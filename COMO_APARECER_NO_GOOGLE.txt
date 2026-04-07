@@ -1,0 +1,87 @@
+=====================================================
+   COMO FAZER O SITE APARECER NO GOOGLE
+   Passo a passo simples — só seguir
+=====================================================
+
+IMPORTANTE: O site precisa estar ONLINE primeiro (domínio ativo + hospedado).
+Quando estiver, siga esses passos:
+
+
+========== PASSO 1: Google Search Console (OBRIGATÓRIO) ==========
+
+1. Acesse: search.google.com/search-console
+2. Faça login com a conta Google da Izzat Car
+3. Clique em "Adicionar propriedade"
+4. Escolha "Domínio" e digite: izzatcarimports.com.br
+5. Vai pedir verificação via DNS — adicione o registro TXT no Registro.br
+   (eu te ajudo quando chegar nessa etapa)
+6. Depois de verificado:
+   - Vá em "Sitemaps" no menu lateral
+   - Digite: sitemap.xml
+   - Clique "Enviar"
+   - Pronto! Google vai começar a indexar
+
+TEMPO: Google costuma indexar em 2-7 dias após isso.
+
+
+========== PASSO 2: Google Meu Negócio — Adicionar site ==========
+
+1. Pesquise "Izzat Car Imports" no Google
+2. Clique em "Editar perfil"
+3. Em "Website" coloque: https://www.izzatcarimports.com.br
+4. Salve
+
+Isso já cria um link forte pro site.
+
+
+========== PASSO 3: Mercado Livre — Link pro site ==========
+
+Na descrição dos anúncios ou no perfil do ML, mencionar:
+"Visite nosso site: izzatcarimports.com.br"
+(ML não permite links clicáveis, mas o nome do domínio ajuda no SEO)
+
+
+========== O QUE JÁ ESTÁ FEITO NO SITE (SEO TÉCNICO) ==========
+
+✅ Title tags otimizados com palavras-chave
+✅ Meta descriptions com marcas e termos de busca
+✅ Meta keywords com 30+ termos relevantes
+✅ Schema JSON-LD (AutoPartsStore) — Google entende que é loja de autopeças
+✅ Open Graph tags — quando alguém compartilhar o link aparece bonito
+✅ Sitemap.xml — mapa do site pro Google
+✅ Robots.txt — permissão pro Google indexar
+✅ Canonical URLs — evita conteúdo duplicado
+✅ Geo tags — Google sabe que é em Aceguá/RS
+✅ Lang pt-BR — Google sabe que é em português
+✅ Mobile responsive — Google prioriza sites que funcionam no celular
+
+
+========== COMO O CLIENTE VAI TE ACHAR ==========
+
+Quando alguém buscar no Google:
+- "peças originais volkswagen"
+- "farol corolla original"
+- "autopeças com procedência legal"
+- "peças bmw originais brasil"
+- "desmanche credenciado RS"
+
+Vai aparecer:
+┌─────────────────────────────────────────────────┐
+│ Izzat Car Imports | Peças Originais com          │
+│ Procedência Legal - Aceguá/RS                    │
+│ www.izzatcarimports.com.br                       │
+│ CDV credenciado Detran-RS nº 01060. Mais de      │
+│ 350 mil peças originais, garantia 90 dias...     │
+│ ⭐⭐⭐⭐⭐ 5.0 - Loja de autopeças               │
+│ 📍 Rua 504, 120 - Aceguá/RS                     │
+│ 📞 (53) 99117-0950                              │
+└─────────────────────────────────────────────────┘
+
+Isso é o resultado RICO que o Schema JSON-LD gera.
+
+
+========== DICA BÔNUS: Postar toda semana ==========
+
+Quanto mais posts no Google Meu Negócio, mais o Google mostra.
+Já deixei 4 posts prontos no arquivo TEXTOS_GOOGLE_MEU_NEGOCIO.txt.
+Poste 1 por semana e o ranking vai subindo.
