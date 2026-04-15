@@ -50,45 +50,65 @@ def refresh_token():
     return None
 
 def get_all_item_ids():
-    """Busca todos os IDs de anúncios ativos."""
+    """Busca todos os IDs de anuncios ativos. Usa offset ate 1000, depois scroll_id."""
     print("📦 Buscando IDs dos anúncios...")
     ids = []
-    offset = 0
     limit = 100
-    while True:
+    total = 0
+
+    # Fase 1: offset normal (0-999)
+    for offset in range(0, 1000, limit):
         url = f"https://api.mercadolibre.com/users/{SELLER_ID}/items/search?status=active&limit={limit}&offset={offset}"
         resp = requests.get(url, headers=headers)
         if resp.status_code == 401:
             new_token = refresh_token()
             if new_token:
                 headers["Authorization"] = f"Bearer {new_token}"
-                continue
+                resp = requests.get(url, headers=headers)
             else:
                 break
         data = resp.json()
         batch = data.get("results", [])
-        ids.extend(batch)
         total = data.get("paging", {}).get("total", 0)
-        offset += len(batch)
-        print(f"  {offset}/{total} IDs...")
-        if offset >= total or not batch or offset >= 10000:
-            break
-        if offset >= 1000:
-            # ML limita search a 1000, usar scroll
-            url2 = f"https://api.mercadolibre.com/users/{SELLER_ID}/items/search?status=active&limit={limit}&offset={offset}&search_type=scan"
-            resp2 = requests.get(url2, headers=headers)
-            if resp2.status_code == 200:
-                data2 = resp2.json()
-                batch2 = data2.get("results", [])
-                if not batch2:
-                    break
-                ids.extend(batch2)
-                offset += len(batch2)
-                print(f"  {offset}/{total} IDs (scan)...")
-                time.sleep(0.3)
-                continue
+        ids.extend(batch)
+        print(f"  {len(ids)}/{total} IDs...")
+        if not batch or len(ids) >= total:
             break
         time.sleep(0.2)
+
+    # Fase 2: scroll para pegar alem de 1000
+    if len(ids) < total:
+        print(f"  Usando scroll para {total - len(ids)} restantes...")
+        scroll_url = f"https://api.mercadolibre.com/users/{SELLER_ID}/items/search?status=active&search_type=scan&limit={limit}"
+        resp = requests.get(scroll_url, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            scroll_id = data.get("scroll_id")
+            batch = data.get("results", [])
+            # Adicionar apenas os que nao temos
+            existing = set(ids)
+            for b in batch:
+                if b not in existing:
+                    ids.append(b)
+                    existing.add(b)
+
+            while scroll_id and len(ids) < total:
+                scroll_url2 = f"https://api.mercadolibre.com/users/{SELLER_ID}/items/search?status=active&search_type=scan&limit={limit}&scroll_id={scroll_id}"
+                resp2 = requests.get(scroll_url2, headers=headers)
+                if resp2.status_code != 200:
+                    break
+                data2 = resp2.json()
+                batch2 = data2.get("results", [])
+                scroll_id = data2.get("scroll_id")
+                if not batch2:
+                    break
+                for b in batch2:
+                    if b not in existing:
+                        ids.append(b)
+                        existing.add(b)
+                print(f"  {len(ids)}/{total} IDs (scroll)...")
+                time.sleep(0.3)
+
     print(f"✅ {len(ids)} IDs encontrados")
     return ids
 
