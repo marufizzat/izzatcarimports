@@ -859,28 +859,74 @@
         const sortSelect = document.getElementById('sortSelect');
 
         // ===== LOAD DATA =====
-        function loadData() {
-            if (typeof ALL_PRODUCTS !== 'undefined' && ALL_PRODUCTS.length > 0) {
-                // Converter formato compacto pra formato padrão
-                allProducts = ALL_PRODUCTS.map(p => ({
-                    title: p.t,
-                    price: p.p,
-                    img: p.i,
-                    url: p.u,
-                    free_shipping: p.f,
-                    id: p.id,
-                    brand: p.b || ''
+        // Fonte de verdade: API do Izzat App (atualiza a cada 10min).
+        // Fallback: ALL_PRODUCTS estatico (catalog_data.js).
+        const API_BASE = 'https://backend-production-0201.up.railway.app';
+        const API_LIMIT = 500;
+
+        async function fetchProdutosAPI() {
+            const produtos = [];
+            let offset = 0;
+            let total = null;
+            // pagina em lotes de 500 ate esgotar
+            while (true) {
+                const url = `${API_BASE}/loja/produtos?limit=${API_LIMIT}&offset=${offset}&apenas_ativos=true`;
+                const r = await fetch(url, { cache: 'no-store' });
+                if (!r.ok) throw new Error('API ' + r.status);
+                const data = await r.json();
+                if (data.erro) throw new Error(data.erro);
+                if (total === null) total = data.total || 0;
+                const lote = data.produtos || [];
+                if (!lote.length) break;
+                produtos.push(...lote);
+                offset += lote.length;
+                if (produtos.length >= total) break;
+                if (lote.length < API_LIMIT) break;
+            }
+            return produtos;
+        }
+
+        function fallbackEstatico() {
+            if (typeof ALL_PRODUCTS === 'undefined' || !ALL_PRODUCTS.length) return [];
+            return ALL_PRODUCTS.map(p => ({
+                title: p.t, price: p.p, img: p.i, url: p.u,
+                free_shipping: p.f, id: p.id, brand: p.b || ''
+            }));
+        }
+
+        async function loadData() {
+            try {
+                const produtos = await fetchProdutosAPI();
+                allProducts = produtos.map(p => ({
+                    title: p.titulo,
+                    price: p.preco,
+                    img: p.thumbnail,
+                    url: p.permalink,
+                    free_shipping: p.frete_gratis,
+                    id: p.mlb,
+                    brand: p.marca || '',
+                    oem: p.oem || '',
+                    disponivel: p.disponivel !== false,
                 }));
-                console.log(`Catálogo carregado: ${allProducts.length} produtos`);
-                applyFilters();
-            } else {
+                // Filtra so disponiveis (vendido no ML some do site)
+                allProducts = allProducts.filter(p => p.disponivel);
+                console.log(`[API] Catálogo: ${allProducts.length} produtos ativos`);
+            } catch (e) {
+                console.warn('[API] falhou, usando fallback estatico:', e);
+                allProducts = fallbackEstatico();
+                console.log(`[estatico] Catálogo: ${allProducts.length} produtos`);
+            }
+
+            if (!allProducts.length) {
                 productsContainer.innerHTML = `
                     <div class="no-results">
                         <h3>Catálogo sendo preparado</h3>
                         <p>Enquanto isso, veja nossos anúncios diretamente no Mercado Livre!</p>
                         <a href="https://perfil.mercadolivre.com.br/IZZAT_CAR_IMPORTS" class="btn-whatsapp" target="_blank" style="background:var(--primary);">Ver no Mercado Livre</a>
                     </div>`;
+                return;
             }
+            applyFilters();
         }
 
         // ===== SAVE STATE TO URL =====
