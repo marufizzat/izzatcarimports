@@ -112,9 +112,19 @@ def get_all_item_ids():
     print(f"✅ {len(ids)} IDs encontrados")
     return ids
 
+def upscale_img(url):
+    if not url:
+        return url
+    url = url.replace("http:", "https:")
+    if "-I.jpg" in url:
+        url = url.replace("-I.jpg", "-O.webp")
+    elif "-I.webp" in url:
+        url = url.replace("-I.webp", "-O.webp")
+    return url
+
 def get_items_details(ids):
-    """Busca detalhes dos itens em lotes de 20."""
-    print("📋 Buscando detalhes dos anúncios...")
+    """Busca detalhes dos itens em lotes de 20. Agora salva pictures[], attributes, sold."""
+    print("Buscando detalhes dos anuncios...")
     products = []
     for i in range(0, len(ids), 20):
         batch = ids[i:i+20]
@@ -133,32 +143,43 @@ def get_items_details(ids):
                 if not item or item.get("status") != "active":
                     continue
 
-                # Pegar melhor imagem
-                img = ""
-                if item.get("pictures") and len(item["pictures"]) > 0:
-                    img = item["pictures"][0].get("secure_url", "")
-                elif item.get("thumbnail"):
-                    img = item["thumbnail"].replace("http:", "https:")
+                # Array completo de fotos (capa = [0])
+                pics = []
+                for p in item.get("pictures", []):
+                    u = upscale_img(p.get("secure_url", ""))
+                    if u:
+                        pics.append(u)
+                if not pics and item.get("thumbnail"):
+                    pics = [upscale_img(item["thumbnail"])]
+                img = pics[0] if pics else ""
 
-                # Imagem grande
-                if "-I.jpg" in img:
-                    img = img.replace("-I.jpg", "-O.webp")
-                elif "-I.webp" in img:
-                    img = img.replace("-I.webp", "-O.webp")
+                # Extrair atributos importantes
+                attrs = {}
+                for a in item.get("attributes", []):
+                    aid = a.get("id", "")
+                    val = a.get("value_name", "") or a.get("value_id", "")
+                    if aid and val:
+                        attrs[aid] = val
 
-                # Extrair marca do título
+                oem = attrs.get("OEM", "") or attrs.get("PART_NUMBER", "")
+                part_number = attrs.get("PART_NUMBER", "")
+                model = attrs.get("MODEL", "")
+
+                # Extrair marca do título (fallback pra atributo BRAND)
                 brand = ""
                 brands_list = [
                     "Volkswagen", "VW", "Chevrolet", "GM", "Fiat", "Ford", "Toyota",
                     "Honda", "Hyundai", "Renault", "Citroën", "Citroen", "Peugeot",
                     "Nissan", "Kia", "Jeep", "BMW", "Mercedes", "Audi", "Volvo",
-                    "Jaguar", "Land Rover", "Mitsubishi", "Subaru", "Suzuki", "Chery", "Lifan"
+                    "Jaguar", "Land Rover", "Mitsubishi", "Subaru", "Suzuki", "Chery", "Lifan", "Dodge"
                 ]
                 title_lower = item.get("title", "").lower()
                 for b in brands_list:
                     if b.lower() in title_lower:
                         brand = b
                         break
+                if not brand and attrs.get("BRAND"):
+                    brand = attrs["BRAND"].split()[0] if attrs["BRAND"] else ""
 
                 product = {
                     "id": item.get("id", ""),
@@ -166,12 +187,18 @@ def get_items_details(ids):
                     "price": item.get("price", 0),
                     "currency": item.get("currency_id", "BRL"),
                     "img": img,
+                    "pics": pics,
                     "url": item.get("permalink", ""),
                     "free_shipping": item.get("shipping", {}).get("free_shipping", False),
                     "condition": item.get("condition", ""),
                     "sold": item.get("sold_quantity", 0),
                     "brand": brand,
                     "available": item.get("available_quantity", 0),
+                    "oem": oem,
+                    "part_number": part_number,
+                    "model": model,
+                    "category_id": item.get("category_id", ""),
+                    "attrs": attrs,
                 }
                 products.append(product)
 
@@ -179,7 +206,29 @@ def get_items_details(ids):
         print(f"  {done}/{len(ids)} detalhes...")
         time.sleep(0.3)  # Rate limit
 
-    print(f"✅ {len(products)} produtos processados")
+    print(f"{len(products)} produtos processados")
+    return products
+
+def get_items_descriptions(products):
+    """Busca descricao plain_text de cada item. Chamada separada por item."""
+    print("Buscando descricoes...")
+    for idx, p in enumerate(products):
+        if idx % 50 == 0:
+            print(f"  {idx}/{len(products)} descricoes...")
+        try:
+            r = requests.get(f"https://api.mercadolibre.com/items/{p['id']}/description", headers=headers, timeout=15)
+            if r.status_code == 401:
+                new_token = refresh_token()
+                if new_token:
+                    headers["Authorization"] = f"Bearer {new_token}"
+                    r = requests.get(f"https://api.mercadolibre.com/items/{p['id']}/description", headers=headers, timeout=15)
+            if r.status_code == 200:
+                p["desc"] = r.json().get("plain_text", "")
+            else:
+                p["desc"] = ""
+        except Exception as e:
+            p["desc"] = ""
+        time.sleep(0.08)
     return products
 
 def save_products(products):
@@ -202,6 +251,32 @@ def save_products(products):
     print(f"✅ Salvo em {output}")
     print(f"   {len(products)} produtos | {size_mb:.1f} MB")
 
+def save_seller_reputation():
+    """Busca reputacao do vendedor e salva em reputation.json pra exibir no site."""
+    try:
+        r = requests.get(f"https://api.mercadolibre.com/users/{SELLER_ID}", headers=headers, timeout=15)
+        if r.status_code == 200:
+            d = r.json()
+            rep = d.get("seller_reputation", {})
+            metrics = rep.get("transactions", {}).get("ratings", {})
+            out = {
+                "level_id": rep.get("level_id", ""),
+                "power_seller_status": rep.get("power_seller_status", ""),
+                "total_transactions": rep.get("transactions", {}).get("total", 0),
+                "completed": rep.get("transactions", {}).get("completed", 0),
+                "canceled": rep.get("transactions", {}).get("canceled", 0),
+                "positive": metrics.get("positive", 0),
+                "neutral": metrics.get("neutral", 0),
+                "negative": metrics.get("negative", 0),
+                "nickname": d.get("nickname", ""),
+                "registration_date": d.get("registration_date", ""),
+            }
+            with open(SITE_DIR / "reputation.json", "w", encoding="utf-8") as f:
+                json.dump(out, f, ensure_ascii=False, indent=2)
+            print(f"Reputacao salva: {out['level_id']} / {out['total_transactions']} vendas / {out['positive']*100:.0f}% positivas")
+    except Exception as e:
+        print(f"Erro reputacao: {e}")
+
 def main():
     print("=" * 50)
     print("  IZZAT CAR — Atualizador de Catálogo")
@@ -214,7 +289,9 @@ def main():
         return
 
     products = get_items_details(ids)
+    products = get_items_descriptions(products)
     save_products(products)
+    save_seller_reputation()
 
     print()
     print("🎉 PRONTO! O site já vai mostrar os anúncios atualizados.")
