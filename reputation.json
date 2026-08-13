@@ -1,9 +1,9 @@
 {
   "level_id": "5_green",
   "power_seller_status": "silver",
-  "total_transactions": 529,
-  "completed": 426,
-  "canceled": 103,
+  "total_transactions": 843,
+  "completed": 669,
+  "canceled": 174,
   "positive": 1,
   "neutral": 0,
   "negative": 0,

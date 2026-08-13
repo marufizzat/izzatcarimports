@@ -251,6 +251,27 @@ def save_products(products):
     print(f"✅ Salvo em {output}")
     print(f"   {len(products)} produtos | {size_mb:.1f} MB")
 
+def save_js_files(products):
+    """Gera catalog_data.js (fallback do catalogo) e vitrine_data.js (home)."""
+    compactos = [
+        {"id": p["id"], "t": p["title"], "p": p["price"], "i": p["img"],
+         "u": p["url"], "f": p["free_shipping"], "b": p["brand"]}
+        for p in products if p.get("img")
+    ]
+    with open(SITE_DIR / "catalog_data.js", "w", encoding="utf-8") as f:
+        f.write("const ALL_PRODUCTS = ")
+        json.dump(compactos, f, ensure_ascii=False)
+        f.write(";")
+
+    vitrine = [{k: c[k] for k in ("t", "p", "i", "u", "f", "id")} for c in compactos[:40]]
+    with open(SITE_DIR / "vitrine_data.js", "w", encoding="utf-8") as f:
+        f.write("const VITRINE_DATA = ")
+        json.dump(vitrine, f, ensure_ascii=False)
+        f.write(";")
+
+    print(f"catalog_data.js: {len(compactos)} | vitrine_data.js: {len(vitrine)}")
+
+
 def save_seller_reputation():
     """Busca reputacao do vendedor e salva em reputation.json pra exibir no site."""
     try:
@@ -291,6 +312,7 @@ def main():
     products = get_items_details(ids)
     products = get_items_descriptions(products)
     save_products(products)
+    save_js_files(products)
     save_seller_reputation()
 
     print()
