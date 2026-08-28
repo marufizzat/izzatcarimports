@@ -18,99 +18,63 @@ TOKEN = os.getenv("ML_ACCESS_TOKEN")
 SELLER_ID = "2932888131"
 SITE_DIR = Path(r"C:\Users\Administrator\Desktop\IzzatCar\site")
 
+# O token do .env local vive expirando (6h) e renovar aqui rotaciona o refresh
+# token que o backend tambem usa. Por isso puxamos os anuncios pelo proxy do
+# backend, que mantem o token dele valido sozinho.
+# ADMIN_KEY NUNCA entra neste arquivo: o repo do site e publico.
+BACKEND = os.getenv("BACKEND_URL", "https://backend-production-0201.up.railway.app")
+ADMIN_KEY = os.getenv("ADMIN_KEY", "")
+
 headers = {"Authorization": f"Bearer {TOKEN}"}
 
-def refresh_token():
-    """Tenta renovar o token se expirado."""
-    refresh = os.getenv("REFRESH_TOKEN")
-    app_id = os.getenv("APP_ID", "5532196899096674")
-    client_secret = os.getenv("CLIENT_SECRET")
-    if not refresh or not client_secret:
-        print("⚠ Sem REFRESH_TOKEN ou CLIENT_SECRET no .env")
-        return None
-    resp = requests.post("https://api.mercadolibre.com/oauth/token", json={
-        "grant_type": "refresh_token",
-        "client_id": app_id,
-        "client_secret": client_secret,
-        "refresh_token": refresh
-    })
-    if resp.status_code == 200:
-        data = resp.json()
-        new_token = data["access_token"]
-        # Atualizar .env
-        env_content = env_path.read_text()
-        env_content = env_content.replace(TOKEN, new_token)
-        if "REFRESH_TOKEN" in env_content:
-            old_refresh = refresh
-            env_content = env_content.replace(old_refresh, data.get("refresh_token", old_refresh))
-        env_path.write_text(env_content)
-        print("✅ Token renovado!")
-        return new_token
-    print(f"❌ Erro ao renovar token: {resp.status_code}")
-    return None
+def fetch_items_backend():
+    """Puxa todos os anuncios ativos (item completo) pelo proxy do backend.
 
-def get_all_item_ids():
-    """Busca todos os IDs de anuncios ativos. Usa offset ate 1000, depois scroll_id."""
-    print("📦 Buscando IDs dos anúncios...")
-    ids = []
-    limit = 100
-    total = 0
+    O backend renova o token do ML sozinho, entao esta rota nao expira como o
+    ML_ACCESS_TOKEN do .env local.
+    """
+    if not ADMIN_KEY:
+        print("⚠ Sem ADMIN_KEY no .env — nao da pra usar o proxy do backend")
+        return []
 
-    # Fase 1: offset normal (0-999)
-    for offset in range(0, 1000, limit):
-        url = f"https://api.mercadolibre.com/users/{SELLER_ID}/items/search?status=active&limit={limit}&offset={offset}"
-        resp = requests.get(url, headers=headers)
-        if resp.status_code == 401:
-            new_token = refresh_token()
-            if new_token:
-                headers["Authorization"] = f"Bearer {new_token}"
-                resp = requests.get(url, headers=headers)
-            else:
-                break
-        data = resp.json()
-        batch = data.get("results", [])
-        total = data.get("paging", {}).get("total", 0)
-        ids.extend(batch)
-        print(f"  {len(ids)}/{total} IDs...")
-        if not batch or len(ids) >= total:
+    print("📦 Buscando anúncios pelo backend...")
+    h = {"X-Admin-Key": ADMIN_KEY}
+    raw, vistos, scroll_id, total = [], set(), None, 0
+
+    while True:
+        params = {"limit": 50}
+        if scroll_id:
+            params["scroll_id"] = scroll_id
+        try:
+            r = requests.get(f"{BACKEND}/admin/ml_items_batch", params=params, headers=h, timeout=180)
+        except Exception as e:
+            print(f"  ⚠ falha na chamada ({e}) — parando com {len(raw)} anúncios")
             break
-        time.sleep(0.2)
+        if r.status_code != 200:
+            print(f"  ⚠ http {r.status_code}: {r.text[:200]}")
+            break
 
-    # Fase 2: scroll para pegar alem de 1000
-    if len(ids) < total:
-        print(f"  Usando scroll para {total - len(ids)} restantes...")
-        scroll_url = f"https://api.mercadolibre.com/users/{SELLER_ID}/items/search?status=active&search_type=scan&limit={limit}"
-        resp = requests.get(scroll_url, headers=headers)
-        if resp.status_code == 200:
-            data = resp.json()
-            scroll_id = data.get("scroll_id")
-            batch = data.get("results", [])
-            # Adicionar apenas os que nao temos
-            existing = set(ids)
-            for b in batch:
-                if b not in existing:
-                    ids.append(b)
-                    existing.add(b)
+        data = r.json()
+        total = data.get("total", total)
+        lote = data.get("items", [])
+        scroll_id = data.get("scroll_id")
 
-            while scroll_id and len(ids) < total:
-                scroll_url2 = f"https://api.mercadolibre.com/users/{SELLER_ID}/items/search?status=active&search_type=scan&limit={limit}&scroll_id={scroll_id}"
-                resp2 = requests.get(scroll_url2, headers=headers)
-                if resp2.status_code != 200:
-                    break
-                data2 = resp2.json()
-                batch2 = data2.get("results", [])
-                scroll_id = data2.get("scroll_id")
-                if not batch2:
-                    break
-                for b in batch2:
-                    if b not in existing:
-                        ids.append(b)
-                        existing.add(b)
-                print(f"  {len(ids)}/{total} IDs (scroll)...")
-                time.sleep(0.3)
+        novos = 0
+        for it in lote:
+            mlb = it.get("id")
+            if not mlb or mlb in vistos or it.get("_fetch_error"):
+                continue
+            vistos.add(mlb)
+            raw.append(it)
+            novos += 1
 
-    print(f"✅ {len(ids)} IDs encontrados")
-    return ids
+        print(f"  {len(raw)}/{total} anúncios...")
+        if not lote or not scroll_id or novos == 0:
+            break
+
+    print(f"✅ {len(raw)} anúncios recebidos")
+    return raw
+
 
 def upscale_img(url):
     if not url:
@@ -122,113 +86,97 @@ def upscale_img(url):
         url = url.replace("-I.webp", "-O.webp")
     return url
 
-def get_items_details(ids):
-    """Busca detalhes dos itens em lotes de 20. Agora salva pictures[], attributes, sold."""
-    print("Buscando detalhes dos anuncios...")
+def get_items_details(raw_items):
+    """Converte os itens crus do ML no formato do site (pictures[], attributes, sold)."""
+    print("Montando produtos...")
     products = []
-    for i in range(0, len(ids), 20):
-        batch = ids[i:i+20]
-        batch_str = ",".join(batch)
-        url = f"https://api.mercadolibre.com/items?ids={batch_str}"
-        resp = requests.get(url, headers=headers)
-        if resp.status_code == 401:
-            new_token = refresh_token()
-            if new_token:
-                headers["Authorization"] = f"Bearer {new_token}"
-                resp = requests.get(url, headers=headers)
-        if resp.status_code == 200:
-            items = resp.json()
-            for item_wrapper in items:
-                item = item_wrapper.get("body", {})
-                if not item or item.get("status") != "active":
-                    continue
+    for item in raw_items:
+        if not item or item.get("status") != "active":
+            continue
 
-                # Array completo de fotos (capa = [0])
-                pics = []
-                for p in item.get("pictures", []):
-                    u = upscale_img(p.get("secure_url", ""))
-                    if u:
-                        pics.append(u)
-                if not pics and item.get("thumbnail"):
-                    pics = [upscale_img(item["thumbnail"])]
-                img = pics[0] if pics else ""
+        # Array completo de fotos (capa = [0])
+        pics = []
+        for p in item.get("pictures", []):
+            u = upscale_img(p.get("secure_url", ""))
+            if u:
+                pics.append(u)
+        if not pics and item.get("thumbnail"):
+            pics = [upscale_img(item["thumbnail"])]
+        img = pics[0] if pics else ""
 
-                # Extrair atributos importantes
-                attrs = {}
-                for a in item.get("attributes", []):
-                    aid = a.get("id", "")
-                    val = a.get("value_name", "") or a.get("value_id", "")
-                    if aid and val:
-                        attrs[aid] = val
+        # Extrair atributos importantes
+        attrs = {}
+        for a in item.get("attributes", []):
+            aid = a.get("id", "")
+            val = a.get("value_name", "") or a.get("value_id", "")
+            if aid and val:
+                attrs[aid] = val
 
-                oem = attrs.get("OEM", "") or attrs.get("PART_NUMBER", "")
-                part_number = attrs.get("PART_NUMBER", "")
-                model = attrs.get("MODEL", "")
+        oem = attrs.get("OEM", "") or attrs.get("PART_NUMBER", "")
+        part_number = attrs.get("PART_NUMBER", "")
+        model = attrs.get("MODEL", "")
 
-                # Extrair marca do título (fallback pra atributo BRAND)
-                brand = ""
-                brands_list = [
-                    "Volkswagen", "VW", "Chevrolet", "GM", "Fiat", "Ford", "Toyota",
-                    "Honda", "Hyundai", "Renault", "Citroën", "Citroen", "Peugeot",
-                    "Nissan", "Kia", "Jeep", "BMW", "Mercedes", "Audi", "Volvo",
-                    "Jaguar", "Land Rover", "Mitsubishi", "Subaru", "Suzuki", "Chery", "Lifan", "Dodge"
-                ]
-                title_lower = item.get("title", "").lower()
-                for b in brands_list:
-                    if b.lower() in title_lower:
-                        brand = b
-                        break
-                if not brand and attrs.get("BRAND"):
-                    brand = attrs["BRAND"].split()[0] if attrs["BRAND"] else ""
+        # Extrair marca do título (fallback pra atributo BRAND)
+        brand = ""
+        brands_list = [
+            "Volkswagen", "VW", "Chevrolet", "GM", "Fiat", "Ford", "Toyota",
+            "Honda", "Hyundai", "Renault", "Citroën", "Citroen", "Peugeot",
+            "Nissan", "Kia", "Jeep", "BMW", "Mercedes", "Audi", "Volvo",
+            "Jaguar", "Land Rover", "Mitsubishi", "Subaru", "Suzuki", "Chery", "Lifan", "Dodge"
+        ]
+        title_lower = item.get("title", "").lower()
+        for b in brands_list:
+            if b.lower() in title_lower:
+                brand = b
+                break
+        if not brand and attrs.get("BRAND"):
+            brand = attrs["BRAND"].split()[0] if attrs["BRAND"] else ""
 
-                product = {
-                    "id": item.get("id", ""),
-                    "title": item.get("title", ""),
-                    "price": item.get("price", 0),
-                    "currency": item.get("currency_id", "BRL"),
-                    "img": img,
-                    "pics": pics,
-                    "url": item.get("permalink", ""),
-                    "free_shipping": item.get("shipping", {}).get("free_shipping", False),
-                    "condition": item.get("condition", ""),
-                    "sold": item.get("sold_quantity", 0),
-                    "brand": brand,
-                    "available": item.get("available_quantity", 0),
-                    "oem": oem,
-                    "part_number": part_number,
-                    "model": model,
-                    "category_id": item.get("category_id", ""),
-                    "attrs": attrs,
-                }
-                products.append(product)
-
-        done = min(i + 20, len(ids))
-        print(f"  {done}/{len(ids)} detalhes...")
-        time.sleep(0.3)  # Rate limit
+        product = {
+            "id": item.get("id", ""),
+            "title": item.get("title", ""),
+            "price": item.get("price", 0),
+            "currency": item.get("currency_id", "BRL"),
+            "img": img,
+            "pics": pics,
+            "url": item.get("permalink", ""),
+            "free_shipping": item.get("shipping", {}).get("free_shipping", False),
+            "condition": item.get("condition", ""),
+            "sold": item.get("sold_quantity", 0),
+            "brand": brand,
+            "available": item.get("available_quantity", 0),
+            "oem": oem,
+            "part_number": part_number,
+            "model": model,
+            "category_id": item.get("category_id", ""),
+            "attrs": attrs,
+        }
+        products.append(product)
 
     print(f"{len(products)} produtos processados")
     return products
 
 def get_items_descriptions(products):
-    """Busca descricao plain_text de cada item. Chamada separada por item."""
-    print("Buscando descricoes...")
-    for idx, p in enumerate(products):
-        if idx % 50 == 0:
-            print(f"  {idx}/{len(products)} descricoes...")
+    """Reaproveita as descricoes ja salvas em products.json.
+
+    Nenhuma pagina do site le `desc` (catalogo.html usa catalog_data.js e
+    index.html usa vitrine_data.js), entao nao vale 1 GET por anuncio — era a
+    fase que fazia a atualizacao demorar ~35 min.
+    """
+    antigos = {}
+    old = SITE_DIR / "products.json"
+    if old.exists():
         try:
-            r = requests.get(f"https://api.mercadolibre.com/items/{p['id']}/description", headers=headers, timeout=15)
-            if r.status_code == 401:
-                new_token = refresh_token()
-                if new_token:
-                    headers["Authorization"] = f"Bearer {new_token}"
-                    r = requests.get(f"https://api.mercadolibre.com/items/{p['id']}/description", headers=headers, timeout=15)
-            if r.status_code == 200:
-                p["desc"] = r.json().get("plain_text", "")
-            else:
-                p["desc"] = ""
+            with open(old, encoding="utf-8") as f:
+                for p in json.load(f).get("products", []):
+                    if p.get("id") and p.get("desc"):
+                        antigos[p["id"]] = p["desc"]
         except Exception as e:
-            p["desc"] = ""
-        time.sleep(0.08)
+            print(f"  ⚠ nao deu pra reler products.json: {e}")
+
+    for p in products:
+        p["desc"] = antigos.get(p["id"], "")
+    print(f"Descricoes reaproveitadas: {sum(1 for p in products if p['desc'])}/{len(products)}")
     return products
 
 def save_products(products):
@@ -304,12 +252,12 @@ def main():
     print("=" * 50)
     print()
 
-    ids = get_all_item_ids()
-    if not ids:
-        print("❌ Nenhum anúncio encontrado. Verifique o token.")
+    raw = fetch_items_backend()
+    if not raw:
+        print("❌ Nenhum anúncio encontrado. Verifique ADMIN_KEY / backend.")
         return
 
-    products = get_items_details(ids)
+    products = get_items_details(raw)
     products = get_items_descriptions(products)
     save_products(products)
     save_js_files(products)
