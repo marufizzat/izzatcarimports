@@ -15,6 +15,40 @@ SITE_DIR = Path(r"C:\Users\Administrator\Desktop\IzzatCar\site")
 PECA_DIR = SITE_DIR / "peca"
 PRODUCTS_FILE = SITE_DIR / "products.json"
 
+# Rastreamento: Google Analytics + Pixel da Meta.
+# Strings normais (SEM o f) de proposito: o snippet e cheio de { e }, e dentro de
+# f-string cada chave teria que ser dobrada. Aqui elas entram so via {TRACKING_*}.
+TRACKING_HEAD = """<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-M9W3R23RY9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-M9W3R23RY9');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2508976816257209');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2508976816257209&ev=PageView&noscript=1" /></noscript>
+<!-- End Meta Pixel Code -->"""
+
+TRACKING_BODY = """<!-- Meta Pixel - evento Contact no clique de WhatsApp -->
+<script>
+document.addEventListener('click', function(e) {
+  var t = e.target;
+  if (!t || !t.closest) return;
+  if (t.closest('a[href*="wa.me"]') && window.fbq) fbq('track', 'Contact');
+});
+</script>"""
+
 env_path = Path(r"C:\Users\Administrator\Desktop\IzzatCar\MercadoLivre\.env")
 load_dotenv(env_path)
 TOKEN = os.getenv("ML_ACCESS_TOKEN")
@@ -91,6 +125,7 @@ def generate_page(item, desc):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{TRACKING_HEAD}
 <title>{title} | Izzat Car Imports</title>
 <meta name="description" content="{title} - Peça original R$ {price}. Garantia 90 dias, envio todo Brasil. CDV credenciado Detran-RS nº 01060.">
 <meta name="robots" content="index, follow">
@@ -310,6 +345,7 @@ async function calcFrete() {{
     }} catch(e) {{ result.innerHTML='<p style="color:#FF6B6B">CEP não encontrado</p>'; }}
 }}
 </script>
+{TRACKING_BODY}
 </body>
 </html>'''
 
