@@ -1,1210 +1,214 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-M9W3R23RY9"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag("js", new Date());
-      gtag("config", "G-M9W3R23RY9");
-    </script>
-    <!-- Meta Pixel Code -->
-    <script>
-    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-    document,'script','https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '2508976816257209');
-    fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=2508976816257209&ev=PageView&noscript=1" /></noscript>
-    <!-- End Meta Pixel Code -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo de Peças Automotivas Originais | Izzat Car Imports</title>
-    <meta name="description" content="Catálogo com mais de 1.800 peças automotivas originais com procedência legal. Faróis, motores, câmbio, suspensão, elétrica. Volkswagen, Chevrolet, Fiat, Ford, Toyota, Honda, BMW, Mercedes, Audi, Volvo, Jaguar. Garantia 90 dias, envio todo Brasil.">
-    <meta name="keywords" content="comprar peças originais, farol original, motor original, câmbio original, peças volkswagen originais, peças chevrolet originais, peças bmw originais, peças mercedes originais, peças audi originais, autopeças online, peças com garantia, peças com nota fiscal">
-    <meta property="og:title" content="Catálogo de Peças Originais | Izzat Car Imports">
-    <meta property="og:description" content="Mais de 1.800 peças originais com garantia 90 dias. Compre direto pelo site ou no Mercado Livre.">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://www.izzatcarimports.com.br/catalogo.html">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root {
-            --primary: #FF6B00;
-            --primary-light: #FF8A33;
-            --primary-dark: #CC5500;
-            --accent: #00D4FF;
-            --dark: #050508;
-            --dark-2: #0C0C12;
-            --dark-3: #14141E;
-            --dark-4: #1C1C28;
-            --dark-5: #24243A;
-            --white: #FFFFFF;
-            --gray: #8888A0;
-            --gray-light: #CCCCDD;
-            --green: #25D366;
-        }
-
-        html { scroll-behavior: smooth; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--dark);
-            color: var(--white);
-            overflow-x: hidden;
-        }
-
-        .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
-
-        /* ===== NAVBAR ===== */
-        .navbar {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%;
-            z-index: 1000;
-            background: rgba(5, 5, 8, 0.9);
-            backdrop-filter: blur(24px) saturate(1.8);
-            -webkit-backdrop-filter: blur(24px) saturate(1.8);
-            border-bottom: 1px solid rgba(255,107,0,0.08);
-            padding: 14px 0;
-        }
-
-        .navbar .container { display: flex; justify-content: space-between; align-items: center; }
-
-        .logo {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--white);
-            text-decoration: none;
-            letter-spacing: -1px;
-        }
-        .logo span { color: var(--primary); }
-
-        .nav-links { display: flex; gap: 28px; list-style: none; align-items: center; }
-        .nav-links a {
-            color: var(--gray);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-        .nav-links a:hover, .nav-links a.active { color: var(--white); }
-
-        .nav-cta {
-            background: var(--primary) !important;
-            color: var(--white) !important;
-            padding: 10px 20px !important;
-            border-radius: 8px !important;
-            font-weight: 600 !important;
-        }
-
-        .menu-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; z-index: 1001; }
-        .menu-toggle span { display: block; width: 24px; height: 2px; background: var(--white); margin: 6px 0; transition: all 0.3s; }
-
-        /* ===== HERO CATALOGO ===== */
-        .catalog-hero {
-            padding: 120px 0 40px;
-            text-align: center;
-            position: relative;
-        }
-
-        .catalog-hero::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: radial-gradient(ellipse at top center, rgba(255,107,0,0.06) 0%, transparent 60%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .catalog-hero h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(32px, 5vw, 52px);
-            font-weight: 700;
-            letter-spacing: -2px;
-            margin-bottom: 12px;
-            position: relative;
-        }
-
-        .catalog-hero h1 .gradient-text {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .catalog-hero p {
-            font-size: 17px;
-            color: var(--gray);
-            position: relative;
-            margin-bottom: 32px;
-        }
-
-        /* ===== SEARCH BAR ===== */
-        .search-container {
-            position: relative;
-            max-width: 700px;
-            margin: 0 auto 20px;
-            z-index: 2;
-        }
-
-        .search-bar {
-            width: 100%;
-            padding: 18px 24px 18px 56px;
-            background: var(--dark-3);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 16px;
-            color: var(--white);
-            font-size: 16px;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        .search-bar:focus {
-            border-color: rgba(255,107,0,0.4);
-            box-shadow: 0 0 30px rgba(255,107,0,0.08);
-        }
-
-        .search-bar::placeholder { color: var(--gray); }
-
-        .search-icon {
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 20px;
-            color: var(--gray);
-            pointer-events: none;
-        }
-
-        .search-clear {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: var(--dark-4);
-            border: none;
-            color: var(--gray);
-            width: 28px; height: 28px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 14px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .search-clear.show { display: flex; }
-        .search-clear:hover { background: var(--primary); color: var(--white); }
-
-        /* ===== FILTERS ===== */
-        .filters {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 900px;
-            margin: 0 auto 16px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .filter-btn {
-            padding: 10px 20px;
-            background: var(--dark-3);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 100px;
-            color: var(--gray);
-            font-size: 13px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .filter-btn:hover { border-color: rgba(255,107,0,0.3); color: var(--white); }
-
-        .filter-btn.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: var(--white);
-        }
-
-        /* ===== RESULTS INFO ===== */
-        .results-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 0;
-            margin-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-
-        .results-count {
-            font-size: 14px;
-            color: var(--gray);
-        }
-
-        .results-count strong {
-            color: var(--primary);
-            font-weight: 700;
-        }
-
-        .sort-select {
-            padding: 8px 16px;
-            background: var(--dark-3);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 8px;
-            color: var(--white);
-            font-size: 13px;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            outline: none;
-        }
-
-        .sort-select option { background: var(--dark-3); }
-
-        /* ===== PRODUCT GRID ===== */
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 20px;
-            padding: 24px 0;
-        }
-
-        .product-card {
-            background: var(--dark-3);
-            border: 1px solid rgba(255,255,255,0.04);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            text-decoration: none;
-            color: var(--white);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .product-card:hover {
-            border-color: rgba(255,107,0,0.2);
-            transform: translateY(-6px);
-            box-shadow: 0 16px 48px rgba(0,0,0,0.3), 0 4px 16px rgba(255,107,0,0.06);
-        }
-
-        .product-img-container {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1;
-            background: var(--dark-4);
-            overflow: hidden;
-        }
-
-        .product-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s;
-        }
-
-        .product-card:hover .product-img { transform: scale(1.06); }
-
-        .product-badges {
-            position: absolute;
-            top: 12px; left: 12px;
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            backdrop-filter: blur(8px);
-        }
-
-        .badge-free {
-            background: rgba(37,211,102,0.2);
-            color: #25D366;
-            border: 1px solid rgba(37,211,102,0.3);
-        }
-
-        .badge-original {
-            background: rgba(255,107,0,0.15);
-            color: var(--primary);
-            border: 1px solid rgba(255,107,0,0.25);
-        }
-
-        .product-info {
-            padding: 18px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .product-title {
-            font-size: 14px;
-            font-weight: 500;
-            line-height: 1.45;
-            color: var(--gray-light);
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .product-bottom {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .product-price {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--white);
-        }
-
-        .product-price small {
-            display: block;
-            font-size: 11px;
-            color: var(--gray);
-            font-weight: 400;
-            margin-top: 2px;
-        }
-
-        .product-buttons {
-            display: flex;
-            gap: 6px;
-            margin-top: 10px;
-        }
-
-        .product-btn-ml {
-            flex: 1;
-            padding: 10px 0;
-            background: var(--primary);
-            border: none;
-            border-radius: 8px;
-            color: var(--white);
-            font-size: 11px;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            text-align: center;
-            display: block;
-        }
-
-        .product-btn-ml:hover { background: var(--primary-dark); }
-
-        .product-btn-direto {
-            flex: 1;
-            padding: 10px 0;
-            background: #25D366;
-            border: none;
-            border-radius: 8px;
-            color: var(--white);
-            font-size: 11px;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            text-align: center;
-            display: block;
-        }
-
-        .product-btn-direto:hover { background: #1EBE5A; }
-
-        /* ===== LOAD MORE ===== */
-        .load-more-container {
-            text-align: center;
-            padding: 40px 0;
-        }
-
-        .btn-load {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 16px 40px;
-            background: var(--dark-3);
-            border: 1px solid rgba(255,107,0,0.2);
-            border-radius: 12px;
-            color: var(--white);
-            font-size: 15px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.4s;
-        }
-
-        .btn-load:hover {
-            background: var(--primary);
-            border-color: var(--primary);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(255,107,0,0.2);
-        }
-
-        .btn-load:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .loader-small {
-            width: 20px; height: 20px;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ===== INITIAL LOADER ===== */
-        .page-loader {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 100px 0;
-            color: var(--gray);
-            gap: 16px;
-        }
-
-        .loader-big {
-            width: 48px; height: 48px;
-            border: 3px solid var(--dark-4);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        /* ===== NO RESULTS ===== */
-        .no-results {
-            text-align: center;
-            padding: 80px 0;
-            color: var(--gray);
-        }
-
-        .no-results h3 {
-            font-size: 24px;
-            margin-bottom: 12px;
-            color: var(--white);
-        }
-
-        .no-results p { margin-bottom: 24px; }
-
-        .no-results .btn-whatsapp {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 28px;
-            background: var(--green);
-            color: var(--white);
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.3s;
-        }
-
-        .no-results .btn-whatsapp:hover { background: #1EBE5A; transform: translateY(-2px); }
-
-        /* ===== FOOTER ===== */
-        .footer {
-            padding: 32px 0;
-            border-top: 1px solid rgba(255,255,255,0.04);
-            text-align: center;
-        }
-        .footer p { font-size: 13px; color: var(--gray); }
-        .footer a { color: var(--primary); text-decoration: none; }
-
-        /* ===== WHATSAPP FLOAT ===== */
-        .whatsapp-float {
-            position: fixed;
-            bottom: 28px; right: 28px;
-            z-index: 999;
-            width: 60px; height: 60px;
-            background: linear-gradient(135deg, #25D366, #1EBE5A);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 24px rgba(37,211,102,0.4);
-            transition: all 0.4s;
-            text-decoration: none;
-        }
-        .whatsapp-float:hover { transform: scale(1.12) translateY(-4px); }
-        .whatsapp-float svg { width: 30px; height: 30px; fill: white; }
-        .whatsapp-float::before {
-            content: '';
-            position: absolute;
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            background: #25D366;
-            animation: waPulse 2s infinite;
-            z-index: -1;
-        }
-        @keyframes waPulse {
-            0% { transform: scale(1); opacity: 0.4; }
-            100% { transform: scale(1.6); opacity: 0; }
-        }
-
-        /* ===== BACK TO TOP ===== */
-        .back-top {
-            position: fixed;
-            bottom: 28px; right: 100px;
-            z-index: 999;
-            width: 44px; height: 44px;
-            background: var(--dark-3);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gray);
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .back-top.show { opacity: 1; pointer-events: all; }
-        .back-top:hover { background: var(--primary); color: var(--white); border-color: var(--primary); }
-
-        /* ===== VEHICLE SEARCH ===== */
-        .vehicle-search {
-            display: flex;
-            gap: 10px;
-            max-width: 700px;
-            margin: 0 auto 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            position: relative;
-            z-index: 2;
-        }
-
-        .vehicle-select {
-            padding: 14px 18px;
-            background: var(--dark-3);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 12px;
-            color: var(--white);
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            outline: none;
-            flex: 1;
-            min-width: 160px;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%239090B0'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 14px center;
-        }
-
-        .vehicle-select:focus { border-color: rgba(255,107,0,0.4); }
-        .vehicle-select option { background: var(--dark-3); }
-
-        .vehicle-search-btn {
-            padding: 14px 28px;
-            background: var(--primary);
-            border: none;
-            border-radius: 12px;
-            color: var(--white);
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .vehicle-search-btn:hover { background: #CC5500; }
-
-        .vehicle-label {
-            text-align: center;
-            font-size: 13px;
-            color: var(--gray);
-            margin-bottom: 12px;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* ===== THEME TOGGLE ===== */
-        .theme-toggle {
-            width: 40px; height: 40px;
-            background: var(--dark-3);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
-            transition: all 0.3s;
-            color: var(--gray);
-        }
-        .theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
-
-        /* LIGHT MODE */
-        body.light {
-            --dark: #F5F5FA;
-            --dark-2: #EBEBF2;
-            --dark-3: #FFFFFF;
-            --dark-4: #E0E0EE;
-            --white: #111125;
-            --gray: #666688;
-            --gray-light: #333355;
-        }
-        body.light .navbar { background: rgba(245,245,250,0.92); }
-        body.light .search-bar { background: var(--dark-3); color: var(--white); }
-        body.light .filter-btn { background: var(--dark-3); color: var(--gray); }
-        body.light .product-card { background: var(--dark-3); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-        body.light .product-title { color: #333; }
-        body.light .product-price { color: #111; }
-        body.light .sort-select { background: var(--dark-3); color: #333; }
-        body.light .vehicle-select { background: var(--dark-3); color: #333; }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-                position: fixed;
-                top: 0; left: 0;
-                width: 100%; height: 100vh;
-                background: rgba(5,5,8,0.98);
-                backdrop-filter: blur(24px);
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 24px;
-            }
-            .nav-links.active { display: flex; }
-            .menu-toggle { display: block; }
-
-            .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-            .product-price { font-size: 18px; }
-            .filters { gap: 8px; }
-            .filter-btn { padding: 8px 14px; font-size: 12px; }
-            .results-info { flex-direction: column; gap: 8px; align-items: flex-start; }
-        }
-
-        @media (max-width: 480px) {
-            .products-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .product-info { padding: 12px; }
-            .product-title { font-size: 12px; -webkit-line-clamp: 2; }
-            .product-price { font-size: 16px; }
-            .product-cta { width: 32px; height: 32px; border-radius: 8px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catálogo de Peças Originais | Izzat Car Imports</title>
+<meta name="description" content="Mais de 3.900 peças originais de desmanche legalizado. Ache pelo seu carro, pelo tipo de peça ou pelo código OEM. Garantia de 90 dias e nota fiscal. CDV Detran-RS 01060.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.izzatcarimports.com.br/catalogo.html">
+<meta property="og:title" content="Catálogo de Peças Originais | Izzat Car Imports">
+<meta property="og:description" content="Ache a peça pelo seu carro, pelo tipo ou pelo código OEM. Garantia de 90 dias e nota fiscal.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.izzatcarimports.com.br/catalogo.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://http2.mlstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/izzat.css">
+<script src="assets/izzat.js"></script>
+
+<style>
+  /* Só o que é exclusivo do catálogo. O resto vem de assets/izzat.css. */
+  .cat-head { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: var(--s6); }
+  .cat-head h1 { margin-bottom: var(--s2); }
+  .cat-head > .wrap > p { color: var(--text-muted); }
+
+  .busca { position: relative; margin-top: var(--s5); }
+  .busca .field { padding-left: 48px; padding-right: 48px; min-height: 56px; font-size: 16px; }
+  .busca > svg { position: absolute; left: var(--s4); top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--text-dim); pointer-events: none; }
+  .busca .limpar { position: absolute; right: var(--s2); top: 50%; transform: translateY(-50%); width: 40px; height: 40px; display: none; align-items: center; justify-content: center; color: var(--text-dim); border-radius: var(--r-sm); }
+  .busca .limpar:hover { color: var(--text); background: var(--surface-3); }
+  .busca.tem-texto .limpar { display: flex; }
+  .busca-dica { margin-top: var(--s2); font-size: 13px; color: var(--text-dim); }
+
+  .carro { display: grid; gap: var(--s3); grid-template-columns: repeat(3, 1fr) auto; margin-top: var(--s4); align-items: end; }
+  .carro label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+
+  .corpo { display: grid; grid-template-columns: 264px 1fr; gap: var(--s6); align-items: start; padding-block: var(--s6); }
+
+  .lado { position: sticky; top: calc(var(--nav-h) + var(--s4)); }
+  .bloco { border-bottom: 1px solid var(--line); padding-bottom: var(--s4); margin-bottom: var(--s4); }
+  .bloco:last-of-type { border-bottom: 0; }
+  .bloco h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); margin-bottom: var(--s3); }
+  .opcoes { display: flex; flex-direction: column; gap: 2px; max-height: 340px; overflow-y: auto; }
+  .opcao { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 40px; padding: 0 var(--s2); border-radius: var(--r-sm); color: var(--text-muted); font-size: 14px; text-align: left; width: 100%; transition: background .16s var(--ease), color .16s var(--ease); }
+  .opcao:hover { background: var(--surface-2); color: var(--text); }
+  .opcao[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary-light); font-weight: 600; }
+  .opcao .count { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; flex: none; }
+
+  .barra { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s4); }
+  .barra .total { font-size: 15px; color: var(--text-muted); }
+  .barra .total b { color: var(--text); font-family: var(--font-h); }
+  .barra .direita { margin-left: auto; }
+  .barra select.field { min-height: 40px; width: auto; font-size: 14px; }
+
+  .ativos { display: flex; flex-wrap: wrap; gap: var(--s2); margin-bottom: var(--s4); }
+  .ativos:empty { display: none; }
+  .chip { display: inline-flex; align-items: center; gap: var(--s2); min-height: 34px; padding: 0 var(--s2) 0 var(--s3); border-radius: var(--r-pill); background: var(--primary-soft); border: 1px solid rgba(255,107,0,.35); color: var(--primary-light); font-size: 13px; font-weight: 500; }
+  .chip button { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: inherit; }
+  .chip button:hover { background: rgba(255,107,0,.25); }
+
+  .filtros-mob { display: none; }
+
+  @media (max-width: 900px) {
+    .carro { grid-template-columns: 1fr 1fr; }
+    .carro > button { grid-column: 1 / -1; }
+    .corpo { grid-template-columns: 1fr; gap: var(--s4); }
+    .filtros-mob { display: inline-flex; }
+    .lado {
+      position: fixed; inset: 0; z-index: 200;
+      background: var(--bg); padding: var(--s4);
+      overflow-y: auto; display: none;
+    }
+    .lado.open { display: block; }
+    .lado-topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s4); padding-bottom: var(--s3); border-bottom: 1px solid var(--line); }
+    .lado-fim { position: sticky; bottom: 0; background: var(--bg); padding-top: var(--s3); }
+    .opcoes { max-height: none; }
+  }
+  @media (min-width: 901px) { .lado-topo, .lado-fim { display: none; } }
+</style>
 </head>
 <body>
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
-        <div class="container">
-            <a href="index.html" class="logo">IZZAT <span>CAR</span></a>
-            <ul class="nav-links" id="navLinks">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="catalogo.html" class="active">Catálogo</a></li>
-                <li><a href="veiculos.html">Veículos</a></li>
-                <li><a href="index.html#contato">Contato</a></li>
-                <li><a href="https://wa.me/5553991170950?text=Ol%C3%A1!%20Vi%20o%20site%20da%20Izzat%20Car%20e%20quero%20saber%20sobre%20uma%20pe%C3%A7a." class="nav-cta" target="_blank">WhatsApp</a></li>
-                <li><button class="theme-toggle" onclick="toggleTheme()" title="Modo claro/escuro" id="themeBtn">&#9790;</button></li>
-            </ul>
-            <button class="menu-toggle" onclick="toggleMenu()" aria-label="Menu">
-                <span></span><span></span><span></span>
-            </button>
-        </div>
-    </nav>
+<nav class="nav">
+  <div class="wrap">
+    <a href="index.html" class="logo">IZZAT <span>CAR</span></a>
+    <button class="nav-toggle" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <ul class="nav-links">
+      <li><a href="index.html">Início</a></li>
+      <li><a href="catalogo.html" aria-current="page">Catálogo</a></li>
+      <li><a href="veiculos.html">Veículos</a></li>
+      <li><a href="index.html#contato">Contato</a></li>
+      <li><a href="https://wa.me/5553991170950" class="btn btn-whats btn-sm" target="_blank" rel="noopener">WhatsApp</a></li>
+    </ul>
+  </div>
+</nav>
 
-    <!-- HERO CATALOGO -->
-    <section class="catalog-hero">
-        <div class="container">
-            <h1>Catálogo de <span class="gradient-text">Peças</span></h1>
-            <p>Mais de 350 mil peças em estoque. Busque por nome, marca, modelo ou código OEM.</p>
+<header class="cat-head">
+  <div class="wrap">
+    <h1>Catálogo de peças</h1>
+    <p>Peças originais de desmanche legalizado, com nota fiscal e 90 dias de garantia.</p>
 
-            <!-- SEARCH -->
-            <div class="search-container">
-                <span class="search-icon">&#128269;</span>
-                <input type="text" class="search-bar" id="searchInput" placeholder="Buscar peça... ex: farol corolla, bomba combustivel golf">
-                <button class="search-clear" id="searchClear" onclick="clearSearch()">&#10005;</button>
-            </div>
+    <div class="busca" id="busca">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="q" class="field" autocomplete="off" enterkeyhint="search"
+             placeholder="Peça, carro ou código. Ex.: farol golf, 31663477, modulo xc60 2019"
+             aria-label="Buscar peça">
+      <button class="limpar" id="qLimpar" type="button" aria-label="Limpar busca">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <p class="busca-dica">Sabe o código gravado na peça? Digite ele que a busca acha direto.</p>
 
-            <!-- BUSCA POR VEÍCULO -->
-            <p class="vehicle-label">Ou busque por veículo:</p>
-            <div class="vehicle-search">
-                <select class="vehicle-select" id="vehicleBrand" onchange="updateModels()">
-                    <option value="">Marca do veículo</option>
-                    <option value="volkswagen">Volkswagen</option>
-                    <option value="chevrolet">Chevrolet</option>
-                    <option value="fiat">Fiat</option>
-                    <option value="ford">Ford</option>
-                    <option value="toyota">Toyota</option>
-                    <option value="honda">Honda</option>
-                    <option value="hyundai">Hyundai</option>
-                    <option value="renault">Renault</option>
-                    <option value="citroen">Citroën</option>
-                    <option value="peugeot">Peugeot</option>
-                    <option value="nissan">Nissan</option>
-                    <option value="kia">Kia</option>
-                    <option value="jeep">Jeep</option>
-                    <option value="bmw">BMW</option>
-                    <option value="mercedes">Mercedes</option>
-                    <option value="audi">Audi</option>
-                    <option value="volvo">Volvo</option>
-                    <option value="jaguar">Jaguar</option>
-                    <option value="land rover">Land Rover</option>
-                    <option value="mitsubishi">Mitsubishi</option>
-                </select>
-                <select class="vehicle-select" id="vehicleModel">
-                    <option value="">Modelo</option>
-                </select>
-                <button class="vehicle-search-btn" onclick="searchByVehicle()">Buscar peças</button>
-            </div>
+    <div class="carro">
+      <div>
+        <label for="fMarca">Marca do carro</label>
+        <select id="fMarca" class="field"><option value="">Todas as marcas</option></select>
+      </div>
+      <div>
+        <label for="fModelo">Modelo</label>
+        <select id="fModelo" class="field" disabled><option value="">Escolha a marca</option></select>
+      </div>
+      <div>
+        <label for="fAno">Ano</label>
+        <select id="fAno" class="field"><option value="">Qualquer ano</option></select>
+      </div>
+      <button class="btn btn-ghost" id="limparCarro" type="button">Limpar</button>
+    </div>
+  </div>
+</header>
 
-            <!-- FILTERS -->
-            <div class="filters" id="filters">
-                <button class="filter-btn active" data-brand="">Todas</button>
-                <button class="filter-btn" data-brand="volkswagen">Volkswagen</button>
-                <button class="filter-btn" data-brand="chevrolet">Chevrolet</button>
-                <button class="filter-btn" data-brand="fiat">Fiat</button>
-                <button class="filter-btn" data-brand="ford">Ford</button>
-                <button class="filter-btn" data-brand="toyota">Toyota</button>
-                <button class="filter-btn" data-brand="honda">Honda</button>
-                <button class="filter-btn" data-brand="hyundai">Hyundai</button>
-                <button class="filter-btn" data-brand="renault">Renault</button>
-                <button class="filter-btn" data-brand="bmw">BMW</button>
-                <button class="filter-btn" data-brand="mercedes">Mercedes</button>
-                <button class="filter-btn" data-brand="audi">Audi</button>
-                <button class="filter-btn" data-brand="volvo">Volvo</button>
-                <button class="filter-btn" data-brand="jaguar">Jaguar</button>
-                <button class="filter-btn" data-brand="peugeot">Peugeot</button>
-                <button class="filter-btn" data-brand="citroen">Citroën</button>
-                <button class="filter-btn" data-brand="kia">Kia</button>
-                <button class="filter-btn" data-brand="jeep">Jeep</button>
-                <button class="filter-btn" data-brand="nissan">Nissan</button>
-                <button class="filter-btn" data-brand="land rover">Land Rover</button>
-            </div>
-        </div>
-    </section>
+<main class="wrap corpo">
 
-    <!-- CATALOG CONTENT -->
-    <main>
-        <div class="container">
-            <!-- RESULTS INFO -->
-            <div class="results-info" id="resultsInfo" style="display:none;">
-                <div class="results-count" id="resultsCount"></div>
-                <select class="sort-select" id="sortSelect" onchange="changeSort()">
-                    <option value="relevance">Mais relevantes</option>
-                    <option value="price_asc">Menor preço</option>
-                    <option value="price_desc">Maior preço</option>
-                </select>
-            </div>
+  <aside class="lado" id="lado" aria-label="Filtros">
+    <div class="lado-topo">
+      <h2 style="font-size:20px">Filtros</h2>
+      <button id="fecharFiltros" type="button" aria-label="Fechar filtros" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
 
-            <!-- PRODUCTS -->
-            <div id="productsContainer">
-                <div class="page-loader" id="pageLoader">
-                    <div class="loader-big"></div>
-                    <p>Carregando peças...</p>
-                </div>
-            </div>
+    <div class="bloco">
+      <h3>Tipo de peça</h3>
+      <div class="opcoes" id="fFamilias"></div>
+    </div>
 
-            <!-- LOAD MORE -->
-            <div class="load-more-container" id="loadMoreContainer" style="display:none;">
-                <button class="btn-load" id="loadMoreBtn" onclick="loadMore()">
-                    Carregar mais peças
-                </button>
-            </div>
-        </div>
-    </main>
+    <div class="bloco">
+      <h3>Preço</h3>
+      <div class="opcoes" id="fPrecos"></div>
+    </div>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2022-2026 <a href="index.html">Izzat Car Imports</a> &mdash; CDV Credenciado Detran-RS nº 01060 &mdash; Todos os direitos reservados</p>
-        </div>
-    </footer>
+    <div class="bloco">
+      <h3>Entrega</h3>
+      <div class="opcoes">
+        <button class="opcao" id="fFrete" type="button" aria-pressed="false"><span>Somente frete grátis</span><span class="count" id="cFrete"></span></button>
+      </div>
+    </div>
 
-    <!-- WHATSAPP FLOAT -->
-    <a href="https://wa.me/5553991170950?text=Ol%C3%A1!%20Vi%20o%20site%20e%20quero%20saber%20sobre%20uma%20pe%C3%A7a." class="whatsapp-float" target="_blank" title="Chamar no WhatsApp">
-        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    </a>
+    <div class="lado-fim">
+      <button class="btn btn-primary btn-block" id="verResultados" type="button">Ver resultados</button>
+    </div>
+  </aside>
 
-    <!-- BACK TO TOP -->
-    <button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+  <div>
+    <div class="barra">
+      <button class="btn btn-ghost btn-sm filtros-mob" id="abrirFiltros" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        Filtros
+      </button>
+      <span class="total" id="total">Carregando peças…</span>
+      <div class="direita">
+        <label for="ordenar" class="sr-only">Ordenar resultados</label>
+        <select id="ordenar" class="field">
+          <option value="rel">Mais relevantes</option>
+          <option value="asc">Menor preço</option>
+          <option value="desc">Maior preço</option>
+        </select>
+      </div>
+    </div>
 
-    <script src="catalog_data.js"></script>
-    <script>
-        // ===== STATE =====
-        let allProducts = [];
-        let filteredProducts = [];
-        let currentOffset = 0;
-        let currentQuery = '';
-        let currentBrand = '';
-        let currentSort = 'relevance';
-        const PER_PAGE = 48;
+    <div class="ativos" id="ativos"></div>
 
-        // ===== ELEMENTS =====
-        const searchInput = document.getElementById('searchInput');
-        const searchClear = document.getElementById('searchClear');
-        const productsContainer = document.getElementById('productsContainer');
-        const loadMoreContainer = document.getElementById('loadMoreContainer');
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
-        const resultsInfo = document.getElementById('resultsInfo');
-        const resultsCount = document.getElementById('resultsCount');
-        const sortSelect = document.getElementById('sortSelect');
+    <div class="grid-products" id="grid"></div>
 
-        // ===== LOAD DATA =====
-        // Fonte de verdade: API do Izzat App (atualiza a cada 10min).
-        // Fallback: ALL_PRODUCTS estatico (catalog_data.js).
-        const API_BASE = 'https://backend-production-0201.up.railway.app';
-        const API_LIMIT = 500;
+    <div class="empty" id="vazio" hidden>
+      <h3>Nenhuma peça com esses filtros</h3>
+      <p>Tente tirar um filtro. Ou chame no WhatsApp: a gente procura no estoque pra você.</p>
+      <p style="margin-top:var(--s4)"><a class="btn btn-whats" id="vazioWhats" href="https://wa.me/5553991170950" target="_blank" rel="noopener">Procurar no WhatsApp</a></p>
+    </div>
 
-        async function fetchProdutosAPI() {
-            const produtos = [];
-            let offset = 0;
-            let total = null;
-            // pagina em lotes de 500 ate esgotar
-            while (true) {
-                const url = `${API_BASE}/loja/produtos?limit=${API_LIMIT}&offset=${offset}&apenas_ativos=true`;
-                const r = await fetch(url, { cache: 'no-store' });
-                if (!r.ok) throw new Error('API ' + r.status);
-                const data = await r.json();
-                if (data.erro) throw new Error(data.erro);
-                if (total === null) total = data.total || 0;
-                const lote = data.produtos || [];
-                if (!lote.length) break;
-                produtos.push(...lote);
-                offset += lote.length;
-                if (produtos.length >= total) break;
-                if (lote.length < API_LIMIT) break;
-            }
-            return produtos;
-        }
+    <div style="text-align:center;margin-top:var(--s6)">
+      <button class="btn btn-ghost btn-lg" id="mais" type="button" hidden></button>
+    </div>
+  </div>
+</main>
 
-        function fallbackEstatico() {
-            if (typeof ALL_PRODUCTS === 'undefined' || !ALL_PRODUCTS.length) return [];
-            return ALL_PRODUCTS.map(p => ({
-                title: p.t, price: p.p, img: p.i, url: p.u,
-                free_shipping: p.f, id: p.id, brand: p.b || ''
-            }));
-        }
+<footer class="foot">
+  <div class="wrap foot-bottom">
+    <span>&copy; 2022-2026 Izzat Car Imports — CDV Detran-RS nº 01060</span>
+    <span><a href="https://wa.me/5553991170950" target="_blank" rel="noopener">(53) 99117-0950</a> · Aceguá/RS</span>
+  </div>
+</footer>
 
-        async function loadData() {
-            try {
-                const produtos = await fetchProdutosAPI();
-                allProducts = produtos.map(p => ({
-                    title: p.titulo,
-                    price: p.preco,
-                    img: p.thumbnail,
-                    url: p.permalink,
-                    free_shipping: p.frete_gratis,
-                    id: p.mlb,
-                    brand: p.marca || '',
-                    oem: p.oem || '',
-                    disponivel: p.disponivel !== false,
-                }));
-                // Filtra so disponiveis (vendido no ML some do site)
-                allProducts = allProducts.filter(p => p.disponivel);
-                console.log(`[API] Catálogo: ${allProducts.length} produtos ativos`);
-            } catch (e) {
-                console.warn('[API] falhou, usando fallback estatico:', e);
-                allProducts = fallbackEstatico();
-                console.log(`[estatico] Catálogo: ${allProducts.length} produtos`);
-            }
+<a class="whats-float" href="https://wa.me/5553991170950" target="_blank" rel="noopener" aria-label="Falar no WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 004.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0012.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 01-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 015.83 2.42 8.18 8.18 0 012.41 5.82c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.15.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.22.25-.85.83-.85 2.03s.87 2.35.99 2.51c.12.17 1.71 2.62 4.15 3.67.58.25 1.03.4 1.39.51.58.19 1.11.16 1.53.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
+</a>
 
-            if (!allProducts.length) {
-                productsContainer.innerHTML = `
-                    <div class="no-results">
-                        <h3>Catálogo sendo preparado</h3>
-                        <p>Enquanto isso, veja nossos anúncios diretamente no Mercado Livre!</p>
-                        <a href="https://perfil.mercadolivre.com.br/IZZAT_CAR_IMPORTS" class="btn-whatsapp" target="_blank" style="background:var(--primary);">Ver no Mercado Livre</a>
-                    </div>`;
-                return;
-            }
-            applyFilters();
-        }
-
-        // ===== SAVE STATE TO URL =====
-        function saveStateToURL() {
-            const params = new URLSearchParams();
-            if (currentQuery) params.set('q', currentQuery);
-            if (currentBrand) params.set('marca', currentBrand);
-            if (currentSort !== 'relevance') params.set('sort', currentSort);
-            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-            history.replaceState(null, '', newUrl);
-        }
-
-        // ===== FILTER + SORT =====
-        function applyFilters() {
-            saveStateToURL();
-            let results = [...allProducts];
-
-            // Filtro por busca
-            if (currentQuery) {
-                const terms = currentQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/\s+/);
-                results = results.filter(p => {
-                    const title = p.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                    return terms.every(term => title.includes(term));
-                });
-            }
-
-            // Filtro por marca
-            if (currentBrand) {
-                const brandLower = currentBrand.toLowerCase();
-                results = results.filter(p => {
-                    const title = p.title.toLowerCase();
-                    const brand = (p.brand || '').toLowerCase();
-                    return title.includes(brandLower) || brand.includes(brandLower);
-                });
-            }
-
-            // Ordenar
-            if (currentSort === 'price_asc') {
-                results.sort((a, b) => a.price - b.price);
-            } else if (currentSort === 'price_desc') {
-                results.sort((a, b) => b.price - a.price);
-            }
-            // relevance = ordem padrão (mais vendidos)
-
-            filteredProducts = results;
-            currentOffset = 0;
-            renderProducts(true);
-        }
-
-        // ===== RENDER =====
-        function renderProducts(reset) {
-            const total = filteredProducts.length;
-
-            resultsInfo.style.display = 'flex';
-            resultsCount.innerHTML = `<strong>${total.toLocaleString('pt-BR')}</strong> peça${total !== 1 ? 's' : ''} encontrada${total !== 1 ? 's' : ''}`;
-
-            if (total === 0) {
-                productsContainer.innerHTML = `
-                    <div class="no-results">
-                        <h3>Nenhuma peça encontrada</h3>
-                        <p>Tente buscar de outra forma ou chame no WhatsApp que a gente procura pra você!</p>
-                        <a href="https://wa.me/5553991170950?text=Olá! Estou procurando uma peça: ${encodeURIComponent(currentQuery || currentBrand)}" class="btn-whatsapp" target="_blank">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                            Pedir pelo WhatsApp
-                        </a>
-                    </div>`;
-                loadMoreContainer.style.display = 'none';
-                return;
-            }
-
-            if (reset) {
-                productsContainer.innerHTML = '<div class="products-grid" id="productsGrid"></div>';
-            }
-
-            const grid = document.getElementById('productsGrid');
-            const batch = filteredProducts.slice(currentOffset, currentOffset + PER_PAGE);
-
-            batch.forEach(item => {
-                const price = parseFloat(item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-                // Gerar slug igual ao Python
-                const slug = item.title.toLowerCase()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                    .replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').substring(0, 80)
-                    + '-' + item.id;
-                const localUrl = 'peca/' + slug + '.html';
-
-                const isMobile = window.innerWidth <= 768;
-                const card = document.createElement('a');
-                card.href = localUrl;
-                if (!isMobile) card.target = '_blank';
-                card.className = 'product-card';
-                card.style.textDecoration = 'none';
-                card.style.color = 'inherit';
-                card.innerHTML = `
-                    <div class="product-img-container">
-                        <img src="${item.img}" alt="${item.title}" class="product-img" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><rect fill=%22%231C1C28%22 width=%22200%22 height=%22200%22/><text fill=%22%238888A0%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22sans-serif%22 font-size=%2214%22>Sem imagem</text></svg>'">
-                        <div class="product-badges">
-                            <span class="badge badge-original">Original</span>
-                            ${item.free_shipping ? '<span class="badge badge-free">Frete Grátis</span>' : ''}
-                        </div>
-                    </div>
-                    <div class="product-info">
-                        <div class="product-title">${item.title}</div>
-                        <div class="product-price">
-                            R$ ${price}
-                            <small>Clique para ver detalhes</small>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-
-            currentOffset += batch.length;
-
-            // Load more button
-            if (currentOffset < total) {
-                loadMoreContainer.style.display = 'block';
-                const remaining = total - currentOffset;
-                loadMoreBtn.innerHTML = `Carregar mais peças (${remaining.toLocaleString('pt-BR')} restantes)`;
-                loadMoreBtn.disabled = false;
-            } else {
-                loadMoreContainer.style.display = 'none';
-            }
-        }
-
-        function loadMore() {
-            renderProducts(false);
-        }
-
-        // ===== SEARCH =====
-        let searchTimeout;
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchClear.classList.toggle('show', e.target.value.length > 0);
-            searchTimeout = setTimeout(() => {
-                currentQuery = e.target.value.trim();
-                applyFilters();
-            }, 300);
-        });
-
-        function clearSearch() {
-            searchInput.value = '';
-            searchClear.classList.remove('show');
-            currentQuery = '';
-            applyFilters();
-            searchInput.focus();
-        }
-
-        // ===== FILTERS =====
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentBrand = btn.dataset.brand;
-                applyFilters();
-            });
-        });
-
-        // ===== SORT =====
-        function changeSort() {
-            currentSort = sortSelect.value;
-            applyFilters();
-        }
-
-        // ===== MOBILE MENU =====
-        function toggleMenu() {
-            document.getElementById('navLinks').classList.toggle('active');
-        }
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.addEventListener('click', () => document.getElementById('navLinks').classList.remove('active'));
-        });
-
-        // ===== BACK TO TOP =====
-        window.addEventListener('scroll', () => {
-            document.getElementById('backTop').classList.toggle('show', window.scrollY > 400);
-        });
-
-        // ===== URL PARAMS =====
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('q')) {
-            searchInput.value = urlParams.get('q');
-            searchClear.classList.add('show');
-            currentQuery = urlParams.get('q');
-        }
-        if (urlParams.get('marca')) {
-            currentBrand = urlParams.get('marca');
-            document.querySelectorAll('.filter-btn').forEach(b => {
-                b.classList.toggle('active', b.dataset.brand === currentBrand);
-            });
-        }
-
-        // ===== VEHICLE SEARCH =====
-        const vehicleModels = {
-            volkswagen: ['Golf', 'Polo', 'Gol', 'Saveiro', 'Fox', 'Voyage', 'Amarok', 'Tiguan', 'T-Cross', 'Jetta', 'Passat', 'Virtus', 'Nivus', 'Taos', 'Up'],
-            chevrolet: ['Onix', 'Tracker', 'Cruze', 'S10', 'Spin', 'Cobalt', 'Prisma', 'Equinox', 'Trailblazer', 'Montana', 'Celta', 'Corsa', 'Astra', 'Vectra'],
-            fiat: ['Argo', 'Cronos', 'Toro', 'Mobi', 'Strada', 'Pulse', 'Fastback', 'Uno', 'Palio', 'Siena', 'Punto', 'Bravo', 'Freemont', 'Fiorino', 'Doblo'],
-            ford: ['Ka', 'EcoSport', 'Ranger', 'Fusion', 'Focus', 'Fiesta', 'Territory', 'Maverick', 'Edge', 'Bronco'],
-            toyota: ['Corolla', 'Hilux', 'SW4', 'Yaris', 'Etios', 'RAV4', 'Camry', 'Corolla Cross'],
-            honda: ['Civic', 'HR-V', 'City', 'Fit', 'CR-V', 'WR-V', 'Accord', 'ZR-V'],
-            hyundai: ['HB20', 'Creta', 'Tucson', 'Santa Fe', 'ix35', 'Azera', 'Veloster', 'Elantra'],
-            renault: ['Kwid', 'Sandero', 'Logan', 'Duster', 'Captur', 'Oroch', 'Stepway', 'Master', 'Kangoo', 'Scenic', 'Clio', 'Megane', 'Fluence'],
-            citroen: ['C3', 'C4', 'C4 Cactus', 'Aircross', 'DS3', 'DS4', 'DS5', 'Berlingo', 'Jumpy'],
-            peugeot: ['208', '2008', '3008', '308', '408', '508', 'Partner', 'Expert'],
-            nissan: ['Kicks', 'March', 'Versa', 'Sentra', 'Frontier', 'Leaf', 'X-Trail'],
-            kia: ['Sportage', 'Cerato', 'Sorento', 'Picanto', 'Soul', 'Stinger', 'Seltos', 'Carnival'],
-            jeep: ['Renegade', 'Compass', 'Commander', 'Wrangler', 'Cherokee', 'Grand Cherokee'],
-            bmw: ['320i', '328i', 'X1', 'X3', 'X5', 'X6', '118i', '120i', '520i', 'M3', 'M4'],
-            mercedes: ['C180', 'C200', 'C250', 'C300', 'C320', 'GLA', 'GLC', 'GLE', 'A200', 'CLA', 'E300'],
-            audi: ['A3', 'A4', 'A5', 'A6', 'Q3', 'Q5', 'Q7', 'Q8', 'TT', 'RS3', 'RS5'],
-            volvo: ['XC40', 'XC60', 'XC90', 'S60', 'S90', 'V40', 'V60'],
-            jaguar: ['E-Pace', 'F-Pace', 'XE', 'XF', 'XJ', 'F-Type'],
-            'land rover': ['Evoque', 'Discovery', 'Discovery Sport', 'Defender', 'Velar', 'Sport'],
-            mitsubishi: ['Outlander', 'ASX', 'Eclipse Cross', 'L200', 'Pajero', 'Lancer']
-        };
-
-        function updateModels() {
-            const brand = document.getElementById('vehicleBrand').value;
-            const modelSelect = document.getElementById('vehicleModel');
-            modelSelect.innerHTML = '<option value="">Modelo</option>';
-            if (brand && vehicleModels[brand]) {
-                vehicleModels[brand].forEach(m => {
-                    modelSelect.innerHTML += `<option value="${m.toLowerCase()}">${m}</option>`;
-                });
-            }
-        }
-
-        function searchByVehicle() {
-            const brand = document.getElementById('vehicleBrand').value;
-            const model = document.getElementById('vehicleModel').value;
-            if (brand || model) {
-                const query = (brand + ' ' + model).trim();
-                searchInput.value = query;
-                searchClear.classList.add('show');
-                currentQuery = query;
-                currentBrand = '';
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', !b.dataset.brand));
-                applyFilters();
-            }
-        }
-
-        // ===== THEME TOGGLE =====
-        function toggleTheme() {
-            document.body.classList.toggle('light');
-            const isLight = document.body.classList.contains('light');
-            document.getElementById('themeBtn').innerHTML = isLight ? '&#9728;' : '&#9790;';
-            localStorage.setItem('izzat-theme', isLight ? 'light' : 'dark');
-        }
-
-        // Load saved theme
-        if (localStorage.getItem('izzat-theme') === 'light') {
-            document.body.classList.add('light');
-            document.getElementById('themeBtn').innerHTML = '&#9728;';
-        }
-
-        // ===== INIT =====
-        loadData();
-    </script>
-
-<!-- Meta Pixel - evento Contact no clique de WhatsApp -->
-<script>
-document.addEventListener('click', function(e) {
-  var t = e.target;
-  if (!t || !t.closest) return;
-  if (t.closest('a[href*="wa.me"]') && window.fbq) fbq('track', 'Contact');
-});
-</script>
+<script defer src="catalogo_index.js"></script>
+<script defer src="assets/catalogo.js"></script>
 </body>
 </html>

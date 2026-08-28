@@ -1,0 +1,4002 @@
+{
+ "MLB101763": {
+  "nome": "Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Portas e Painéis",
+   "Portas"
+  ]
+ },
+ "MLB101764": {
+  "nome": "Pára-Lamas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Pára-Lamas"
+  ]
+ },
+ "MLB11099": {
+  "nome": "Kits Completos",
+  "path": [
+   "Acessórios para Veículos",
+   "Segurança Veicular",
+   "Alarmes e Acessórios",
+   "Kits Completos"
+  ]
+ },
+ "MLB114768": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Outros"
+  ]
+ },
+ "MLB115598": {
+  "nome": "De Vidros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Vidros"
+  ]
+ },
+ "MLB115599": {
+  "nome": "De Piscas-alertas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Piscas-alertas"
+  ]
+ },
+ "MLB115601": {
+  "nome": "De Espelhos Laterais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Espelhos Laterais"
+  ]
+ },
+ "MLB115604": {
+  "nome": "Outros Botões",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "Outros Botões"
+  ]
+ },
+ "MLB115699": {
+  "nome": "Sirenes",
+  "path": [
+   "Acessórios para Veículos",
+   "Segurança Veicular",
+   "Sirenes"
+  ]
+ },
+ "MLB115943": {
+  "nome": "De Roda",
+  "path": [
+   "Acessórios para Veículos",
+   "Ferramentas para Veículos",
+   "Chaves",
+   "De Roda"
+  ]
+ },
+ "MLB116012": {
+  "nome": "Volantes",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Volantes"
+  ]
+ },
+ "MLB116338": {
+  "nome": "Hidráulico",
+  "path": [
+   "Acessórios para Veículos",
+   "Ferramentas para Veículos",
+   "Elevação",
+   "Macacos",
+   "Hidráulico"
+  ]
+ },
+ "MLB116479": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Janelas e Vedações",
+   "Sistemas de Elevação",
+   "Outros"
+  ]
+ },
+ "MLB116489": {
+  "nome": "Câmeras de Ré",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Câmeras de Ré"
+  ]
+ },
+ "MLB116505": {
+  "nome": "Mangueiras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Ar Condicionado",
+   "Mangueiras e Conexões",
+   "Mangueiras"
+  ]
+ },
+ "MLB116536": {
+  "nome": "Suporte",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Ar Condicionado",
+   "Suporte"
+  ]
+ },
+ "MLB116875": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Câmbios",
+   "Outros"
+  ]
+ },
+ "MLB116902": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Escapamentos",
+   "Outros"
+  ]
+ },
+ "MLB116938": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Outros"
+  ]
+ },
+ "MLB120498": {
+  "nome": "Antenas",
+  "path": [
+   "Acessórios para Veículos",
+   "Navegadores GPS para Vehículos",
+   "Acessórios",
+   "Antenas"
+  ]
+ },
+ "MLB135679": {
+  "nome": "Com Tela",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Reprodutores",
+   "Estéreos",
+   "Com Tela"
+  ]
+ },
+ "MLB169600": {
+  "nome": "Telas",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Telas"
+  ]
+ },
+ "MLB186150": {
+  "nome": "Câmera Veicular",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Câmera Veicular"
+  ]
+ },
+ "MLB188061": {
+  "nome": "Tampas de Combustível",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Tanques de Combustível",
+   "Tampas de Combustível"
+  ]
+ },
+ "MLB190940": {
+  "nome": "Grades de Ventilação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Grades de Ventilação"
+  ]
+ },
+ "MLB190942": {
+  "nome": "Motor de Calefação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Calefação",
+   "Motor de Calefação"
+  ]
+ },
+ "MLB190944": {
+  "nome": "Radiador de Calefação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Calefação",
+   "Radiador de Calefação"
+  ]
+ },
+ "MLB190945": {
+  "nome": "Mangueiras de Calefação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Calefação",
+   "Mangueiras de Calefação"
+  ]
+ },
+ "MLB190946": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Calefação",
+   "Outros"
+  ]
+ },
+ "MLB190953": {
+  "nome": "Condensadores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Ar Condicionado",
+   "Condensadores"
+  ]
+ },
+ "MLB190954": {
+  "nome": "Painel Evaporador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Ar Condicionado",
+   "Painel Evaporador"
+  ]
+ },
+ "MLB190955": {
+  "nome": "Válvula de Expansão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Ar Condicionado",
+   "Válvula de Expansão"
+  ]
+ },
+ "MLB190956": {
+  "nome": "Interruptores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Ar Condicionado",
+   "Interruptores"
+  ]
+ },
+ "MLB190975": {
+  "nome": "Módulo de Ignição",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Módulo de Ignição"
+  ]
+ },
+ "MLB190976": {
+  "nome": "Motor de Arranque",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Componentes de Partida",
+   "Motor de Arranque"
+  ]
+ },
+ "MLB191083": {
+  "nome": "Velas Aquecedoras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Velas",
+   "Velas Aquecedoras"
+  ]
+ },
+ "MLB191703": {
+  "nome": "Servo Freio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Servo Freio"
+  ]
+ },
+ "MLB191704": {
+  "nome": "Reservatório do Líquido",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Reservatório do Líquido"
+  ]
+ },
+ "MLB191707": {
+  "nome": "Sensor ABS",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Sensores e Comutadores",
+   "Sensor ABS"
+  ]
+ },
+ "MLB191711": {
+  "nome": "Bomba Depressor",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Bomba Depressor"
+  ]
+ },
+ "MLB191713": {
+  "nome": "Borracha",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Janelas e Vedações",
+   "Sistemas de Elevação",
+   "Borracha"
+  ]
+ },
+ "MLB191714": {
+  "nome": "Elétrico",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Janelas e Vedações",
+   "Sistemas de Elevação",
+   "Elétrico"
+  ]
+ },
+ "MLB191716": {
+  "nome": "Capas para Espelhos Laterais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Espelhos Retrovisores e Lentes",
+   "Capas para Espelhos Laterais"
+  ]
+ },
+ "MLB191717": {
+  "nome": "Borrachas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Borrachas"
+  ]
+ },
+ "MLB191726": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Outros"
+  ]
+ },
+ "MLB191727": {
+  "nome": "Lâmpadas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Lâmpadas e LEDs",
+   "Lâmpadas"
+  ]
+ },
+ "MLB191728": {
+  "nome": "Faróis de três Stop",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Faróis",
+   "Faróis de três Stop"
+  ]
+ },
+ "MLB191833": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Outros"
+  ]
+ },
+ "MLB192166": {
+  "nome": "Tampas de Porta Luva",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis Painel e Porta-Luvas",
+   "Tampas de Porta Luva"
+  ]
+ },
+ "MLB192355": {
+  "nome": "Motor Teto Solar",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Tetos Solares e Motores",
+   "Motor Teto Solar"
+  ]
+ },
+ "MLB192357": {
+  "nome": "Corpo de Borboleta",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Corpo de Borboleta"
+  ]
+ },
+ "MLB192358": {
+  "nome": "Sonda Lambda",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Sonda Lambda"
+  ]
+ },
+ "MLB192359": {
+  "nome": "Flauta do Bico Injetor",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Flauta do Bico Injetor"
+  ]
+ },
+ "MLB192360": {
+  "nome": "Regulador de Pressão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Regulador de Pressão"
+  ]
+ },
+ "MLB192361": {
+  "nome": "Válvula EGR",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Válvula EGR"
+  ]
+ },
+ "MLB192362": {
+  "nome": "Sensor MAP",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Sensores",
+   "Sensor MAP"
+  ]
+ },
+ "MLB192363": {
+  "nome": "Sensor de Posição",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Sensores",
+   "Sensor de Posição"
+  ]
+ },
+ "MLB192364": {
+  "nome": "Apoio de Cabeças",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Apoio de Cabeças"
+  ]
+ },
+ "MLB192365": {
+  "nome": "Sensor de Rotação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Sensores",
+   "Sensor de Rotação"
+  ]
+ },
+ "MLB192366": {
+  "nome": "Miolos de Volante",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Volantes e Botões da Buzina",
+   "Miolos de Volante"
+  ]
+ },
+ "MLB192566": {
+  "nome": "Injetores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Injetores"
+  ]
+ },
+ "MLB192571": {
+  "nome": "Sensor MAF",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Sensores",
+   "Sensor MAF"
+  ]
+ },
+ "MLB192572": {
+  "nome": "Módulo de Injeção",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Módulo de Injeção"
+  ]
+ },
+ "MLB192761": {
+  "nome": "Sensor de Detonação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Sensores",
+   "Sensor de Detonação"
+  ]
+ },
+ "MLB192954": {
+  "nome": "Sensor de Velocidade",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Sensores",
+   "Sensor de Velocidade"
+  ]
+ },
+ "MLB192955": {
+  "nome": "De Tetos Solares",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Tetos Solares"
+  ]
+ },
+ "MLB193146": {
+  "nome": "Catalisador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Escapamentos",
+   "Catalisador"
+  ]
+ },
+ "MLB193147": {
+  "nome": "Bombas Injetoras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Bombas",
+   "Bombas Injetoras"
+  ]
+ },
+ "MLB193151": {
+  "nome": "Tensores Poly V",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Correias",
+   "Tensores Poly V"
+  ]
+ },
+ "MLB193153": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Distribuição",
+   "Outros"
+  ]
+ },
+ "MLB193390": {
+  "nome": "Bloco Completo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Bloco de Motores",
+   "Bloco Completo"
+  ]
+ },
+ "MLB193420": {
+  "nome": "Caixa de Direção",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Caixas de Direção e Peças",
+   "Caixa de Direção"
+  ]
+ },
+ "MLB193436": {
+  "nome": "Radiadores de Óleo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Radiadores",
+   "Radiadores de Óleo"
+  ]
+ },
+ "MLB193476": {
+  "nome": "Bieletas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Barras estabilizadoras",
+   "Bieletas"
+  ]
+ },
+ "MLB193498": {
+  "nome": "Radiadores Intercooler",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Intercoolers",
+   "Radiadores Intercooler"
+  ]
+ },
+ "MLB193530": {
+  "nome": "Molas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Molas e Barras",
+   "Molas"
+  ]
+ },
+ "MLB193531": {
+  "nome": "Reservatório",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Radiadores",
+   "Reservatório"
+  ]
+ },
+ "MLB193571": {
+  "nome": "Barras Estabilizadoras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Barras estabilizadoras",
+   "Barras Estabilizadoras"
+  ]
+ },
+ "MLB193572": {
+  "nome": "Bandejas de Suspensão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Braços Oscilantes",
+   "Bandejas de Suspensão"
+  ]
+ },
+ "MLB193593": {
+  "nome": "Mangueira Radiador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Radiadores",
+   "Mangueira Radiador"
+  ]
+ },
+ "MLB193785": {
+  "nome": "Tampa do Radiador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Radiadores",
+   "Tampa do Radiador"
+  ]
+ },
+ "MLB193805": {
+  "nome": "Mangueira Direção Hidráulica",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Mangueira Direção Hidráulica"
+  ]
+ },
+ "MLB193902": {
+  "nome": "Coxins de Motor",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Coxins de Motor"
+  ]
+ },
+ "MLB193933": {
+  "nome": "Mangueiras de Admissão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Mangueiras de Admissão"
+  ]
+ },
+ "MLB193936": {
+  "nome": "Sensor de Óleo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Sensor de Óleo"
+  ]
+ },
+ "MLB193937": {
+  "nome": "Sensor de Temperatura",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Sensores",
+   "Sensor de Temperatura"
+  ]
+ },
+ "MLB193938": {
+  "nome": "Sensor de Temperatura de Ar",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Sensores",
+   "Sensor de Temperatura de Ar"
+  ]
+ },
+ "MLB193992": {
+  "nome": "Retentores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Retentores"
+  ]
+ },
+ "MLB194016": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Filtros",
+   "Outros"
+  ]
+ },
+ "MLB194024": {
+  "nome": "Mangueira Intercooler",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Mangueira Intercooler"
+  ]
+ },
+ "MLB194051": {
+  "nome": "Engrenagem Árvore de Comando",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Distribuição",
+   "Engrenagem de Distribuição",
+   "Engrenagem Árvore de Comando"
+  ]
+ },
+ "MLB194055": {
+  "nome": "Tensor do Distribuidor",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Distribuição",
+   "Tensor do Distribuidor"
+  ]
+ },
+ "MLB194056": {
+  "nome": "Corrente de Distribuição",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Distribuição",
+   "Corrente de Distribuição"
+  ]
+ },
+ "MLB194062": {
+  "nome": "Cintos de Segurança",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Segurança",
+   "Cintos de Segurança"
+  ]
+ },
+ "MLB194154": {
+  "nome": "Coxim Amortecedor",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Coxim Amortecedor"
+  ]
+ },
+ "MLB194168": {
+  "nome": "Terminal Ponteira de Direção",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Terminal Ponteira de Direção"
+  ]
+ },
+ "MLB194170": {
+  "nome": "Árvores Comandos de Válvulas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Cabeçotes de Motores",
+   "Árvores Comandos de Válvulas"
+  ]
+ },
+ "MLB194173": {
+  "nome": "Parafusos do Cilindro",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Tampas",
+   "Parafusos do Cilindro"
+  ]
+ },
+ "MLB194174": {
+  "nome": "Cárters Completos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Cárters de Motores",
+   "Cárters Completos"
+  ]
+ },
+ "MLB194203": {
+  "nome": "Módulo Air Bag",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Segurança",
+   "Módulo Air Bag"
+  ]
+ },
+ "MLB194429": {
+  "nome": "para Porta-malas e Portões",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Fechaduras e Chaves",
+   "para Porta-malas e Portões"
+  ]
+ },
+ "MLB194430": {
+  "nome": "Fechadura de Capôs",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Fechaduras e Chaves",
+   "Fechadura de Capôs"
+  ]
+ },
+ "MLB194431": {
+  "nome": "Fechaduras de Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Fechaduras e Chaves",
+   "Fechaduras de Portas"
+  ]
+ },
+ "MLB194432": {
+  "nome": "Cilindro de Ignição",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Fechaduras e Chaves",
+   "Cilindro de Ignição"
+  ]
+ },
+ "MLB194702": {
+  "nome": "Forros de Capô",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Forros de Capô"
+  ]
+ },
+ "MLB194703": {
+  "nome": "Almas de Para-choques",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Para-choques",
+   "Almas de Para-choques"
+  ]
+ },
+ "MLB194739": {
+  "nome": "Painéis Frontais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Portas e Painéis",
+   "Painéis Frontais"
+  ]
+ },
+ "MLB194742": {
+  "nome": "Cabo Seletor de Marcha",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Seletoras e Cabos",
+   "Cabo Seletor de Marcha"
+  ]
+ },
+ "MLB194743": {
+  "nome": "Cardan",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Cardan"
+  ]
+ },
+ "MLB194751": {
+  "nome": "Caixa de Transferência",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Caixa de Transferência"
+  ]
+ },
+ "MLB194752": {
+  "nome": "Tanques de Combustível",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Tanques de Combustível",
+   "Tanques de Combustível"
+  ]
+ },
+ "MLB194770": {
+  "nome": "Abertura Porta Malas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Cabos",
+   "Abertura Porta Malas"
+  ]
+ },
+ "MLB194771": {
+  "nome": "Abertura Capô",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Cabos",
+   "Abertura Capô"
+  ]
+ },
+ "MLB194772": {
+  "nome": "Abertura Tanque de Combustível",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Cabos",
+   "Abertura Tanque de Combustível"
+  ]
+ },
+ "MLB194773": {
+  "nome": "Suportes de Para-choques",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Para-choques",
+   "Suportes de Para-choques"
+  ]
+ },
+ "MLB194775": {
+  "nome": "Dobradiças da Porta Mala",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Dobradiças",
+   "Dobradiças da Porta Mala"
+  ]
+ },
+ "MLB194777": {
+  "nome": "Dobradiças do Capô",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Dobradiças",
+   "Dobradiças do Capô"
+  ]
+ },
+ "MLB194778": {
+  "nome": "Tetos Solares",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Tetos Solares e Motores",
+   "Tetos Solares"
+  ]
+ },
+ "MLB194779": {
+  "nome": "Amortecedores a Gás",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Amortecedores a Gás"
+  ]
+ },
+ "MLB194788": {
+  "nome": "Protetor de Cárter",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Cárters de Motores",
+   "Protetor de Cárter"
+  ]
+ },
+ "MLB194789": {
+  "nome": "Parabarros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Parabarros"
+  ]
+ },
+ "MLB194790": {
+  "nome": "Tampas de Porta Mala",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Portas e Painéis",
+   "Tampas de Porta Mala"
+  ]
+ },
+ "MLB194793": {
+  "nome": "Motores Ventiladores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Eletroventiladores",
+   "Motores Ventiladores"
+  ]
+ },
+ "MLB194800": {
+  "nome": "Dobradiças da Porta",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Dobradiças",
+   "Dobradiças da Porta"
+  ]
+ },
+ "MLB194805": {
+  "nome": "Coxim do Câmbio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Câmbios",
+   "Coxim do Câmbio"
+  ]
+ },
+ "MLB194806": {
+  "nome": "Caixa de Câmbio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Câmbios",
+   "Caixa de Câmbio"
+  ]
+ },
+ "MLB194807": {
+  "nome": "Engrenagem de Marcha",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Câmbios",
+   "Engrenagem de Marcha"
+  ]
+ },
+ "MLB194808": {
+  "nome": "Seletora do Trambulador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Câmbios",
+   "Seletora do Trambulador"
+  ]
+ },
+ "MLB194829": {
+  "nome": "Rolamentos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Rolamentos e Semi Eixos",
+   "Rolamentos"
+  ]
+ },
+ "MLB212730": {
+  "nome": "Braços De Suspensão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Braços Pitman e Suspensão",
+   "Braços De Suspensão"
+  ]
+ },
+ "MLB2221": {
+  "nome": "Buzinas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Buzinas"
+  ]
+ },
+ "MLB2235": {
+  "nome": "Alavancas de Câmbio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Alavancas de Câmbio"
+  ]
+ },
+ "MLB22645": {
+  "nome": "Faróis Traseiros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Faróis",
+   "Faróis Traseiros"
+  ]
+ },
+ "MLB22664": {
+  "nome": "Calotas",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Calotas"
+  ]
+ },
+ "MLB22668": {
+  "nome": "Bobina de Ignição",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Bobina de Ignição"
+  ]
+ },
+ "MLB22685": {
+  "nome": "Cinzeiros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Cinzeiros"
+  ]
+ },
+ "MLB22701": {
+  "nome": "Quebra Sóis",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Quebra Sóis"
+  ]
+ },
+ "MLB22704": {
+  "nome": "Consoles",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Consolas",
+   "Consoles"
+  ]
+ },
+ "MLB22709": {
+  "nome": "Amortecedores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Amortecedores"
+  ]
+ },
+ "MLB22714": {
+  "nome": "Emblemas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Emblemas"
+  ]
+ },
+ "MLB22747": {
+  "nome": "Luzes Internas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Luzes Internas"
+  ]
+ },
+ "MLB252556": {
+  "nome": "Assoalhos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Assoalhos"
+  ]
+ },
+ "MLB258475": {
+  "nome": "Trincos para Portas e Janelas",
+  "path": [
+   "Casa, Móveis e Decoração",
+   "Segurança para Casa",
+   "Ferragens de Segurança",
+   "Trincos para Portas e Janelas"
+  ]
+ },
+ "MLB260620": {
+  "nome": "Coifas de Câmbio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Coifas de Câmbio"
+  ]
+ },
+ "MLB261055": {
+  "nome": "Suspensão a Ar",
+  "path": [
+   "Acessórios para Veículos",
+   "Performance",
+   "Suspensão e Direção",
+   "Suspensão a Ar"
+  ]
+ },
+ "MLB269568": {
+  "nome": "Grampos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Grampos"
+  ]
+ },
+ "MLB269574": {
+  "nome": "Comutadores de Ignição",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Fechaduras e Chaves",
+   "Comutadores de Ignição"
+  ]
+ },
+ "MLB269575": {
+  "nome": "Interruptores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Eletroventiladores",
+   "Interruptores"
+  ]
+ },
+ "MLB269576": {
+  "nome": "Defletores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Eletroventiladores",
+   "Defletores"
+  ]
+ },
+ "MLB269577": {
+  "nome": "Canos de Injetores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Canos de Injetores"
+  ]
+ },
+ "MLB270295": {
+  "nome": "Triângulos de Segurança",
+  "path": [
+   "Acessórios para Veículos",
+   "Segurança Veicular",
+   "Triângulos de Segurança"
+  ]
+ },
+ "MLB270299": {
+  "nome": "Pedais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Pedais",
+   "Pedais"
+  ]
+ },
+ "MLB270881": {
+  "nome": "Colunas de Direção",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Colunas de Direção"
+  ]
+ },
+ "MLB270896": {
+  "nome": "Vapor de Gasolina",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Vapor de Gasolina"
+  ]
+ },
+ "MLB271124": {
+  "nome": "Suportes de Estepe",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Suportes de Estepe"
+  ]
+ },
+ "MLB271145": {
+  "nome": "Parafusos Prisioneiros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Parafusos Prisioneiros"
+  ]
+ },
+ "MLB271611": {
+  "nome": "Porta-copos",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Porta-copos"
+  ]
+ },
+ "MLB271725": {
+  "nome": "Mangueiras de Combustível",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças Náuticas",
+   "Motores e Peças",
+   "Sistema de Combustível",
+   "Mangueiras de Combustível"
+  ]
+ },
+ "MLB277543": {
+  "nome": "Forros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Forros e Peças",
+   "Forros"
+  ]
+ },
+ "MLB277569": {
+  "nome": "Polias para Bombas de Água",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Correias",
+   "Polias",
+   "Polias para Bombas de Água"
+  ]
+ },
+ "MLB277571": {
+  "nome": "Flanges para Bombas de Água",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Radiadores",
+   "Flanges para Bombas de Água"
+  ]
+ },
+ "MLB277577": {
+  "nome": "Cruzeta Coluna de Direção",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Cruzeta Coluna de Direção"
+  ]
+ },
+ "MLB277922": {
+  "nome": "Válvulas Solenóides",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Válvulas Solenóides"
+  ]
+ },
+ "MLB277942": {
+  "nome": "Mangas de Eixo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Mangas de Eixo"
+  ]
+ },
+ "MLB277952": {
+  "nome": "Quebra Sol",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Quebra Sol"
+  ]
+ },
+ "MLB277962": {
+  "nome": "Quadros de Suspensão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Quadros de Suspensão"
+  ]
+ },
+ "MLB278120": {
+  "nome": "Caixa do Filtro de Ar",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Filtros",
+   "Caixa do Filtro de Ar"
+  ]
+ },
+ "MLB31156": {
+  "nome": "Apoios de Braço",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Apoios de Braço"
+  ]
+ },
+ "MLB3385": {
+  "nome": "Módulos Amplificadores",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Módulos Amplificadores"
+  ]
+ },
+ "MLB373149": {
+  "nome": "Displays Multifuncionais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Displays Multifuncionais"
+  ]
+ },
+ "MLB373457": {
+  "nome": "Seletoras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Seletoras e Cabos",
+   "Seletoras"
+  ]
+ },
+ "MLB389308": {
+  "nome": "Atuadores Hidráulicos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Embreagens",
+   "Atuadores Hidráulicos"
+  ]
+ },
+ "MLB3905": {
+  "nome": "Alto-Falantes",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Alto-Falantes"
+  ]
+ },
+ "MLB410863": {
+  "nome": "Kit de Segurança para Carros",
+  "path": [
+   "Acessórios para Veículos",
+   "Segurança Veicular",
+   "Kit de Segurança para Carros"
+  ]
+ },
+ "MLB412413": {
+  "nome": "Painel e Instrumental",
+  "path": [
+   "Acessórios para Veículos",
+   "Acessórios de Linha Pesada",
+   "Acessórios de Interior",
+   "Painel e Instrumental"
+  ]
+ },
+ "MLB416795": {
+  "nome": "Sensores de Pressão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Sensores",
+   "Sensores de Pressão"
+  ]
+ },
+ "MLB420222": {
+  "nome": "Suportes para Placas",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Embelezadores",
+   "Suportes para Placas"
+  ]
+ },
+ "MLB428943": {
+  "nome": "Refletores Olho de Gato",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Refletores Olho de Gato"
+  ]
+ },
+ "MLB428983": {
+  "nome": "Maçanetas para Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Maçanetas de Carros",
+   "Maçanetas para Portas"
+  ]
+ },
+ "MLB429458": {
+  "nome": "Quadros de Faróis Dianteiros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Quadros de Faróis Dianteiros"
+  ]
+ },
+ "MLB430132": {
+  "nome": "Sem Tela",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Reprodutores",
+   "Estéreos",
+   "Sem Tela"
+  ]
+ },
+ "MLB430189": {
+  "nome": "Tampas de Correntes",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Distribuição",
+   "Tampas de Correntes"
+  ]
+ },
+ "MLB430228": {
+  "nome": "Alargadores de Pára-Lamas",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Alargadores de Pára-Lamas"
+  ]
+ },
+ "MLB430264": {
+  "nome": "Lanternas",
+  "path": [
+   "Esportes e Fitness",
+   "Camping, Caça e Pesca",
+   "Faróis e Lanternas",
+   "Lanternas"
+  ]
+ },
+ "MLB430536": {
+  "nome": "Espelhos Retrovisores Internos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Espelhos Retrovisores Internos"
+  ]
+ },
+ "MLB430565": {
+  "nome": "Ganchos para Reboque",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Engates",
+   "Ganchos para Reboque"
+  ]
+ },
+ "MLB430566": {
+  "nome": "Tomadas Elétricas",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Engates",
+   "Tomadas Elétricas"
+  ]
+ },
+ "MLB430747": {
+  "nome": "Botões",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Botões"
+  ]
+ },
+ "MLB430748": {
+  "nome": "Comandos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Comandos"
+  ]
+ },
+ "MLB430784": {
+  "nome": "Volantes de Embreagem",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Embreagens",
+   "Volantes de Embreagem"
+  ]
+ },
+ "MLB430950": {
+  "nome": "Aquecedores",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Aquecedores"
+  ]
+ },
+ "MLB430954": {
+  "nome": "Tampas Protetoras de Motor",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Tampas",
+   "Tampas Protetoras de Motor"
+  ]
+ },
+ "MLB430961": {
+  "nome": "Válvulas Solenoides",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Válvulas Solenoides"
+  ]
+ },
+ "MLB431130": {
+  "nome": "Instalações Elétricas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Instalações Elétricas"
+  ]
+ },
+ "MLB431174": {
+  "nome": "Válvulas Canister",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Válvulas Canister"
+  ]
+ },
+ "MLB431271": {
+  "nome": "Painéis para Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis para Portas"
+  ]
+ },
+ "MLB431318": {
+  "nome": "Módulos de Fusíveis",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Fusíveis",
+   "Módulos de Fusíveis"
+  ]
+ },
+ "MLB431764": {
+  "nome": "Kits de Engrenagens Borboleta",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Injeção",
+   "Kits de Engrenagens Borboleta"
+  ]
+ },
+ "MLB431784": {
+  "nome": "De Desembaçadores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Desembaçadores"
+  ]
+ },
+ "MLB431858": {
+  "nome": "Cobre Painéis",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Cobre Painéis"
+  ]
+ },
+ "MLB431909": {
+  "nome": "Botões de Bloqueio Central",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "Botões de Bloqueio Central"
+  ]
+ },
+ "MLB431949": {
+  "nome": "Avanços a Vácuo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Distribuidores e Peças",
+   "Avanços a Vácuo"
+  ]
+ },
+ "MLB431962": {
+  "nome": "Sensores TPMS",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Sensores TPMS"
+  ]
+ },
+ "MLB432285": {
+  "nome": "De Travas Centrais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Travas Centrais"
+  ]
+ },
+ "MLB432458": {
+  "nome": "Tampas das Caixas de Fusíveis",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Tampas das Caixas de Fusíveis"
+  ]
+ },
+ "MLB432462": {
+  "nome": "Portaluvas Completos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis Painel e Porta-Luvas",
+   "Portaluvas Completos"
+  ]
+ },
+ "MLB432647": {
+  "nome": "Carcaças de Bombas de Água",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Bombas",
+   "Peças para Bombas",
+   "Carcaças de Bombas de Água"
+  ]
+ },
+ "MLB433273": {
+  "nome": "Gavetas de Fixação",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Reprodutores",
+   "Acessórios",
+   "Gavetas de Fixação"
+  ]
+ },
+ "MLB433573": {
+  "nome": "Maçanetas de Capô",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Maçanetas de Capô"
+  ]
+ },
+ "MLB435059": {
+  "nome": "Interruptores do volante",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores do volante"
+  ]
+ },
+ "MLB437913": {
+  "nome": "Colunas de Direção",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Suspensão e Direção",
+   "Colunas de Direção"
+  ]
+ },
+ "MLB437933": {
+  "nome": "Sensores de Nível",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Sensores",
+   "Sensores de Nível"
+  ]
+ },
+ "MLB437941": {
+  "nome": "Sensores de Freio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Sensores",
+   "Sensores de Freio"
+  ]
+ },
+ "MLB437948": {
+  "nome": "Bombas de Água",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Sistemas de Refrigeração",
+   "Bombas de Água"
+  ]
+ },
+ "MLB438074": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Outros"
+  ]
+ },
+ "MLB438558": {
+  "nome": "Interfaces",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Interfaces"
+  ]
+ },
+ "MLB439440": {
+  "nome": "Bandejas de Suspensão",
+  "path": [
+   "Acessórios para Veículos",
+   "Performance",
+   "Suspensão e Direção",
+   "Bandejas de Suspensão"
+  ]
+ },
+ "MLB439507": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Portas e Painéis",
+   "Outros"
+  ]
+ },
+ "MLB439544": {
+  "nome": "Isqueiros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Isqueiros"
+  ]
+ },
+ "MLB439572": {
+  "nome": "Suportes de Alternador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Alternadores e Dínamos",
+   "Suportes de Alternador"
+  ]
+ },
+ "MLB439574": {
+  "nome": "Conversores de Voltagem",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Alternadores e Dínamos",
+   "Conversores de Voltagem"
+  ]
+ },
+ "MLB439679": {
+  "nome": "Dobradiças de Porta-luva",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis Painel e Porta-Luvas",
+   "Dobradiças de Porta-luva"
+  ]
+ },
+ "MLB440299": {
+  "nome": "Alarmes para Automotores",
+  "path": [
+   "Acessórios para Veículos",
+   "Segurança Veicular",
+   "Alarmes e Acessórios",
+   "Alarmes para Automotores"
+  ]
+ },
+ "MLB440306": {
+  "nome": "Controles",
+  "path": [
+   "Acessórios para Veículos",
+   "Segurança Veicular",
+   "Controles"
+  ]
+ },
+ "MLB440315": {
+  "nome": "Antenas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Antenas"
+  ]
+ },
+ "MLB440325": {
+  "nome": "Semi Eixos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Rolamentos e Semi Eixos",
+   "Semi Eixos"
+  ]
+ },
+ "MLB447348": {
+  "nome": "Frisos para Janelas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Frisos",
+   "Frisos para Janelas"
+  ]
+ },
+ "MLB447349": {
+  "nome": "Frisos para Faróis",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Frisos",
+   "Frisos para Faróis"
+  ]
+ },
+ "MLB45256": {
+  "nome": "Antenas",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Antenas"
+  ]
+ },
+ "MLB45320": {
+  "nome": "Molduras para Estéreos",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Reprodutores",
+   "Acessórios",
+   "Molduras para Estéreos"
+  ]
+ },
+ "MLB455486": {
+  "nome": "Protetores Laterais de Motor",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Protetores Laterais de Motor"
+  ]
+ },
+ "MLB456200": {
+  "nome": "Feixes de Mola",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Feixes de Mola"
+  ]
+ },
+ "MLB456265": {
+  "nome": "Molduras",
+  "path": [
+   "Acessórios para Veículos",
+   "Acessórios de Linha Pesada",
+   "Acessórios de Exterior",
+   "Molduras"
+  ]
+ },
+ "MLB456374": {
+  "nome": "Protetores de Tapetes",
+  "path": [
+   "Acessórios para Veículos",
+   "Acessórios de Linha Pesada",
+   "Acessórios de Interior",
+   "Capas e Protetores",
+   "Protetores de Tapetes"
+  ]
+ },
+ "MLB456390": {
+  "nome": "Colunas e Copos",
+  "path": [
+   "Acessórios para Veículos",
+   "Acessórios de Linha Pesada",
+   "Acessórios de Interior",
+   "Instrumental",
+   "Colunas e Copos"
+  ]
+ },
+ "MLB456671": {
+  "nome": "Dobradiças de Capô",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Peças de Cabine",
+   "Dobradiças",
+   "Dobradiças de Capô"
+  ]
+ },
+ "MLB456687": {
+  "nome": "Antenas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Peças de Exterior",
+   "Antenas"
+  ]
+ },
+ "MLB456751": {
+  "nome": "Catalisadores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Escapamentos",
+   "Catalisadores"
+  ]
+ },
+ "MLB456968": {
+  "nome": "Difusores de Ar Condicionado",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Climatização",
+   "Difusores de Ar Condicionado"
+  ]
+ },
+ "MLB456988": {
+  "nome": "Modulos de Fusiveis",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Sistema Elétrico",
+   "Modulos de Fusiveis"
+  ]
+ },
+ "MLB457141": {
+  "nome": "De Travas Centrais",
+  "path": [
+   "Agro",
+   "Peças Maquinaria Agrícola",
+   "Cabine",
+   "Interruptores",
+   "De Travas Centrais"
+  ]
+ },
+ "MLB457325": {
+  "nome": "Módulo Air Bag",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Segurança",
+   "Módulo Air Bag"
+  ]
+ },
+ "MLB457371": {
+  "nome": "de Portão e Porta-malas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Linha Pesada",
+   "Fechaduras e Chaves",
+   "de Portão e Porta-malas"
+  ]
+ },
+ "MLB457755": {
+  "nome": "Difusores de Ar",
+  "path": [
+   "Agro",
+   "Peças Maquinaria Agrícola",
+   "Climatização",
+   "Difusores de Ar"
+  ]
+ },
+ "MLB457887": {
+  "nome": "Antenas de Conectividade",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Antenas de Conectividade"
+  ]
+ },
+ "MLB458098": {
+  "nome": "Suportes de Bombas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Peças de Bombas Hidráulicas",
+   "Suportes de Bombas"
+  ]
+ },
+ "MLB458123": {
+  "nome": "Ligações Laterais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Braços Oscilantes",
+   "Ligações Laterais"
+  ]
+ },
+ "MLB458127": {
+  "nome": "Braços Oscilantes",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Braços Oscilantes",
+   "Braços Oscilantes"
+  ]
+ },
+ "MLB458137": {
+  "nome": "Sensores de Altura",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Suspensão e Direção",
+   "Peças Nivelamento Automático",
+   "Sensores de Altura"
+  ]
+ },
+ "MLB458242": {
+  "nome": "Luzes de Teto",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Luzes Internas",
+   "Luzes de Teto"
+  ]
+ },
+ "MLB458254": {
+  "nome": "Refletores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Refletores"
+  ]
+ },
+ "MLB458333": {
+  "nome": "Cilindros Mestres",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Cilindros Mestres"
+  ]
+ },
+ "MLB458347": {
+  "nome": "Módulos de Controle do ABS",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Módulos de Controle do ABS"
+  ]
+ },
+ "MLB458359": {
+  "nome": "Relés de Controle de Freio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Relés de Freio",
+   "Relés de Controle de Freio"
+  ]
+ },
+ "MLB458366": {
+  "nome": "Relés da Unidade de Controle",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Relés de Freio",
+   "Relés da Unidade de Controle"
+  ]
+ },
+ "MLB458378": {
+  "nome": "Sensores de Freio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Sensores e Comutadores",
+   "Sensores de Freio"
+  ]
+ },
+ "MLB458434": {
+  "nome": "Relógios",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Instrumental",
+   "Relógios",
+   "Relógios"
+  ]
+ },
+ "MLB458443": {
+  "nome": "Revestimentos do Painel",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Revestimentos",
+   "Revestimentos do Painel"
+  ]
+ },
+ "MLB458447": {
+  "nome": "Maçanetas Interiores de Porta",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Manivelas de Janela",
+   "Maçanetas Interiores de Porta"
+  ]
+ },
+ "MLB458456": {
+  "nome": "Suportes de Consolas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Consolas",
+   "Suportes de Consolas"
+  ]
+ },
+ "MLB458457": {
+  "nome": "Bases de Console Central",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Consolas",
+   "Bases de Console Central"
+  ]
+ },
+ "MLB458459": {
+  "nome": "Trincos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis Painel e Porta-Luvas",
+   "Trincos"
+  ]
+ },
+ "MLB458460": {
+  "nome": "Descansos de Pé",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Pedais",
+   "Descansos de Pé"
+  ]
+ },
+ "MLB458465": {
+  "nome": "Cintos de Segurança",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Cintos",
+   "Cintos de Segurança"
+  ]
+ },
+ "MLB458472": {
+  "nome": "Buchas para Trilhos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Assentos",
+   "Buchas para Trilhos"
+  ]
+ },
+ "MLB458487": {
+  "nome": "Porta-copos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Organizadores e Armazenamento",
+   "Porta-copos"
+  ]
+ },
+ "MLB458523": {
+  "nome": "Resistências de Motor",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Ar Condicionado",
+   "Controles e unidades HVAC",
+   "Resistências de Motor"
+  ]
+ },
+ "MLB458532": {
+  "nome": "Lateral de carroceria",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Lateral de carroceria"
+  ]
+ },
+ "MLB458557": {
+  "nome": "Pilares",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Pilares"
+  ]
+ },
+ "MLB458559": {
+  "nome": "Vigas de Reforço",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Para-choques",
+   "Vigas de Reforço"
+  ]
+ },
+ "MLB458571": {
+  "nome": "Maçanetas das Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Malas e Tampas Traseiras",
+   "Maçanetas das Portas"
+  ]
+ },
+ "MLB458573": {
+  "nome": "Tampas de Malas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Malas e Tampas Traseiras",
+   "Tampas de Malas"
+  ]
+ },
+ "MLB458579": {
+  "nome": "Molduras das Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Malas e Tampas Traseiras",
+   "Portas e Revestimentos",
+   "Molduras das Portas"
+  ]
+ },
+ "MLB458585": {
+  "nome": "Tomadas de Ar",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Tomadas de Ar"
+  ]
+ },
+ "MLB458586": {
+  "nome": "Varetas de Apoio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Varetas de Apoio"
+  ]
+ },
+ "MLB458591": {
+  "nome": "Suportes para Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Componentes Adicionais",
+   "Suportes para Portas"
+  ]
+ },
+ "MLB458601": {
+  "nome": "Molduras de Janela",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Janelas e Vedações",
+   "Selos, Juntas e Molduras",
+   "Molduras de Janela"
+  ]
+ },
+ "MLB458609": {
+  "nome": "Alças de Liberação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Maçanetas de Carros",
+   "Alças de Liberação"
+  ]
+ },
+ "MLB458624": {
+  "nome": "De Capô",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Fechaduras e Ferragens",
+   "De Capô"
+  ]
+ },
+ "MLB458628": {
+  "nome": "De Porta-malas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Fechaduras e Ferragens",
+   "De Porta-malas"
+  ]
+ },
+ "MLB458634": {
+  "nome": "Painéis laterais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Painéis",
+   "Painéis laterais"
+  ]
+ },
+ "MLB458637": {
+  "nome": "Alargadores de Para-lamas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Painéis",
+   "Para-lamas",
+   "Alargadores de Para-lamas"
+  ]
+ },
+ "MLB458638": {
+  "nome": "Suportes de Para-lamas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Painéis",
+   "Para-lamas",
+   "Suportes de Para-lamas"
+  ]
+ },
+ "MLB458649": {
+  "nome": "Painéis de Soleira",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Painéis",
+   "Painéis Adicionais",
+   "Painéis de Soleira"
+  ]
+ },
+ "MLB458659": {
+  "nome": "Suportes",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Suportes e Abraçadeiras",
+   "Suportes"
+  ]
+ },
+ "MLB458690": {
+  "nome": "Sensores de Chuva",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Limpadores e Lavadores",
+   "Componentes dos Limpadores",
+   "Sensores de Chuva"
+  ]
+ },
+ "MLB458699": {
+  "nome": "Molduras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Retrovisores Laterais",
+   "Componentes de Retrovisores",
+   "Molduras"
+  ]
+ },
+ "MLB458751": {
+  "nome": "De Freio de Mão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Interruptores",
+   "De Freio de Mão"
+  ]
+ },
+ "MLB458759": {
+  "nome": "Interruptores de Vácuo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Interruptores",
+   "Interruptores de Vácuo"
+  ]
+ },
+ "MLB458764": {
+  "nome": "Tampas de Bateria",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Componentes para Baterias",
+   "Tampas de Bateria"
+  ]
+ },
+ "MLB458765": {
+  "nome": "Caixas de Bateria",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Componentes para Baterias",
+   "Caixas de Bateria"
+  ]
+ },
+ "MLB458767": {
+  "nome": "Suportes de Bateris",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Componentes para Baterias",
+   "Suportes de Bateris"
+  ]
+ },
+ "MLB458769": {
+  "nome": "Bandeja de Bateria",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Componentes para Baterias",
+   "Bandeja de Bateria"
+  ]
+ },
+ "MLB458772": {
+  "nome": "Painéis laterais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Painéis laterais"
+  ]
+ },
+ "MLB458775": {
+  "nome": "Painéis de Painel",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis Painel e Porta-Luvas",
+   "Painéis de Painel"
+  ]
+ },
+ "MLB458783": {
+  "nome": "Bombas de Vácuo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Bombas",
+   "Bombas de Vácuo"
+  ]
+ },
+ "MLB458794": {
+  "nome": "Filtros de Óleo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Filtros de Óleo"
+  ]
+ },
+ "MLB458797": {
+  "nome": "Tampa de Enchimento de Óleo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Tampas de Enchimento",
+   "Tampa de Enchimento de Óleo"
+  ]
+ },
+ "MLB458838": {
+  "nome": "Polias de Tensores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Correias",
+   "Rolos e Tensores",
+   "Polias de Tensores"
+  ]
+ },
+ "MLB458846": {
+  "nome": "Tensores de Corrente",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Distribuição",
+   "Tensores de Corrente"
+  ]
+ },
+ "MLB458855": {
+  "nome": "Virabrequims com Flange",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Rolamentos de Motor",
+   "Virabrequims com Flange"
+  ]
+ },
+ "MLB458928": {
+  "nome": "Mangueiras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Mangueira, Linha e Tubulações",
+   "Mangueiras"
+  ]
+ },
+ "MLB458948": {
+  "nome": "Mangueiras de Turbo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Turbos e Supercargadores",
+   "Turbos",
+   "Mangueiras de Turbo"
+  ]
+ },
+ "MLB458959": {
+  "nome": "Carcaças de Termostato",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Refrigeração",
+   "Carcaças de Termostato"
+  ]
+ },
+ "MLB458966": {
+  "nome": "Motores de Ventilador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Refrigeração",
+   "Ventiladores e Carcaças",
+   "Motores de Ventilador"
+  ]
+ },
+ "MLB458968": {
+  "nome": "Mangueiras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Refrigeração",
+   "Mangueiras",
+   "Mangueiras"
+  ]
+ },
+ "MLB458980": {
+  "nome": "Cabos de Carregamento",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Cabos de Carregamento"
+  ]
+ },
+ "MLB459034": {
+  "nome": "Chicotes de Fios",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Transmissõ Automáticas",
+   "Chicotes de Fios"
+  ]
+ },
+ "MLB45905": {
+  "nome": "Sensores de Estacionamento",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Sensores de Estacionamento"
+  ]
+ },
+ "MLB459110": {
+  "nome": "Suportes",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Fixadores e Ferragens",
+   "Suportes"
+  ]
+ },
+ "MLB459124": {
+  "nome": "Módulo Controle Transmissão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Módulos de Controle",
+   "Módulo Controle Transmissão"
+  ]
+ },
+ "MLB459125": {
+  "nome": "Módulo de Troca de Marchas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Módulos de Controle",
+   "Módulo de Troca de Marchas"
+  ]
+ },
+ "MLB459141": {
+  "nome": "Grades",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Grades"
+  ]
+ },
+ "MLB459178": {
+  "nome": "Chicotes de Chassi",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Reboques",
+   "Cabos, Chicotes e Conectores",
+   "Chicotes de Chassi"
+  ]
+ },
+ "MLB459200": {
+  "nome": "Molduras de Para-choques",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Molduras e Acabamentos",
+   "Molduras de Para-choques"
+  ]
+ },
+ "MLB459203": {
+  "nome": "Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Molduras e Acabamentos",
+   "Portas"
+  ]
+ },
+ "MLB459204": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Molduras e Acabamentos",
+   "Outros"
+  ]
+ },
+ "MLB459239": {
+  "nome": "Para-lamas",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Exterior",
+   "Protetores e Guardas",
+   "Para-lamas"
+  ]
+ },
+ "MLB459266": {
+  "nome": "Câmeras ADAS",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Condução Assistida Avançada",
+   "Componentes Controle Cruzeiro",
+   "Câmeras ADAS"
+  ]
+ },
+ "MLB459268": {
+  "nome": "Sensores de Estacionamento",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Condução Assistida Avançada",
+   "Assistentes de Estacionamento",
+   "Sensores de Estacionamento"
+  ]
+ },
+ "MLB459269": {
+  "nome": "Câmeras de Ré",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Condução Assistida Avançada",
+   "Assistentes de Estacionamento",
+   "Câmeras de Ré"
+  ]
+ },
+ "MLB459272": {
+  "nome": "Sirenes de Alarme",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Condução Assistida Avançada",
+   "Avisos e Advertências",
+   "Sirenes de Alarme"
+  ]
+ },
+ "MLB459278": {
+  "nome": "Arneses de Fiação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Chicotes, Cabos e Conectores",
+   "Arneses de Fiação"
+  ]
+ },
+ "MLB459279": {
+  "nome": "Kits de Chicotes de Fiação",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Chicotes, Cabos e Conectores",
+   "Kits de Chicotes de Fiação"
+  ]
+ },
+ "MLB459280": {
+  "nome": "Chicote da Carroceria",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Chicotes, Cabos e Conectores",
+   "Chicote da Carroceria"
+  ]
+ },
+ "MLB459283": {
+  "nome": "Extensão de Chicote",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Chicotes, Cabos e Conectores",
+   "Extensão de Chicote"
+  ]
+ },
+ "MLB459285": {
+  "nome": "Cabos Negativo de Baterias",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Chicotes, Cabos e Conectores",
+   "Cabos Negativo de Baterias"
+  ]
+ },
+ "MLB459286": {
+  "nome": "Cabo Positivo de Bateria",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Chicotes, Cabos e Conectores",
+   "Cabo Positivo de Bateria"
+  ]
+ },
+ "MLB459287": {
+  "nome": "Relés de Partida",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Chicotes, Cabos e Conectores",
+   "Relés de Partida"
+  ]
+ },
+ "MLB459296": {
+  "nome": "Módulos Central Temporização",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Unidades de Controle e ECUs",
+   "Módulos Central Temporização"
+  ]
+ },
+ "MLB459297": {
+  "nome": "Módulos Controle das Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Unidades de Controle e ECUs",
+   "Módulos Controle das Portas"
+  ]
+ },
+ "MLB459299": {
+  "nome": "Módulo de Controle do PCM",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Unidades de Controle e ECUs",
+   "Módulo de Controle do PCM"
+  ]
+ },
+ "MLB459302": {
+  "nome": "Módulos Controle da Caixa",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Unidades de Controle e ECUs",
+   "Módulos Controle da Caixa"
+  ]
+ },
+ "MLB459303": {
+  "nome": "Módulos Controle Transmissão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Unidades de Controle e ECUs",
+   "Módulos Controle Transmissão"
+  ]
+ },
+ "MLB459304": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Unidades de Controle e ECUs",
+   "Outros"
+  ]
+ },
+ "MLB459305": {
+  "nome": "Módulos de Injetores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Módulos de Injetores"
+  ]
+ },
+ "MLB459307": {
+  "nome": "Trocadores de Calor de Óleo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Trocadores e Peças",
+   "Trocadores de Calor de Óleo"
+  ]
+ },
+ "MLB459342": {
+  "nome": "Montagens do Radiador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Juntas, Selos e Ferragens",
+   "Suportes e Ferragens",
+   "Montagens do Radiador"
+  ]
+ },
+ "MLB459394": {
+  "nome": "Controladores Motor AC",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Sistema Elétrico",
+   "Unidades de Controle e ECUs",
+   "Controladores Motor AC"
+  ]
+ },
+ "MLB459414": {
+  "nome": "Tubos Flexíveis",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Escapamentos",
+   "Tubos e Pontas de Escape",
+   "Tubos Flexíveis"
+  ]
+ },
+ "MLB459448": {
+  "nome": "Inversores de Potência",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Elétricos, Híbridos e PHEV",
+   "Inversores de Potência"
+  ]
+ },
+ "MLB459460": {
+  "nome": "Medidores de Painel",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Instrumental",
+   "Medidores de Painel"
+  ]
+ },
+ "MLB459480": {
+  "nome": "Kits Interiores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Revestimentos",
+   "Kits Interiores"
+  ]
+ },
+ "MLB459491": {
+  "nome": "Puxadores de Porta",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis de Porta",
+   "Puxadores de Porta"
+  ]
+ },
+ "MLB459493": {
+  "nome": "Armazenamentos Central",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Consolas",
+   "Armazenamentos Central"
+  ]
+ },
+ "MLB459496": {
+  "nome": "Acabamentos de Alavancas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Alavancas",
+   "Acabamentos de Alavancas"
+  ]
+ },
+ "MLB459497": {
+  "nome": "Revestimentos de console",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis Painel e Porta-Luvas",
+   "Revestimentos de console"
+  ]
+ },
+ "MLB459499": {
+  "nome": "Botões Pulsadores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "Botões Pulsadores"
+  ]
+ },
+ "MLB459501": {
+  "nome": "De Botão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Botão"
+  ]
+ },
+ "MLB459507": {
+  "nome": "Bolsas de Ar",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Segurança Interna",
+   "Bolsas de Ar"
+  ]
+ },
+ "MLB459522": {
+  "nome": "Carregadores de Porta USB",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Plugues e Isqueiros",
+   "Carregadores de Porta USB"
+  ]
+ },
+ "MLB459524": {
+  "nome": "Alças",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Assentos",
+   "Alças"
+  ]
+ },
+ "MLB46526": {
+  "nome": "Spoilers",
+  "path": [
+   "Acessórios para Veículos",
+   "Tuning",
+   "Tuning Exterior",
+   "Spoilers"
+  ]
+ },
+ "MLB46570": {
+  "nome": "Soleiras",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Soleiras"
+  ]
+ },
+ "MLB46649": {
+  "nome": "Travas de Volantes",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Travas de Volantes"
+  ]
+ },
+ "MLB46659": {
+  "nome": "Faróis de Milha",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Faróis",
+   "Faróis de Milha"
+  ]
+ },
+ "MLB46679": {
+  "nome": "Alavancas e Manoplas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Alavancas e Manoplas"
+  ]
+ },
+ "MLB46703": {
+  "nome": "Painéis Laterais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Portas e Painéis",
+   "Painéis Laterais"
+  ]
+ },
+ "MLB46723": {
+  "nome": "Bancos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Assentos",
+   "Bancos"
+  ]
+ },
+ "MLB47007": {
+  "nome": "Air Bags",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Segurança",
+   "Air Bags"
+  ]
+ },
+ "MLB47083": {
+  "nome": "Bielas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Bloco de Motores",
+   "Bielas"
+  ]
+ },
+ "MLB47088": {
+  "nome": "Cilindro de Freio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Cilindro de Freio"
+  ]
+ },
+ "MLB47089": {
+  "nome": "Painéis Completos",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Painéis Completos"
+  ]
+ },
+ "MLB47091": {
+  "nome": "Bombas de Água",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Bombas",
+   "Bombas de Água"
+  ]
+ },
+ "MLB47093": {
+  "nome": "Pistões",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Pistões",
+   "Pistões"
+  ]
+ },
+ "MLB47094": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Outros"
+  ]
+ },
+ "MLB47099": {
+  "nome": "Pinças",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Pinças"
+  ]
+ },
+ "MLB47102": {
+  "nome": "Difusores de Ar",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Difusores de Ar"
+  ]
+ },
+ "MLB47104": {
+  "nome": "Virabrequim",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Virabrequim"
+  ]
+ },
+ "MLB47106": {
+  "nome": "Bombas de Óleo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Bombas",
+   "Bombas de Óleo"
+  ]
+ },
+ "MLB47110": {
+  "nome": "Coletores de Admissão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Coletores de Admissão"
+  ]
+ },
+ "MLB47113": {
+  "nome": "Turbinas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Turbos e Supercargadores",
+   "Turbos",
+   "Turbinas"
+  ]
+ },
+ "MLB47115": {
+  "nome": "Bombas de Combustível",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Bombas",
+   "Bombas de Combustível"
+  ]
+ },
+ "MLB47117": {
+  "nome": "Bóias de Combustível",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Tanques de Combustível",
+   "Bóias de Combustível"
+  ]
+ },
+ "MLB47119": {
+  "nome": "Filtros de Ar",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Filtros",
+   "Filtros de Ar"
+  ]
+ },
+ "MLB47120": {
+  "nome": "Filtros de Óleo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Filtros",
+   "Filtros de Óleo"
+  ]
+ },
+ "MLB47121": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Outros"
+  ]
+ },
+ "MLB47127": {
+  "nome": "Cabeçotes",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Tampas",
+   "Cabeçotes"
+  ]
+ },
+ "MLB47131": {
+  "nome": "Alternadores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Ignição",
+   "Alternadores e Dínamos",
+   "Alternadores"
+  ]
+ },
+ "MLB47133": {
+  "nome": "Motor completo",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Motor completo"
+  ]
+ },
+ "MLB4860": {
+  "nome": "Rodas de Carros e Caminhonetes",
+  "path": [
+   "Acessórios para Veículos",
+   "Rodas",
+   "Rodas de Carros e Caminhonetes"
+  ]
+ },
+ "MLB5665": {
+  "nome": "Estribos e Soleiras",
+  "path": [
+   "Acessórios para Veículos",
+   "Tuning",
+   "Tuning Exterior",
+   "Estribos e Soleiras"
+  ]
+ },
+ "MLB60608": {
+  "nome": "Compressores",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Climatização",
+   "Ar Condicionado",
+   "Compressores"
+  ]
+ },
+ "MLB61637": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Reprodutores",
+   "Outros"
+  ]
+ },
+ "MLB6170": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Outros"
+  ]
+ },
+ "MLB63389": {
+  "nome": "Tampões",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Tampões"
+  ]
+ },
+ "MLB63463": {
+  "nome": "De Luzes",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Luzes"
+  ]
+ },
+ "MLB63464": {
+  "nome": "De Para-brisas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Interruptores",
+   "De Para-brisas"
+  ]
+ },
+ "MLB63475": {
+  "nome": "Pinças de Freios",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Motos e Quadriciclos",
+   "Chassis",
+   "Freios",
+   "Pinças de Freios"
+  ]
+ },
+ "MLB63491": {
+  "nome": "Vidros Laterais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Janelas e Vedações",
+   "Janelas",
+   "Vidros Laterais"
+  ]
+ },
+ "MLB63492": {
+  "nome": "Vidros Traseiros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Janelas e Vedações",
+   "Janelas",
+   "Vidros Traseiros"
+  ]
+ },
+ "MLB63512": {
+  "nome": "Motor Limpador Para-brisas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Limpadores e Lavadores",
+   "Elos e Transmissões",
+   "Motor Limpador Para-brisas"
+  ]
+ },
+ "MLB63517": {
+  "nome": "Bronzinas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Bloco de Motores",
+   "Bronzinas"
+  ]
+ },
+ "MLB63526": {
+  "nome": "Interruptores de Energia",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Fechaduras e Chaves",
+   "Interruptores de Energia"
+  ]
+ },
+ "MLB63530": {
+  "nome": "Manopla de Câmbio",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Manopla de Câmbio"
+  ]
+ },
+ "MLB63548": {
+  "nome": "Velocímetros e Conta-giros",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Instrumental",
+   "Relógios",
+   "Velocímetros e Conta-giros"
+  ]
+ },
+ "MLB63554": {
+  "nome": "Cabo Acelerador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Cabos de Comando",
+   "Cabo Acelerador"
+  ]
+ },
+ "MLB63555": {
+  "nome": "Cabo Afogador",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Cabos de Comando",
+   "Cabo Afogador"
+  ]
+ },
+ "MLB63583": {
+  "nome": "Braços de Limpa Para-brisas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Braços de Limpa Para-brisas"
+  ]
+ },
+ "MLB63586": {
+  "nome": "Pára-choques Traseiros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Para-choques",
+   "Pára-choques Traseiros"
+  ]
+ },
+ "MLB63687": {
+  "nome": "Colunas e Copos",
+  "path": [
+   "Acessórios para Veículos",
+   "Aces. de Carros e Caminhonetes",
+   "Interior",
+   "Instrumental",
+   "Relógios",
+   "Colunas e Copos"
+  ]
+ },
+ "MLB63712": {
+  "nome": "Tampas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Componentes de Motor",
+   "Tampas",
+   "Tampas"
+  ]
+ },
+ "MLB63735": {
+  "nome": "Coletor de Escapamento",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Coletor de Escapamento"
+  ]
+ },
+ "MLB63736": {
+  "nome": "Grades de Para-choques",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Grades de Para-choques"
+  ]
+ },
+ "MLB63737": {
+  "nome": "Frisos para Portas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Frisos",
+   "Frisos para Portas"
+  ]
+ },
+ "MLB63743": {
+  "nome": "Alavanca Freio de Mão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Interior",
+   "Alavanca Freio de Mão"
+  ]
+ },
+ "MLB63746": {
+  "nome": "Reservatório de Para-brisas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Peças de Exterior",
+   "Limpadores e Lavadores",
+   "Bombas e Depósitos",
+   "Reservatório de Para-brisas"
+  ]
+ },
+ "MLB63788": {
+  "nome": "Válvulas Termostáticas",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Motor",
+   "Radiadores",
+   "Válvulas Termostáticas"
+  ]
+ },
+ "MLB63789": {
+  "nome": "Flexíveis",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Mangueiras e Linhas",
+   "Flexíveis"
+  ]
+ },
+ "MLB63815": {
+  "nome": "Cabo do Freio de Mão",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Freios",
+   "Cabos, Conectores e Fios",
+   "Cabo do Freio de Mão"
+  ]
+ },
+ "MLB63822": {
+  "nome": "Diferenciais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Transmissão",
+   "Diferenciais"
+  ]
+ },
+ "MLB63846": {
+  "nome": "Espelhos Retrovisores Laterais",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Espelhos Retrovisores e Lentes",
+   "Espelhos Retrovisores Laterais"
+  ]
+ },
+ "MLB63852": {
+  "nome": "Outros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Carroceria",
+   "Espelhos Retrovisores e Lentes",
+   "Outros"
+  ]
+ },
+ "MLB6535": {
+  "nome": "Grades para Caixas de Som",
+  "path": [
+   "Acessórios para Veículos",
+   "Som Automotivo",
+   "Grades para Caixas de Som"
+  ]
+ },
+ "MLB7863": {
+  "nome": "Faróis Dianteiros",
+  "path": [
+   "Acessórios para Veículos",
+   "Peças de Carros e Caminhonetes",
+   "Iluminação",
+   "Faróis Dianteiros"
+  ]
+ }
+}
