@@ -26,7 +26,7 @@ PECA_DIR = SITE_DIR / "peca"
 PRODUCTS_FILE = SITE_DIR / "products.json"
 INDEX_FILE = SITE_DIR / "catalogo_index.js"
 
-SITE = "https://www.izzatcarimports.com.br"
+SITE = "https://izzatcarimports.com.br"
 WHATS = "5553991170950"
 
 
