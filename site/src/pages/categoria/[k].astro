@@ -52,7 +52,8 @@ function fotoDoTipo(tipo: string): string | null {
 // Tipos: cartão baixo com a foto de estúdio de uma peça do grupo
 const tipos = conta((p) => p.s).filter(([n]) => n !== 'Outros').slice(0, 14).map(([n, q]) => ({
   n, c: q,
-  h: `/catalogo.html?q=${encodeURIComponent(n)}&tipo=${encodeURIComponent(f.n)}`,
+  // o mesmo filtro do número do cartão (campo s), e não busca por texto: o catálogo abre com a mesma contagem
+  h: `/catalogo.html?tipo=${encodeURIComponent(f.n)}&sub=${encodeURIComponent(n)}`,
   foto: fotoDoTipo(n),
 }));
 const texto = textosCategoria(f, lista);

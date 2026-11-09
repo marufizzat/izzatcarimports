@@ -74,4 +74,14 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
     });
   }
   acoes();
+
+  // foto que não carregou: some e fica a placa clara (sem o ícone quebrado e o título cru do anúncio no lugar)
+  const semFoto = (img: HTMLImageElement) => img.classList.add('sem-capa');
+  document.querySelectorAll<HTMLImageElement>('.etiqueta-foto img').forEach((img) => {
+    if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) semFoto(img);
+  });
+  document.addEventListener('error', (e) => {
+    const img = e.target;
+    if (img instanceof HTMLImageElement && img.parentElement?.classList.contains('etiqueta-foto')) semFoto(img);
+  }, true);
 </script>

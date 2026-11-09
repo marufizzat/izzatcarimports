@@ -1,11 +1,14 @@
 // Campo de busca com sugestoes ao vivo (cabecalho e hero).
 // Adaptado do padrao "Async Autocomplete" do 21st.dev (autor: coss.com): debounce, estado de
 // carregando, vazio e lista com teclado (combobox/listbox), reescrito sobre o motor local Busca.
+// As sugestões seguem a MESMA regra do catálogo (lib/busca.ts): o número de "Ver todos" é o que o catálogo mostra.
+// No topo, o carro (ou a marca, ou o sistema) que a pessoa digitou, com a contagem; sem nada, a saída é o WhatsApp.
 import {
-  useEffect, useId, useMemo, useRef, useState,
+  useEffect, useId, useLayoutEffect, useMemo, useRef, useState,
   type FocusEvent as FE, type FormEvent as FormE, type KeyboardEvent as KE,
 } from 'react';
-import { Busca, capaItem, type Item } from '../../lib/busca';
+import { Busca, capaItem, carroAnos, type Atalho, type Item, type Sugestoes } from '../../lib/busca';
+import { icone, linkWhats } from '../catalogo/etiqueta';
 import './sugestoes.css';
 
 type Props = {
@@ -17,6 +20,9 @@ type Props = {
 };
 
 const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const n2 = (v: number) => v.toLocaleString('pt-BR');
+/** busca longa na tela: corta com "…" (o campo já mostra o texto inteiro) */
+const curto = (s: string, max = 28) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
 
 // um unico download do indice, compartilhado por todas as caixas da pagina.
 // O índice de texto é montado aos poucos (sem travar a digitação); enquanto isso aparece "Carregando as peças…".
@@ -33,7 +39,7 @@ function carregarBusca(): Promise<Busca> {
       return b;
     })
     .catch((e) => {
-      carregamento = null; // permite tentar de novo no proximo foco
+      carregamento = null; // permite tentar de novo
       throw e;
     });
   return carregamento;
@@ -45,6 +51,18 @@ const IconeLupa = () => (
     <path d="m20 20-3.5-3.5" />
   </svg>
 );
+const IconeSeta = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+const IconeSprite = ({ nome }: { nome: string }) => <svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone(nome)} /></svg>;
+
+type Op =
+  | { tipo: 'atalho'; a: Atalho }
+  | { tipo: 'item'; it: Item }
+  | { tipo: 'whats' }
+  | { tipo: 'ver' };
 
 export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou código', tamanho = 'normal', autoFoco = false, inicial = '' }: Props) {
   const uid = useId();
@@ -58,6 +76,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   const raiz = useRef<HTMLDivElement>(null);
   const form = useRef<HTMLFormElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
 
   // debounce de ~120 ms
   useEffect(() => {
@@ -65,17 +84,52 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     return () => window.clearTimeout(t);
   }, [q]);
 
-  const itens = useMemo<Item[]>(
-    () => (busca && termo.trim().length >= 2 ? busca.sugestoes(termo, 6) : []),
+  const res = useMemo<Sugestoes | null>(
+    () => (busca && termo.trim().length >= 2 ? busca.sugestoes(termo, 6) : null),
     [busca, termo],
   );
   const aberto = foco && q.trim().length >= 2;
-  const total = itens.length + 1; // ultima linha = ver todos os resultados
   const textoBusca = q.trim();
+  const termoTela = curto(termo.trim() || textoBusca);
+  const atalhos = res?.atalhos ?? [];
+  // com atalho no topo ou na busca aproximada, menos peças: a lista inteira cabe sem rolar
+  const itens = res ? res.itens.slice(0, res.aproximado ? 4 : atalhos.length ? 5 : 6) : [];
+  const semResultado = estado === 'pronto' && !!res && res.total === 0;
+  const mostraCarregando = estado === 'carregando' && !busca;
+  const erro = estado === 'erro' && !busca;
+
+  const ops: Op[] = [
+    ...atalhos.map((a) => ({ tipo: 'atalho' as const, a })),
+    ...itens.map((it) => ({ tipo: 'item' as const, it })),
+    ...(semResultado || erro || res?.aproximado ? [{ tipo: 'whats' as const }] : []),
+    ...(!semResultado ? [{ tipo: 'ver' as const }] : []),
+  ];
+  const total = ops.length;
 
   useEffect(() => {
     setAtivo(-1);
   }, [termo]);
+
+  // celular com o teclado aberto: a lista termina acima do teclado (o "Ver todos" preso no pé fica à vista)
+  useLayoutEffect(() => {
+    const el = lista.current;
+    if (!aberto || !el) return;
+    const vv = window.visualViewport;
+    const ajustar = () => {
+      const r = raiz.current?.getBoundingClientRect();
+      if (!r) return;
+      const fundo = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      const livre = Math.floor(fundo - r.bottom - 16);
+      el.style.maxHeight = `${Math.max(200, Math.min(460, livre))}px`;
+    };
+    ajustar();
+    vv?.addEventListener('resize', ajustar);
+    vv?.addEventListener('scroll', ajustar);
+    return () => {
+      vv?.removeEventListener('resize', ajustar);
+      vv?.removeEventListener('scroll', ajustar);
+    };
+  }, [aberto]);
 
   const carregar = () => {
     if (busca || estado === 'carregando') return;
@@ -96,10 +150,13 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     }
   }, []);
 
-  const irPeca = (h: string) => {
-    window.location.href = `/peca/${h}.html`;
+  const msgWhats = `Olá! Procuro: ${textoBusca}. Tem no pátio?`;
+  const escolher = (op: Op) => {
+    if (op.tipo === 'atalho') window.location.href = op.a.href;
+    else if (op.tipo === 'item') window.location.href = `/peca/${op.it.h}.html`;
+    else if (op.tipo === 'whats') window.open(linkWhats(msgWhats), '_blank', 'noopener');
+    else form.current?.requestSubmit();
   };
-  const verTodos = () => form.current?.requestSubmit();
 
   const onKey = (e: KE<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
@@ -110,10 +167,9 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       e.preventDefault();
       setAtivo((a) => (a <= 0 ? total - 1 : a - 1));
     } else if (e.key === 'Enter') {
-      if (aberto && ativo >= 0) {
+      if (aberto && ativo >= 0 && ops[ativo]) {
         e.preventDefault();
-        if (ativo < itens.length) irPeca(itens[ativo].h);
-        else verTodos();
+        escolher(ops[ativo]);
       }
       // sem opcao marcada: o formulario envia para /catalogo.html?q=
     } else if (e.key === 'Escape' && aberto) {
@@ -122,6 +178,12 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       setAtivo(-1);
     }
   };
+
+  // a opção marcada pelo teclado fica à vista dentro da lista
+  useEffect(() => {
+    if (ativo < 0) return;
+    document.getElementById(`${uid}-op-${ativo}`)?.scrollIntoView({ block: 'nearest' });
+  }, [ativo, uid]);
 
   const onBlur = (e: FE<HTMLDivElement>) => {
     if (!raiz.current?.contains(e.relatedTarget as Node | null)) {
@@ -134,8 +196,67 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     if (!textoBusca) e.preventDefault();
   };
 
-  const semResultado = estado === 'pronto' && termo.trim().length >= 2 && itens.length === 0;
-  const mostraCarregando = estado === 'carregando' && !busca;
+  const opcao = (op: Op, k: number) => {
+    const comum = {
+      id: `${uid}-op-${k}`,
+      role: 'option',
+      'aria-selected': ativo === k,
+      onMouseEnter: () => setAtivo(k),
+      onMouseDown: (e: { preventDefault: () => void }) => e.preventDefault(),
+      onClick: () => escolher(op),
+    } as const;
+    const on = ativo === k ? ' on' : '';
+    if (op.tipo === 'atalho') {
+      return (
+        <li key={`a-${op.a.href}`} {...comum} className={`sb-op sb-atalho${on}`}>
+          <span className="sb-foto sb-icone"><IconeSprite nome={op.a.tipo === 'sistema' ? 'garantia' : 'carro'} /></span>
+          <span className="sb-txt">
+            <b>{op.a.rot}</b>
+            <small>{op.a.sub}</small>
+          </span>
+          <span className="sb-ir"><IconeSeta /></span>
+        </li>
+      );
+    }
+    if (op.tipo === 'item') {
+      const it = op.it;
+      return (
+        <li key={it.id} {...comum} className={`sb-op${on}`}>
+          <span className="sb-foto">
+            {it.i && <img src={capaItem(it, 'E')} alt="" width={56} height={56} loading="lazy" decoding="async" />}
+          </span>
+          <span className="sb-txt">
+            <b>{it.n}</b>
+            <small>{carroAnos(it)}</small>
+          </span>
+          <span className="sb-preco">{moeda.format(it.p)}</span>
+        </li>
+      );
+    }
+    if (op.tipo === 'whats') {
+      return (
+        <li key="whats" {...comum} className={`sb-op sb-whats${on}`}>
+          <span className="sb-foto sb-icone"><IconeSprite nome="whats" /></span>
+          <span className="sb-txt">
+            <b>{semResultado || erro ? 'Não achamos no site. A gente procura no pátio' : 'Não achou? A gente procura no pátio'}</b>
+            <small>Chamar no WhatsApp</small>
+          </span>
+          <span className="sb-ir"><IconeSeta /></span>
+        </li>
+      );
+    }
+    const n = res?.total ?? 0;
+    return (
+      <li key="ver" {...comum} className={`sb-op sb-ver${on}`}>
+        <span>
+          {!res || erro ? `Buscar “${termoTela}” no catálogo`
+            : res.aproximado ? `Ver as ${n2(n)} peças parecidas`
+            : n === 1 ? 'Ver o resultado no catálogo' : `Ver todos os ${n2(n)} resultados`}
+        </span>
+        <IconeSeta />
+      </li>
+    );
+  };
 
   return (
     <div className="sb-raiz" ref={raiz} onBlur={onBlur}>
@@ -202,52 +323,26 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       </form>
 
       {aberto && (
-        <div className="sb-lista">
+        <div className="sb-lista" ref={lista}>
           {mostraCarregando && (
             <p className="sb-status" aria-live="polite"><span className="sb-giro" aria-hidden="true" />Carregando as peças…</p>
           )}
-          {estado === 'erro' && !busca && (
-            <p className="sb-status" aria-live="polite">Não deu para carregar a busca agora. Tente de novo em instantes.</p>
+          {erro && (
+            <p className="sb-status sb-status-erro" aria-live="polite">
+              <span>Não deu para carregar a busca agora.</span>
+              <button type="button" className="sb-tentar" onClick={carregar}>Tentar de novo</button>
+            </p>
+          )}
+          {res?.aproximado && (
+            <p className="sb-status sb-status-aprox" aria-live="polite">Nada exato com “{termoTela}”. Veja as parecidas:</p>
           )}
           {semResultado && (
-            <p className="sb-status" aria-live="polite">Nada com “{textoBusca}” ainda. Tente o modelo do carro ou o código gravado.</p>
+            <p className="sb-status" aria-live="polite">
+              Nada com “{termoTela}” no site.{!res?.carros.length && ' Tente o modelo do carro ou o código gravado.'}
+            </p>
           )}
           <ul id={listaId} role="listbox" aria-label="Sugestões de peças">
-            {itens.map((it, k) => (
-              <li
-                key={it.id}
-                id={`${uid}-op-${k}`}
-                role="option"
-                aria-selected={ativo === k}
-                className={`sb-op${ativo === k ? ' on' : ''}`}
-                onMouseEnter={() => setAtivo(k)}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => irPeca(it.h)}
-              >
-                <span className="sb-foto">
-                  {it.i && <img src={capaItem(it, 'E')} alt="" width={56} height={56} loading="lazy" decoding="async" />}
-                </span>
-                <span className="sb-txt">
-                  <b>{it.n}</b>
-                  <small>{[it.b, it.m].filter(Boolean).join(' ')}</small>
-                </span>
-                <span className="sb-preco">{moeda.format(it.p)}</span>
-              </li>
-            ))}
-            <li
-              id={`${uid}-op-${itens.length}`}
-              role="option"
-              aria-selected={ativo === itens.length}
-              className={`sb-op sb-ver${ativo === itens.length ? ' on' : ''}`}
-              onMouseEnter={() => setAtivo(itens.length)}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={verTodos}
-            >
-              <span>Ver todos os resultados para “{textoBusca}”</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
-            </li>
+            {ops.map(opcao)}
           </ul>
         </div>
       )}
