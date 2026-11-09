@@ -2,63 +2,72 @@
 // "Do mesmo carro": peças da MESMA GERAÇÃO do carro (anos que se sobrepõem), as da mesma família primeiro
 // (regra em lib/relacionadas.ts). Outros anos só completam quando faltam peças, num grupo à parte com o
 // nome dito ("Outros anos do Golf"), para nunca parecer que serve no mesmo carro.
-// Peça sem modelo: "Da mesma marca" (sem prometer o carro).
+// Peça sem modelo: "Mais peças Hyundai" (sem prometer o carro), com o subtítulo vindo de quem chama (sub).
+// No PC todos os cartões ficam à vista (grade, sem rolagem escondida e sem setas); no celular, trilho de deslizar.
+// Estilos globais presos a .dmc (sem o atributo de escopo em cada tag).
 import CartaoPeca from '../CartaoPeca.astro';
 import type { Peca } from '../../lib/dados';
 interface Props {
   titulo?: string;
-  /** "Volkswagen Golf" (ou "Outras peças Volvo" quando é só a marca) */
+  /** "Volkswagen Golf" (ou só a marca, quando a peça não tem modelo) */
   carro: string;
   /** só o modelo, para "Outros anos do Golf" */
   modelo?: string;
   /** anos da peça ("2014 a 2021"); vazio = sem ano */
   anos?: string;
+  /** subtítulo pronto (quando não é "do mesmo carro") */
+  sub?: string;
   link: string; total: number;
   pecas: Peca[];
   outras?: Peca[];
-  familia?: boolean;
   semAno?: boolean;
 }
-const { titulo = 'Do mesmo carro', carro, modelo = '', anos = '', link, total, pecas, outras = [], familia = false, semAno = false } = Astro.props;
-const familiaTxt = familia ? ' Primeiro as da mesma família da peça.' : '';
-const sub = semAno
-  ? `${carro}. Esta peça não tem o ano no anúncio: confira o ano em cada uma.`
-  : anos && pecas.length
-    ? `${carro} da mesma geração desta peça (${anos}).${familiaTxt}`
-    : anos
-      ? `Agora não há outras peças do ${carro} de ${anos}.`
-      : `${carro}.${familiaTxt}`;
+const { titulo = 'Do mesmo carro', carro, modelo = '', anos = '', sub: subPronto, link, total, pecas, outras = [], semAno = false } = Astro.props;
+const sub = subPronto
+  ?? (semAno
+    ? `${carro}. Esta peça não tem o ano no anúncio: confira o ano em cada uma.`
+    : anos && pecas.length
+      ? `Peças do ${carro} de ${anos}, a mesma geração desta.`
+      : anos
+        ? `Agora não há outras peças do ${carro} de ${anos}.`
+        : `Peças do ${carro}.`);
 ---
-<section class="secao faixa">
+<section class="secao dmc">
   <div class="moldura">
-    <div class="cabeca linha">
+    <div class="dmc-cabeca">
       <div>
         <h2 class="titulo-secao">{titulo}</h2>
-        <p class="sub">{sub}</p>
+        <p class="dmc-sub">{sub}</p>
       </div>
       <a class="botao botao-linha" href={link}>Ver as {total} peças</a>
     </div>
-    {pecas.length > 0 && <div class="trilho">{pecas.map((x) => <CartaoPeca p={x} />)}</div>}
+    {pecas.length > 0 && <div class="trilho dmc-grade">{pecas.map((x) => <CartaoPeca p={x} />)}</div>}
     {outras.length > 0 && (
-      <div class="outros-anos">
-        <div class="outros-cabeca">
-          <h3 class="outros-titulo">Outros anos do {modelo || carro}</h3>
-          <p class="sub">Anos diferentes dos desta peça{anos ? ` (${anos})` : ''}: confira o ano no cartão antes de pedir.</p>
-        </div>
-        <div class="trilho">{outras.map((x) => <CartaoPeca p={x} />)}</div>
+      <div class="dmc-outros">
+        <h3 class="dmc-outros-titulo">Outros anos do {modelo || carro}</h3>
+        <p class="dmc-sub">Anos diferentes dos desta peça{anos ? ` (${anos})` : ''}: confira o ano no cartão antes de pedir.</p>
+        <div class="trilho dmc-grade">{outras.map((x) => <CartaoPeca p={x} />)}</div>
       </div>
     )}
   </div>
 </section>
 
-<style>
-  .faixa { background: var(--bg-2); }
-  .cabeca { display: grid; gap: 16px; margin-bottom: 24px; align-items: end; }
-  @media (min-width: 768px) { .cabeca.linha { grid-template-columns: 1fr auto; } }
-  .titulo-secao { margin: 0; }
-  .sub { margin: 6px 0 0; font-size: 15px; color: var(--ink-2); text-wrap: pretty; }
+<style is:global>
+  .dmc { background: var(--bg-2); }
+  .dmc .dmc-cabeca { display: grid; gap: 16px; margin-bottom: 20px; align-items: end; }
+  @media (min-width: 768px) { .dmc .dmc-cabeca { grid-template-columns: 1fr auto; } }
+  /* H2 da peça com teto: nunca maior que o nome da peça (o H1) */
+  .dmc .titulo-secao { margin: 0; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.05; }
+  .dmc .dmc-sub { margin: 6px 0 0; font-size: 15px; color: var(--ink-2); text-wrap: pretty; }
   /* outra geração: separada por uma linha e com título próprio, nunca colada na mesma fila */
-  .outros-anos { margin-top: 18px; padding-top: 26px; border-top: 1px solid var(--line); }
-  .outros-cabeca { margin-bottom: 14px; }
-  .outros-titulo { margin: 0; font-stretch: 84%; font-weight: 800; font-size: 21px; line-height: 1.15; }
+  .dmc .dmc-outros { margin-top: 18px; padding-top: 26px; border-top: 1px solid var(--line); }
+  .dmc .dmc-outros .dmc-sub { margin-bottom: 14px; }
+  .dmc .dmc-outros-titulo { margin: 0; font-stretch: 84%; font-weight: 800; font-size: 21px; line-height: 1.15; }
+  /* PC: todos os cartões à vista. 6 numa fila só no PC largo; de 1024 a 1279 px, 3 por fila */
+  @media (min-width: 1024px) {
+    .dmc .dmc-grade { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; scroll-snap-type: none; }
+  }
+  @media (min-width: 1280px) {
+    .dmc .dmc-grade { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  }
 </style>

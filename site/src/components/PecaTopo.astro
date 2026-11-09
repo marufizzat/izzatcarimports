@@ -1,7 +1,9 @@
 ---
-// Topo da pagina da peca: galeria (deslizar, miniaturas, zoom, tela cheia) + compra.
-// Ordem da compra (pensada para vender, no PC e no celular): nome, serve no seu carro, preco forte,
-// estoque real (peca unica), botao principal, e a confianca logo abaixo. Depois: codigo, perguntas, compartilhar.
+// Topo da pagina da peca: galeria (deslizar, miniaturas, lupa, tela cheia) + compra.
+// Ordem da compra (a mesma no PC e no celular, e a mesma no HTML e na tela): nome e carro, preço forte com o estoque
+// real (peça única), os botões e, logo depois, o "Serve no seu carro?" e a confiança. Depois: código, perguntas,
+// compartilhar. Assim preço e botão sobem para a 1ª tela do celular; a barra fixa (pages/peca/[slug].astro) só aparece
+// quando preço e botões saíram da tela (nunca dois preços à vista).
 // Gatilhos so com dado de verdade: estoque = p.q (ML), reputacao = resumo().reputacao, CDV/nota/garantia do site.
 import type { Peca } from '../lib/dados';
 import { foto, brl, whatsUrl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
@@ -10,16 +12,19 @@ import SeloReputacao from './SeloReputacao.astro';
 import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
 import Compartilhar from './peca/Compartilhar.astro';
 import Acordeao from './ui/Acordeao.astro';
+import { nomeModelos, modelosDa } from '../lib/meuCarro';
 interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
 const { p, nivel = 'h1' } = Astro.props;
 const Titulo = nivel;
-const carro = [p.b, p.m].filter(Boolean).join(' ');
+// todos os carros da peça ("Volvo S60 e XC60" quando ela serve nos dois), como no "Serve em" da ficha
+const carro = nomeModelos(p);
 const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
 const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
 // Mensagem do WhatsApp: sem carro salvo usa "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
 const cabeca = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n`;
-const semCarro = carro ? `Meu carro é ${carro} ano ____. ` : '';
+// peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
+const semCarro = !p.b ? '' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____. ` : `Meu carro é ${carro} ano ____. `;
 const cauda = 'Serve e ainda tem?';
 const msg = cabeca + semCarro + cauda;
 // só código com cara de código (lixo da extração, como "Par", não vira caixa com "Copiar")
@@ -33,20 +38,20 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
   ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'E') })),
 ];
 // Objeções da compra, respondidas com o que o site ja diz (inicio, garantia, envios, como comprar). Nada novo.
+// A promessa "a gente confere antes" fica na lista dos botões e no banner do fim (não se repete aqui).
 const perguntas = [
   {
     pergunta: 'Como sei que serve no meu carro?',
     resposta: [
       carro ? `Esta peça é ${p.m ? 'do' : 'de'} ${carro}${anos ? `, ${anos}` : ''}.` : '',
-      cod ? `Compare o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.` : '',
-      'Na dúvida, mande o modelo e o ano do seu carro no WhatsApp que a gente confere na peça antes de você comprar.',
+      cod ? `Compare o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.`
+          : 'Ela não tem código gravado: para conferir, mande o modelo e o ano do seu carro no WhatsApp.',
     ].filter(Boolean).join(' '),
     link: cod ? { href: '#como-achar-codigo', texto: 'Onde achar o código' } : undefined,
   },
   {
     pergunta: 'E se não servir?',
-    resposta: 'A gente confere antes para isso não acontecer: mande o modelo e o ano do seu carro, ou a foto do código, no WhatsApp antes de fechar. '
-      + 'E toda peça tem 90 dias de garantia: se der problema, chame no WhatsApp com o número do pedido e fotos, que a gente avalia o caso e resolve com troca ou devolução. '
+    resposta: 'Toda peça tem 90 dias de garantia: se der problema, chame no WhatsApp com o número do pedido e fotos, que a gente avalia o caso e resolve com troca ou devolução. '
       + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
     link: { href: '/garantia.html', texto: 'Ver garantia e trocas' },
   },
@@ -64,7 +69,8 @@ const perguntas = [
 <div class="peca-topo">
   <div class="galeria" data-galeria data-titulo={p.n}>
     <div class="galeria-palco" data-palco>
-      <ul class="galeria-trilho" data-trilho>
+      {/* o trilho é a parada do teclado da galeria: setas trocam a foto, Enter abre a tela cheia (script abaixo) */}
+      <ul class="galeria-trilho" data-trilho tabindex="0" aria-label="Fotos da peça: setas trocam, Enter amplia">
         {fotos.map((f, i) => (
           <li><img class:list={[{ estudio: f.e }]} src={f.g} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
                    loading={i === 0 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} decoding="async" /></li>
@@ -78,7 +84,7 @@ const perguntas = [
       <div class="galeria-pontos" aria-hidden="true">
         {fotos.map((_, i) => <i class:list={[{ on: i === 0 }]} data-ponto />)}
       </div>
-      <div class="galeria-miniaturas" aria-label="Fotos da peça">
+      <div class="galeria-miniaturas" role="group" aria-label="Miniaturas" data-minis>
         {fotos.map((f, i) => (
           <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
             <img class:list={[{ estudio: f.e }]} src={f.m} alt="" width="72" height="72" loading="lazy" decoding="async" />
@@ -91,9 +97,8 @@ const perguntas = [
   <div class="compra">
     <div class="compra-cabeca">
       <Titulo class="compra-nome">{p.n}</Titulo>
-      <p class="compra-titulo-ml">{p.t}</p>
+      {p.b && <p class="compra-carro"><b>{carro}</b>{anos && ` · ${anos}`}</p>}
     </div>
-    <FaixaMeuCarro b={p.b} m={p.m} y={p.y} ms={p.ms} ys={p.ys} />
 
     <div class="compra-caixa">
       <div class="compra-preco-linha">
@@ -101,9 +106,9 @@ const perguntas = [
         {q === 1 && <span class="estoque estoque-unica"><i aria-hidden="true"></i>Peça única</span>}
         {q > 1 && <span class="estoque"><i aria-hidden="true"></i>{q} em estoque</span>}
       </div>
-      {q === 1 && <p class="estoque-txt">Só 1 em estoque. Peça usada: quando vende, acabou.</p>}
+      {q === 1 && <p class="estoque-txt">Peça usada: quando vende, acabou.</p>}
       <div class="compra-botoes" data-compra-botoes>
-        <a class="botao botao-laranja" href={whatsUrl(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir pelo WhatsApp</a>
+        <a class="botao botao-laranja" href={whatsUrl(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir no WhatsApp</a>
         <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
       </div>
       <ul class="compra-facil">
@@ -113,12 +118,15 @@ const perguntas = [
       </ul>
     </div>
 
+    {/* peça só com a marca: a linha do carro, lá em cima, já diz tudo (sem faixa repetida) */}
+    {p.m && <FaixaMeuCarro b={p.b} m={p.m} y={p.y} ms={p.ms} ys={p.ys} />}
+
     <div class="confianca">
       <ul class="confianca-itens" aria-label="Garantias da compra">
-        <li><a href="/garantia.html"><img src="/arte/v2/selo-garantia.webp" alt="" width="36" height="36" decoding="async" /><span><b>90 dias de garantia</b><small class="confianca-link">Ver como funciona</small></span></a></li>
-        <li><span><img src="/arte/v2/selo-nota-fiscal.webp" alt="" width="36" height="36" decoding="async" /><span><b>Nota fiscal</b><small>Em toda venda</small></span></span></li>
-        <li><span><img src="/arte/v2/selo-cdv.webp" alt="" width="36" height="36" decoding="async" /><span><b>Desmanche credenciado</b><small>Detran-RS · CDV nº 01060</small></span></span></li>
-        <li><span><img src="/arte/v2/selo-envio.webp" alt="" width="36" height="36" decoding="async" /><span><b>Envio para todo o Brasil</b><small>Com código de rastreio</small></span></span></li>
+        <li><a href="/garantia.html"><img src="/arte/v2/selo-garantia.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>90 dias de garantia</b><small class="confianca-link">Ver como funciona</small></span></a></li>
+        <li><span><img src="/arte/v2/selo-nota-fiscal.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>Nota fiscal</b><small>Em toda venda</small></span></span></li>
+        <li><span><img src="/arte/v2/selo-cdv.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>Desmanche credenciado</b><small>Detran-RS · <span class="sem-quebra">CDV nº 01060</span></small></span></span></li>
+        <li><span><img src="/arte/v2/selo-envio.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>Envio para todo o Brasil</b><small>Com código de rastreio</small></span></span></li>
       </ul>
       <SeloReputacao variante="linha" />
     </div>
@@ -164,57 +172,147 @@ const perguntas = [
   atualizarWhats(lerMeuCarro());
   window.addEventListener(EVENTO, (e) => atualizarWhats((e as CustomEvent<MeuCarro | null>).detail ?? null));
 
-  // Galeria em tela cheia (React): a lista de fotos ela lê do próprio trilho ([data-trilho] img).
-  let telaCheia: Promise<void> | null = null;
-  function montarTelaCheia(titulo: string) {
-    telaCheia ??= (async () => {
-      const [{ createElement }, { createRoot }, { default: GaleriaTelaCheia }] = await Promise.all([
-        import('react'), import('react-dom/client'), import('./ui/GaleriaTelaCheia'),
-      ]);
-      const raiz = document.createElement('div');
-      document.body.append(raiz);
-      createRoot(raiz).render(createElement(GaleriaTelaCheia, { titulo }));
-    })();
-  }
+  // Galeria em tela cheia: módulo pequeno e sem React (ui/GaleriaTelaCheia.ts). Pré-busca quando o navegador folga
+  // e no 1º toque na foto; o HTML dela só é montado na 1ª vez que abre.
+  let telaCheia: Promise<typeof import('./ui/GaleriaTelaCheia')> | null = null;
+  const carregarTelaCheia = () => (telaCheia ??= import('./ui/GaleriaTelaCheia'));
 
   document.querySelectorAll<HTMLElement>('[data-galeria]').forEach((g) => {
     const trilho = g.querySelector<HTMLElement>('[data-trilho]')!;
     const palco = g.querySelector<HTMLElement>('[data-palco]')!;
     const cont = g.querySelector<HTMLElement>('[data-contador]');
+    const faixa = g.querySelector<HTMLElement>('[data-minis]');
     const minis = [...g.querySelectorAll<HTMLButtonElement>('[data-ir]')];
     const pontos = [...g.querySelectorAll<HTMLElement>('[data-ponto]')];
-    const total = trilho.children.length;
-    const marcar = () => {
-      const i = Math.round(trilho.scrollLeft / trilho.clientWidth);
-      if (cont) cont.textContent = `${i + 1} / ${total}`;
-      minis.forEach((b, j) => b.setAttribute('aria-current', String(i === j)));
-      pontos.forEach((d, j) => d.classList.toggle('on', i === j));
-      // só rola as miniaturas quando elas aparecem (no celular ficam escondidas; rolar ali mexia na página)
-      if (minis[i]?.offsetParent) minis[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    };
-    trilho.addEventListener('scroll', () => requestAnimationFrame(marcar), { passive: true });
-    // toque/clique na foto abre a galeria em tela cheia (GaleriaTelaCheia, em React; pinça lá para ampliar)
-    trilho.addEventListener('click', () => {
-      const i = Math.round(trilho.scrollLeft / trilho.clientWidth);
-      (window as any).__galeriaPendente = i; // se a galeria ainda nao montou, ela abre ao montar
-      window.dispatchEvent(new CustomEvent('abrir-galeria', { detail: { indice: i } }));
-      montarTelaCheia(g.dataset.titulo || '');
-    });
-    // monta quando o navegador folgar (como o client:idle das ilhas), sem ilha do Astro na página
-    if ('requestIdleCallback' in window) requestIdleCallback(() => montarTelaCheia(g.dataset.titulo || ''));
-    else setTimeout(() => montarTelaCheia(g.dataset.titulo || ''), 200);
-    minis.forEach((b) => b.addEventListener('click', () =>
-      trilho.scrollTo({ left: Number(b.dataset.ir) * trilho.clientWidth, behavior: 'smooth' })));
+    const fotos = [...trilho.querySelectorAll<HTMLImageElement>('img')];
+    const total = fotos.length;
+    const titulo = g.dataset.titulo || '';
+    const indice = () => Math.max(0, Math.min(total - 1, Math.round(trilho.scrollLeft / (trilho.clientWidth || 1))));
+    let atual = 0;
+    const calmo = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    // computador: lupa que segue o mouse (só com mouse de verdade)
+    // miniaturas: uma parada só no Tab (a da foto à vista); as setas andam entre elas
+    minis.forEach((b, j) => { b.tabIndex = j === 0 ? 0 : -1; });
+    // no computador a faixa aparece na 1ª tela: as 6 primeiras carregam já (no celular ela fica escondida e nem baixa)
+    if (faixa && window.matchMedia('(min-width: 960px)').matches) {
+      minis.slice(0, 6).forEach((b) => { const im = b.querySelector('img'); if (im) im.loading = 'eager'; });
+    }
+    // degradê nas pontas da faixa quando há mais miniaturas escondidas
+    const pontas = () => {
+      if (!faixa) return;
+      const fim = faixa.scrollWidth - faixa.clientWidth;
+      faixa.classList.toggle('mais-esq', faixa.scrollLeft > 2);
+      faixa.classList.toggle('mais-dir', faixa.scrollLeft < fim - 2);
+    };
+
+    // foto à vista mudou: contador, pontinhos, miniatura ativa (só a faixa rola; scrollIntoView mexia na página)
+    const marcar = (i: number) => {
+      if (i === atual) return;
+      atual = i;
+      lupaFim();
+      if (cont) cont.textContent = `${i + 1} / ${total}`;
+      pontos.forEach((d, j) => d.classList.toggle('on', i === j));
+      minis.forEach((b, j) => { b.setAttribute('aria-current', String(i === j)); b.tabIndex = i === j ? 0 : -1; });
+      const m = minis[i];
+      if (faixa && m && faixa.clientWidth) {
+        const esq = m.offsetLeft - 8, dir = m.offsetLeft + m.offsetWidth + 8 - faixa.clientWidth;
+        const como = calmo.matches ? 'instant' : 'smooth';
+        if (esq < faixa.scrollLeft) faixa.scrollTo({ left: esq, behavior: como });
+        else if (dir > faixa.scrollLeft) faixa.scrollTo({ left: dir, behavior: como });
+      }
+    };
+    const ir = (i: number, suave = true) => {
+      const k = Math.max(0, Math.min(total - 1, i));
+      trilho.scrollTo({ left: k * trilho.clientWidth, behavior: suave && !calmo.matches ? 'smooth' : 'instant' });
+    };
+    // um cálculo por quadro, no máximo (o evento de rolagem chega várias vezes por quadro)
+    let agendado = false;
+    trilho.addEventListener('scroll', () => {
+      if (agendado) return;
+      agendado = true;
+      requestAnimationFrame(() => { agendado = false; marcar(indice()); });
+    }, { passive: true });
+
+    // toque/clique na foto (ou Enter no trilho) abre a galeria em tela cheia (pinça e zoom lá). Ao fechar, a página
+    // fica na mesma foto em que a pessoa parou, e o foco volta ao trilho.
+    const abrir = () => {
+      const i = indice();
+      carregarTelaCheia().then((m) => m.abrirGaleria({
+        fotos: fotos.map((f) => f.getAttribute('src') || ''),
+        minis: minis.map((b) => b.querySelector('img')?.getAttribute('src') || ''),
+        titulo, indice: i, foco: trilho,
+        aoFechar: (k) => { if (k !== indice()) ir(k, false); },
+      })).catch(() => {});
+    };
+    trilho.addEventListener('pointerdown', () => { carregarTelaCheia(); }, { passive: true });
+    trilho.addEventListener('click', abrir);
+    trilho.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(); }
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); ir(indice() + (e.key === 'ArrowRight' ? 1 : -1)); }
+      else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); ir(e.key === 'Home' ? 0 : total - 1); }
+    });
+    // pré-busca depois da carga e quando o navegador folgar (só baixa o módulo; não monta nada). Antes do "load" ela
+    // disputava a rede com a foto grande da 1ª tela no 4G lento.
+    const preBuscar = () => {
+      if ('requestIdleCallback' in window) requestIdleCallback(() => { carregarTelaCheia(); }, { timeout: 4000 });
+      else setTimeout(() => { carregarTelaCheia(); }, 800);
+    };
+    if (document.readyState === 'complete') preBuscar();
+    else window.addEventListener('load', preBuscar, { once: true });
+
+    minis.forEach((b, j) => b.addEventListener('click', () => ir(j)));
+    faixa?.addEventListener('keydown', (e) => {
+      const j = minis.indexOf(document.activeElement as HTMLButtonElement);
+      if (j < 0) return;
+      const k = e.key === 'ArrowRight' ? j + 1 : e.key === 'ArrowLeft' ? j - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? total - 1 : -2;
+      if (k === -2 || !minis[k]) return;
+      e.preventDefault();
+      minis[k].focus();
+      ir(k);
+    });
+    if (faixa) {
+      let agFaixa = false;
+      faixa.addEventListener('scroll', () => { if (!agFaixa) { agFaixa = true; requestAnimationFrame(() => { agFaixa = false; pontas(); }); } }, { passive: true });
+      requestAnimationFrame(pontas);
+    }
+
+    // computador: lupa que segue o mouse, só na foto à vista. Um desenho por quadro; a escala respeita o tamanho real
+    // da foto (a capa de estúdio tem 1000 px: passar de 1,5x só borrava, ainda mais em tela retina).
+    let lupaImg: HTMLImageElement | null = null;
+    let mx = 0, my = 0, lupaAgendada = false;
+    function lupaFim() {
+      if (!lupaImg) return;
+      lupaImg.classList.remove('lupa-on');
+      lupaImg.style.removeProperty('transform-origin');
+      lupaImg.style.removeProperty('--lupa');
+      lupaImg = null;
+      palco.classList.remove('lupa');
+    }
+    const escala = (im: HTMLImageElement) => {
+      if (im.classList.contains('estudio')) return 1.5;
+      const r = im.getBoundingClientRect();
+      const s = getComputedStyle(im);
+      const caixaL = r.width - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight);
+      const caixaA = r.height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
+      if (!im.naturalWidth || caixaL <= 0) return 2;
+      const k = Math.min(1, caixaL / im.naturalWidth, caixaA / im.naturalHeight); // object-fit: scale-down
+      return Math.max(1.6, Math.min(2.2, 1 / k));
+    };
+    const lupaDesenhar = () => {
+      lupaAgendada = false;
+      const im = fotos[atual];
+      if (!im) return;
+      const r = trilho.getBoundingClientRect();
+      if (lupaImg !== im) { lupaFim(); lupaImg = im; im.style.setProperty('--lupa', String(escala(im))); im.classList.add('lupa-on'); palco.classList.add('lupa'); }
+      im.style.transformOrigin = `${((mx - r.left) / r.width) * 100}% ${((my - r.top) / r.height) * 100}%`;
+    };
     if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
       palco.addEventListener('pointermove', (e) => {
-        const r = palco.getBoundingClientRect();
-        palco.style.setProperty('--zx', `${((e.clientX - r.left) / r.width) * 100}%`);
-        palco.style.setProperty('--zy', `${((e.clientY - r.top) / r.height) * 100}%`);
-        palco.classList.add('lupa');
-      });
-      palco.addEventListener('pointerleave', () => palco.classList.remove('lupa'));
+        if (e.pointerType !== 'mouse') return;
+        mx = e.clientX; my = e.clientY;
+        if (!lupaAgendada) { lupaAgendada = true; requestAnimationFrame(lupaDesenhar); }
+      }, { passive: true });
+      palco.addEventListener('pointerleave', lupaFim);
     }
   });
 
@@ -232,22 +330,34 @@ const perguntas = [
      componente): sem o atributo de escopo em cada tag da galeria e da compra, a página da peça fica mais leve. */
   .peca-topo { display: grid; gap: 22px; }
   @media (min-width: 960px) { .peca-topo { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 56px; align-items: start; } }
+  /* tablet em pé: a foto quadrada de 700 px empurrava preço e botões para a 2ª tela. Coluna única mais estreita e
+     centrada (foto, nome, preço e botões na 1ª tela); deitado, a foto não passa de 70% da altura da tela. */
+  @media (min-width: 600px) and (max-width: 959px) {
+    .peca-topo { width: min(100%, 560px); margin-inline: auto; }
+    .galeria { width: min(100%, 70vh); margin-inline: auto; }
+  }
   .galeria { min-width: 0; }
   /* no computador a foto acompanha a leitura da coluna de compra */
   @media (min-width: 960px) { .galeria { position: sticky; top: 100px; } }
-  .galeria-palco { position: relative; border-radius: 22px; background: var(--plate); overflow: hidden; box-shadow: var(--shadow-1); --zx: 50%; --zy: 50%; }
-  .galeria-trilho { list-style: none; margin: 0; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; aspect-ratio: 1; }
+  .galeria-palco { position: relative; border-radius: 22px; background: var(--plate); overflow: hidden; box-shadow: var(--shadow-1); }
+  .galeria-trilho { list-style: none; margin: 0; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; aspect-ratio: 1; border-radius: inherit; }
   .galeria-trilho::-webkit-scrollbar { display: none; }
-  .galeria-trilho li { flex: 0 0 100%; scroll-snap-align: center; display: grid; place-items: center; overflow: hidden; }
-  .galeria-trilho img { width: 100%; height: 100%; object-fit: contain; padding: 6%; cursor: zoom-in; transition: transform .18s ease-out; }
+  /* teclado: o anel por dentro do palco (o overflow do palco cortava o de fora) */
+  .galeria-trilho:focus-visible { outline: 3px solid var(--accent-text); outline-offset: -4px; box-shadow: none; border-radius: 22px; }
+  /* flex, não grid: no grid a altura 100% da foto não resolvia e a foto em pé ficava mais alta que o palco (cortava embaixo) */
+  .galeria-trilho li { flex: 0 0 100%; height: 100%; min-width: 0; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .galeria-trilho img { width: 100%; height: 100%; max-height: 100%; min-width: 0; object-fit: contain; padding: 6%; cursor: zoom-in; transition: transform .18s ease-out; }
+  /* fotos do anúncio: inteiras e nunca esticadas além do tamanho real (foto pequena ficava borrada) */
+  .galeria-trilho img:not(.estudio) { object-fit: scale-down; }
   /* capa de estúdio já tem o próprio fundo: ocupa o palco inteiro, sem caixa dentro da caixa */
   .galeria-trilho img.estudio { padding: 0; object-fit: cover; }
-  /* lupa: a foto amplia onde o mouse está (só no computador) */
-  .galeria-palco.lupa .galeria-trilho img { transform: scale(2.2); transform-origin: var(--zx) var(--zy); transition: none; }
+  /* lupa: só a foto à vista amplia, no ponto do mouse (só no computador; escala e ponto vêm do script) */
+  .galeria-trilho img.lupa-on { transform: scale(var(--lupa, 2)); }
   .galeria-contador { position: absolute; right: 14px; bottom: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 650;
-                      background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); z-index: 1; }
+                      background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); z-index: 1; pointer-events: none; }
+  html.leve .galeria-contador { backdrop-filter: none; background: rgb(29 29 31 / .86); }
   .galeria-dica { position: absolute; left: 14px; bottom: 14px; z-index: 1; padding: 6px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
-                  background: rgb(255 255 255 / .9); color: #1d1d1f; box-shadow: var(--shadow-1); pointer-events: none; }
+                  background: rgb(255 255 255 / .9); color: #1d1d1f; box-shadow: var(--shadow-1); pointer-events: none; transition: opacity .2s; }
   .galeria-dica-toque { display: none; }
   .galeria-palco.lupa .galeria-dica-mouse { opacity: 0; }
   @media (hover: none) {
@@ -257,10 +367,18 @@ const perguntas = [
   @media (hover: hover) and (pointer: fine) {
     .galeria-dica-toque { display: none; }
   }
-  .galeria-miniaturas { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
-  .galeria-miniaturas button { flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--plate);
-                               box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; transition: box-shadow .2s; }
-  .galeria-miniaturas button[aria-current="true"] { box-shadow: inset 0 0 0 2.5px var(--accent); }
+  .galeria-miniaturas { position: relative; display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; padding: 3px; }
+  .galeria-miniaturas::-webkit-scrollbar { display: none; }
+  /* mais miniaturas escondidas: a ponta some num degradê (antes a última aparecia cortada, sem aviso) */
+  .galeria-miniaturas.mais-dir { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent); }
+  .galeria-miniaturas.mais-esq { -webkit-mask-image: linear-gradient(90deg, transparent, #000 56px); mask-image: linear-gradient(90deg, transparent, #000 56px); }
+  .galeria-miniaturas.mais-esq.mais-dir { -webkit-mask-image: linear-gradient(90deg, transparent, #000 56px, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(90deg, transparent, #000 56px, #000 calc(100% - 56px), transparent); }
+  .galeria-miniaturas button { flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--surface-2);
+                               box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; outline: 2.5px solid transparent; outline-offset: -2.5px;
+                               transition: outline-color .2s; }
+  /* a ativa: anel por cima da foto (o box-shadow ficava por baixo da capa de estúdio) */
+  .galeria-miniaturas button[aria-current="true"] { outline-color: var(--accent); }
+  .galeria-miniaturas button:focus-visible { outline: 3px solid var(--accent-text); outline-offset: -3px; box-shadow: none; }
   .galeria-miniaturas img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
   .galeria-miniaturas img.estudio { padding: 0; object-fit: cover; }
   /* celular: pontinhos no lugar das miniaturas (a foto grande + nome + preço + botão cabem na primeira tela) */
@@ -271,14 +389,17 @@ const perguntas = [
     .galeria-miniaturas { display: none; }
     .galeria-pontos { display: flex; }
   }
+  @media (prefers-reduced-motion: reduce) { .galeria-pontos i, .galeria-miniaturas button, .galeria-dica, .galeria-trilho img { transition: none; } }
 
   .compra { min-width: 0; display: grid; gap: 16px; align-content: start; }
   .compra-cabeca { display: grid; gap: 8px; }
   .compra-nome { overflow-wrap: anywhere; margin: 0; font-stretch: 84%; font-weight: 800; font-size: clamp(28px, 3.2vw, 42px); line-height: 1.04; letter-spacing: -.01em; text-wrap: balance; }
-  .compra-titulo-ml { margin: 0; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); overflow-wrap: anywhere; }
+  /* o carro da peça logo abaixo do nome (o título cru do ML saiu daqui: repetia o nome; ele está na ficha) */
+  .compra-carro { margin: 0; font-size: 15.5px; line-height: 1.35; color: var(--ink-2); overflow-wrap: anywhere; }
+  .compra-carro b { font-weight: 680; color: var(--ink); }
 
   /* preço + estoque real + botões: o centro da decisão */
-  .compra-caixa { display: grid; gap: 10px; margin-top: 4px; }
+  .compra-caixa { display: grid; gap: 10px; margin-top: 2px; }
   .compra-preco-linha { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
   .compra-preco { margin: 0; font-stretch: 80%; font-weight: 850; font-size: 50px; line-height: 1; letter-spacing: -.01em; }
   .compra-preco small { font-size: 21px; font-weight: 700; color: var(--ink-2); }
@@ -304,20 +425,26 @@ const perguntas = [
   .confianca-itens small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--ink-3); }
   .confianca-itens .confianca-link { color: var(--ink-2); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
   .confianca-itens a:hover b { color: var(--accent-text); }
+  .confianca .sem-quebra { white-space: nowrap; }
   .confianca .rep-linha { padding-top: 14px; border-top: 1px solid var(--line); }
-  /* celular estreito: uma coluna (em duas, os títulos quebravam em 3 linhas) */
+  /* celular estreito e PC de 960 a 1199 px (coluna de compra estreita): uma coluna (em duas, os títulos quebravam
+     em 3 ou 4 linhas e a grade saía torta) */
+  @media (max-width: 559px), (min-width: 960px) and (max-width: 1199px) {
+    .confianca-itens { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  }
   @media (max-width: 559px) {
     .confianca { gap: 12px; padding: 14px 14px 14px 12px; }
-    .confianca-itens { grid-template-columns: minmax(0, 1fr); gap: 10px; }
     .confianca-itens img { width: 32px; height: 32px; }
   }
 
   .compra-cod { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 12px 12px 16px; border-radius: 14px;
                 background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
   .compra-cod span { display: block; font-size: 12.5px; color: var(--ink-3); }
-  .compra-cod b { font-size: 18px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+  .compra-cod b { display: block; font-size: 18px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
   .compra-cod > div { min-width: 0; }
   .compra-cod .botao { --h: 40px; padding: 0 14px; font-size: 14px; }
+  /* o link numa linha própria: o código acima é bloco (colado, "A045591 Onde fica..." lia como uma coisa só).
+     inline-block e sem largura fixa: no celular de 320 px ele quebra em vez de alargar a coluna */
   .compra-ajuda { display: inline-block; margin-top: 4px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
   .compra-ajuda:hover { color: var(--ink); }
 
@@ -326,6 +453,7 @@ const perguntas = [
 
   @media (max-width: 959px) {
     .compra { gap: 14px; }
+    .compra-cabeca { gap: 6px; }
     .compra-nome { font-size: clamp(26px, 7vw, 34px); }
     .compra-preco { font-size: 44px; }
     .compra-preco small { font-size: 19px; }

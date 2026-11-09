@@ -471,7 +471,7 @@ def _blocos_texto(linhas):
     def texto(t):
         t = acentuar_texto(t)
         t = re.sub(r"\b((?:19|20)\d{2}) at[ée] \1\b", r"\1", t)
-        return _limpar_frases(_anos_em_faixa(t))
+        return _sem_trechos_dobrados(_limpar_frases(_anos_em_faixa(t)))
 
     grupos = []
     for tipo, t in itens:
@@ -486,6 +486,24 @@ def _blocos_texto(linhas):
         else:
             grupos.append([tag, [t]])
     return [[tag, [" ".join(ts)]] if tag == "p" else [tag, ts] for tag, ts in grupos]
+
+
+_ANO = r"(?:19|20)\d{2}"
+_FAIXA = re.compile(rf"\b({_ANO})\s*(?:-|–|/|\ba\b|at[ée])\s*({_ANO})\b")
+
+
+def _sem_trechos_dobrados(t):
+    """O modelo de anuncio repete o carro e os anos: "Gol Voyage G5 Gol Voyage G5 2008-2012 (2008 até 2012)",
+    "... 2008-2012 ano modelo 2008 até 2012". Fica uma vez so: "Gol Voyage G5 2008 a 2012"."""
+    ant = None
+    while ant != t:               # trecho de 1 a 6 palavras repetido colado ("A B C A B C" -> "A B C")
+        ant = t
+        t = re.sub(r"(?<![\wÀ-ÿ])((?:[\wÀ-ÿ.+/-]+\s+){0,5}[\wÀ-ÿ.+/-]+)\s+\1(?![\wÀ-ÿ])", r"\1", t, flags=re.I)
+    t = _FAIXA.sub(lambda m: f"{m.group(1)} a {m.group(2)}" if m.group(1) != m.group(2) else m.group(1), t)
+    # a mesma faixa de anos dita de novo logo depois: "(2008 a 2012)", "ano modelo 2008 a 2012"
+    t = re.sub(rf"\b({_ANO} a {_ANO})\s*\(\s*\1\s*\)", r"\1", t)
+    t = re.sub(rf"\b({_ANO} a {_ANO})([^.;]{{0,12}}?)\s*,?\s*(?:ano(?:s)?(?: modelo)?|modelo)?\s*\1\b", r"\1\2", t)
+    return re.sub(r"\s{2,}", " ", t).strip()
 
 
 _PALAVRA_VAZIA = set("""a o as os e de do da dos das em no na nos nas ao aos um uma com sem se nao ou nem por
