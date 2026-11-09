@@ -438,8 +438,9 @@ const perguntas = [
   .compra-cod b { display: block; font-size: 18px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
   .compra-cod > div { min-width: 0; }
   .compra-cod .botao { --h: 40px; padding: 0 14px; font-size: 14px; }
-  /* o link numa linha própria (colado ao código, "A045591 Onde fica..." lia como uma coisa só) */
-  .compra-ajuda { display: block; width: max-content; max-width: 100%; margin-top: 4px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  /* o link numa linha própria: o código acima é bloco (colado, "A045591 Onde fica..." lia como uma coisa só).
+     inline-block e sem largura fixa: no celular de 320 px ele quebra em vez de alargar a coluna */
+  .compra-ajuda { display: inline-block; margin-top: 4px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
   .compra-ajuda:hover { color: var(--ink); }
 
   .compra-perguntas { margin-top: 6px; }
