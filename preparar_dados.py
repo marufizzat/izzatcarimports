@@ -917,7 +917,7 @@ def limitar_anos(a0, a1, marca="", modelo=""):
     """Corta a faixa no periodo do carro (PRODUCAO_BR) e no ano-modelo maximo de hoje.
     Faixa toda fora do periodo = leitura errada: fica sem ano (nunca ano impossivel)."""
     ini, fim = PRODUCAO_BR.get((marca, gi.chave_modelo(modelo or "")), (None, None))
-    lo = max(a0, ini) if ini else a0
+    lo = max(a0, ini or 1950, 1950)          # "45/48" do jeito classico seria 1945
     hi = min(a1, fim or ANO_MAX, ANO_MAX)
     if lo > hi:
         return None, None
