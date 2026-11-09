@@ -158,3 +158,5 @@ jobs:
     steps:
       - id: deploy
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000   # 30 min: o site tem ~5 mil capas e o GitHub às vezes demora para sincronizar
