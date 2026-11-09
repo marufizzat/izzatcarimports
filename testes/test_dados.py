@@ -122,6 +122,29 @@ def test_filtro_de_etiqueta_decisao():
     assert decidir_etiqueta(None, 0.90) is False         # sem OCR: segue sem filtro
 
 
+def test_enquadramento_v2_regra():
+    """Capa v2: peça sempre na zona segura, base no piso comum e tamanho pelo peso visual (casco)."""
+    from capas_estudio import enquadrar, REGRA
+    L = 1000
+    piso, topo = round(REGRA["PISO"] * L), round(REGRA["TOPO"] * L)
+    xmin, xmax = round(REGRA["XMIN"] * L), round(REGRA["XMAX"] * L)
+    casos = {
+        "compacta": (500, 500, {"casco": 250000, "cx": 250}),
+        "comprida": (2000, 100, {"casco": 190000, "cx": 1000}),
+        "alta": (200, 1000, {"casco": 180000, "cx": 100}),
+        "pequena": (100, 100, {"casco": 10000, "cx": 50}),
+        "torta": (800, 600, {"casco": 300000, "cx": 700}),   # massa toda à direita
+    }
+    r = {k: enquadrar(w, h, med, L) for k, (w, h, med) in casos.items()}
+    for k, (s, x, y, nw, nh) in r.items():
+        assert xmin <= x and x + nw <= xmax, k            # nunca sai da zona segura
+        assert y >= topo and y + nh == piso, k            # base no piso comum, nada na faixa do selo
+    assert r["compacta"][3] == round(REGRA["T"] * L)       # compacta: lado = T (peso visual)
+    assert r["comprida"][3] == xmax - xmin                 # comprida: usa a largura toda da zona
+    assert r["pequena"][0] == REGRA["UP"]                  # foto pequena: amplia no máximo UP
+    assert r["torta"][1] < (L - r["torta"][3]) // 2        # centro de massa à direita puxa a peça para a esquerda
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):
