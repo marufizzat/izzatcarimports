@@ -14,7 +14,7 @@ interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
 const { p, nivel = 'h1' } = Astro.props;
 const Titulo = nivel;
 const carro = [p.b, p.m].filter(Boolean).join(' ');
-const anos = p.y ? `${p.y[0]} a ${p.y[1]}` : '';
+const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
 const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
 // Mensagem do WhatsApp: sem carro salvo usa "Meu carro é X ano ____"; com carro salvo o script troca essa linha.

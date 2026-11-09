@@ -45,13 +45,13 @@ const rel = doCarro.length ? doCarro : p.rel.map(pecaPorId).filter((x): x is Pec
 const mesmaFamiliaAqui = doCarro.length > 0 && nivel(doCarro[0]) < 2;
 const url = `${SITE}/peca/${p.slug}.html`;
 const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
-const serve = nomeCarro + (p.y ? `, ${p.y[0]} a ${p.y[1]}` : '');
+const serve = nomeCarro + (p.y ? `, ${p.y[0] === p.y[1] ? p.y[0] : `${p.y[0]} a ${p.y[1]}`}` : '');
 // so com marca e modelo dizemos "Serve em"; peca so com a marca fica "Carro" (sem prometer o modelo)
 const serveRotulo = p.m ? 'Serve em' : 'Carro';
 const unica = p.q === 1;
 // código só quando parece código de verdade (5+ com letra e número, ou 6+ dígitos), em maiúsculas
 const codigo = codigoDaPeca(p.oem);
-const titulo = `${p.n}${nomeCarro ? ` ${nomeCarro}` : ''}${p.y ? ` ${p.y[0]}–${p.y[1]}` : ''}${codigo ? ` ${codigo}` : ` ${p.id}`} | Izzat Car`;
+const titulo = `${p.n}${nomeCarro ? ` ${nomeCarro}` : ''}${p.y ? ` ${p.y[0] === p.y[1] ? p.y[0] : `${p.y[0]}–${p.y[1]}`}` : ''}${codigo ? ` ${codigo}` : ` ${p.id}`} | Izzat Car`;
 const descricao = `${p.t}. Peça original de carro com baixa legal no Detran-RS. R$ ${brl(p.p)}, nota fiscal e 90 dias de garantia. CDV nº 01060.`;
 const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\nServe e ainda tem?`;
 const trilha: [string, string][] = [['Início', '/index.html'], ['Catálogo', '/catalogo.html']];
