@@ -22,6 +22,7 @@ const FOCAVEIS =
 const CSS = `
 .gv-fundo{position:fixed;inset:0;z-index:1000;background:rgb(16 16 20 / .42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .3s ease}
 .gv-fundo.on{opacity:1}
+html.leve .gv-fundo{-webkit-backdrop-filter:none;backdrop-filter:none}
 .gv-painel{position:fixed;z-index:1001;left:0;right:0;bottom:0;max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;
   background:var(--surface);color:var(--ink);border-radius:24px 24px 0 0;box-shadow:var(--shadow-2);
   transform:translate3d(0,calc(var(--dy,0px) + 100%),0);transition:transform .34s cubic-bezier(.2,.8,.2,1);overscroll-behavior:contain}

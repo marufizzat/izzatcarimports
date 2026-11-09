@@ -75,6 +75,8 @@ git init -q -b "$RAMO"
 mkdir -p .
 find "$ORIGEM" -maxdepth 1 -name '*.webp' -exec cp {} . \;
 [ -f "$ORIGEM/_falhas.json" ] && cp "$ORIGEM/_falhas.json" .
+# assinatura dos ajustes manuais (capas_ajustes.json) já aplicados: sem ela o robô refaz essas capas com o rembg
+for f in "$ORIGEM"/_ajustes_aplicados*.json; do [ -f "$f" ] && cp "$f" .; done
 git add -A
 git -c user.name="izzat-bot" -c user.email="izzat-bot@users.noreply.github.com" \
   commit -q -m "Capas de estudio: semeadas do Mac ($N capas)"

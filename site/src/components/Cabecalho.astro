@@ -15,6 +15,8 @@ const ativo = (h: string) => atual === h || (h === '/catalogo.html' && atual.sta
   (h === '/carros.html' && atual.startsWith('/carros/'));
 const carros = resumo().carros.slice(0, 8);
 // Busca sempre à vista no PC (fora do catálogo, que tem a própria). Na home ela espera a busca grande da abertura sair da tela.
+// O campo vem pronto no HTML (sem JS, ele já busca no catálogo). As sugestões ao vivo (React) só carregam quando a
+// pessoa chega no campo: sem ilha do Astro aqui, a página não leva o código das ilhas nem o React à toa.
 const buscaNoTopo = !atual.startsWith('/catalogo');
 const buscaEspera = atual === '/' || atual === '/index.html';
 ---
@@ -27,7 +29,7 @@ const buscaEspera = atual === '/' || atual === '/index.html';
     </nav>
     {buscaNoTopo && (
       <div class:list={['cab-busca', { 'cab-busca-espera': buscaEspera }]} data-cab-busca>
-        <SugestoesBusca client:media="(min-width: 1180px)" placeholder="Buscar peça, carro ou código" />
+        <SugestoesBusca placeholder="Buscar peça, carro ou código" />
       </div>
     )}
     <div class="cab-acoes">
@@ -119,36 +121,59 @@ const buscaEspera = atual === '/' || atual === '/index.html';
   caixa?.querySelector('[data-fechar-carro]')?.addEventListener('click', () => caixa.close());
   caixa?.addEventListener('click', (e) => { if (e.target === caixa) caixa.close(); });
 
+  // busca do cabeçalho (PC largo): monta as sugestões (React) no 1º contato com o campo (mouse, foco ou toque).
+  // O que já foi digitado e o foco passam para o campo novo.
+  const cabBuscaRaiz = document.querySelector<HTMLElement>('[data-cab-busca]');
+  if (cabBuscaRaiz) {
+    let montada = false;
+    const montar = async () => {
+      if (montada) return;
+      montada = true;
+      const [{ createElement }, { createRoot }, { default: SugestoesBusca }] = await Promise.all([
+        import('react'), import('react-dom/client'), import('./ui/SugestoesBusca'),
+      ]);
+      const campo = cabBuscaRaiz.querySelector('input');
+      createRoot(cabBuscaRaiz).render(createElement(SugestoesBusca, {
+        placeholder: campo?.placeholder, inicial: campo?.value ?? '', autoFoco: !!campo && document.activeElement === campo,
+      }));
+    };
+    for (const tipo of ['pointerenter', 'focusin', 'touchstart']) cabBuscaRaiz.addEventListener(tipo, montar, { passive: true });
+  }
+
   const d = document.getElementById('menu-movel') as HTMLDialogElement | null;
   document.querySelectorAll('[data-abrir-menu]').forEach((b) => b.addEventListener('click', () => d?.showModal()));
   document.querySelectorAll('[data-fechar-menu]').forEach((b) => b.addEventListener('click', () => d?.close()));
   d?.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 </script>
 
-<style>
+<style is:global>
+  /* Globais de propósito (sem o atributo de escopo em cada link do cabeçalho e do menu): tudo preso a
+     .cab (cabeçalho) ou .menu-movel (menu do celular). */
   .cab { position: sticky; top: 0; z-index: 50; background: color-mix(in oklab, var(--bg), transparent 12%);
          backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
          border-bottom: 1px solid color-mix(in oklab, var(--line), transparent 25%); }
-  .cab-escuro { background: rgb(14 14 16 / .8); color: #f2f2f4; --line: #2a2b30; }
-  .cab-sobre { position: absolute; inset: 0 0 auto 0; background: linear-gradient(180deg, rgb(0 0 0 / .55), transparent); border: 0; backdrop-filter: none; color: #fff; }
-  .cab-linha { display: flex; align-items: center; gap: 20px; height: 68px; }
-  .cab-linha :global(.logo img) { height: 54px; width: auto; display: block; }
-  .cab-nav { display: none; gap: 2px; margin-left: 16px; }
-  .cab-nav a { position: relative; padding: 10px 14px; border-radius: 10px; font-weight: 560; font-size: 15.5px; color: var(--ink-2);
+  /* aparelho fraco: fundo sólido da mesma cor (desfocar a página a cada quadro da rolagem pesa) */
+  html.leve .cab:not(.cab-escuro):not(.cab-sobre) { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .cab.cab-escuro { background: rgb(14 14 16 / .8); color: #f2f2f4; --line: #2a2b30; }
+  .cab.cab-sobre { position: absolute; inset: 0 0 auto 0; background: linear-gradient(180deg, rgb(0 0 0 / .55), transparent); border: 0; backdrop-filter: none; color: #fff; }
+  .cab .cab-linha { display: flex; align-items: center; gap: 20px; height: 68px; }
+  .cab .cab-linha .logo img { height: 54px; width: auto; display: block; }
+  .cab .cab-nav { display: none; gap: 2px; margin-left: 16px; }
+  .cab .cab-nav a { position: relative; padding: 10px 14px; border-radius: 10px; font-weight: 560; font-size: 15.5px; color: var(--ink-2);
                transition: color .2s, background-color .2s; }
-  .cab-nav a:hover { color: var(--ink); background: color-mix(in oklab, var(--ink), transparent 94%); }
-  .cab-nav a[aria-current="page"] { color: var(--ink); }
-  .cab-nav a[aria-current="page"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 3px; height: 3px; border-radius: 3px;
+  .cab .cab-nav a:hover { color: var(--ink); background: color-mix(in oklab, var(--ink), transparent 94%); }
+  .cab .cab-nav a[aria-current="page"] { color: var(--ink); }
+  .cab .cab-nav a[aria-current="page"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 3px; height: 3px; border-radius: 3px;
                background: var(--accent); }
-  .cab-acoes { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-  .cab-icone { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: inherit; }
-  .cab-icone:hover { background: color-mix(in oklab, currentColor, transparent 92%); }
-  .cab-icone :global(svg), .cab-icone svg { width: 23px; height: 23px; }
-  .cab-whats { --h: 44px; padding: 0 13px; font-size: 15px; }
-  .cab-whats span { display: none; }
+  .cab .cab-acoes { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  :is(.cab, .menu-movel) .cab-icone { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: inherit; }
+  :is(.cab, .menu-movel) .cab-icone:hover { background: color-mix(in oklab, currentColor, transparent 92%); }
+  :is(.cab, .menu-movel) .cab-icone svg { width: 23px; height: 23px; }
+  .cab .cab-whats { --h: 44px; padding: 0 13px; font-size: 15px; }
+  .cab .cab-whats span { display: none; }
   @media (min-width: 960px) {
-    .cab-linha { height: 84px; } .cab-linha :global(.logo img) { height: 66px; }
-    .cab-nav { display: flex; } .cab-whats { padding: 0 18px; } .cab-whats span { display: inline; } .cab-menu { display: none; }
+    .cab .cab-linha { height: 84px; } .cab .cab-linha .logo img { height: 66px; }
+    .cab .cab-nav { display: flex; } .cab .cab-whats { padding: 0 18px; } .cab .cab-whats span { display: inline; } .cab .cab-menu { display: none; }
   }
 
   .menu-movel { margin: 0 0 0 auto; width: min(100%, 420px); height: 100dvh; max-height: none; border: 0; padding: 18px 20px 28px;
@@ -157,15 +182,16 @@ const buscaEspera = atual === '/' || atual === '/index.html';
   .menu-movel[open] { display: flex; transform: none; }
   @starting-style { .menu-movel[open] { transform: translateX(100%); } }
   .menu-movel::backdrop { background: rgb(10 10 12 / .45); backdrop-filter: blur(4px); }
-  .menu-topo { display: flex; justify-content: space-between; align-items: center; }
-  .menu-topo :global(.logo img) { height: 52px; width: auto; }
-  .menu-links { display: grid; }
-  .menu-links a { padding: 14px 4px; font-stretch: 84%; font-weight: 800; font-size: 26px; border-bottom: 1px solid var(--line); }
-  .menu-links a[aria-current="page"] { color: var(--accent-text); }
-  .menu-rotulo { margin: 8px 0 -6px; font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
-  .menu-carros { display: flex; flex-wrap: wrap; gap: 8px; }
-  .menu-carros a { padding: 9px 13px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 14.5px; font-weight: 560; }
-  .menu-whats { margin-top: auto; --h: 54px; }
+  html.leve .menu-movel::backdrop { backdrop-filter: none; }
+  .menu-movel .menu-topo { display: flex; justify-content: space-between; align-items: center; }
+  .menu-movel .menu-topo .logo img { height: 52px; width: auto; }
+  .menu-movel .menu-links { display: grid; }
+  .menu-movel .menu-links a { padding: 14px 4px; font-stretch: 84%; font-weight: 800; font-size: 26px; border-bottom: 1px solid var(--line); }
+  .menu-movel .menu-links a[aria-current="page"] { color: var(--accent-text); }
+  .menu-movel .menu-rotulo { margin: 8px 0 -6px; font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
+  .menu-movel .menu-carros { display: flex; flex-wrap: wrap; gap: 8px; }
+  .menu-movel .menu-carros a { padding: 9px 13px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 14.5px; font-weight: 560; }
+  .menu-movel .menu-whats { margin-top: auto; --h: 54px; }
 </style>
 
 <script>
@@ -179,25 +205,25 @@ const buscaEspera = atual === '/' || atual === '/index.html';
   }
 </script>
 
-<style>
+<style is:global>
   /* busca no cabeçalho (PC largo): o mesmo campo com sugestões da abertura, em versão compacta; a lupa sai */
-  .cab-busca { display: none; }
+  .cab .cab-busca { display: none; }
   @media (min-width: 1180px) {
-    .cab-busca ~ .cab-acoes, .cab-nav, .cab-linha > :global(.logo) { flex: none; }
-    .cab-nav a { white-space: nowrap; }
-    .cab-busca { display: block; flex: 1 1 340px; min-width: 200px; max-width: 440px; margin-left: auto;
+    .cab .cab-busca ~ .cab-acoes, .cab .cab-nav, .cab .cab-linha > .logo { flex: none; }
+    .cab .cab-nav a { white-space: nowrap; }
+    .cab .cab-busca { display: block; flex: 1 1 340px; min-width: 200px; max-width: 440px; margin-left: auto;
       transition: opacity .25s ease, transform .25s ease, visibility .25s; }
-    .cab-busca ~ .cab-acoes { margin-left: 10px; }
-    .cab-busca ~ .cab-acoes > a.cab-icone[href="/catalogo.html#busca"] { display: none; }
-    .cab-busca-espera:not(:focus-within) { opacity: 0; visibility: hidden; transform: translateY(-4px); }
-    .cab-busca :global(.sb-busca:not(.sb-grande)) { height: 46px; border-radius: 12px; padding: 0 4px 0 14px; gap: 6px; box-shadow: inset 0 0 0 1.5px var(--line-2); }
-    .cab-busca :global(.sb-busca:not(.sb-grande):focus-within) { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 82%); }
-    .cab-busca :global(.sb-busca input) { font-size: 15.5px; }
-    .cab-busca :global(.sb-lupa svg) { width: 19px; height: 19px; }
-    .cab-busca :global(.sb-limpar) { width: 36px; height: 36px; }
-    .cab-busca :global(.sb-btn) { --h: 38px; padding: 0 11px; border-radius: 9px; }
-    .cab-busca :global(.sb-btn span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    .cab-busca :global(.sb-lista) { right: auto; width: max(100%, 520px); }
+    .cab .cab-busca ~ .cab-acoes { margin-left: 10px; }
+    .cab .cab-busca ~ .cab-acoes > a.cab-icone[href="/catalogo.html#busca"] { display: none; }
+    .cab .cab-busca-espera:not(:focus-within) { opacity: 0; visibility: hidden; transform: translateY(-4px); }
+    .cab .cab-busca .sb-busca:not(.sb-grande) { height: 46px; border-radius: 12px; padding: 0 4px 0 14px; gap: 6px; box-shadow: inset 0 0 0 1.5px var(--line-2); }
+    .cab .cab-busca .sb-busca:not(.sb-grande):focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 82%); }
+    .cab .cab-busca .sb-busca input { font-size: 15.5px; }
+    .cab .cab-busca .sb-lupa svg { width: 19px; height: 19px; }
+    .cab .cab-busca .sb-limpar { width: 36px; height: 36px; }
+    .cab .cab-busca .sb-btn { --h: 38px; padding: 0 11px; border-radius: 9px; }
+    .cab .cab-busca .sb-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .cab .cab-busca .sb-lista { right: auto; width: max(100%, 520px); }
   }
-  @media (prefers-reduced-motion: reduce) { .cab-busca { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .cab .cab-busca { transition: none; } }
 </style>

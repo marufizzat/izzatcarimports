@@ -39,7 +39,11 @@ export function codigoPeca(o?: string | null): string {
 
 /** Mesma mensagem do botão da página da peça. */
 export function msgWhats(titulo: string, preco: number, url: string) {
-  return `Olá! Vi no site esta peça:\n\n${titulo}\nR$ ${brl(preco)}\n${url}\n\nServe e ainda tem?`;
+  return msgWhatsTexto(titulo, brl(preco), url);
+}
+/** A mesma mensagem com o preço já escrito ("1.234,56"): o cartão do build lê o preço do próprio cartão. */
+export function msgWhatsTexto(titulo: string, precoBRL: string, url: string) {
+  return `Olá! Vi no site esta peça:\n\n${titulo}\nR$ ${precoBRL}\n${url}\n\nServe e ainda tem?`;
 }
 export function linkWhats(texto: string) {
   return `https://wa.me/${WHATS}?text=${encodeURIComponent(texto)}`;
@@ -65,7 +69,5 @@ export function dadosCarro(b?: string | null, m?: string | null, y?: [number, nu
   };
 }
 
-/** Glifo do WhatsApp (o mesmo de Icone.astro). */
-export const ICONE_WHATS = 'M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01Zm-7.01 15.24c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.23-8.23 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43s.17-.25.25-.41c.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18s-.22-.16-.47-.28Z';
-/** Escudo com visto (desenho Lucide "shield-check", licença ISC): a linha de confiança do cartão. */
-export const ICONE_GARANTIA = 'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1zM9 12l2 2 4-4';
+/** Ícones do cartão: o desenho mora no sprite /icones.svg (src/lib/icones.ts); o cartão usa <use href={icone(...)}>. */
+export { icone, WHATS_D as ICONE_WHATS, GARANTIA_D as ICONE_GARANTIA } from '../../lib/icones';

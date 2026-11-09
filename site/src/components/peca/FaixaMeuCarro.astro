@@ -1,9 +1,12 @@
 ---
 // "Serve no seu carro?" logo abaixo do nome: UMA linha de encaixe (antes eram a faixa + o "Serve em" repetido).
-// Peça com marca e modelo: 4 estados no HTML (convite, serve, confira o ano, outro carro); o script mostra o certo.
+// Peça com marca e modelo: 4 estados (convite, serve, confira o ano, outro carro). O HTML traz só o convite; os
+// outros três só existem com carro salvo (localStorage, logo com JS), então o script os monta na hora, com o mesmo
+// desenho (assim eles não pesam nas 5 mil páginas).
 // Altura mínima reservada (2 linhas): no PC a troca de estado não mexe em nada; no celular, "serve" e
 // "confira o ano" podem quebrar em 3 linhas e descer o preço uns 15-30 px (o botão segue na primeira tela).
 // Peça só com a marca: "Peça de <marca>, anos" (sem prometer o modelo). Nunca escrevemos "não serve".
+// Estilos globais (classes .enc-*, só deste componente): os estados montados pelo script usam as mesmas regras.
 import Icone from '../Icone.astro';
 interface Props { b: string; m: string; y: [number, number] | null; }
 const { b, m, y } = Astro.props;
@@ -19,30 +22,6 @@ const carro = [b, m].filter(Boolean).join(' ');
         <button type="button" class="enc-acao" data-abrir-meu-carro>Conferir no meu carro</button>
       </p>
     </div>
-    <div class="enc-estado enc-sim" data-estado="sim" hidden>
-      <span class="enc-icone"><Icone nome="check" /></span>
-      <p class="enc-txt">
-        <span>Serve no seu <b data-nome-carro>carro</b></span>
-        <small>{anos ? `Peça de ${anos}` : `Peça do ${carro}`}</small>
-      </p>
-      <button type="button" class="enc-trocar" data-abrir-meu-carro>Trocar</button>
-    </div>
-    <div class="enc-estado enc-ano" data-estado="confira-ano" hidden>
-      <span class="enc-icone" aria-hidden="true">!</span>
-      <p class="enc-txt">
-        <span>Confira o ano: esta peça é de <b>{anos}</b></span>
-        <small>Seu carro salvo: <span data-nome-carro>carro</span></small>
-      </p>
-      <button type="button" class="enc-trocar" data-abrir-meu-carro>Trocar</button>
-    </div>
-    <div class="enc-estado" data-estado="outro" hidden>
-      <span class="enc-icone"><Icone nome="carro" /></span>
-      <p class="enc-txt">
-        <span>Serve em <b>{carro}</b>{anos && `, ${anos}`}</span>
-        <small>Seu carro salvo: <span data-nome-carro>carro</span></small>
-      </p>
-      <button type="button" class="enc-trocar" data-abrir-meu-carro>Trocar</button>
-    </div>
   </section>
 ) : b ? (
   <section class="enc" aria-label="Carro da peça">
@@ -56,28 +35,43 @@ const carro = [b, m].filter(Boolean).join(' ');
 <script>
   import { lerMeuCarro, serveNoMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';
 
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+  // o mesmo desenho do <Icone nome="check" />
+  const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  const TROCAR = '<button type="button" class="enc-trocar" data-abrir-meu-carro>Trocar</button>';
+  const SALVO = '<small>Seu carro salvo: <span data-nome-carro>carro</span></small>';
+
   document.querySelectorAll<HTMLElement>('[data-meu-carro]').forEach((el) => {
     const p = {
       b: el.dataset.b || '',
       m: el.dataset.m || '',
       y: el.dataset.y0 && el.dataset.y1 ? ([Number(el.dataset.y0), Number(el.dataset.y1)] as [number, number]) : null,
     };
-    const estados = [...el.querySelectorAll<HTMLElement>('[data-estado]')];
+    const carro = esc([p.b, p.m].filter(Boolean).join(' '));
+    const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
+    const iconeCarro = el.querySelector('[data-estado="convite"] .enc-icone')?.innerHTML ?? '';
+    const html: Record<string, string> = {
+      sim: `<div class="enc-estado enc-sim" data-estado="sim"><span class="enc-icone">${CHECK}</span><p class="enc-txt"><span>Serve no seu <b data-nome-carro>carro</b></span><small>${anos ? `Peça de ${anos}` : `Peça do ${carro}`}</small></p>${TROCAR}</div>`,
+      'confira-ano': `<div class="enc-estado enc-ano" data-estado="confira-ano"><span class="enc-icone" aria-hidden="true">!</span><p class="enc-txt"><span>Confira o ano: esta peça é de <b>${anos}</b></span>${SALVO}</p>${TROCAR}</div>`,
+      outro: `<div class="enc-estado" data-estado="outro"><span class="enc-icone">${iconeCarro}</span><p class="enc-txt"><span>Serve em <b>${carro}</b>${anos ? `, ${anos}` : ''}</span>${SALVO}</p>${TROCAR}</div>`,
+    };
     const mostrar = (c: MeuCarro | null) => {
       const s = serveNoMeuCarro(p, c);
       const chave = !c ? 'convite' : s ?? 'outro';
-      estados.forEach((e) => { e.hidden = e.dataset.estado !== chave; });
+      if (!el.querySelector(`[data-estado="${chave}"]`) && html[chave]) el.insertAdjacentHTML('beforeend', html[chave]);
+      el.querySelectorAll<HTMLElement>('[data-estado]').forEach((e) => { e.hidden = e.dataset.estado !== chave; });
       if (c) el.querySelectorAll('[data-nome-carro]').forEach((n) => { n.textContent = nomeCarro(c); });
     };
     mostrar(lerMeuCarro());
     window.addEventListener(EVENTO, (e) => mostrar((e as CustomEvent<MeuCarro | null>).detail ?? null));
-    el.querySelectorAll<HTMLButtonElement>('[data-abrir-meu-carro]').forEach((b) =>
-      b.addEventListener('click', () => window.dispatchEvent(new CustomEvent('abrir-meu-carro'))));
+    el.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('[data-abrir-meu-carro]')) window.dispatchEvent(new CustomEvent('abrir-meu-carro'));
+    });
   });
 </script>
 
-<style>
-  [hidden] { display: none !important; }
+<style is:global>
+  .enc-estado[hidden] { display: none; }
   .enc { display: grid; }
   .enc-estado { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px 10px 10px; border-radius: 14px;
                 background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
@@ -85,7 +79,7 @@ const carro = [b, m].filter(Boolean).join(' ');
   .enc-icone { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
                background: var(--surface-2); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line);
                font-weight: 850; font-size: 18px; line-height: 1; }
-  .enc-icone :global(svg) { width: 20px; height: 20px; }
+  .enc-icone svg { width: 20px; height: 20px; }
   .enc-txt { flex: 1; min-width: 0; margin: 0; display: grid; gap: 2px; font-size: 15px; line-height: 1.3; color: var(--ink-2); }
   .enc-txt b { color: var(--ink); font-weight: 680; }
   .enc-txt small { font-size: 13.5px; color: var(--ink-3); }
@@ -98,7 +92,7 @@ const carro = [b, m].filter(Boolean).join(' ');
   /* serve: verde */
   .enc-sim { background: #ecf8f0; box-shadow: inset 0 0 0 1px #bfe6cc; }
   .enc-sim .enc-icone { background: #16a34a; color: #fff; box-shadow: none; }
-  .enc-sim .enc-icone :global(svg) { stroke-width: 2.8; width: 18px; height: 18px; }
+  .enc-sim .enc-icone svg { stroke-width: 2.8; width: 18px; height: 18px; }
   .enc-sim .enc-txt, .enc-sim .enc-txt b { color: #14532d; }
   .enc-sim .enc-txt small { color: #2f6b45; }
   .enc-sim .enc-trocar { color: #166534; }
@@ -108,13 +102,5 @@ const carro = [b, m].filter(Boolean).join(' ');
   .enc-ano .enc-txt, .enc-ano .enc-txt b { color: #6b4100; }
   .enc-ano .enc-txt small, .enc-ano .enc-trocar { color: #7a4a00; }
 
-  @media (prefers-color-scheme: dark) {
-    .enc-sim { background: #0f2a1a; box-shadow: inset 0 0 0 1px #1f5133; }
-    .enc-sim .enc-txt, .enc-sim .enc-txt b { color: #c9f2d8; }
-    .enc-sim .enc-txt small { color: #93d6ad; }
-    .enc-sim .enc-trocar { color: #8ee3ad; }
-    .enc-ano { background: #2b200c; box-shadow: inset 0 0 0 1px #5a4217; }
-    .enc-ano .enc-txt, .enc-ano .enc-txt b { color: #ffe1a8; }
-    .enc-ano .enc-txt small, .enc-ano .enc-trocar { color: #ffd58a; }
-  }
+  
 </style>

@@ -7,7 +7,6 @@ const largura = Math.round(altura * 600 / 435);
 ---
 <a href="/index.html" class={`logo ${cls ?? ''}`} aria-label="Izzat Car Imports, início">
   <picture>
-    {!escuro && <source srcset="/identidade/logo-dark.png" media="(prefers-color-scheme: dark)" />}
     <img src={escuro ? '/identidade/logo-dark.png' : '/identidade/logo.png'} alt="Izzat Car Imports" width={largura} height={altura} />
   </picture>
 </a>

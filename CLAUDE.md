@@ -37,6 +37,11 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      `_revisar.json`; a folha sai com `ferramentas/folha_revisar.py <pasta>`. Para o Google Shopping, a cópia sem logo
      sai com `ESTUDIO_SAIDA_LIMPA` (o feed não aceita logo sobreposto). Maquiadas na v2: `ferramentas/marca_pro.py`
      (grava noutra pasta e nunca sobrescreve `estudio-pro`). Ao ligar a v2, pôr `ESTUDIO_VERSAO`/`ESTUDIO_LOGO` também no `atualizar.yml`.
+   - **Ajustes manuais** (`capas_ajustes.json` na raiz, o robô respeita): por peça, a foto escolhida (`chave` do ML;
+     `foto` = índice só para o olho humano), `corte` e `apagar` (frações da foto inteira) — nessa foto não valem os
+     filtros automáticos; `sem_capa` = nenhuma foto serve (o robô apaga a capa e o site mostra a foto do ML);
+     `ok` = falso alarme conferido (não volta ao `_revisar.json`). Ajuste novo/mudado refaz a capa (assinatura em
+     `<saída>/_ajustes_aplicados.json`, que vai junto no ramo). Teste: `python testes/test_capas_ajustes.py`.
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
 
 7. **Reputação do Mercado Livre**: `atualizar_catalogo.py` (`save_seller_reputation`) lê a rota pública
@@ -71,6 +76,21 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Não escrever: frete grátis em arte, número de peças em arte, "tem aqui", preço em arte,
   "mais barato que", "100% garantido", depoimento inventado.
 - Ainda **a confirmar** antes de aparecer no site: endereço, horário, 12x, retirada no local, "lacre".
+
+## Peso e fluidez (o Pages aceita até 1 GB; cada byte da página de peça vale 5 mil vezes)
+- Página de peça ≈ 38 KB de HTML (era 87 KB). Antes de pôr algo em todo cartão ou em toda peça, pense nisso.
+- Ícones: desenhos em `site/src/lib/icones.ts`; os longos (WhatsApp, escudo, carro…) vêm do sprite `/icones.svg`
+  com `<use>` (`Icone.astro`). Nunca colar o `<path>` do WhatsApp direto na página.
+- CSS e scripts de componente saem em arquivo com cache (`astro.config.mjs`); `site/integracoes/escopo-curto.mjs`
+  encurta o atributo de escopo do Astro no fim do build. Componentes da peça, cabeçalho e rodapé usam `<style is:global>`
+  com as classes presas à raiz do componente (`.detalhes …`, `.rodape …`, `.cab …`).
+- Sem ilha do Astro na página da peça: a busca do cabeçalho monta o React no 1º contato com o campo e a galeria em tela
+  cheia monta quando o navegador folga (`PecaTopo.astro`). "Pedir no WhatsApp" do cartão e os estados do "Serve no seu
+  carro" são montados pelo script. "Do mesmo carro" mostra 6 cartões.
+- Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`): sem vidro desfocado, sem 3D no coverflow, sem o
+  "respirar" da abertura e sem animação de altura nas perguntas.
+- Busca: o índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
+  O catálogo pinta os cartões aos poucos (12 por quadro).
 
 ## Rodar no computador
 ```

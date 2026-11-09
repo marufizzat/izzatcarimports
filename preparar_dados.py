@@ -370,20 +370,87 @@ def _chave_titulo(linha):
     return re.sub(r"\s+", " ", t).strip(" :-")
 
 
+# Linha de lista: "+ Peca: x", "- Volvo XC60 - 2018, ...", "• x", "1) Conferir ...".
+_ITEM = re.compile(r"^(?:[+\-•*–—]|(\d{1,2})[).])\s+(?=\S)")
+# Linha "Rotulo: valor" ("Material: aco", "Codigo OEM: 32136006"): 2+ seguidas viram lista.
+_ROTULO = re.compile(r"^[A-Za-zÀ-ÿ][^:]{0,38}:\s+\S")
+# Item sem valor de verdade: "Largura da peca: 0 cm", "Posicao: Conforme aplicacao".
+_ITEM_VAZIO = re.compile(r":\s*(?:0+(?:[.,]0+)?\s*(?:cm|mm|m|g|kg)?|conforme aplica[cç][aã]o|n/?a|-+)\s*\.?$",
+                         re.I)
+_ANOS_SEGUIDOS = re.compile(r"\b(?:19|20)\d{2}(?:(?:\s*[,\-]\s*|\s+)(?:19|20)\d{2}){2,}\b")
+
+
+def _anos_em_faixa(t):
+    """'2018, 2019, 2020, 2021' -> '2018 a 2021' (so quando os anos sao seguidos)."""
+    def faixa(m):
+        anos = [int(a) for a in re.findall(r"(?:19|20)\d{2}", m.group(0))]
+        if all(b == a + 1 for a, b in zip(anos, anos[1:])):
+            return f"{anos[0]} a {anos[-1]}"
+        return m.group(0)
+    return _ANOS_SEGUIDOS.sub(faixa, t)
+
+
+def _blocos_texto(linhas):
+    """Linhas de uma secao -> blocos HTML: frase vira <p>, lista vira <ul>/<ol> (antes as
+    linhas da lista grudavam numa frase so: "+ Peça: X + Cor: Preto + ..."). Linha com
+    promessa sai, e a continuacao dela (linha seguinte comecando em minuscula) tambem."""
+    from html import escape
+    vivas, cortou = [], False
+    for linha in linhas:
+        if PROMESSA.search(linha):
+            cortou = True
+            continue
+        if cortou and linha[:1].islower():
+            continue
+        cortou = False
+        vivas.append(linha)
+    itens = []                     # [tipo, texto]: 'li', 'ol' (numerado), 'rot' (rotulo: valor), 'p'
+    for linha in vivas:
+        m = _ITEM.match(linha)
+        if m:
+            itens.append(["ol" if m.group(1) else "li", caixa_normal(linha[m.end():].strip())])
+        elif linha[:1].islower() and itens:
+            itens[-1][1] += " " + caixa_normal(linha)        # continuacao da linha de cima
+        else:
+            itens.append(["rot" if _ROTULO.match(linha) else "p", caixa_normal(linha)])
+    for i, it in enumerate(itens):  # "Rotulo: valor" sozinho e frase; 2+ seguidos, lista
+        if it[0] == "rot":
+            viz = [itens[j][0] for j in (i - 1, i + 1) if 0 <= j < len(itens)]
+            it[0] = "li" if any(v in ("rot", "li") for v in viz) else "p"
+    grupos = []
+    for tipo, t in itens:
+        if tipo != "p" and _ITEM_VAZIO.search(t):
+            continue
+        tag = {"p": "p", "ol": "ol"}.get(tipo, "ul")
+        if grupos and grupos[-1][0] == tag:
+            grupos[-1][1].append(t)
+        else:
+            grupos.append([tag, [t]])
+
+    def texto(t):
+        t = acentuar_texto(t)
+        t = re.sub(r"\b((?:19|20)\d{2}) at[ée] \1\b", r"\1", t)
+        return escape(_anos_em_faixa(t))
+
+    html = []
+    for tag, ts in grupos:
+        if tag == "p":
+            html.append("<p>" + texto(" ".join(ts)) + "</p>")
+        else:
+            html.append(f"<{tag}>" + "".join("<li>" + texto(t) + "</li>" for t in ts) + f"</{tag}>")
+    return html
+
+
 def descricao(texto):
     """Descricao do ML em HTML limpo: so secoes sobre a peca, titulos com acento,
-    sem promessas nao confirmadas."""
+    sem promessas nao confirmadas, sem CAIXA ALTA e com as listas em lista."""
     from html import escape
     blocos, par = [], []
     manter = True          # texto antes do 1o titulo: so se nao tiver promessa
 
     def fechar():
         if par and manter:
-            linhas = [l for l in par if not PROMESSA.search(l)]
-            if linhas:
-                t = acentuar(" ".join(linhas))
-                t = re.sub(r"\b((?:19|20)\d{2}) at[ée] \1\b", r"\1", t)
-                blocos.append("<p>" + escape(t) + "</p>")
+            blocos.extend(_blocos_texto(par))
         par.clear()
 
     for linha in (texto or "").splitlines():
@@ -392,7 +459,8 @@ def descricao(texto):
             fechar()
             continue
         letras = [c for c in linha if c.isalpha()]
-        titulo = 3 <= len(linha) <= 80 and letras and all(c.isupper() for c in letras)
+        nucleo = re.sub(r"^[=\-_*#\s]+|[=\-_*#\s]+$", "", linha)      # "===== VEICULOS ... =====" e titulo
+        titulo = 3 <= len(nucleo) <= 80 and letras and all(c.isupper() for c in letras)
         if titulo:
             fechar()
             chave = _chave_titulo(linha)
@@ -929,6 +997,63 @@ def chave_url(s):
 
 
 # --------------------------------------------------------------------------
+# Subtipo (campo "s"): a folha da categoria do ML. Algumas folhas so fazem sentido
+# junto com a mae ("Interruptores > De Vidros", "Estéreos > Com Tela", "... > Outros")
+# e apareciam soltas ("De Vidros", "Elétrico") no site. Aqui viram nome inteiro, no
+# mesmo estilo dos outros subtipos (o do ML: "Difusores de Ar", "Faróis Traseiros").
+# --------------------------------------------------------------------------
+# Folhas que nem com a mae ficam claras, ou nomes iguais para coisas diferentes
+# ("Mangueiras" do ar e do arrefecimento). Lista curta e auditavel, por categoria do ML.
+SUBTIPO_ID = {
+    "MLB191714": "Máquinas e Motores de Vidro Elétrico",   # Sistemas de Elevação > Elétrico
+    "MLB191715": "Máquinas de Vidro Manuais",              # Sistemas de Elevação > Manual
+    "MLB116479": "Máquinas de Vidro",                      # Sistemas de Elevação > Outros
+    "MLB459304": "Unidades de Controle",                   # Unidades de Controle e ECUs > Outros
+    "MLB430748": "Comandos de Ar Condicionado",            # Climatização > Comandos
+    "MLB116536": "Suportes de Ar Condicionado",            # Climatização > Ar Condicionado > Suporte
+    "MLB190956": "Interruptores de Ar Condicionado",       # Climatização > Ar Condicionado > Interruptores
+    "MLB430747": "Botões de Climatização",                 # Climatização > Botões
+    "MLB60610": "Kits de Ar Condicionado",                 # Climatização > Ar Condicionado > Kit Completo
+    "MLB269575": "Interruptores de Eletroventilador",      # Eletroventiladores > Interruptores
+    "MLB116505": "Mangueiras de Ar Condicionado",          # Ar Condicionado > Mangueiras e Conexões > Mangueiras
+    "MLB458968": "Mangueiras de Arrefecimento",            # Motor > Refrigeração > Mangueiras > Mangueiras
+    "MLB63712": "Tampas do Motor",                         # Componentes de Motor > Tampas > Tampas
+    "MLB458659": "Suportes da Carroceria",                 # Carroceria > Suportes e Abraçadeiras > Suportes
+    "MLB459110": "Suportes da Transmissão",                # Transmissão > Fixadores e Ferragens > Suportes
+    "MLB459203": "Molduras das Portas",                    # Aces. > Exterior > Molduras e Acabamentos > Portas
+    "MLB456265": "Molduras Externas",                      # Linha Pesada > Acessórios de Exterior > Molduras
+    "MLB458699": "Molduras de Retrovisores",               # Retrovisores Laterais > Componentes > Molduras
+    "MLB458929": "Linhas do Motor",                        # Motor > Mangueira, Linha e Tubulações > Linhas
+    "MLB458551": "Motor Teto Solar",                       # Tetos solares > Motores (= "Motor Teto Solar")
+    "MLB116338": "Macacos Hidráulicos",                    # Elevação > Macacos > Hidráulico
+    "MLB169600": "Telas Multimídia",                       # Som Automotivo > Telas
+    "MLB438558": "Interfaces de Som",                      # Som Automotivo > Interfaces
+    "MLB11099": "Kits de Alarme",                          # Alarmes e Acessórios > Kits Completos
+    "MLB440306": "Controles de Alarme",                    # Segurança Veicular > Controles
+}
+_SUBTIPO_PREP = re.compile(r"^(de|do|da|dos|das|com|sem|para)\s", re.I)
+
+
+def subtipo(cat, cid=""):
+    """Nome do tipo de peca: 'Interruptores > De Vidros' -> 'Interruptores de Vidros',
+    'Estéreos > Com Tela' -> 'Estéreos com Tela', 'Pedais > Outros' -> 'Pedais'.
+    'Outros' logo abaixo da familia continua 'Outros' (as paginas ja o tratam a parte)."""
+    if not cat:
+        return ""
+    if cid in SUBTIPO_ID:
+        return SUBTIPO_ID[cid]
+    nome = (cat.get("nome") or "").strip()
+    path = cat.get("path") or []
+    mae = path[-2].strip() if len(path) >= 2 else ""
+    if mae and _SUBTIPO_PREP.match(nome):
+        base = mae.split(" e ")[0].strip()          # "Fechaduras e Chaves" -> "Fechaduras"
+        return base + " " + nome[:1].lower() + nome[1:]
+    if mae and nome.lower() in ("outros", "outras") and len(path) >= 5:
+        return mae                                   # "Pedais > Outros" -> "Pedais"
+    return nome
+
+
+# --------------------------------------------------------------------------
 # Foto do ML: guardamos so a chave ("957636-MLB110353255009_042026"); o site
 # monta o tamanho certo (-V 320px no card, -O 500px, -F cheia na ficha).
 # --------------------------------------------------------------------------
@@ -1025,16 +1150,508 @@ def codigos_peca(p):
     return lista
 
 
-def ficha(p):
+# --------------------------------------------------------------------------
+# CAIXA ALTA -> frase normal (descricao e ficha). O anuncio do ML vem muito em
+# MAIUSCULAS ("PEDAL ACELERADOR HONDA FIT 1.5 - ORIGINAL DE FABRICA - OEM X").
+# So muda a caixa (e a repeticao colada "VOLKSWAGEN VOLKSWAGEN"): nada e inventado
+# nem tirado. Codigo (tem numero), sigla e nome de marca/carro ficam como devem.
+# --------------------------------------------------------------------------
+# Siglas que ficam em MAIUSCULAS no texto. Conjunto proprio: o SIGLAS do nome da peca
+# e outro (mexer nele muda os nomes das pecas).
+SIGLAS_TEXTO = SIGLAS | set("""oem bcm bsi uch tcu tcm pcm ecm cem ecu abs esp ebd srs tpms egr pcv maf map
+tbi dpf adas acc bsm pdc epb eps vvt vtec dohc sohc cvt dsg tsi tdi tfsi fsi gdi crdi mpi thp vti hdi dci tce
+cgi gti amg awd 4wd fwd rwd suv cd dvd usb gps lcd mp3 led drl hid ptc ntc obd nfe cdv cdc vw gm bmw jac byd
+abs/esp mqb spa vcds odis vida mmi hud tps ckp cmp iac atf epdm pvc rs vdo trw ngk skf zf ii iii iv vi vii viii
+ix""".split())
+# Siglas de versao que so ficam em maiusculas logo depois do carro ("Fiesta SE SEL", "Ka SE"):
+# fora dali "SE", "SI", "EX" sao palavras ("se tiver duvida").
+SIGLAS_VERSAO = set("""se sel si ex exl exs lx lxs ls lt ltz gl glx gls gt gts st ss rs sr sri xr xl xlt xls rt
+hse sxt srt cc tt dx lxi gli""".split())
+# Palavras que nao sao nome de carro (o nome do carro nunca e uma destas).
+_NAO_NOME = set("""tipo serie classe original de do da com sem para""".split())
+# Fornecedores de peca (o "Fabricante" que vale mostrar) e versoes comuns, com a grafia.
+_FORNECEDORES_NOMES = """Bosch Valeo Delphi Denso Magneti Marelli Continental Hella Webasto Harman Kardon Sachs
+Mahle Visteon Siemens Behr Nakata Cofap Monroe Brose Aisin Hitachi Mitsuba Mobis Omron""".split()
+_NOMES_EXTRA = _FORNECEDORES_NOMES + """Detran Sportline Comfortline Highline Trendline Titanium Elegance
+Attractive Essence Sporting Tendance Exclusive Allure Griffe Momentum Inscription Premier Vivace Zetec Sigma
+Duratec Rocam Ecoboost Etorq Fittipaldi Rallye Trekking Adventure Tigershark""".split()
+_NOMES_PROPRIOS = {}          # chave ("xc60", "golf") -> grafia ("XC60", "Golf")
+_MODELOS_CHAVE = set()        # chaves dos nomes de carro inteiros ("c4cactus", "grandsiena")
+
+
+def _aprender_nomes(nomes, modelos=False):
+    """Ensina a grafia dos nomes de marca/carro ('C4 Cactus' -> c4: C4, cactus: Cactus)."""
+    for nome in nomes:
+        if not nome:
+            continue
+        if modelos:
+            _MODELOS_CHAVE.add(gi.chave_modelo(nome))
+        for w in re.split(r"[\s/]+", nome):
+            k = gi.chave_modelo(w)
+            if len(k) >= 2 and not k.isdigit() and k not in _NAO_NOME:
+                _NOMES_PROPRIOS.setdefault(k, w)
+
+
+_aprender_nomes(MARCAS)
+_aprender_nomes(["VW", "GM", "BMW", "JAC", "RAM", "MB", "Citroën", "Mercedes", "Benz", "Chevy", "Range Rover"])
+_aprender_nomes([exibir(w) for w in MODELOS_SOLTOS], modelos=True)
+_aprender_nomes(list(GRAFIA.values()), modelos=True)
+_aprender_nomes([m for mods in _PRODUCAO.values() for m in mods], modelos=True)
+_aprender_nomes(_NOMES_EXTRA)
+
+# Palavras de frase (preposicao, artigo) e de peca: param a "sequencia do carro".
+_FUNCAO = set("""de da do das dos e em no na nos nas ou a o as os ao aos por pelo pela com sem para um uma
+que ate até se sob sobre entre apos após mais menos muito cada todo toda todos todas este esta esse essa""".split())
+_COMUNS = set("""original originais genuino genuina fabrica peca pecas motor lado kit par conjunto completo
+completa novo nova usado usada modelo versao ano anos linha tipo cor preto preta branco branca cinza prata
+cromado cromada vermelho azul bege oem codigo referencia unidade jogo aplicacao veiculo veiculos carro""".split())
+# Carroceria/combustivel: minusculas, mas a sequencia do carro continua ("Fiesta hatch sedan SE SEL").
+_NEUTRAS = set("""hatch sedan flex turbo diesel gasolina etanol alcool hibrido hybrid coupe cabrio wagon
+sportback avant perua cabine dupla simples""".split())
+
+
+def _palavra_comum(k):
+    return (k in _FUNCAO or k in _COMUNS or k in _GENERO or k in _PALAVRAS or k in ACENTOS
+            or k in ABREV_ADJETIVO or k in ABREV_INVARIAVEL or k in ABREV_FIXA)
+
+
+def _maiusc(w):
+    """Palavra so de letras e toda em maiusculas ("FAROL", "ELÉTRICO", "R-DESIGN")."""
+    letras = [c for c in w if c.isalpha()]
+    return len(letras) >= 2 and all(c.isupper() for c in letras) and not any(c.isdigit() for c in w)
+
+
+def _capital(w):
+    return "-".join(x[:1].upper() + x[1:].lower() for x in w.split("-"))
+
+
+def _troca_palavra(w, na_seq):
+    """(nova grafia, continua a sequencia do carro?) de uma palavra em CAIXA ALTA."""
+    k = gi.chave_modelo(w)
+    if k in SIGLAS_TEXTO:
+        return w, na_seq
+    if k in _NOMES_PROPRIOS:
+        g = _NOMES_PROPRIOS[k]
+        return (g if gi.chave_modelo(g) == k else _capital(w)), True
+    if "-" in w and all(gi.chave_modelo(x) in _NOMES_PROPRIOS or gi.chave_modelo(x) in SIGLAS_TEXTO
+                        for x in w.split("-") if x):        # "MERCEDES-BENZ", "DETRAN-RS"
+        return "-".join(_troca_palavra(x, True)[0] for x in w.split("-")), True
+    if na_seq and k in SIGLAS_VERSAO:
+        return w, True
+    if k in _NEUTRAS:
+        return w.lower(), na_seq
+    if _palavra_comum(k):
+        return w.lower(), False
+    if na_seq:
+        return _capital(w), True                          # versao: "Vivace", "Way", "Elegance"
+    return w.lower(), False
+
+
+_TOKEN = re.compile(r"[0-9A-Za-zÀ-ÖØ-öø-ÿ][0-9A-Za-zÀ-ÖØ-öø-ÿ'.\-]*[0-9A-Za-zÀ-ÖØ-öø-ÿ]|[0-9A-Za-zÀ-ÖØ-öø-ÿ]")
+_PARA_SEQ = re.compile(r"\s-\s|[(),.;:|!?\[\]]")          # separador que encerra a sequencia do carro
+
+
+def caixa_normal(texto):
+    """'MÓDULO ALCANCE FAROL VOLKSWAGEN VOLKSWAGEN GOLF 1.4 TSI - ORIGINAL DE FABRICA - OEM 5Q0907357'
+    -> 'Módulo alcance farol Volkswagen Golf 1.4 TSI - original de fábrica - OEM 5Q0907357'.
+    Linha mista (frase normal com trecho em caixa alta) so troca o trecho com nome de marca/carro
+    ou que e frase; a palavra solta de enfase ("DIREITO") e o rotulo citado ficam."""
+    if not texto:
+        return texto
+    toks = list(_TOKEN.finditer(texto))
+    palavras = [m for m in toks if not any(c.isdigit() for c in m.group(0)) and len(m.group(0)) >= 2]
+    altas = [m for m in palavras if _maiusc(m.group(0))]
+    if not altas:
+        return _sem_repeticao(texto)
+    forcado = len(altas) >= 3 and len(altas) >= 0.6 * len(palavras)
+    elegivel = set()
+    if forcado:
+        elegivel = {m.start() for m in altas}
+    else:
+        # mista: o trecho em caixa alta muda quando tem nome de marca/carro ("RENAULT SANDERO DUSTER")
+        # ou e frase (3+ palavras, uma delas de frase/peca: "MÓDULO DE INJEÇÃO"). Palavra solta de
+        # enfase ("DIREITO") e rotulo citado ("FRONT VEHICLE DIRECTION", "SEM CÓDIGO") ficam.
+        def fechar_grupo(grupo):
+            while grupo and len(grupo[-1].group(0)) == 1:   # "E" solto no fim nao e do trecho
+                grupo = grupo[:-1]
+            ks = [gi.chave_modelo(g.group(0)) for g in grupo]
+            rotulo = bool(grupo) and not texto[:grupo[0].start()].strip() \
+                and texto[grupo[-1].end():].lstrip().startswith(":")       # "CÓDIGO OEM: X"
+            if any(k in _NOMES_PROPRIOS for k in ks) or (any(_palavra_comum(k) for k in ks)
+                                                        and (len(grupo) >= 3 or (rotulo and len(grupo) >= 2))):
+                elegivel.update(g.start() for g in grupo)
+        grupo = []
+        for m in toks:
+            w = m.group(0)
+            junto = grupo and re.fullmatch(r"[\s/]+", texto[grupo[-1].end():m.start()])
+            if _maiusc(w) and (not grupo or junto):
+                grupo.append(m)
+                continue
+            if junto and len(w) == 1 and w.isupper() and w.isalpha():   # "TECIDO E PLÁSTICO"
+                grupo.append(m)
+                continue
+            fechar_grupo(grupo)
+            grupo = [m] if _maiusc(w) else []
+        fechar_grupo(grupo)
+    saida, pos, na_seq = [], 0, False
+    for m in toks:
+        entre = texto[pos:m.start()]
+        if _PARA_SEQ.search(entre):
+            na_seq = False
+        saida.append(entre)
+        w = m.group(0)
+        k = gi.chave_modelo(w)
+        if m.start() in elegivel:
+            w, na_seq = _troca_palavra(w, na_seq)
+        elif any(c.isdigit() for c in w):
+            na_seq = na_seq or k in _NOMES_PROPRIOS          # "XC60", "C4" tambem abrem o carro
+        elif len(w) == 1:
+            if forcado and not na_seq and w in "AEOÀÉ":       # "208, 2008 E CITROEN" -> "e"
+                w = w.lower()
+            na_seq = na_seq and w not in "aeoàé"
+        else:
+            na_seq = (k in _NOMES_PROPRIOS) or (na_seq and not _palavra_comum(k))
+        saida.append(w)
+        pos = m.end()
+    saida.append(texto[pos:])
+    novo = "".join(saida)
+    # inicio de frase continua com maiuscula ("MODULO ..." -> "Modulo ...")
+    novo = re.sub(r"(^|[.!?]\s+)([a-zà-ÿ])", lambda x: x.group(1) + x.group(2).upper(), novo)
+    return _sem_repeticao(novo)
+
+
+def _sem_repeticao(texto):
+    """Marca/carro repetido colado: 'Volkswagen Volkswagen Golf', 'Fiat Fiat Uno', 'Volkswagen VW Gol'."""
+    def marca_de(w):
+        return _ALIAS_MAP.get(gi.strip_accents(w).lower())
+
+    def repete(a, b):
+        if a.lower() == b.lower():
+            return gi.chave_modelo(a) in _NOMES_PROPRIOS
+        return bool(marca_de(a)) and marca_de(a) == marca_de(b)
+
+    saida, pos, ant = [], 0, None
+    for m in re.finditer(r"[A-Za-zÀ-ÿ][\wÀ-ÿ-]*", texto):
+        sep, w = texto[pos:m.start()], m.group(0)
+        depois = texto[m.end():m.end() + 1]
+        if ant is not None and sep == " " and depois != "/" and repete(ant, w):
+            pos = m.end()                       # some a palavra repetida e o espaco antes dela
+            continue
+        saida += [sep, w]
+        pos, ant = m.end(), w
+    saida.append(texto[pos:])
+    return "".join(saida)
+
+
+# Acentos que o texto do anuncio perde, so palavras sem outra leitura (a lista do
+# acentuar() vale para o nome da peca; esta e so para a descricao e a ficha).
+_PALAVRAS_TEXTO = {
+    "anuncio": "anúncio", "anuncios": "anúncios", "procedencia": "procedência", "sao": "são",
+    "aluminio": "alumínio", "cambio": "câmbio", "responsavel": "responsável", "macaneta": "maçaneta",
+    "macanetas": "maçanetas", "aco": "aço", "cabecote": "cabeçote", "vacuo": "vácuo", "estetica": "estética",
+    "valvulas": "válvulas", "capo": "capô", "resistencia": "resistência", "potencia": "potência",
+    "saida": "saída", "reforcada": "reforçada", "reforcado": "reforçado", "reforco": "reforço",
+    "carcaca": "carcaça", "reservatorio": "reservatório", "eletricos": "elétricos", "eletricas": "elétricas",
+    "seguranca": "segurança", "braco": "braço", "bracos": "braços", "multimidia": "multimídia",
+    "termico": "térmico", "termica": "térmica", "proximo": "próximo", "proxima": "próxima",
+    "abracadeira": "abraçadeira", "abracadeiras": "abraçadeiras", "maquina": "máquina", "atraves": "através",
+    "desembacador": "desembaçador", "rele": "relé", "hibrido": "híbrido", "hibrida": "híbrida",
+    "dobradica": "dobradiça", "dobradicas": "dobradiças", "carter": "cárter", "dimensoes": "dimensões",
+    "radio": "rádio", "hidrovacuo": "hidrovácuo", "hidraulica": "hidráulica", "eletronicos": "eletrônicos",
+    "eletronicas": "eletrônicas", "acustico": "acústico", "acustica": "acústica", "eficiencia": "eficiência",
+    "especifico": "específico", "sintetico": "sintético", "camera": "câmera", "arranhoes": "arranhões",
+    "termostatica": "termostática", "multiplos": "múltiplos", "multiplas": "múltiplas", "calco": "calço",
+    "angulo": "ângulo", "audio": "áudio", "presenca": "presença", "fumaca": "fumaça", "velocimetro": "velocímetro",
+    "secundaria": "secundária", "primario": "primário", "primaria": "primária", "faisca": "faísca",
+    "intemperies": "intempéries", "obstaculos": "obstáculos", "alca": "alça", "estavel": "estável",
+    "necessario": "necessário", "necessaria": "necessária", "varios": "vários", "varias": "várias",
+    "acessorio": "acessório", "acessorios": "acessórios", "pinca": "pinça", "facil": "fácil",
+    "colisoes": "colisões", "balanco": "balanço", "experiencia": "experiência", "pratico": "prático",
+    "sera": "será", "generica": "genérica", "generico": "genérico", "catalogo": "catálogo", "giria": "gíria",
+    "maxima": "máxima", "maximo": "máximo", "minimo": "mínimo", "minima": "mínima", "auxilio": "auxílio",
+    "esfericas": "esféricas", "rotulas": "rótulas", "planetaria": "planetária", "ruido": "ruído",
+    "ruidos": "ruídos", "otimo": "ótimo", "otima": "ótima", "proprio": "próprio", "propria": "própria",
+    "periodo": "período", "conteudo": "conteúdo", "citroen": "citroën", "serie": "série", "camara": "câmara",
+    "duvida": "dúvida", "logistica": "logística", "plasticos": "plásticos", "metalicos": "metálicos",
+    "versoes": "versões", "versao": "versão", "forca": "força", "gas": "gás", "pe": "pé",
+}
+# "-avel/-aveis" e sempre "-ável/-áveis" ("ajustavel", "memorizaveis")
+_REGRAS_TEXTO = [(re.compile(r"(?<=[a-z]{2})aveis\b"), "áveis"), (re.compile(r"(?<=[a-z]{2})avel\b"), "ável")]
+
+
+def acentuar_texto(texto):
+    """acentuar() + as palavras da lista acima + "de fabrica" -> "de fábrica".
+    Pedaco com numero (codigo: "F1EP7K004FD3JA6", "5u0819703") fica como esta."""
+    def palavra(m):
+        if not m.group(0).isascii():
+            return m.group(0)                   # ja tem acento ("Peça" nao vira "Péça")
+        w = acentuar(m.group(0))
+        novo = _PALAVRAS_TEXTO.get(w.lower())
+        if novo is None:
+            lw = w.lower()
+            for rx, sub in _REGRAS_TEXTO:
+                lw = rx.sub(sub, lw)
+            if lw == w.lower():
+                return w
+            novo = lw
+        if w.isupper() and len(w) > 1:
+            return novo.upper()
+        return novo[:1].upper() + novo[1:] if w[:1].isupper() else novo
+
+    def pedaco(m):
+        p = m.group(0)
+        return p if re.search(r"\d", p) else re.sub(r"[A-Za-zÀ-ÖØ-öø-ÿ]+", palavra, p)
+    t = re.sub(r"\S+", pedaco, texto or "")
+    return re.sub(r"\b(d[eoa]s?) (f)abrica\b", lambda m: f"{m.group(1)} {m.group(2)}ábrica", t, flags=re.I)
+
+
+def frase_valor(v):
+    """Valor curto da ficha em frase normal: 'PLASTICO COM COMPONENTES ELETRÔNICOS' ->
+    'Plástico com componentes eletrônicos', 'Plastico com Placa Eletronica' -> 'Plástico com placa eletrônica'.
+    Siglas (ABS, EPDM) e letras soltas ('E/D') ficam."""
+    def palavra(m):
+        w = m.group(0)
+        if any(c.isdigit() for c in w) or len(w) == 1:
+            return w
+        k = gi.chave_modelo(w)
+        if k in SIGLAS_TEXTO:
+            return w.upper()
+        return w.lower()
+    t = acentuar_texto(_TOKEN.sub(palavra, v.strip()))
+    return t[:1].upper() + t[1:]
+
+
+# --------------------------------------------------------------------------
+# Ficha da peca. Os atributos do ML foram escritos pro robo de busca: vem em CAIXA
+# ALTA, sem acento, com o carro repetido ("Fabricante: VOLVO S60", "Modelo: XC60")
+# e listas enormes ("Captiva / Captiva Sport / ..."). Aqui: rotulo claro, valor com a
+# maiuscula certa, sem o que o topo ja diz (marca, modelo, "Original") e sem vazio.
+# --------------------------------------------------------------------------
+_VALOR_VAZIO = re.compile(r"^(?:-+1?|0|n/?a|nao|não|nenhum[a]?|nao informado|não informado|nao se aplica|"
+                          r"não se aplica|conforme aplica[cç][aã]o|sim)$", re.I)
+_PAISES = {"brasil", "china", "alemanha", "suecia", "japao", "eua", "estados unidos", "mexico", "argentina",
+           "franca", "italia", "espanha", "coreia", "coreia do sul", "india", "tailandia", "portugal",
+           "reino unido", "inglaterra", "hungria", "republica tcheca", "polonia", "nacional", "importado"}
+_CORES_EN = {"red": "Vermelho", "black": "Preto", "silver": "Prata", "gray": "Cinza", "grey": "Cinza",
+             "white": "Branco", "blue": "Azul"}
+_LIXO_FABRICANTE = {"original", "originais", "genuina", "genuino", "oem", "new", "novo", "nova", "peca", "pecas"}
+_ANOS_FIM = re.compile(r"\s*\(?\b((?:19|20)?\d{2})\s*(?:/|-|–|a|até|ate)\s*((?:19|20)?\d{2})\)?\s*$"
+                       r"|\s*\(?\b((?:19|20)\d{2})\)?\s*$", re.I)
+
+
+def _anos_no_fim(item, y):
+    """'XC60 18/24' com a peca 2018-2024 -> 'XC60' (o ano ja esta em "Serve em").
+    Ano diferente do da peca fica (e informacao, nao repeticao)."""
+    m = _ANOS_FIM.search(item)
+    if not m or not y:
+        return item
+    if m.group(3):
+        a = b = int(m.group(3))
+    else:
+        x, z = m.group(1), m.group(2)
+        a = _ano2(x) if len(x) == 2 else int(x)
+        b = _ano2(z) if len(z) == 2 else int(z)
+    if y[0] - 1 <= min(a, b) and max(a, b) <= y[1] + 1 and item[:m.start()].strip():
+        return item[:m.start()].strip()
+    return item
+
+
+def _grafia_carro(item):
+    """Grafia de carro: 'PAJERO FULL' -> 'Pajero Full', 'Xc60' -> 'XC60', 'Wr-v' -> 'WR-V'."""
+    def palavra(m):
+        w = m.group(0)
+        k = gi.chave_modelo(w)
+        if k in GRAFIA:
+            return GRAFIA[k]
+        g = _NOMES_PROPRIOS.get(k)
+        if g and gi.chave_modelo(g) == k and (w.isupper() or w.islower() or re.search(r"\d", w)):
+            return g
+        if _maiusc(w) and len(w) >= 4 and k not in SIGLAS_TEXTO:
+            return _capital(w)
+        if re.fullmatch(r"[a-z]{1,2}\d{1,2}", w):        # versao "t8" -> "T8"
+            return w.upper()
+        return w
+    return _TOKEN.sub(palavra, item)
+
+
+def _separar_barra(x):
+    """Barra sem espaco so separa dois NOMES ("XC60/XC90", "Gol/Voyage"); nunca ano ("18/24"),
+    numero ("208/2008", "206/207"), versao curta ("T5/T8", "G5/G6", "R/T") nem frase/parenteses."""
+    if "/" not in x or "(" in x or re.search(r"\.\s", x):
+        return [x]
+    pedacos = x.split("/")
+    partes, atual = [], pedacos[0]
+    for p in pedacos[1:]:
+        antes = re.split(r"[\s/]+", atual.strip())[-1]
+        depois = p.split()[0] if p.split() else ""
+        if (re.search(r"[A-Za-z]", antes) and re.search(r"[A-Za-z]", depois)
+                and not (len(antes) <= 2 and len(depois) <= 2)
+                and not atual.endswith(" ") and not p.startswith(" ")):
+            partes.append(atual.strip())
+            atual = p
+        else:
+            atual += "/" + p
+    partes.append(atual.strip())
+    return [p for p in partes if p]
+
+
+def _separar_modelos(v):
+    """'C4 / C4 Cactus / Strada/Bravo' -> ['C4', 'C4 Cactus', 'Strada', 'Bravo']."""
+    itens = []
+    for x in re.split(r"\s+/\s+|\s*·\s*|\s*;\s*|,\s+", v):
+        if x.strip():
+            itens += _separar_barra(x.strip())
+    return itens
+
+
+def _eh_carro(w):
+    """Palavra que abre um nome de carro (modelo ou marca): 'XC60', 'Tiguan', 'Peugeot'."""
+    k = gi.chave_modelo(w)
+    return k in _MODELOS_CHAVE or k in _CONHECIDOS_GLOBAL or gi.strip_accents(w).lower() in _ALIAS_MAP
+
+
+def modelos_ficha(v, marca="", modelo="", y=None):
+    """Atributo MODEL do ML -> [rotulo, valor] ou None quando so repete o carro do topo.
+    Lista com versoes vira um carro por linha: 'C4 Cactus: Feel, Shine, Live'; lista so de
+    carros vira uma linha: 'C320, C200, C180'. Nenhum nome e tirado (o ano igual ao do topo sai)."""
+    itens = [_grafia_carro(acentuar_texto(_anos_no_fim(caixa_normal(x), y))) for x in _separar_modelos(v)]
+    itens = [x for x in itens if x and not _VALOR_VAZIO.match(x)]
+    if not itens:
+        return None
+    # marca do topo no comeco de todos ("Volkswagen Golf 1.4 TSI", "VW Gol / VW Voyage") sai
+    if marca:
+        def sem_marca(x):
+            t = gi.strip_accents(x).lower()
+            for a in sorted([marca.lower(), *MARCAS.get(marca, [])], key=len, reverse=True):
+                a = gi.strip_accents(a)
+                if t.startswith(a + " "):
+                    return x[len(a) + 1:].strip()
+            return None
+        sem = [sem_marca(x) for x in itens]
+        if all(sem):
+            itens = sem
+    # versoes debaixo do carro: base literal ("C4 Cactus" -> "C4 Cactus Feel") ou carro conhecido
+    # que abre 2+ itens sem aparecer sozinho ("Saveiro G3 / Saveiro G4" -> "Saveiro: G3, G4").
+    # Pedaco que nao e carro ("XC60 2.0 T5 / T8 SPA", "Passat B6 / B7") fica com o de cima.
+    primeiro = Counter(x.split()[0].lower() for x in itens if len(x.split()) > 1)
+    bases = {x.lower() for x in itens}
+    grupos = []                                  # [base, [versoes], pedacos colados na base]
+    for x in itens:
+        alvo = None
+        for g in sorted(grupos, key=lambda g: -len(g[0])):
+            if x.lower().startswith(g[0].lower() + " ") and gi.chave_modelo(x) not in _MODELOS_CHAVE:
+                alvo = g
+                break
+        if alvo is None:
+            w0 = x.split()[0]
+            if len(x.split()) > 1 and primeiro[w0.lower()] >= 2 and w0.lower() not in bases \
+                    and gi.chave_modelo(w0) in _MODELOS_CHAVE:
+                alvo = next((g for g in grupos if g[0].lower() == w0.lower()), None)
+                if alvo is None:
+                    alvo = [w0, []]
+                    grupos.append(alvo)
+        if alvo is not None:
+            resto = x[len(alvo[0]):].strip()
+            if resto and resto.lower() not in (r.lower() for r in alvo[1]):
+                alvo[1].append(resto)
+        elif grupos and not _eh_carro(x.split()[0]):
+            ant = grupos[-1]
+            if ant[1] or gi.chave_modelo(ant[0]) in _MODELOS_CHAVE:
+                ant[1].append(x)                  # "XC60" + "T8" -> "XC60: T8"
+            else:
+                ant[0] = f"{ant[0]} / {x}"         # "XC60 2.0 T5" + "T8 SPA" -> "XC60 2.0 T5 / T8 SPA"
+        elif not any(g[0].lower() == x.lower() for g in grupos):
+            grupos.append([x, []])
+    if len(grupos) == 1 and not grupos[0][1]:
+        unico = grupos[0][0]
+        do_topo = {gi.chave_modelo(w) for w in f"{marca} {modelo}".split()} | {gi.chave_modelo(modelo)}
+        if modelo and all(gi.chave_modelo(w) in do_topo for w in unico.split()):
+            return None                       # "XC60", "Fiesta" com "Serve em Ford New Fiesta": repetido
+        return ["Modelo do veículo", unico]
+    # o carro da pagina primeiro; o resto na ordem do anuncio
+    grupos.sort(key=lambda g: gi.chave_modelo(g[0]) != gi.chave_modelo(modelo or "-"))
+    if not any(vs for _, vs in grupos):           # so carros, sem versao: uma linha, na ordem do anuncio
+        lista = list(dict.fromkeys(itens))
+        lista.sort(key=lambda x: gi.chave_modelo(x) != gi.chave_modelo(modelo or "-"))
+        return ["Modelos compatíveis", ", ".join(lista)]
+    linhas = [f"{b}: {', '.join(vs)}" if vs else b for b, vs in grupos]
+    return ["Modelos e versões", "\n".join(linhas)]
+
+
+_FORNECEDORES = {gi.chave_modelo(w) for w in _FORNECEDORES_NOMES} | {"trw", "vdo", "zf", "ngk"}
+_ALIASES_MARCA = {gi.strip_accents(a).lower() for a in _ALIAS_MAP} | {"general motors", "stellantis", "vag"}
+
+
+def _fabricante(v, marca):
+    """Fabricante da PECA (Bosch, Calsonic Kansei, Hyundai Mobis). Sai quando fala do carro:
+    a marca (de qualquer montadora: o carro ja esta em "Serve em"), modelo, ou os dois juntos
+    ("FORD NEW", "VOLVO S60", "Gm Cruze", "fordka", "Renaul", "Audi, Original")."""
+    import difflib
+    toks = [t for t in re.split(r"[\s,/()-]+", v) if t]
+    toks = [t for t in toks if gi.chave_modelo(t) not in _LIXO_FABRICANTE]
+    if not toks:
+        return None
+    if any(gi.chave_modelo(t) in _FORNECEDORES for t in toks):
+        pass                                                   # "Hyundai Mobis", "Siemens - VDO"
+    else:
+        texto = gi.strip_accents(" ".join(toks)).lower()
+        if texto in _ALIASES_MARCA:
+            return None
+        nomes = sorted(_ALIASES_MARCA) + sorted(_MODELOS_CHAVE)
+
+        def do_carro(t):
+            k = gi.chave_modelo(t)
+            if gi.strip_accents(t).lower() in _ALIASES_MARCA or k in _MODELOS_CHAVE or k in _CONHECIDOS_GLOBAL:
+                return True
+            if any(k.startswith(gi.chave_modelo(a)) for a in _ALIASES_MARCA if len(a) >= 3):
+                return True                                    # "fordka", "Renaul"... (pedaco de marca)
+            if any(gi.chave_modelo(a).startswith(k) for a in _ALIASES_MARCA if len(k) >= 4):
+                return True                                    # "Land", "Renaul"
+            return len(k) >= 4 and bool(difflib.get_close_matches(k, nomes, n=1, cutoff=0.75))
+        if any(do_carro(t) for t in toks):
+            return None
+    return " ".join(t.upper() if gi.chave_modelo(t) in SIGLAS_TEXTO
+                    else _capital(t) if _maiusc(t) and len(t) > 3 else t for t in toks)
+
+
+def _origem(v):
+    """País de origem. 'Original-31346697' (o vendedor pos o codigo aqui) sai: a pagina ja
+    diz que a peca e original (Procedencia). 'Suécia-Motor-Cabeçote' -> 'Suécia'."""
+    k = gi.strip_accents(v).lower().strip()
+    if k.startswith("original"):
+        return None
+    pais = k.split("-")[0].strip()
+    if pais in _PAISES:
+        return frase_valor(v.split("-")[0])
+    return frase_valor(v) if k in _PAISES else None
+
+
+def ficha(p, marca="", modelo="", y=None):
+    """Linhas da ficha: [rotulo, valor]. Valor com quebra de linha = um item por linha.
+    marca/modelo/y = o carro que o topo ja mostra (o que so repete ele sai)."""
     linhas = []
     cods = codigos_peca(p)
     if cods:
         linhas.append(["Código original (OEM)", " / ".join(cods)])
     attrs = p.get("attrs") or {}
     for chave, rotulo in FICHA:
-        v = (attrs.get(chave) or "").strip()
-        if v and v.lower() not in ("nao", "não", "n/a"):
-            linhas.append([rotulo, limpar_attr(chave, v)])
+        v = re.sub(r"\s+", " ", (attrs.get(chave) or "")).strip()
+        if not v or _VALOR_VAZIO.match(v):
+            continue
+        if chave == "MODEL":
+            linha = modelos_ficha(v, marca, modelo, y)
+        elif chave == "ORIGIN":
+            o = _origem(v)
+            linha = ["Origem", o] if o else None
+        elif chave == "MANUFACTURER":
+            f = _fabricante(v, marca)
+            linha = ["Fabricante da peça", f] if f else None
+        elif chave == "COLOR":
+            linha = [rotulo, _CORES_EN.get(v.lower()) or frase_valor(v)]
+        else:                                             # POSITION, MATERIAL
+            linha = [rotulo, frase_valor(v)]
+        if linha and linha[1] and not _VALOR_VAZIO.match(linha[1]):
+            linhas.append(linha)
     return linhas
 
 
@@ -1182,6 +1799,8 @@ def main():
         if nome:
             grafias[(mc, gi.chave_modelo(nome))][exibir(nome)] += 1
     display = {k: v.most_common(1)[0][0] for k, v in grafias.items()}
+    # grafia dos carros do estoque (2+ pecas) para a descricao e a ficha ("GOLF" -> "Golf")
+    _aprender_nomes([display[k] for k, v in grafias.items() if sum(v.values()) >= 2], modelos=True)
 
     # 3) Uma entrada por peca.
     pecas = []
@@ -1197,7 +1816,7 @@ def main():
         a0, a1 = anos_do_titulo(p["title"], mc, mod, p.get("part_number"))
         cat = cats.get(p.get("category_id"))
         fam = gi.familia(cat)
-        tipo = (cat or {}).get("nome", "")
+        tipo = subtipo(cat, p.get("category_id") or "")
         fotos = list(dict.fromkeys(p.get("pics") or ([p["img"]] if p.get("img") else [])))[:12]
         pecas.append({
             "id": p["id"],
@@ -1215,7 +1834,7 @@ def main():
             "s": tipo,
             "oem": " ".join(codigos_peca(p)),
             "o": codigos_busca(p),
-            "ficha": ficha(p),
+            "ficha": ficha(p, mc, mod, [a0, a1] if a0 else None),
             "desc": descricao(p.get("desc")),
         })
         q = estoque(p)

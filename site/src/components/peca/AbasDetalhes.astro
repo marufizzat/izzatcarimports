@@ -1,10 +1,28 @@
 ---
 // Ficha e descricao. No computador: as duas lado a lado. No celular: abas (sem paredao de texto).
+// Ficha: o codigo, onde serve, e o que o anuncio diz da peca (ja limpo no preparar_dados.py: sem o carro
+// repetido, sem "Original-123", com a maiuscula certa). Valor com quebra de linha = um carro por linha.
 import type { Peca } from '../../lib/dados';
+import { codigoDaPeca } from '../../lib/dados';
 interface Props { p: Peca; serve: string; serveRotulo?: string; }
 const { p, serve, serveRotulo = 'Serve em' } = Astro.props;
-const ficha = p.ficha;
-const descTexto = `${p.t}. Peça original retirada de carro com baixa legal, conferida e fotografada no nosso pátio. Confira o código gravado e, na dúvida, mande o modelo e o ano do seu carro no WhatsApp.`;
+const iCod = p.ficha.findIndex(([k]) => k.startsWith('Código'));
+const serveLinha: [string, string][] = serve ? [[serveRotulo, serve]] : [];
+const ficha: [string, string][] = iCod >= 0
+  ? [p.ficha[iCod], ...serveLinha, ...p.ficha.filter((_, i) => i !== iCod)]
+  : [...serveLinha, ...p.ficha];
+// "C4 Cactus: Feel, Shine" -> o carro em destaque e as versoes do lado
+const linhas = (v: string) => v.split('\n').map((l) => { const m = /^([^:]{1,40}): (.+)$/.exec(l); return m ? { b: m[1], r: m[2] } : { b: '', r: l }; });
+// Texto padrao (o vendedor nao escreveu descricao): so fatos da peca, sem repetir o titulo do anuncio
+// nem o "na duvida, chame no WhatsApp" (o "Antes de comprar" la em cima ja diz).
+const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
+const carroTxt = p.b && p.m ? ` do ${p.b} ${p.m}` : p.b ? ` de ${p.b}` : '';
+const cod = codigoDaPeca(p.oem);
+const descTexto = [
+  `${p.n} original${carroTxt}${anos ? `, ${anos}` : ''}${cod ? `, com o código ${cod} gravado` : ''}.`,
+  'Peça usada, de carro com baixa legal no Detran-RS.',
+  'As fotos são da própria peça: veja nelas o estado e os detalhes.',
+].join(' ');
 ---
 <section class="secao detalhes" data-abas>
   <div class="moldura">
@@ -17,9 +35,15 @@ const descTexto = `${p.t}. Peça original retirada de carro com baixa legal, con
         <h2 class="subtitulo">Ficha da peça</h2>
         <table class="ficha">
           <tbody>
-            {ficha.map(([k, v]) => <tr><th scope="row">{k}</th><td class={k.startsWith('Código') ? 'oem' : ''}>{v}</td></tr>)}
-            {serve && <tr><th scope="row">{serveRotulo}</th><td>{serve}</td></tr>}
-            <tr><th scope="row">Procedência</th><td>Carro com baixa legal no Detran-RS · CDV nº 01060</td></tr>
+            {ficha.map(([k, v]) => (
+              <tr><th scope="row">{k}</th>
+                <td class={k.startsWith('Código') ? 'oem' : ''}>
+                  {k.startsWith('Modelos e') || v.includes('\n')
+                    ? linhas(v).map((l) => <span class="ficha-linha">{l.b && <b>{l.b}:</b>} {l.r}</span>)
+                    : v}
+                </td></tr>
+            ))}
+            <tr><th scope="row">Procedência</th><td>Peça original de carro com baixa legal no <span class="sem-quebra">Detran-RS</span> · <span class="sem-quebra">CDV nº 01060</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -58,28 +82,40 @@ const descTexto = `${p.t}. Peça original retirada de carro com baixa legal, con
   });
 </script>
 
-<style>
-  .detalhes { padding-top: 24px; }
-  .abas { display: none; gap: 6px; padding: 5px; margin-bottom: 18px; border-radius: 14px; background: var(--bg-2); }
-  .abas button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 15px; font-weight: 650; color: var(--ink-2); cursor: pointer; }
-  .abas button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
-  .detalhes-grade { display: grid; gap: 40px; }
-  .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: 24px; }
-  .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
-  .ficha th, .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
-  .ficha tr:last-child th, .ficha tr:last-child td { border-bottom: 0; }
-  .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
-  .ficha td { overflow-wrap: anywhere; }
-  .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
-  .descricao :global(h3) { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
-  .descricao :global(p) { margin: 0 0 10px; }
+<style is:global>
+  /* Globais de propósito (sem o atributo de escopo em cada linha da ficha): tudo preso a .detalhes. */
+
+  .secao.detalhes { padding-top: 24px; }
+  .detalhes .abas { display: none; gap: 6px; padding: 5px; margin-bottom: 18px; border-radius: 14px; background: var(--bg-2); }
+  .detalhes .abas button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 15px; font-weight: 650; color: var(--ink-2); cursor: pointer; }
+  .detalhes .abas button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+  .detalhes .detalhes-grade { display: grid; gap: 40px; }
+  .detalhes .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: 24px; }
+  .detalhes .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
+  .detalhes .ficha th, .detalhes .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .detalhes .ficha tr:last-child th, .detalhes .ficha tr:last-child td { border-bottom: 0; }
+  .detalhes .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
+  .detalhes .ficha td { overflow-wrap: anywhere; }
+  .detalhes .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
+  .detalhes .descricao h3 { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
+  .detalhes .descricao p { margin: 0 0 10px; }
+  /* regras da ficha limpa (listas, linhas da ficha) */
+  .detalhes .descricao ul, .detalhes .descricao ol { display: grid; gap: 5px; margin: 0 0 12px; padding-left: 1.25em; }
+  .detalhes .descricao ul { list-style: disc; }
+  .detalhes .descricao ol { list-style: decimal; }
+  .detalhes .descricao li { padding-left: 3px; }
+  .detalhes .descricao li::marker { color: var(--ink-3); }
+  .detalhes .ficha-linha { display: block; }
+  .detalhes .sem-quebra { white-space: nowrap; }
+  .detalhes .ficha-linha + .ficha-linha { margin-top: 7px; }
+  .detalhes .ficha-linha b { font-weight: 650; color: var(--ink); }
   @media (max-width: 959px) {
-    .abas { display: flex; }
-    .detalhes-grade { gap: 0; }
-    .subtitulo { display: none; }
+    .detalhes .abas { display: flex; }
+    .detalhes .detalhes-grade { gap: 0; }
+    .detalhes .subtitulo { display: none; }
   }
   @media (min-width: 960px) {
-    .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; }
-    .painel[hidden] { display: block !important; }
+    .detalhes .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; }
+    .detalhes .painel[hidden] { display: block !important; }
   }
 </style>

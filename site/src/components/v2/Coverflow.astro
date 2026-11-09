@@ -1,6 +1,6 @@
 ---
 // "Chegou no pátio": no computador (com mouse, sem reduzir movimento) vira um carrossel 3D estilo coverflow;
-// no celular e com "reduzir movimento" continua o trilho de arrastar (.trilho, data-trilho).
+// no celular, com "reduzir movimento" e em aparelho fraco (html.leve) continua o trilho de arrastar (.trilho, data-trilho).
 // Os cartões são o CartaoPeca de sempre. Só CSS 3D + um script pequeno; sem dependências.
 // Posição de cada cartão = data-o (distância até o cartão ativo). O servidor já põe a posição
 // inicial (ativo = 0), então o desktop aparece certo antes do script.
@@ -33,7 +33,10 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
 
 <script>
   // Só o modo 3D (desktop com mouse e sem "reduzir movimento") usa setas, arrastar e roda do mouse.
-  const modo = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
+  const mq3d = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
+  // aparelho fraco (html.leve, ver Base.astro): sem 3D, fica o trilho
+  const leve = document.documentElement.classList.contains('leve');
+  const modo = { get matches() { return !leve && mq3d.matches; } };
 
   document.querySelectorAll<HTMLElement>('[data-cf]').forEach((raiz) => {
     const lista = raiz.querySelector<HTMLUListElement>('.cf-lista');
@@ -148,48 +151,49 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
   .cf-controles { display: none; }
 
   /* ---- Modo coverflow (desktop com mouse, sem reduzir movimento) ---- */
+  /* (aparelho fraco, html.leve: fica o trilho de arrastar, como no celular) */
   @media (min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    .cf-lista {
+    :global(html:not(.leve)) .cf-lista {
       --cw: clamp(230px, 21vw, 288px);
       display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; grid-auto-columns: auto;
       overflow: visible; scroll-snap-type: none; padding: 26px 0 30px; gap: 0;
       perspective: 1400px; perspective-origin: 50% 35%;
       user-select: none; -webkit-user-select: none; cursor: grab;
     }
-    .cf-lista.arrastando { cursor: grabbing; }
-    .cf-lista img, .cf-lista a { -webkit-user-drag: none; user-drag: none; }
-    .cf-item {
+    :global(html:not(.leve)) .cf-lista.arrastando { cursor: grabbing; }
+    :global(html:not(.leve)) .cf-lista img, :global(html:not(.leve)) .cf-lista a { -webkit-user-drag: none; user-drag: none; }
+    :global(html:not(.leve)) .cf-item {
       grid-row: 1; grid-column: 1; justify-self: center; width: var(--cw);
       transition: transform .75s cubic-bezier(.2,.75,.2,1), opacity .55s ease;
       backface-visibility: hidden;
     }
     /* véu: os cartões de lado ficam um pouco apagados */
-    .cf-item::after {
+    :global(html:not(.leve)) .cf-item::after {
       content: ""; position: absolute; inset: 8px; border-radius: 18px; pointer-events: none;
       background: var(--bg); opacity: 0; transition: opacity .55s ease;
     }
-    .cf-item[data-o="0"] { transform: translate3d(0, 0, 0) scale(1.05); z-index: 5; }
-    .cf-item[data-o="-1"] { transform: translate3d(calc(var(--cw) * -.74), 0, -110px) rotateY(40deg) scale(.88); z-index: 4; }
-    .cf-item[data-o="1"] { transform: translate3d(calc(var(--cw) * .74), 0, -110px) rotateY(-40deg) scale(.88); z-index: 4; }
-    .cf-item[data-o="-2"] { transform: translate3d(calc(var(--cw) * -1.28), 0, -240px) rotateY(56deg) scale(.74); z-index: 3; }
-    .cf-item[data-o="2"] { transform: translate3d(calc(var(--cw) * 1.28), 0, -240px) rotateY(-56deg) scale(.74); z-index: 3; }
-    .cf-item[data-o="x"] { transform: translate3d(0, 0, -420px) scale(.6); opacity: 0; visibility: hidden; z-index: 0; }
-    .cf-item[data-o="-1"]::after, .cf-item[data-o="1"]::after { opacity: .18; }
-    .cf-item[data-o="-2"]::after, .cf-item[data-o="2"]::after { opacity: .34; }
-    .cf-item[data-o="0"] .etiqueta { box-shadow: var(--shadow-2); }
+    :global(html:not(.leve)) .cf-item[data-o="0"] { transform: translate3d(0, 0, 0) scale(1.05); z-index: 5; }
+    :global(html:not(.leve)) .cf-item[data-o="-1"] { transform: translate3d(calc(var(--cw) * -.74), 0, -110px) rotateY(40deg) scale(.88); z-index: 4; }
+    :global(html:not(.leve)) .cf-item[data-o="1"] { transform: translate3d(calc(var(--cw) * .74), 0, -110px) rotateY(-40deg) scale(.88); z-index: 4; }
+    :global(html:not(.leve)) .cf-item[data-o="-2"] { transform: translate3d(calc(var(--cw) * -1.28), 0, -240px) rotateY(56deg) scale(.74); z-index: 3; }
+    :global(html:not(.leve)) .cf-item[data-o="2"] { transform: translate3d(calc(var(--cw) * 1.28), 0, -240px) rotateY(-56deg) scale(.74); z-index: 3; }
+    :global(html:not(.leve)) .cf-item[data-o="x"] { transform: translate3d(0, 0, -420px) scale(.6); opacity: 0; visibility: hidden; z-index: 0; }
+    :global(html:not(.leve)) .cf-item[data-o="-1"]::after, :global(html:not(.leve)) .cf-item[data-o="1"]::after { opacity: .18; }
+    :global(html:not(.leve)) .cf-item[data-o="-2"]::after, :global(html:not(.leve)) .cf-item[data-o="2"]::after { opacity: .34; }
+    :global(html:not(.leve)) .cf-item[data-o="0"] .etiqueta { box-shadow: var(--shadow-2); }
 
-    .cf-controles { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 6px; }
-    .cf-status { min-width: 9ch; margin: 0; text-align: center; font-size: 15px; font-weight: 650; color: var(--ink-2); }
-    .cf-seta {
+    :global(html:not(.leve)) .cf-controles { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 6px; }
+    :global(html:not(.leve)) .cf-status { min-width: 9ch; margin: 0; text-align: center; font-size: 15px; font-weight: 650; color: var(--ink-2); }
+    :global(html:not(.leve)) .cf-seta {
       width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer;
       background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2), 0 6px 14px -10px rgb(0 0 0 / .35);
       transition: box-shadow .2s, transform .2s, opacity .2s;
     }
-    .cf-seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .cf-seta:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 10px 20px -10px rgb(0 0 0 / .4); }
-    .cf-seta:active:not(:disabled) { transform: translateY(1px); }
-    .cf-seta:disabled { opacity: .35; cursor: default; }
-    .cf-seta:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    :global(html:not(.leve)) .cf-seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    :global(html:not(.leve)) .cf-seta:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 10px 20px -10px rgb(0 0 0 / .4); }
+    :global(html:not(.leve)) .cf-seta:active:not(:disabled) { transform: translateY(1px); }
+    :global(html:not(.leve)) .cf-seta:disabled { opacity: .35; cursor: default; }
+    :global(html:not(.leve)) .cf-seta:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   @media (prefers-reduced-motion: reduce) {

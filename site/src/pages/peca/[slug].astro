@@ -3,11 +3,11 @@ import Pagina from '../../layouts/Pagina.astro';
 import PecaTopo from '../../components/PecaTopo.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
-import GaleriaTelaCheia from '../../components/ui/GaleriaTelaCheia';
 import AbasDetalhes from '../../components/peca/AbasDetalhes.astro';
 import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
+import { doMesmoCarro } from '../../lib/relacionadas';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
@@ -35,17 +35,17 @@ const r = resumo();
 const fam = r.familias.find((f) => f.n === p.c);
 const carro = p.m ? r.carros.find((c) => c.b === p.b && c.m === p.m) : undefined;
 const marca = r.marcas.find((m) => m.n === p.b);
-// Do mesmo carro: mesma subfamilia primeiro, depois a mesma familia, depois o resto (ordem estavel por nome).
-const nivel = (x: Peca) => (x.s && x.s === p.s ? 0 : x.c === p.c ? 1 : 2);
-const doCarro = (p.b && p.m ? (porCarro().get(`${p.b}|${p.m}`) ?? []) : [])
-  .filter((x) => x.id !== p.id)
-  .sort((a, b) => nivel(a) - nivel(b) || a.n.localeCompare(b.n, 'pt-BR'))
-  .slice(0, 8);
-const rel = doCarro.length ? doCarro : p.rel.map(pecaPorId).filter((x): x is Peca => !!x).slice(0, 8);
-const mesmaFamiliaAqui = doCarro.length > 0 && nivel(doCarro[0]) < 2;
+// Do mesmo carro: a MESMA GERACAO (anos que se sobrepoem), mesma subfamilia/familia primeiro. Outra geracao
+// so completa quando faltam pecas, num grupo a parte e com o nome dito (regra em lib/relacionadas.ts).
+const doCarro = p.b && p.m ? doMesmoCarro(p, porCarro().get(`${p.b}|${p.m}`) ?? []) : { mesma: [], outras: [], semAno: false };
+const temCarro = doCarro.mesma.length + doCarro.outras.length > 0;
+// sem outra peca do modelo: as da mesma marca (titulo "Da mesma marca", sem prometer o carro)
+const daMarca = temCarro ? [] : p.rel.map(pecaPorId).filter((x): x is Peca => !!x).slice(0, 8);
+const mesmaFamiliaAqui = doCarro.mesma.length > 0 && doCarro.mesma[0].c === p.c;
 const url = `${SITE}/peca/${p.slug}.html`;
 const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
-const serve = nomeCarro + (p.y ? `, ${p.y[0] === p.y[1] ? p.y[0] : `${p.y[0]} a ${p.y[1]}`}` : '');
+const anosTxt = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
+const serve = nomeCarro + (anosTxt ? `, ${anosTxt}` : '');
 // so com marca e modelo dizemos "Serve em"; peca so com a marca fica "Carro" (sem prometer o modelo)
 const serveRotulo = p.m ? 'Serve em' : 'Carro';
 const unica = p.q === 1;
@@ -53,7 +53,6 @@ const unica = p.q === 1;
 const codigo = codigoDaPeca(p.oem);
 const titulo = `${p.n}${nomeCarro ? ` ${nomeCarro}` : ''}${p.y ? ` ${p.y[0] === p.y[1] ? p.y[0] : `${p.y[0]}–${p.y[1]}`}` : ''}${codigo ? ` ${codigo}` : ` ${p.id}`} | Izzat Car`;
 const descricao = `${p.t}. Peça original de carro com baixa legal no Detran-RS. R$ ${brl(p.p)}, nota fiscal e 90 dias de garantia. CDV nº 01060.`;
-const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\nServe e ainda tem?`;
 const trilha: [string, string][] = [['Início', '/index.html'], ['Catálogo', '/catalogo.html']];
 if (fam && fam.n !== 'Outros') trilha.push([fam.n, `/categoria/${fam.k}.html`]);
 if (carro) trilha.push([`${carro.b} ${carro.m}`, `/carros/${carro.k}.html`]);
@@ -86,7 +85,6 @@ const ld = {
       <span aria-current="page">{p.n}</span>
     </nav>
     <section class="topo"><PecaTopo p={p} /></section>
-    <GaleriaTelaCheia client:idle fotos={[...(capaEstudio(p.id) ? [capaEstudio(p.id)!] : []), ...p.fotos.map((k) => foto(k, 'F'))]} titulo={p.n} />
   </div>
 
   <div class="barra-compra" data-barra-compra aria-hidden="true">
@@ -94,18 +92,23 @@ const ld = {
       <div class="barra-preco num"><small>R$</small> {brl(p.p)}</div>
       {unica && <span class="barra-unica"><i aria-hidden="true"></i>Peça única</span>}
     </div>
-    <a class="botao botao-laranja" href={whatsUrl(msg)} data-whats data-cabeca={`Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n`} data-sem={nomeCarro ? `Meu carro é ${nomeCarro} ano ____. ` : ''} data-cauda="Serve e ainda tem?" tabindex="-1"><Icone nome="whats" />Pedir pelo WhatsApp</a>
+    {/* o link (com a mensagem pronta e o carro salvo) é o mesmo do botão principal: o script do PecaTopo copia */}
+    <a class="botao botao-laranja" data-whats-espelho tabindex="-1"><Icone nome="whats" />Pedir pelo WhatsApp</a>
   </div>
 
   <AbasDetalhes p={p} serve={serve} serveRotulo={serveRotulo} />
 
   {codigo && <GuiaCodigo cod={codigo} titulo={p.t} url={url} />}
 
-  {rel.length > 0 && (
-    <DoMesmoCarro carro={carro ? `${carro.b} ${carro.m}` : marca ? `Outras peças ${marca.n}` : 'Outras peças'}
+  {temCarro && (
+    <DoMesmoCarro carro={nomeCarro} modelo={p.m} anos={anosTxt}
                   link={carro ? `/carros/${carro.k}.html` : marca ? `/marca/${marca.k}.html` : '/catalogo.html'}
-                  total={carro ? carro.c : marca ? marca.c : 0} pecas={rel}
-                  familia={mesmaFamiliaAqui ? p.c : ''} />
+                  total={carro ? carro.c : marca ? marca.c : 0} pecas={doCarro.mesma.slice(0, 6)} outras={doCarro.outras.slice(0, 4)}
+                  familia={mesmaFamiliaAqui} semAno={doCarro.semAno} />
+  )}
+  {!temCarro && daMarca.length > 0 && (
+    <DoMesmoCarro titulo={marca ? 'Da mesma marca' : 'Outras peças'} carro={marca ? `Outras peças ${marca.n}` : 'Outras peças do estoque'}
+                  link={marca ? `/marca/${marca.k}.html` : '/catalogo.html'} total={marca ? marca.c : r.total} pecas={daMarca} />
   )}
 
   <section class="secao">
@@ -153,6 +156,8 @@ const ld = {
                   box-shadow: var(--shadow-2), inset 0 0 0 1px var(--line);
                   transform: translateY(140%); transition: transform .35s cubic-bezier(.2,.8,.2,1); }
   .barra-compra.visivel { transform: none; }
+  /* aparelho fraco: sem desfoque atrás da barra (fundo sólido da mesma cor) */
+  :global(html.leve) .barra-compra { background: var(--surface); backdrop-filter: none; }
   .barra-info { display: grid; gap: 2px; min-width: 0; }
   .barra-preco { font-stretch: 80%; font-weight: 850; font-size: 23px; line-height: 1.05; white-space: nowrap; }
   .barra-preco small { font-size: 13.5px; color: var(--ink-2); }

@@ -66,7 +66,7 @@ const ld = {
     </div>
   </section>
 
-  <section class="secao" aria-labelledby="t-cat">
+  <section class="secao cv" aria-labelledby="t-cat">
     <div class="moldura">
       <div class="cabeca-secao linha">
         <div>
@@ -79,7 +79,7 @@ const ld = {
     </div>
   </section>
 
-  <section class="secao faixa" aria-labelledby="t-chegou">
+  <section class="secao faixa cv" aria-labelledby="t-chegou">
     <div class="moldura">
       <div class="cabeca-secao linha">
         <div>
@@ -92,7 +92,7 @@ const ld = {
     </div>
   </section>
 
-  <section class="secao" aria-labelledby="t-marcas">
+  <section class="secao cv" aria-labelledby="t-marcas">
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-marcas" class="titulo-secao">Escolha pela marca do seu carro</h2>
@@ -109,7 +109,7 @@ const ld = {
     </div>
   </section>
 
-  <section class="secao faixa" aria-labelledby="t-carros">
+  <section class="secao faixa cv" aria-labelledby="t-carros">
     <div class="moldura">
       <div class="cabeca-secao linha">
         <div>
@@ -122,7 +122,7 @@ const ld = {
     </div>
   </section>
 
-  <section class="secao" aria-labelledby="t-como">
+  <section class="secao cv" aria-labelledby="t-como">
     <div class="moldura">
       <div class="cabeca-secao linha">
         <div>
@@ -149,7 +149,7 @@ const ld = {
     </div>
   </section>
 
-  <section class="secao" aria-labelledby="t-faq">
+  <section class="secao cv" aria-labelledby="t-faq">
     <div class="moldura faq">
       <div class="cabeca-secao">
         <h2 id="t-faq" class="titulo-secao">Perguntas que a gente mais recebe</h2>
@@ -175,6 +175,10 @@ const ld = {
   .cabeca-secao .lead { margin: 0; }
   .titulo-secao { margin: 0; }
   .faixa { background: var(--bg-2); }
+  /* Fluidez: seções abaixo da dobra só são desenhadas quando chegam perto da tela (a home abre mais leve no
+     celular). "auto" guarda o tamanho já desenhado (sem pulo na rolagem). Só em seções com o respiro normal
+     (.secao): nada nelas passa da borda (o content-visibility corta o que passar). */
+  .cv { content-visibility: auto; contain-intrinsic-size: auto 900px; }
 
   .selos-faixa { position: relative; z-index: 1; margin-top: -28px; }
   @media (max-width: 767px) { .selos-faixa { margin-top: 0; padding-top: 4px; } }
