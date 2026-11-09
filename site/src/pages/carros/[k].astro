@@ -17,6 +17,7 @@ import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS } from '../../lib/dados'
 import { textosCarro, tituloCarro } from '../../lib/textos';
 import { fotoVitrine } from '../../lib/vitrine';
 import { linkAviso } from '../../lib/aviso';
+import { miniatura } from '../../lib/miniatura';
 import { serveNoModelo } from '../../lib/meuCarro';
 export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
 const r = resumo();
@@ -41,7 +42,8 @@ const fams = N < SISTEMAS_A_PARTIR_DE ? [] : Object.entries(lista.reduce<Record<
   .sort((a, b) => b[1] - a[1])
   .map(([n, q]) => {
     const arte = arteFamilia(n);
-    return { n, c: q, h: `${base}&tipo=${encodeURIComponent(n)}`, foto: arte ?? fotoVitrine(lista, (p) => p.c === n), arte: !!arte };
+    // a miniatura (192 px) no lugar da arte inteira (1254 px): o cartão mostra 64 px
+    return { n, c: q, h: `${base}&tipo=${encodeURIComponent(n)}`, foto: arte ? miniatura(arte) : fotoVitrine(lista, (p) => p.c === n), arte: !!arte };
   });
 
 const anos = c.anos ? (c.anos[0] === c.anos[1] ? `de ${c.anos[0]}` : `de ${c.anos[0]} a ${c.anos[1]}`) : '';
