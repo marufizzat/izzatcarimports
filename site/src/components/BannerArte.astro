@@ -1,0 +1,19 @@
+---
+// Banner com o TEXTO DESENHADO NA ARTE (gerada no Codex, logo original aplicado depois).
+// No celular entra a versao em pe (texto grande); o texto vai no alt/aria-label.
+interface Props { arte: string; texto: string; href: string; movel?: string; largura?: number; altura?: number; class?: string; }
+const { arte, texto, href, movel, largura = 1536, altura = 1024, class: cls } = Astro.props;
+---
+<a class={`banner-arte ${cls ?? ''}`} href={href} aria-label={texto}>
+  <picture>
+    {movel && <source media="(max-width: 700px)" srcset={`${movel}.webp`} type="image/webp" width="1024" height="1536" />}
+    {movel && <source media="(max-width: 700px)" srcset={`${movel}.jpg`} width="1024" height="1536" />}
+    <source srcset={`${arte}.webp`} type="image/webp" />
+    <img src={`${arte}.jpg`} alt={texto} width={largura} height={altura} loading="lazy" decoding="async" />
+  </picture>
+</a>
+<style>
+  .banner-arte { display: block; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-2); transition: transform .35s cubic-bezier(.2,.7,.2,1); }
+  .banner-arte img { width: 100%; height: auto; display: block; }
+  @media (hover: hover) { .banner-arte:hover { transform: translateY(-3px); } }
+</style>

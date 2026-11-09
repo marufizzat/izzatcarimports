@@ -1,0 +1,83 @@
+---
+// Acordeao de perguntas frequentes: zero JavaScript (details/summary nativos).
+// A altura anima com ::details-content + interpolate-size (Chrome, Edge, Safari recentes);
+// onde nao existir, abre e fecha direto, sem quebrar nada.
+// Uma pergunta aberta por vez (atributo name). Gera FAQPage em JSON-LD para o Google.
+interface Item { pergunta: string; resposta: string }
+interface Props { itens: Item[] }
+
+const { itens } = Astro.props;
+// nome do grupo unico por lista (uma aberta por vez, sem misturar com outro acordeao da pagina)
+const grupo = `faq-${[...itens.map((i) => i.pergunta).join('|')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`;
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: itens.map((i) => ({
+    '@type': 'Question',
+    name: i.pergunta,
+    acceptedAnswer: { '@type': 'Answer', text: i.resposta },
+  })),
+}).replace(/</g, '\\u003c');
+---
+
+<div class="acd">
+  {itens.map((it) => (
+    <details class="acd-item" name={grupo}>
+      <summary class="acd-pergunta">
+        <span>{it.pergunta}</span>
+        <i class="acd-sinal" aria-hidden="true"></i>
+      </summary>
+      <p class="acd-resposta">{it.resposta}</p>
+    </details>
+  ))}
+</div>
+<script type="application/ld+json" set:html={jsonLd} />
+
+<style>
+  .acd { interpolate-size: allow-keywords; border-top: 1px solid var(--line); }
+  .acd-item { border-bottom: 1px solid var(--line); }
+
+  .acd-pergunta {
+    list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    min-height: 60px; padding: 16px 4px; cursor: pointer; border-radius: 10px;
+    font-size: clamp(16px, 1.6vw, 18px); font-weight: 650; font-stretch: 92%; line-height: 1.35; color: var(--ink);
+    user-select: none;
+  }
+  .acd-pergunta::-webkit-details-marker { display: none; }
+  .acd-pergunta:hover span { color: var(--accent-text); }
+  .acd-pergunta span { transition: color .2s ease; text-wrap: balance; }
+
+  /* sinal + que vira - (duas barras; a vertical gira e some) */
+  .acd-sinal {
+    position: relative; flex: none; width: 36px; height: 36px; border-radius: 12px;
+    background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line);
+    transition: background-color .25s ease, box-shadow .25s ease;
+  }
+  .acd-sinal::before,
+  .acd-sinal::after {
+    content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 2px; margin: -1px 0 0 -7px;
+    border-radius: 2px; background: var(--ink);
+    transition: transform .36s cubic-bezier(.2,.8,.2,1), opacity .25s ease;
+  }
+  .acd-sinal::after { transform: rotate(90deg); }
+  .acd-item[open] .acd-sinal { background: var(--accent); box-shadow: none; }
+  .acd-item[open] .acd-sinal::after { transform: rotate(0deg); opacity: 0; }
+
+  .acd-resposta {
+    margin: 0; padding: 0 56px 22px 4px; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty;
+  }
+
+  /* altura animada: o conteudo (tudo exceto o summary) fica no pseudo-elemento */
+  .acd-item::details-content {
+    block-size: 0; overflow: clip;
+    transition: block-size .36s cubic-bezier(.2,.8,.2,1), content-visibility .36s allow-discrete;
+  }
+  .acd-item[open]::details-content { block-size: auto; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .acd-item::details-content, .acd-sinal, .acd-sinal::before, .acd-sinal::after, .acd-pergunta span { transition: none; }
+  }
+  @media (max-width: 639px) {
+    .acd-resposta { padding-right: 8px; }
+  }
+</style>

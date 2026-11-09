@@ -1,0 +1,25 @@
+---
+// Chamada final para o WhatsApp (mensagem pronta), em bloco de fim de pagina.
+import './inst.css';
+import Icone from '../Icone.astro';
+import { whatsUrl } from '../../lib/dados';
+interface Props { titulo: string; texto: string; mensagem?: string; rotulo?: string; id?: string; arte?: string; arteAlt?: string; }
+const { titulo, texto, mensagem = 'Olá! Estou procurando uma peça.', rotulo = 'Chamar no WhatsApp', id,
+        arte = '/arte/passo-2', arteAlt = 'Confirme o seu carro: manda o modelo e o ano. A gente confere na peça.' } = Astro.props;
+---
+<div class="moldura inst-sec">
+  <section class="inst-chamada-caixa inst-chamada-com-arte" aria-labelledby={id}>
+    <div class="inst-chamada-texto">
+      <h2 class="titulo-secao" id={id}>{titulo}</h2>
+      <p>{texto}</p>
+      <a class="botao botao-laranja inst-botao" href={whatsUrl(mensagem)} rel="noopener">
+        <Icone nome="whats" />{rotulo}
+      </a>
+      <span class="inst-fone">(53) 99117-0950</span>
+    </div>
+    <picture class="inst-chamada-arte">
+      <source srcset={`${arte}.webp`} type="image/webp" />
+      <img src={`${arte}.jpg`} alt={arteAlt} width="800" height="800" loading="lazy" decoding="async" />
+    </picture>
+  </section>
+</div>

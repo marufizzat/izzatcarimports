@@ -1,0 +1,156 @@
+---
+import Pagina from '../../layouts/Pagina.astro';
+import PecaTopo from '../../components/PecaTopo.astro';
+import CartaoPeca from '../../components/CartaoPeca.astro';
+import BannerArte from '../../components/BannerArte.astro';
+import Icone from '../../components/Icone.astro';
+import GaleriaTelaCheia from '../../components/ui/GaleriaTelaCheia';
+import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE } from '../../lib/dados';
+import type { Peca } from '../../lib/dados';
+
+export function getStaticPaths() {
+  return pecas().map((p) => ({ params: { slug: p.slug }, props: { id: p.id } }));
+}
+const p = pecaPorId(Astro.props.id) as Peca;
+const r = resumo();
+const fam = r.familias.find((f) => f.n === p.c);
+const carro = p.m ? r.carros.find((c) => c.b === p.b && c.m === p.m) : undefined;
+const marca = r.marcas.find((m) => m.n === p.b);
+const rel = p.rel.map(pecaPorId).filter((x): x is Peca => !!x).slice(0, 8);
+const url = `${SITE}/peca/${p.slug}.html`;
+const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
+const serve = nomeCarro + (p.y ? `, ${p.y[0]} a ${p.y[1]}` : '');
+const codigo = (p.oem || '').split(/[\s,;/|]+/)[0];
+const titulo = `${p.n}${nomeCarro ? ` ${nomeCarro}` : ''}${p.y ? ` ${p.y[0]}–${p.y[1]}` : ''}${codigo ? ` ${codigo.toUpperCase()}` : ` ${p.id}`} | Izzat Car`;
+const descricao = `${p.t}. Peça original de carro com baixa legal no Detran-RS. R$ ${brl(p.p)}, nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\nServe e ainda tem?`;
+const trilha: [string, string][] = [['Início', '/index.html'], ['Catálogo', '/catalogo.html']];
+if (fam && fam.n !== 'Outros') trilha.push([fam.n, `/categoria/${fam.k}.html`]);
+if (carro) trilha.push([`${carro.b} ${carro.m}`, `/carros/${carro.k}.html`]);
+else if (marca) trilha.push([marca.n, `/marca/${marca.k}.html`]);
+
+const ld = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'Product', name: p.t, image: p.fotos.slice(0, 6).map((k) => foto(k, 'F')), sku: p.id,
+      mpn: (p.oem || '').split(/\s+/)[0] || p.id,
+      description: `${p.t}. Peça original com procedência legal, nota fiscal e 90 dias de garantia. Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
+      brand: { '@type': 'Brand', name: p.b || 'Original' },
+      category: p.s || p.c,
+      offers: { '@type': 'Offer', url, price: p.p.toFixed(2), priceCurrency: 'BRL', availability: 'https://schema.org/InStock',
+                seller: { '@type': 'Organization', name: 'Izzat Car Imports' } } },
+    { '@type': 'BreadcrumbList', itemListElement: [...trilha, [p.n, `/peca/${p.slug}.html`]].map(([n, h], i) => ({
+        '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) },
+  ],
+};
+---
+<Pagina titulo={titulo} descricao={descricao} ogImagem={foto(p.fotos[0], 'F') || undefined}
+        produto={{ id: p.id, name: p.t, price: p.p, category: p.c }}>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <link slot="head" rel="preload" as="image" href={foto(p.fotos[0], 'F')} fetchpriority="high" />
+
+  <div class="moldura">
+    <nav class="trilha" aria-label="Você está em">
+      {trilha.map(([n, h]) => <><a href={h}>{n}</a><span aria-hidden="true">/</span></>)}
+      <span aria-current="page">{p.n}</span>
+    </nav>
+    <section class="topo"><PecaTopo p={p} /></section>
+    <GaleriaTelaCheia client:idle fotos={p.fotos.map((k) => foto(k, 'F'))} titulo={p.n} />
+  </div>
+
+  <div class="barra-compra" data-barra-compra aria-hidden="true">
+    <div class="barra-preco num"><small>R$</small> {brl(p.p)}</div>
+    <a class="botao botao-laranja" href={whatsUrl(msg)} tabindex="-1"><Icone nome="whats" />Pedir pelo WhatsApp</a>
+  </div>
+
+  <section class="secao detalhes">
+    <div class="moldura detalhes-grade">
+      {p.ficha.length > 0 && (
+        <div>
+          <h2 class="subtitulo">Ficha da peça</h2>
+          <table class="ficha">
+            <tbody>
+              {p.ficha.map(([k, v]) => <tr><th scope="row">{k}</th><td class={k.startsWith('Código') ? 'oem' : ''}>{v}</td></tr>)}
+              {serve && <tr><th scope="row">Serve em</th><td>{serve}</td></tr>}
+              <tr><th scope="row">Procedência</th><td>Carro com baixa legal no Detran-RS · CDV nº 01060</td></tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div>
+        <h2 class="subtitulo">Descrição</h2>
+        {p.desc ? <div class="descricao" set:html={p.desc} />
+                : <p class="descricao">{p.t}. Peça original retirada de carro com baixa legal, conferida e fotografada no nosso pátio. Confira o código gravado e, na dúvida, mande o modelo e o ano do seu carro no WhatsApp.</p>}
+      </div>
+    </div>
+  </section>
+
+  {rel.length > 0 && (
+    <section class="secao faixa">
+      <div class="moldura">
+        <div class="cabeca linha">
+          <h2 class="titulo-secao">{carro ? `Outras peças do ${carro.b} ${carro.m}` : marca ? `Outras peças ${marca.n}` : 'Outras peças'}</h2>
+          {carro ? <a class="botao botao-linha" href={`/carros/${carro.k}.html`}>Ver as {carro.c} peças</a>
+                 : marca ? <a class="botao botao-linha" href={`/marca/${marca.k}.html`}>Ver todas</a> : null}
+        </div>
+        <div class="trilho">{rel.map((x) => <CartaoPeca p={x} />)}</div>
+      </div>
+    </section>
+  )}
+
+  <section class="secao">
+    <div class="moldura">
+      <BannerArte arte="/banners/A_oficina_clara" movel="/arte/serve-movel" href={whatsUrl(`Olá! Quero confirmar se esta peça serve no meu carro:\n${p.t}\n${url}\n\nMeu carro é ____ (modelo) ____ (ano).`)}
+        texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
+    </div>
+  </section>
+</Pagina>
+
+<script>
+  const barra = document.querySelector<HTMLElement>('[data-barra-compra]');
+  const alvo = document.querySelector('[data-compra-botoes]');
+  if (barra && alvo && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => {
+      const mostrar = !e.isIntersecting && e.boundingClientRect.top < 0;
+      barra.classList.toggle('visivel', mostrar);
+      barra.setAttribute('aria-hidden', String(!mostrar));
+      barra.querySelector('a')?.setAttribute('tabindex', mostrar ? '0' : '-1');
+    }).observe(alvo);
+  }
+</script>
+
+<style>
+  .trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding-block: 18px 14px; font-size: 13.5px; color: var(--ink-3); }
+  .trilha a { color: var(--ink-2); }
+  .trilha a:hover { color: var(--ink); text-decoration: underline; }
+  .trilha [aria-current] { color: var(--ink-3); max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topo { padding-bottom: 32px; }
+  .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: 24px; }
+  .detalhes { padding-top: 24px; }
+  .detalhes-grade { display: grid; gap: 40px; }
+  @media (min-width: 960px) { .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; } }
+  .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
+  .ficha th, .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .ficha tr:last-child th, .ficha tr:last-child td { border-bottom: 0; }
+  .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
+  .ficha td { overflow-wrap: anywhere; }
+  .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
+  .descricao :global(h3) { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
+  .descricao :global(p) { margin: 0 0 10px; }
+  .faixa { background: var(--bg-2); }
+  .cabeca { display: grid; gap: 16px; margin-bottom: 24px; align-items: end; }
+  @media (min-width: 768px) { .cabeca.linha { grid-template-columns: 1fr auto; } }
+  .titulo-secao { margin: 0; }
+
+  .barra-compra { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 40;
+                  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 18px;
+                  border-radius: 18px; background: color-mix(in oklab, var(--surface), transparent 6%); backdrop-filter: blur(16px);
+                  box-shadow: var(--shadow-2), inset 0 0 0 1px var(--line);
+                  transform: translateY(140%); transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+  .barra-compra.visivel { transform: none; }
+  .barra-preco { font-stretch: 80%; font-weight: 850; font-size: 24px; }
+  .barra-preco small { font-size: 14px; color: var(--ink-2); }
+  .barra-compra .botao { --h: 48px; font-size: 15px; padding: 0 16px; }
+  @media (min-width: 960px) { .barra-compra { display: none; } }
+  @media (max-width: 959px) { :global(body:has(.barra-compra)) { padding-bottom: 84px; } }
+</style>

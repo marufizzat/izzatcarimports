@@ -1,0 +1,50 @@
+---
+import Icone from './Icone.astro';
+import { whatsUrl, resumo } from '../lib/dados';
+const r = resumo();
+const marcas = r.marcas.slice(0, 8);
+---
+<footer class="rodape faixa-escura">
+  <div class="moldura rodape-topo">
+    <div class="rodape-marca">
+      <img src="/identidade/logo-dark.png" alt="Izzat Car Imports" width="99" height="72" loading="lazy" />
+      <p>Desmanche credenciado pelo Detran-RS, CDV nº 01060. Peças originais de carros com baixa legal, com nota fiscal e 90 dias de garantia em toda peça.</p>
+      <a class="botao botao-laranja" href={whatsUrl('Olá! Estou procurando uma peça.')}><Icone nome="whats" />(53) 99117-0950</a>
+    </div>
+    <nav aria-label="Peças"><b>Peças</b>
+      <a href="/catalogo.html">Catálogo completo</a>
+      <a href="/carros.html">Peças por carro</a>
+      {marcas.map((m) => <a href={`/marca/${m.k}.html`}>{m.n}</a>)}
+    </nav>
+    <nav aria-label="Comprar"><b>Comprar</b>
+      <a href="/como-comprar.html">Como comprar</a>
+      <a href="/garantia.html">Garantia e trocas</a>
+      <a href="/envios.html">Envios</a>
+      <a href="/procuro-peca.html">Não achou? Procuro peça</a>
+    </nav>
+    <nav aria-label="A loja"><b>A loja</b>
+      <a href="/sobre.html">O pátio</a>
+      <a href="/contato.html">Contato</a>
+      <a href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" rel="noopener">Loja no Mercado Livre</a>
+      <a href="https://instagram.com/cdvizzatcarimports" rel="noopener">Instagram @cdvizzatcarimports</a>
+    </nav>
+  </div>
+  <div class="moldura rodape-base">
+    <span>© {new Date().getFullYear()} Izzat Car Imports · Aceguá/RS</span>
+    <span>Catálogo atualizado a cada 30 minutos com os anúncios ativos.</span>
+  </div>
+</footer>
+<style>
+  .rodape { padding-block: 64px 28px; margin-top: 0; }
+  .rodape-topo { display: grid; gap: 36px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .rodape-topo { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; } }
+  .rodape-marca { display: grid; gap: 16px; justify-items: start; align-content: start; }
+  .rodape-marca img { height: 72px; width: auto; }
+  .rodape-marca p { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 42ch; }
+  .rodape nav { display: grid; gap: 10px; align-content: start; }
+  .rodape nav b { font-stretch: 86%; font-weight: 800; font-size: 17px; margin-bottom: 4px; }
+  .rodape nav a { color: var(--ink-2); font-size: 15px; padding: 2px 0; }
+  .rodape nav a:hover { color: var(--ink); }
+  .rodape-base { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; margin-top: 48px; padding-top: 20px;
+                 border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+</style>

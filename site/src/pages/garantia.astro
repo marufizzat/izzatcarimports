@@ -1,0 +1,120 @@
+---
+import Pagina from '../layouts/Pagina.astro';
+import Topo from '../components/inst/Topo.astro';
+import Chamada from '../components/inst/Chamada.astro';
+import Icone from '../components/Icone.astro';
+import { whatsUrl, SITE } from '../lib/dados';
+
+const canonical = `${SITE}/garantia.html`;
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
+    { '@type': 'ListItem', position: 2, name: 'Garantia e trocas', item: canonical },
+  ],
+};
+---
+<Pagina
+  titulo="Garantia e trocas | Izzat Car Imports"
+  descricao="90 dias de garantia em toda peça e nota fiscal em toda venda. Se algo der errado, fale pelo WhatsApp com o número do pedido e a gente resolve."
+  canonical={canonical}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
+  </Fragment>
+
+  <Topo
+    titulo="Garantia e trocas"
+    lead="Toda peça tem 90 dias de garantia e toda venda sai com nota fiscal. Se algo der errado, a gente resolve com você."
+    trilha={[{ nome: 'Início', href: '/index.html' }, { nome: 'Garantia e trocas' }]}
+  />
+
+  <div class="moldura">
+    <section class="inst-sec gar-destaque" aria-labelledby="h-prazo">
+      <div class="gar-selo">
+        <img src="/icones/garantia-192.webp" alt="" width="132" height="132" />
+        <p class="inst-grande display" aria-hidden="true">90 dias</p>
+        <h2 class="titulo-secao inst-h2 gar-sr" id="h-prazo">90 dias de garantia</h2>
+      </div>
+      <div class="inst-texto">
+        <p class="gar-item"><img src="/icones/pecas-96.webp" alt="" width="44" height="44" /><span><b>Em toda peça.</b> A garantia vale para toda peça que a gente vende.</span></p>
+        <p class="gar-item"><img src="/icones/nota-fiscal-96.webp" alt="" width="44" height="44" /><span><b>Nota fiscal em toda venda.</b> Toda compra sai com nota fiscal, para você guardar.</span></p>
+      </div>
+    </section>
+
+    <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-problema">
+      <div class="inst-texto">
+        <h2 class="titulo-secao inst-h2" id="h-problema">Se a peça der problema</h2>
+        <p>Fale com a gente dentro do prazo de garantia. Quanto mais fotos e detalhes você mandar, mais rápido a gente resolve.</p>
+        <div class="inst-acoes">
+          <a class="botao botao-laranja inst-botao" href={whatsUrl('Olá! Comprei uma peça e preciso de ajuda com a garantia. Número do pedido:')} rel="noopener">
+            <Icone nome="whats" />Falar sobre a garantia
+          </a>
+        </div>
+      </div>
+      <ol class="inst-numeros">
+        <li>
+          <div>
+            <b>Chame pelo WhatsApp</b>
+            <p>Informe o número do pedido e o que aconteceu com a peça.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>Mande fotos</b>
+            <p>Fotos da peça, mostrando o problema. Se tiver, inclua também a etiqueta ou o código gravado.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>A gente resolve</b>
+            <p>A gente avalia o caso e resolve com troca ou devolução.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="inst-sec inst-sec--linha" aria-labelledby="h-ml">
+      <div class="inst-texto">
+        <h2 class="titulo-secao inst-h2" id="h-ml">Compra pelo Mercado Livre</h2>
+        <p>Quem comprou pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.</p>
+      </div>
+    </section>
+
+    <section class="inst-sec inst-sec--linha" aria-labelledby="h-evitar">
+      <div class="inst-duas">
+        <div class="inst-texto">
+          <h2 class="titulo-secao inst-h2" id="h-evitar">Evite a peça errada</h2>
+          <p>Antes de fechar a compra, confira estes pontos. Assim a peça chega certa na primeira vez.</p>
+        </div>
+        <ul class="inst-lista">
+          <li><Icone nome="check" /><span>Confirme o <b>modelo, o ano e o motor</b> do seu carro antes de comprar.</span></li>
+          <li><Icone nome="check" /><span>Compare o <b>código gravado</b> da sua peça velha com o código do anúncio.</span></li>
+          <li><Icone nome="check" /><span>Olhe as fotos e a ficha técnica da peça no anúncio ou no site.</span></li>
+          <li><Icone nome="check" /><span>Na dúvida, manda o carro e o código no WhatsApp <b>antes</b> de fechar.</span></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <Chamada
+    id="h-chamada"
+    titulo="Comprou e precisa de ajuda?"
+    texto="Chama no WhatsApp com o número do pedido. A gente responde por lá."
+    mensagem="Olá! Comprei uma peça e preciso de ajuda. Número do pedido:"
+  />
+</Pagina>
+
+<style>
+  .gar-destaque { display: grid; gap: clamp(24px, 4vw, 56px); }
+  @media (min-width: 900px) { .gar-destaque { grid-template-columns: 1.1fr 0.9fr; align-items: center; } }
+  .gar-selo { display: flex; align-items: center; gap: clamp(16px, 3vw, 36px); }
+  .gar-selo img { width: clamp(88px, 12vw, 150px); height: auto; filter: drop-shadow(0 18px 30px rgb(200 70 0 / .3)); }
+  .gar-selo .inst-grande { font-size: clamp(80px, 13vw, 190px); }
+  .gar-item { display: flex; gap: 14px; align-items: flex-start; padding: 18px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .gar-item img { width: 44px; height: 44px; flex: none; }
+  .gar-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .gar-destaque .inst-texto p { margin-bottom: 1.2em; }
+  .gar-destaque .inst-texto p:last-child { margin-bottom: 0; }
+</style>

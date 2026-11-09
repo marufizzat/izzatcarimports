@@ -1,0 +1,99 @@
+---
+import Pagina from '../layouts/Pagina.astro';
+import Topo from '../components/inst/Topo.astro';
+import Chamada from '../components/inst/Chamada.astro';
+import Icone from '../components/Icone.astro';
+import { whatsUrl, SITE } from '../lib/dados';
+
+const canonical = `${SITE}/envios.html`;
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
+    { '@type': 'ListItem', position: 2, name: 'Envios', item: canonical },
+  ],
+};
+---
+<Pagina
+  titulo="Envios para todo o Brasil | Izzat Car Imports"
+  descricao="Enviamos peças para todo o Brasil com código de rastreio. O frete aparece no anúncio do Mercado Livre, e pelo WhatsApp a gente cota para o seu CEP."
+  canonical={canonical}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
+  </Fragment>
+
+  <Topo
+    titulo="Envios para todo o Brasil"
+    lead="A peça sai embalada com cuidado, com nota fiscal e código de rastreio para você acompanhar."
+    trilha={[{ nome: 'Início', href: '/index.html' }, { nome: 'Envios' }]}
+  />
+
+  <div class="moldura">
+    <section class="inst-sec" aria-labelledby="h-frete">
+      <h2 class="titulo-secao inst-h2" id="h-frete">Como o frete funciona</h2>
+      <ul class="env-linhas">
+        <li>
+          <span class="env-icone"><Icone nome="carro" /></span>
+          <div>
+            <b>Pelo Mercado Livre</b>
+            <p>O frete aparece no anúncio, antes de você fechar a compra.</p>
+          </div>
+        </li>
+        <li>
+          <span class="env-icone"><Icone nome="whats" /></span>
+          <div>
+            <b>Pelo WhatsApp</b>
+            <p>A gente cota o frete para o seu CEP e passa o valor antes do envio.</p>
+          </div>
+        </li>
+        <li>
+          <span class="env-icone"><Icone nome="sacola" /></span>
+          <div>
+            <b>Peças grandes</b>
+            <p>Motor, câmbio e outras peças grandes têm o envio combinado pelo WhatsApp, caso a caso.</p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-cuidado">
+      <div class="inst-texto">
+        <h2 class="titulo-secao inst-h2" id="h-cuidado">Embalada com cuidado</h2>
+        <p>Cada peça é embalada com cuidado antes de sair do pátio.</p>
+        <p>Todo envio vai com código de rastreio, para você acompanhar a entrega.</p>
+      </div>
+      <ul class="inst-lista">
+        <li><Icone nome="check" /><span><b>Código de rastreio</b> em todo envio.</span></li>
+        <li><Icone nome="check" /><span><b>Nota fiscal</b> em toda venda.</span></li>
+        <li><Icone nome="check" /><span><b>Envio para todo o Brasil.</b></span></li>
+      </ul>
+    </section>
+  </div>
+
+  <Chamada
+    id="h-chamada"
+    titulo="Quer saber o frete para o seu CEP?"
+    texto="Manda o CEP e a peça no WhatsApp. A gente cota e responde por lá."
+    mensagem="Olá! Quero saber o frete para o meu CEP. Segue a peça e o CEP:"
+    rotulo="Cotar pelo WhatsApp"
+  />
+</Pagina>
+
+<style>
+  .env-linhas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .env-linhas li {
+    display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 18px; align-items: center;
+    padding-block: 22px; border-top: 1px solid var(--line);
+  }
+  .env-linhas li:last-child { border-bottom: 1px solid var(--line); }
+  .env-icone {
+    display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px;
+    background: var(--accent); color: var(--on-accent);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 8px 16px -8px rgb(255 106 0 / .7);
+  }
+  .env-icone :global(svg) { width: 26px; height: 26px; }
+  .env-linhas b { display: block; font-size: 19px; font-weight: 650; color: var(--ink); line-height: 1.3; }
+  .env-linhas p { margin: 4px 0 0; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
+</style>

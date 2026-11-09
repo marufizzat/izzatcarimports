@@ -162,12 +162,14 @@ def get_items_details(raw_items):
     return products
 
 def get_items_descriptions(products):
-    """Reaproveita as descricoes ja salvas em products.json.
+    """Descricao de cada anuncio (a pagina da peca mostra).
 
-    Nenhuma pagina do site le `desc` (catalogo.html usa catalog_data.js e
-    index.html usa vitrine_data.js), entao nao vale 1 GET por anuncio — era a
-    fase que fazia a atualizacao demorar ~35 min.
+    Reaproveita as que ja estao no products.json anterior (o workflow guarda esse
+    arquivo em cache entre as rodadas) e busca SO as que faltam pelo backend
+    (/admin/ml_item_desc), no maximo DESC_POR_RODADA por vez pra rodada nao
+    demorar. Em poucas rodadas todas as pecas ficam com descricao.
     """
+    import concurrent.futures as cf
     antigos = {}
     old = SITE_DIR / "products.json"
     if old.exists():
@@ -181,7 +183,32 @@ def get_items_descriptions(products):
 
     for p in products:
         p["desc"] = antigos.get(p["id"], "")
-    print(f"Descricoes reaproveitadas: {sum(1 for p in products if p['desc'])}/{len(products)}")
+
+    faltam = [p for p in products if not p["desc"]]
+    limite = int(os.getenv("DESC_POR_RODADA", "150"))
+    if not ADMIN_KEY:
+        print("⚠ ADMIN_KEY ausente: descricoes novas NAO foram buscadas")
+    if ADMIN_KEY and faltam and limite > 0:
+        h = {"X-Admin-Key": ADMIN_KEY}
+
+        def pega(p):
+            try:
+                r = requests.get(f"{BACKEND}/admin/ml_item_desc", params={"mlb": p["id"]}, headers=h, timeout=20)
+                if r.status_code == 200:
+                    d = (r.json() or {}).get("data") or {}
+                    return p, (d.get("plain_text") or "").strip()
+            except Exception:
+                pass
+            return p, ""
+
+        novos = 0
+        with cf.ThreadPoolExecutor(max_workers=8) as ex:
+            for p, txt in ex.map(pega, faltam[:limite]):
+                if txt:
+                    p["desc"] = txt
+                    novos += 1
+        print(f"Descricoes novas buscadas: {novos}/{min(len(faltam), limite)} (faltavam {len(faltam)})")
+    print(f"Descricoes: {sum(1 for p in products if p['desc'])}/{len(products)}")
     return products
 
 def save_products(products):

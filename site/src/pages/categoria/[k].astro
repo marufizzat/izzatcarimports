@@ -1,0 +1,35 @@
+---
+import Pagina from '../../layouts/Pagina.astro';
+import TopoListagem from '../../components/TopoListagem.astro';
+import GradePecas from '../../components/GradePecas.astro';
+import Atalhos from '../../components/Atalhos.astro';
+import { pecas, resumo } from '../../lib/dados';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+export function getStaticPaths() { return resumo().familias.filter((f) => f.n !== 'Outros').map((f) => ({ params: { k: f.k }, props: { k: f.k } })); }
+const f = resumo().familias.find((x) => x.k === Astro.props.k)!;
+const lista = pecas().filter((p) => p.c === f.n).sort((a, b) => (b.id > a.id ? 1 : -1));
+const base = `/catalogo.html?tipo=${encodeURIComponent(f.n)}`;
+const recorte = existsSync(join(process.cwd(), 'public', 'categorias', `${f.k}.webp`)) ? `/categorias/${f.k}.webp` : '/icones/pecas-192.webp';
+const conta = (chave: (p: (typeof lista)[number]) => string) => Object.entries(lista.reduce<Record<string, number>>((o, p) => { const k = chave(p); if (k) o[k] = (o[k] || 0) + 1; return o; }, {})).sort((a, b) => b[1] - a[1]);
+const marcas = conta((p) => p.b).map(([n, q]) => [n, q, `${base}&marca=${encodeURIComponent(n)}`] as [string, number, string]);
+const tipos = conta((p) => p.s).slice(0, 14).map(([n, q]) => [n, q, `/catalogo.html?q=${encodeURIComponent(n)}&tipo=${encodeURIComponent(f.n)}`] as [string, number, string]);
+---
+<Pagina titulo={`${f.n}: peças originais | Izzat Car Imports`}
+        descricao={`${f.c} peças de ${f.n.toLowerCase()} originais, de carros com baixa legal no Detran-RS. Nota fiscal e 90 dias de garantia.`}>
+  <div class="moldura">
+    <TopoListagem trilha={[['Início', '/index.html'], ['Catálogo', '/catalogo.html'], [f.n, `/categoria/${f.k}.html`]]}
+      titulo={f.n} apoio={`${f.c} peças originais de ${f.n.toLowerCase()} no estoque. Escolha a marca do seu carro para chegar mais rápido.`}>
+      <span slot="lado" class="palco-peca"><img src={recorte} alt="" width="320" height="320" /></span>
+      <Atalhos titulo="Por marca do carro" itens={marcas} />
+      <Atalhos titulo="Por tipo" itens={tipos} />
+    </TopoListagem>
+    <section class="secao-lista"><GradePecas lista={lista.slice(0, 48)} total={lista.length} linkTodas={base} /></section>
+  </div>
+</Pagina>
+<style>
+  .secao-lista { padding-bottom: 72px; }
+  .palco-peca { position: relative; display: grid; place-items: center; width: clamp(200px, 26vw, 340px); aspect-ratio: 1; justify-self: center; border-radius: 50%;
+    background: radial-gradient(closest-side, var(--surface) 62%, color-mix(in oklab, var(--accent), transparent 88%) 63%, transparent 64%), radial-gradient(closest-side, color-mix(in oklab, var(--accent), transparent 90%), transparent); }
+  .palco-peca img { width: 78%; height: auto; filter: drop-shadow(0 22px 26px rgb(0 0 0 / .2)); }
+</style>

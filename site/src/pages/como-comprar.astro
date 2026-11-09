@@ -1,0 +1,143 @@
+---
+import Pagina from '../layouts/Pagina.astro';
+import Topo from '../components/inst/Topo.astro';
+import Chamada from '../components/inst/Chamada.astro';
+import Icone from '../components/Icone.astro';
+import { whatsUrl, SITE } from '../lib/dados';
+
+const canonical = `${SITE}/como-comprar.html`;
+const ML = 'https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS';
+const msgSite = 'Olá! Vim pelo site e quero comprar uma peça. Pode me ajudar?';
+const passos = [
+  { src: '/arte/passo-1.webp', alt: 'Ache a peça — Pelo nome, pelo carro ou pelo código gravado.' },
+  { src: '/arte/passo-2.webp', alt: 'Confirme o seu carro — Manda o modelo e o ano. A gente confere na peça.' },
+  { src: '/arte/passo-3.webp', alt: 'Feche a compra — No Mercado Livre ou direto pelo WhatsApp.' },
+  { src: '/arte/passo-4.webp', alt: 'Receba em casa — Com nota fiscal e código de rastreio.' },
+];
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
+    { '@type': 'ListItem', position: 2, name: 'Como comprar', item: canonical },
+  ],
+};
+---
+<Pagina
+  titulo="Como comprar peças originais | Izzat Car Imports"
+  descricao="Em 4 passos: ache a peça, confirme o seu carro, feche a compra pelo Mercado Livre ou pelo WhatsApp e receba em casa com nota fiscal."
+  canonical={canonical}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
+  </Fragment>
+
+  <Topo
+    titulo="Como comprar"
+    lead="Quatro passos, do pedido até a peça na sua casa. Se preferir, a gente fecha tudo pelo WhatsApp."
+    trilha={[{ nome: 'Início', href: '/index.html' }, { nome: 'Como comprar' }]}
+  />
+
+  <section class="moldura passos-wrap" aria-label="Os 4 passos">
+    <ol class="passos">
+      {passos.map((p, i) => (
+        <li class="passo">
+          <img src={p.src} alt={p.alt} width="1024" height="1024" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <div class="moldura">
+    <section class="inst-sec inst-duas" id="whatsapp" aria-labelledby="h-whatsapp">
+      <div class="inst-texto">
+        <h2 class="titulo-secao inst-h2" id="h-whatsapp">Comprar pelo WhatsApp</h2>
+        <p>Manda a peça ou o carro no WhatsApp. A gente confirma se a peça serve no seu carro, passa o valor e combina o envio.</p>
+        <p>A mensagem já abre pronta. Você só completa com o que precisa.</p>
+        <div class="inst-acoes">
+          <a class="botao botao-laranja inst-botao" href={whatsUrl(msgSite)} rel="noopener">
+            <Icone nome="whats" />Chamar no WhatsApp
+          </a>
+        </div>
+      </div>
+      <div>
+        <p class="inst-rotulo">Mensagem pronta</p>
+        <div class="inst-balao">
+          <p>{msgSite}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="inst-sec inst-sec--linha" id="mercado-livre" aria-labelledby="h-ml">
+      <div class="inst-texto">
+        <h2 class="titulo-secao inst-h2" id="h-ml">Comprar pelo Mercado Livre</h2>
+        <p>As peças também estão na loja <b class="inst-quebra">IZZAT_CAR_IMPORTS</b> no Mercado Livre, com fotos, ficha técnica e frete no anúncio.</p>
+        <p>A compra segue a proteção do próprio Mercado Livre.</p>
+        <div class="inst-acoes">
+          <a class="botao botao-linha inst-botao" href={ML} target="_blank" rel="noopener">Ver a loja no Mercado Livre</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="inst-sec inst-sec--linha" id="codigo" aria-labelledby="h-codigo">
+      <div class="inst-duas">
+        <div class="inst-texto">
+          <h2 class="titulo-secao inst-h2" id="h-codigo">O código gravado na peça</h2>
+          <p>Muitas peças originais trazem um código gravado ou impresso. Com ele, a gente acha a peça certa para o seu carro, sem chute.</p>
+          <div class="inst-acoes">
+            <a class="botao botao-linha inst-botao" href="/catalogo.html">Buscar no catálogo</a>
+          </div>
+        </div>
+        <ol class="inst-numeros">
+          <li>
+            <div>
+              <b>Pegue a peça velha</b>
+              <p>Procure o código gravado ou impresso nela. São letras e números, às vezes numa etiqueta ou em relevo.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <b>Copie o código como está</b>
+              <p>Letras e números, na mesma ordem. Se estiver difícil de ler, tire uma foto de perto.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <b>Busque ou mande pelo WhatsApp</b>
+              <p>Pesquise o código no catálogo. Se não achar, manda a foto no WhatsApp e a gente confere.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </div>
+
+  <Chamada
+    id="h-chamada"
+    titulo="Não sabe qual peça é?"
+    texto="Manda o modelo, o ano e uma foto da peça no WhatsApp. A gente olha e responde por lá."
+    mensagem="Olá! Não sei qual peça eu preciso. Segue o modelo e o ano do carro:"
+  />
+</Pagina>
+
+<style>
+  .passos-wrap { padding-block: clamp(8px, 2vw, 24px) clamp(40px, 6vw, 80px); }
+  .passos {
+    list-style: none; margin: 0 -16px; padding: 4px 16px 24px;
+    display: grid; grid-auto-flow: column; grid-auto-columns: min(78vw, 320px); gap: 14px;
+    overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 16px;
+    scrollbar-width: none;
+  }
+  .passos::-webkit-scrollbar { display: none; }
+  .passo {
+    scroll-snap-align: start; aspect-ratio: 1; border-radius: 20px; overflow: hidden;
+    background: var(--surface-2); box-shadow: var(--shadow-1);
+  }
+  .passo img { width: 100%; height: 100%; object-fit: cover; }
+  @media (min-width: 768px) {
+    .passos { margin: 0; padding: 0; grid-auto-flow: row; grid-template-columns: repeat(2, 1fr); grid-auto-columns: auto; overflow: visible; gap: 20px; }
+  }
+  @media (min-width: 1024px) {
+    .passos { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  }
+</style>

@@ -1,0 +1,95 @@
+/* Paginas institucionais (direcao A · Oficina clara). So tokens do global.css. */
+
+.inst-topo { padding-block: clamp(28px, 5vw, 64px) clamp(8px, 2vw, 16px); }
+
+.inst-trilha {
+  display: flex; flex-wrap: wrap; align-items: center; margin: 0 0 clamp(16px, 2.6vw, 28px);
+  padding: 0; list-style: none; font-size: 14px; color: var(--ink-3);
+}
+.inst-trilha li { display: inline-flex; align-items: center; }
+.inst-trilha li + li::before { content: "/"; margin: 0 10px; color: var(--line-2); }
+.inst-trilha a { color: var(--ink-2); padding-block: 8px; }
+.inst-trilha a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.inst-trilha span { color: var(--ink-2); padding-block: 8px; }
+
+.inst-h1 { font-size: clamp(40px, 8.6vw, 104px); margin: 0; }
+.inst-lead { margin: clamp(16px, 2vw, 24px) 0 0; max-width: 46ch; }
+
+.inst-sec { padding-block: clamp(48px, 7vw, 96px); }
+.inst-sec--linha { border-top: 1px solid var(--line); }
+.inst-h2 { margin: 0 0 clamp(16px, 2.2vw, 26px); }
+
+.inst-texto { max-width: 60ch; }
+.inst-texto p { margin: 0 0 1em; font-size: 17px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty; }
+.inst-texto p:last-child { margin-bottom: 0; }
+.inst-texto b { color: var(--ink); font-weight: 650; }
+.inst-texto a:not(.botao) { color: var(--accent-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+.inst-duas { display: grid; gap: clamp(32px, 5vw, 72px); }
+@media (min-width: 900px) { .inst-duas { grid-template-columns: 1fr 1fr; align-items: center; } }
+
+.inst-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.inst-botao { white-space: normal; height: auto; min-height: 52px; padding-block: 12px; text-align: center; line-height: 1.2; max-width: 100%; }
+.inst-quebra { overflow-wrap: anywhere; }
+
+/* listas com check (linha Lucide, so o icone) */
+.inst-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.inst-lista li { display: flex; gap: 12px; align-items: flex-start; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
+.inst-lista svg { width: 22px; height: 22px; flex: none; margin-top: 2px; color: var(--accent-text); }
+.inst-lista b { color: var(--ink); font-weight: 650; }
+
+/* passos reais: marcador laranja com letra grafite */
+.inst-numeros { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; counter-reset: passo; }
+.inst-numeros li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; align-items: start; counter-increment: passo; }
+.inst-numeros li::before {
+  content: counter(passo); display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent); font-stretch: 80%; font-weight: 820; font-size: 20px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 8px 16px -8px rgb(255 106 0 / .7);
+}
+.inst-numeros b { display: block; color: var(--ink); font-size: 18px; font-weight: 650; line-height: 1.3; padding-top: 9px; }
+.inst-numeros p { margin: 4px 0 0; color: var(--ink-2); font-size: 16px; line-height: 1.5; }
+
+/* balao da mensagem pronta */
+.inst-balao {
+  position: relative; max-width: 40ch; padding: 20px 22px; border-radius: 22px 22px 22px 6px;
+  background: var(--surface); box-shadow: var(--shadow-1); color: var(--ink);
+}
+.inst-balao p { margin: 0; font-size: 17px; line-height: 1.5; color: var(--ink); }
+.inst-rotulo { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--ink-3); }
+
+/* arte (cartao com imagem) — mantem a moldura mesmo sem o arquivo */
+.inst-arte { margin: 0; border-radius: 22px; overflow: hidden; background: var(--surface-2); box-shadow: var(--shadow-1); }
+.inst-arte img { width: 100%; height: 100%; object-fit: cover; }
+
+/* janela de video real (16:9, 9:16, 4:5) */
+.inst-janela { margin: 0; border-radius: 28px; overflow: hidden; background: var(--bg-2); box-shadow: var(--shadow-2); }
+.inst-janela video { width: 100%; height: 100%; object-fit: cover; }
+.inst-janela--16x9 { aspect-ratio: 16 / 9; }
+
+/* chamada final em bloco */
+.inst-chamada-caixa {
+  display: grid; gap: 14px; justify-items: start; padding: clamp(28px, 4.5vw, 56px);
+  border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-1);
+}
+.inst-chamada-caixa .titulo-secao { margin: 0; }
+.inst-chamada-caixa p { margin: 0; max-width: 46ch; color: var(--ink-2); font-size: 17px; line-height: 1.55; }
+.inst-fone { font-stretch: 90%; font-weight: 700; font-size: 16px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* selo e numero grande */
+.inst-grande { margin: 0; font-size: clamp(88px, 20vw, 230px); line-height: .86; }
+
+@media (prefers-reduced-motion: reduce) {
+  .inst-janela video { animation: none; }
+}
+
+@media (max-width: 600px) { .inst-acoes .botao { width: 100%; } }
+
+/* chamada final com arte ao lado (sem metade vazia) */
+.inst-chamada-com-arte { display: grid; gap: 24px; align-items: center; }
+.inst-chamada-texto { display: grid; gap: 16px; justify-items: start; }
+.inst-chamada-arte img { width: 100%; max-width: 380px; height: auto; border-radius: 20px; box-shadow: var(--shadow-1); margin-inline: auto; display: block; }
+@media (min-width: 900px) { .inst-chamada-com-arte { grid-template-columns: 1.2fr .8fr; } }
+/* video do galpao: corta a borda de baixo (mao de quem filmou) */
+.inst-janela video, .patio-videos video { object-position: 50% 32%; }
+.inst-janela--16x9 { aspect-ratio: 16 / 8; }
+@media (max-width: 700px) { .inst-janela--16x9 { aspect-ratio: 4 / 3; } }

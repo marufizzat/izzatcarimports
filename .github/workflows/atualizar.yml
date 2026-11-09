@@ -1,45 +1,105 @@
-# Atualiza o catalogo do site sozinho, na nuvem do GitHub (nao depende do PC).
-# Puxa so os anuncios ATIVOS do ML pelo backend (Cloudflare), regera o indice e
-# as paginas /peca/ (apagando as de pecas vendidas/pausadas) e publica.
-name: Atualizar catalogo
+# Atualiza o catalogo e PUBLICA o site novo (pasta site/, Astro) no GitHub Pages.
+# Roda sozinho a cada 30 min, na venda (venda_ml), no botao manual e a cada push.
+# Nada gerado e commitado: o site sai como artefato do Pages (repo para de inchar).
+# PRE-REQUISITO (uma vez): Settings -> Pages -> Source = "GitHub Actions".
+name: Atualizar catalogo e publicar o site
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # a cada 30 min
+    - cron: "*/30 * * * *"
   repository_dispatch:
-    types: [venda_ml]        # gatilho imediato (backend pode chamar ao vender)
-  workflow_dispatch:         # botao manual no GitHub
+    types: [venda_ml]
+  workflow_dispatch:
+  push:
+    branches: [master]
 
 concurrency:
-  group: atualizar-catalogo
+  group: pages
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  atualizar:
+  construir:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      TEM_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
+
+      # products.json da rodada anterior (descricoes ja buscadas) + analise das fotos
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            products.json
+            categorias_ml.json
+            fotos_limpas.json
+          key: catalogo-${{ github.run_id }}
+          restore-keys: catalogo-
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests python-dotenv
-      - name: Puxar anuncios ativos e regerar paginas
+      - run: pip install requests python-dotenv pillow
+
+      - name: Puxar anuncios ativos do Mercado Livre (pelo backend)
         env:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           PYTHONIOENCODING: utf-8
+        run: python -u atualizar_catalogo.py
+
+      # guarda o cache mesmo se o build falhar depois (nao perde descricoes buscadas)
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            products.json
+            categorias_ml.json
+            fotos_limpas.json
+          key: catalogo-${{ github.run_id }}
+
+      - name: Preparar dados do site (marca, modelo, ano, busca)
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
-          python -u atualizar_catalogo.py
-          python -u gerar_indice.py
-          python -u gerar_paginas_individuais.py
-      - name: Publicar se mudou
-        run: |
-          git config user.name "izzat-bot"
-          git config user.email "izzat-bot@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then echo "Nada mudou"; exit 0; fi
-          git commit -m "Catalogo atualizado automaticamente"
-          git push
+          python -u preparar_dados.py
+          python -u testes/test_dados.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - run: npm --prefix site test
+      - run: npm --prefix site run build
+      - name: Conferir links internos (nenhum quebrado)
+        run: node site/scripts/verificar-links.mjs
+
+      # Cloudflare (opcional): so publica la se o Maruf cadastrar os 2 segredos no repo.
+      # Assim a migracao pro Cloudflare e so cadastrar os segredos + apontar o dominio.
+      - name: Publicar tambem no Cloudflare (se configurado)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        if: env.TEM_CLOUDFLARE == 'true'
+        run: cd site && npx wrangler deploy --config wrangler.jsonc
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

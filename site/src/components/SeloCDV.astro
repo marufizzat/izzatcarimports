@@ -1,0 +1,22 @@
+---
+// Selo circular do credenciamento (texto real, desenhado em SVG).
+interface Props { tamanho?: number; class?: string; }
+const { tamanho = 132, class: cls } = Astro.props;
+---
+<svg class={`selo-cdv ${cls ?? ''}`} width={tamanho} height={tamanho} viewBox="0 0 200 200" role="img"
+     aria-label="Desmanche credenciado pelo Detran-RS, CDV número 01060">
+  <defs>
+    <path id="cdv-arco" d="M100,100 m-74,0 a74,74 0 1,1 148,0 a74,74 0 1,1 -148,0" />
+    <radialGradient id="cdv-luz" cx="35%" cy="28%" r="80%">
+      <stop offset="0" stop-color="#ff9a4d" /><stop offset=".55" stop-color="#ff6a00" /><stop offset="1" stop-color="#d94f00" />
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="98" fill="url(#cdv-luz)" />
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#1d1d1f" stroke-opacity=".22" stroke-width="1.5" />
+  <circle cx="100" cy="100" r="56" fill="#1d1d1f" />
+  <text font-family="Archivo Variable, sans-serif" font-size="15.5" font-weight="700" letter-spacing="3.1" fill="#1d1d1f" style="font-stretch:88%">
+    <textPath href="#cdv-arco" startOffset="0">CDV CREDENCIADO · DETRAN-RS · ACEGUÁ ·</textPath>
+  </text>
+  <text x="100" y="96" text-anchor="middle" font-family="Archivo Variable, sans-serif" font-size="13" font-weight="600" fill="#ff8a3d" style="font-stretch:90%">nº</text>
+  <text x="100" y="124" text-anchor="middle" font-family="Archivo Variable, sans-serif" font-size="34" font-weight="800" fill="#fff" style="font-stretch:72%">01060</text>
+</svg>

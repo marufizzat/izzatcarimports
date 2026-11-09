@@ -1,0 +1,78 @@
+---
+import Pagina from '../layouts/Pagina.astro';
+import Icone from '../components/Icone.astro';
+import { whatsUrl, SITE } from '../lib/dados';
+
+const canonical = `${SITE}/404.html`;
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
+    { '@type': 'ListItem', position: 2, name: 'Página não encontrada', item: canonical },
+  ],
+};
+---
+<Pagina
+  titulo="Página não encontrada | Izzat Car Imports"
+  descricao="Essa página não existe ou saiu do ar. Busque a peça no catálogo ou fale com a gente pelo WhatsApp."
+  canonical={canonical}
+  noindex
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
+  </Fragment>
+
+  <div class="moldura nf">
+    <figure class="nf-arte">
+      <img src="/arte/404.webp" alt="Essa peça já saiu do pátio. Ela pode ter sido vendida. Procure outra ou fale com a gente." width="1536" height="1024" decoding="async" />
+    </figure>
+
+    <div class="nf-texto">
+      <nav aria-label="Você está em">
+        <ol class="nf-trilha">
+          <li><a href="/index.html">Início</a></li>
+          <li><span aria-current="page">Página não encontrada</span></li>
+        </ol>
+      </nav>
+      <h1 class="display nf-h1">Página não encontrada</h1>
+      <p class="lead nf-lead">O link pode estar errado ou a página mudou de lugar. Busque a peça ou fale com a gente.</p>
+
+      <form class="busca nf-busca" action="/catalogo.html" method="get" role="search">
+        <Icone nome="busca" />
+        <input type="search" name="q" placeholder="Peça, carro ou código" aria-label="Buscar peça, carro ou código" autocomplete="off" />
+        <button type="submit" class="botao botao-laranja">Buscar</button>
+      </form>
+
+      <div class="nf-links">
+        <a class="botao botao-linha nf-botao" href="/catalogo.html">Ver o catálogo</a>
+        <a class="botao botao-linha nf-botao" href="/carros.html">Peças por carro</a>
+        <a class="botao botao-laranja nf-botao" href={whatsUrl('Olá! Estou procurando uma peça.')} rel="noopener">
+          <Icone nome="whats" />Chamar no WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+</Pagina>
+
+<style>
+  .nf { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(32px, 5vw, 72px); align-items: center; padding-block: clamp(28px, 5vw, 72px) clamp(56px, 8vw, 112px); }
+  @media (min-width: 900px) { .nf { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .nf-arte { margin: 0; border-radius: 28px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--surface-2); box-shadow: var(--shadow-1); }
+  .nf-arte img { width: 100%; height: 100%; object-fit: cover; }
+  .nf-texto { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; justify-items: start; min-width: 0; }
+  .nf-texto > * { max-width: 100%; }
+  .nf-trilha { display: flex; flex-wrap: wrap; align-items: center; margin: 0 0 clamp(16px, 2.6vw, 28px); padding: 0; list-style: none; font-size: 14px; color: var(--ink-3); }
+  .nf-trilha li { display: inline-flex; align-items: center; }
+  .nf-trilha li + li::before { content: "/"; margin: 0 10px; color: var(--line-2); }
+  .nf-trilha a { color: var(--ink-2); padding-block: 8px; }
+  .nf-trilha a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .nf-trilha span { color: var(--ink-2); padding-block: 8px; }
+  .nf-h1 { font-size: clamp(40px, 7.4vw, 92px); margin: 0; }
+  .nf-lead { margin: clamp(16px, 2vw, 22px) 0 0; max-width: 44ch; }
+  .nf-busca { margin-top: clamp(24px, 3.4vw, 36px); width: 100%; max-width: 560px; }
+  .nf-busca .botao { padding: 0 18px; }
+  .nf-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+  .nf-botao { white-space: normal; height: auto; min-height: 52px; padding-block: 12px; text-align: center; line-height: 1.2; max-width: 100%; }
+  @media (max-width: 600px) { .nf-botao { width: 100%; } }
+</style>

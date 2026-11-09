@@ -1,0 +1,94 @@
+---
+import Pagina from '../layouts/Pagina.astro';
+import Topo from '../components/inst/Topo.astro';
+import Icone from '../components/Icone.astro';
+import { whatsUrl, SITE } from '../lib/dados';
+
+const canonical = `${SITE}/contato.html`;
+const msg = 'Olá! Estou procurando uma peça.';
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
+    { '@type': 'ListItem', position: 2, name: 'Contato', item: canonical },
+  ],
+};
+---
+<Pagina
+  titulo="Contato | Izzat Car Imports, Aceguá-RS"
+  descricao="Fale com a Izzat Car Imports pelo WhatsApp (53) 99117-0950, pelo Instagram ou pelo Mercado Livre. Desmanche credenciado em Aceguá-RS."
+  canonical={canonical}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
+  </Fragment>
+
+  <Topo
+    titulo="Fale com a gente"
+    lead="O jeito mais rápido é o WhatsApp. Manda a peça ou o carro que a gente responde."
+    trilha={[{ nome: 'Início', href: '/index.html' }, { nome: 'Contato' }]}
+  />
+
+  <div class="moldura">
+    <section class="con-principal" aria-labelledby="h-whats">
+      <div class="con-texto">
+        <h2 class="titulo-secao inst-h2" id="h-whats">WhatsApp</h2>
+        <p>Mande a peça, o carro ou o código gravado. A mensagem já abre pronta.</p>
+        <a class="botao botao-laranja inst-botao con-botao" href={whatsUrl(msg)} rel="noopener">
+          <Icone nome="whats" />Chamar no WhatsApp
+        </a>
+      </div>
+      <p class="con-numero num">(53) 99117-0950</p>
+    </section>
+
+    <div class="con-grade">
+      <section class="con-bloco" aria-labelledby="h-insta">
+        <h2 class="con-titulo" id="h-insta">Instagram</h2>
+        <p>Acompanhe o pátio e fale com a gente por lá.</p>
+        <a class="con-link" href="https://instagram.com/cdvizzatcarimports" target="_blank" rel="noopener">@cdvizzatcarimports</a>
+      </section>
+
+      <section class="con-bloco" aria-labelledby="h-ml">
+        <h2 class="con-titulo" id="h-ml">Mercado Livre</h2>
+        <p>As peças anunciadas, com frete no anúncio e a proteção de compra do Mercado Livre.</p>
+        <a class="con-link" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Loja IZZAT_CAR_IMPORTS</a>
+      </section>
+
+      <section class="con-bloco" aria-labelledby="h-onde">
+        <h2 class="con-titulo" id="h-onde">Onde a gente está</h2>
+        <p class="con-cidade"><Icone nome="pino" />Aceguá/RS</p>
+        <p>O endereço completo e o horário a gente passa pelo WhatsApp.</p>
+      </section>
+
+      <section class="con-bloco" aria-labelledby="h-procuro">
+        <h2 class="con-titulo" id="h-procuro">Não achou a peça?</h2>
+        <p>Conte o carro e a peça que você procura. A gente procura no pátio.</p>
+        <a class="con-link" href="/procuro-peca.html">Abrir o formulário</a>
+      </section>
+    </div>
+  </div>
+</Pagina>
+
+<style>
+  .con-principal {
+    display: grid; gap: 28px; align-items: end; padding: clamp(28px, 4.5vw, 56px);
+    border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-1);
+    margin-bottom: clamp(40px, 6vw, 72px);
+  }
+  .con-texto { display: grid; gap: 14px; justify-items: start; }
+  .con-texto p { margin: 0; font-size: 17px; line-height: 1.55; color: var(--ink-2); max-width: 44ch; }
+  .con-texto .inst-h2 { margin: 0; }
+  .con-botao { margin-top: 6px; }
+  .con-numero { margin: 0; font-stretch: 80%; font-weight: 800; font-size: clamp(40px, 7vw, 76px); line-height: .95; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  @media (min-width: 900px) { .con-principal { grid-template-columns: 1fr auto; } }
+  .con-grade { display: grid; gap: 0; padding-bottom: clamp(48px, 7vw, 96px); }
+  @media (min-width: 768px) { .con-grade { grid-template-columns: 1fr 1fr; column-gap: 48px; } }
+  .con-bloco { display: grid; gap: 10px; align-content: start; padding-block: 28px; border-top: 1px solid var(--line); }
+  .con-titulo { margin: 0; font-stretch: 78%; font-weight: 820; font-size: clamp(26px, 3vw, 34px); line-height: 1; color: var(--ink); }
+  .con-bloco p { margin: 0; font-size: 16.5px; line-height: 1.55; color: var(--ink-2); max-width: 46ch; }
+  .con-link { justify-self: start; color: var(--accent-text); font-weight: 650; font-size: 17px; padding-block: 6px; text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
+  .con-link:hover { color: var(--ink); }
+  .con-cidade { display: flex; align-items: center; gap: 10px; font-size: 20px !important; font-weight: 700; color: var(--ink) !important; font-stretch: 86%; }
+  .con-cidade :global(svg) { width: 24px; height: 24px; color: var(--accent-text); flex: none; }
+</style>

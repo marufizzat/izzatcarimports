@@ -1,0 +1,53 @@
+/* IZZAT CAR — GA4 + Meta Pixel do site inteiro (mesmos IDs do site antigo).
+   Carrega depois da pagina pronta, pra nao atrasar a primeira tela.
+   Pagina de peca declara window.IZZAT_PRODUCT antes deste arquivo. */
+(function () {
+  'use strict';
+  /* So mede no dominio de verdade: preview local e testes nao sujam o GA/Pixel. */
+  if (!/(^|\.)izzatcarimports\.com\.br$/.test(location.hostname)) {
+    window.izzatBusca = function () {};
+    return;
+  }
+  var META_PIXEL_ID = '2508976816257209';
+  var GA_ID = 'G-M9W3R23RY9';
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { window.dataLayer.push(arguments); }
+  window.gtag = gtag;
+  !function (f, b, e, v, n, t, s) {
+    if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+    if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+    t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+  }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+  gtag('js', new Date()); gtag('config', GA_ID);
+  fbq('init', META_PIXEL_ID); fbq('track', 'PageView');
+
+  function carregarGA() { var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID; document.head.appendChild(s); }
+  if ('requestIdleCallback' in window) requestIdleCallback(carregarGA, { timeout: 2500 }); else setTimeout(carregarGA, 1200);
+
+  var prod = window.IZZAT_PRODUCT;
+  if (prod && prod.id) {
+    fbq('track', 'ViewContent', { content_ids: [prod.id], content_name: prod.name, content_type: 'product',
+      content_category: prod.category || undefined, value: prod.price, currency: 'BRL' });
+    gtag('event', 'view_item', { currency: 'BRL', value: prod.price, items: [{ item_id: prod.id, item_name: prod.name, price: prod.price }] });
+  }
+  /* Busca (catalogo e topo): o catalogo chama window.izzatBusca(termo) */
+  window.izzatBusca = function (termo) {
+    if (!termo) return;
+    fbq('track', 'Search', { search_string: termo });
+    gtag('event', 'search', { search_term: termo });
+  };
+  /* Contact = qualquer link de WhatsApp. InitiateCheckout = SO botao de compra
+     no Mercado Livre (data-compra), nao o link do perfil da loja. */
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var base = { content_name: (prod && prod.name) || document.title };
+    if (prod && prod.id) { base.content_ids = [prod.id]; base.value = prod.price; base.currency = 'BRL'; }
+    if (href.indexOf('wa.me') > -1 || href.indexOf('api.whatsapp') > -1) {
+      fbq('track', 'Contact', base); gtag('event', 'contato_whatsapp', { pagina: location.pathname });
+    } else if (a.hasAttribute('data-compra')) {
+      fbq('track', 'InitiateCheckout', base); gtag('event', 'saida_mercado_livre', { pagina: location.pathname });
+    }
+  }, true);
+})();

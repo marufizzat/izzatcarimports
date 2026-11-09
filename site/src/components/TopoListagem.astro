@@ -1,0 +1,33 @@
+---
+// Topo das paginas de carro / marca / categoria: trilha, titulo grande e apoio.
+import { SITE } from '../lib/dados';
+interface Props { trilha: [string, string][]; antes?: string; titulo: string; apoio: string; }
+const { trilha, antes, titulo, apoio } = Astro.props;
+const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
+---
+<script type="application/ld+json" set:html={JSON.stringify(ld)} />
+<header class="topo-lista">
+  <nav class="trilha" aria-label="Você está em">
+    {trilha.slice(0, -1).map(([n, h]) => <><a href={h}>{n}</a><span aria-hidden="true">/</span></>)}
+    <span aria-current="page">{trilha[trilha.length - 1][0]}</span>
+  </nav>
+  <div class="topo-lista-grade">
+    <div>
+      {antes && <p class="topo-antes">{antes}</p>}
+      <h1 class="display">{titulo}</h1>
+      <p class="lead">{apoio}</p>
+    </div>
+    <slot name="lado" />
+  </div>
+  <slot />
+</header>
+<style>
+  .topo-lista { padding-block: 18px 32px; }
+  .trilha { display: flex; flex-wrap: wrap; gap: 6px 8px; font-size: 13.5px; color: var(--ink-3); margin-bottom: 18px; }
+  .trilha a { color: var(--ink-2); } .trilha a:hover { color: var(--ink); text-decoration: underline; }
+  .topo-lista-grade { display: grid; gap: 20px; align-items: center; }
+  @media (min-width: 900px) { .topo-lista-grade { grid-template-columns: 1fr auto; } }
+  .topo-antes { margin: 0 0 4px; font-weight: 650; font-size: 15px; color: var(--accent-text); }
+  .topo-lista h1 { margin: 0; font-size: clamp(42px, 6vw, 80px); }
+  .topo-lista .lead { margin: 12px 0 0; max-width: 56ch; }
+</style>

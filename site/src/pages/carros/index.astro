@@ -1,0 +1,56 @@
+---
+import Pagina from '../../layouts/Pagina.astro';
+import TopoListagem from '../../components/TopoListagem.astro';
+import CartaoCarro from '../../components/CartaoCarro.astro';
+import { resumo } from '../../lib/dados';
+const r = resumo();
+const marcas = [...new Set(r.carros.map((c) => c.b))];
+---
+<Pagina titulo="Peças por carro | Izzat Car Imports"
+        descricao={`Escolha o seu carro e veja as peças originais que saíram dele: ${r.carros.slice(0, 8).map((c) => `${c.b} ${c.m}`).join(', ')} e mais ${r.carros.length - 8} modelos.`}>
+  <div class="moldura">
+    <TopoListagem trilha={[['Início', '/index.html'], ['Carros', '/carros.html']]} titulo="Peças por carro"
+      apoio="Cada carro aqui passou pelo nosso pátio. Escolha o seu e veja as peças originais que saíram dele." />
+    <div class="filtro-carros" role="search">
+      <label class="busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" placeholder="Digite o modelo, por exemplo Compass" aria-label="Filtrar carros" data-filtro-carros /></label>
+      <div class="marcas-filtro" data-marcas>
+        <button type="button" aria-pressed="true" data-marca="">Todas</button>
+        {marcas.map((m) => <button type="button" aria-pressed="false" data-marca={m}>{m}</button>)}
+      </div>
+    </div>
+    <div class="grade-carros" data-grade>
+      {r.carros.map((c) => <div data-carro={`${c.b} ${c.m}`.toLowerCase()} data-b={c.b}><CartaoCarro c={c} /></div>)}
+    </div>
+    <p class="nenhum" data-nenhum hidden>Nenhum carro com esse nome por aqui. <a href="/procuro-peca.html">Peça para a gente procurar no pátio</a>.</p>
+  </div>
+</Pagina>
+<script>
+  const inp = document.querySelector<HTMLInputElement>('[data-filtro-carros]');
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-carro]')];
+  const botoes = [...document.querySelectorAll<HTMLButtonElement>('[data-marca]')];
+  const nenhum = document.querySelector<HTMLElement>('[data-nenhum]');
+  let marca = '';
+  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const aplicar = () => {
+    const q = norm(inp?.value || '');
+    let n = 0;
+    cards.forEach((c) => { const ok = (!marca || c.dataset.b === marca) && (!q || norm(c.dataset.carro || '').includes(q)); c.hidden = !ok; if (ok) n++; });
+    if (nenhum) nenhum.hidden = n > 0;
+  };
+  inp?.addEventListener('input', aplicar);
+  botoes.forEach((b) => b.addEventListener('click', () => {
+    marca = b.dataset.marca || ''; botoes.forEach((x) => x.setAttribute('aria-pressed', String(x === b))); aplicar();
+  }));
+</script>
+<style>
+  .filtro-carros { display: grid; gap: 14px; margin-bottom: 24px; }
+  .filtro-carros .busca { max-width: 640px; }
+  .marcas-filtro { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+  @media (min-width: 900px) { .marcas-filtro { flex-wrap: wrap; } }
+  .marcas-filtro button { flex: none; height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; font-size: 14.5px; }
+  .marcas-filtro button[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
+  .grade-carros { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding-bottom: 72px; }
+  @media (min-width: 900px) { .grade-carros { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
+  .nenhum { padding-bottom: 72px; color: var(--ink-2); } .nenhum a { color: var(--accent-text); font-weight: 600; text-decoration: underline; }
+</style>

@@ -1,0 +1,14 @@
+{
+  // PRODUÇÃO no Cloudflare (conta da IzzatCar): o mesmo site do GitHub Pages.
+  // Usado pelo workflow quando existirem os segredos CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID.
+  // Nome próprio: NÃO mexe nos workers do backend (izzat-backend, izzat-painel...).
+  "name": "izzatcar-site",
+  "main": "./worker/index.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none"
+  }
+}

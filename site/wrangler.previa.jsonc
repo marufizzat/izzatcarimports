@@ -1,0 +1,13 @@
+{
+  // PRÉVIA pública (noindex, foto do catálogo do dia). Gerar com: PREVIA=1 npx astro build
+  // Publicar com: npx wrangler deploy --config wrangler.previa.jsonc
+  "name": "izzatcar-site-previa",
+  "main": "./worker/index.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist-previa",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none"
+  }
+}

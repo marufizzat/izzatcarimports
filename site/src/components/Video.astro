@@ -1,0 +1,31 @@
+---
+// Video real da loja, sem som, em laco. So o da abertura (prioridade) toca de cara;
+// os outros nao baixam nada ate a pessoa rolar perto (economiza dados no 4G).
+// Nos horizontais (h-*), tela ate 1280 px baixa a versao 1280 (metade do peso).
+interface Props { nome: string; class?: string; rotulo?: string; prioridade?: boolean; }
+const { nome, class: cls, rotulo, prioridade = false } = Astro.props;
+const horizontal = nome.startsWith('h-');
+---
+<video class={cls} muted loop playsinline preload="none" poster={horizontal ? `/midia/${nome}-1280.jpg` : `/midia/${nome}.jpg`} data-prioridade={prioridade ? '1' : undefined}
+       aria-label={rotulo} aria-hidden={rotulo ? undefined : 'true'} data-video-loja>
+  {horizontal && <source src={`/midia/${nome}-1280.webm`} type="video/webm" media="(max-width: 1280px)" />}
+  {horizontal && <source src={`/midia/${nome}-1280.mp4`} type="video/mp4" media="(max-width: 1280px)" />}
+  <source src={`/midia/${nome}.webm`} type="video/webm" />
+  <source src={`/midia/${nome}.mp4`} type="video/mp4" />
+</video>
+<script>
+  const vids = [...document.querySelectorAll<HTMLVideoElement>('video[data-video-loja]')];
+  const parado = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (parado) vids.forEach((v) => v.pause());
+  else if ('IntersectionObserver' in window) {
+    // o video da abertura so comeca depois da pagina pronta: o poster aparece na hora
+    const comecar = () => vids.filter((v) => v.dataset.prioridade).forEach((v) => { v.preload = 'auto'; v.play().catch(() => {}); });
+    if (document.readyState === 'complete') setTimeout(comecar, 300); else addEventListener('load', () => setTimeout(comecar, 300));
+    const io = new IntersectionObserver((es) => es.forEach((e) => {
+      const v = e.target as HTMLVideoElement;
+      if (v.dataset.prioridade && document.readyState !== 'complete') return;
+      if (e.isIntersecting) { if (v.preload === 'none') v.preload = 'auto'; v.play().catch(() => {}); } else v.pause();
+    }), { rootMargin: '300px 0px' });
+    vids.forEach((v) => io.observe(v));
+  }
+</script>

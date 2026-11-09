@@ -1,0 +1,133 @@
+---
+// Topo da pagina da peca: galeria (deslizar, miniaturas, tela cheia) + compra.
+import type { Peca } from '../lib/dados';
+import { foto, brl, whatsUrl, SITE } from '../lib/dados';
+import Icone from './Icone.astro';
+interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
+const { p, nivel = 'h1' } = Astro.props;
+const Titulo = nivel;
+const carro = [p.b, p.m].filter(Boolean).join(' ');
+const serve = carro ? `${carro}${p.y ? `, ${p.y[0]} a ${p.y[1]}` : ''}` : '';
+const [reais, cent] = brl(p.p).split(',');
+const url = `${SITE}/peca/${p.slug}.html`;
+const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n${serve ? `Meu carro é ${carro} ano ____. ` : ''}Serve e ainda tem?`;
+const cod = (p.oem || '').split(/[\s,;/|]+/)[0];
+const fotos = p.fotos.length ? p.fotos : [''];
+---
+<div class="peca-topo">
+  <div class="galeria" data-galeria>
+    <div class="galeria-palco">
+      <ul class="galeria-trilho" data-trilho>
+        {fotos.map((f, i) => (
+          <li><img src={foto(f, 'F')} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
+                   loading={i === 0 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} decoding="async" /></li>
+        ))}
+      </ul>
+      <span class="galeria-contador num" data-contador>1 / {fotos.length}</span>
+    </div>
+    {fotos.length > 1 && (
+      <div class="galeria-miniaturas" aria-label="Fotos da peça">
+        {fotos.map((f, i) => (
+          <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
+            <img src={foto(f, 'E')} alt="" width="72" height="72" loading="lazy" />
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+
+  <div class="compra">
+    {serve && <p class="compra-serve"><Icone nome="carro" /> Serve em <b>{serve}</b></p>}
+    <Titulo class="compra-nome">{p.n}</Titulo>
+    <p class="compra-titulo-ml">{p.t}</p>
+    <p class="compra-preco num"><small>R$</small>{reais}<small>,{cent}</small></p>
+    <div class="compra-botoes" data-compra-botoes>
+      <a class="botao botao-laranja" href={whatsUrl(msg)}><Icone nome="whats" />Pedir pelo WhatsApp</a>
+      <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
+    </div>
+    <p class="compra-aviso">Na dúvida se serve? Mande o modelo e o ano do seu carro no WhatsApp que a gente confere na peça.</p>
+    {cod && (
+      <div class="compra-cod">
+        <div><span>Código gravado na peça</span><b class="oem">{cod}</b></div>
+        <button type="button" class="botao botao-linha" data-copiar={cod}><Icone nome="copiar" />Copiar</button>
+      </div>
+    )}
+    <ul class="compra-garantias">
+      <li><img src="/icones/garantia-96.webp" alt="" width="32" height="32" />90 dias de garantia</li>
+      <li><img src="/icones/nota-fiscal-96.webp" alt="" width="32" height="32" />Nota fiscal na venda</li>
+      <li><img src="/icones/patio-96.webp" alt="" width="32" height="32" />Retirada de carro com baixa legal, CDV nº 01060</li>
+      <li><img src="/icones/envios-96.webp" alt="" width="32" height="32" />Envio para todo o Brasil</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-galeria]').forEach((g) => {
+    const trilho = g.querySelector<HTMLElement>('[data-trilho]')!;
+    const cont = g.querySelector<HTMLElement>('[data-contador]');
+    const minis = [...g.querySelectorAll<HTMLButtonElement>('[data-ir]')];
+    const total = trilho.children.length;
+    const marcar = () => {
+      const i = Math.round(trilho.scrollLeft / trilho.clientWidth);
+      if (cont) cont.textContent = `${i + 1} / ${total}`;
+      minis.forEach((b, j) => b.setAttribute('aria-current', String(i === j)));
+      minis[i]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    trilho.addEventListener('scroll', () => requestAnimationFrame(marcar), { passive: true });
+    // toque/clique na foto abre a galeria em tela cheia (ilha GaleriaTelaCheia)
+    trilho.addEventListener('click', () => {
+      const i = Math.round(trilho.scrollLeft / trilho.clientWidth);
+      (window as any).__galeriaPendente = i; // se a ilha ainda nao montou, ela abre ao montar
+      window.dispatchEvent(new CustomEvent('abrir-galeria', { detail: { indice: i } }));
+    });
+    minis.forEach((b) => b.addEventListener('click', () =>
+      trilho.scrollTo({ left: Number(b.dataset.ir) * trilho.clientWidth, behavior: 'smooth' })));
+  });
+  document.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copiar || ''); } catch {}
+      const t = b.lastChild!; const antes = t.textContent; t.textContent = 'Copiado';
+      setTimeout(() => (t.textContent = antes), 1600);
+    });
+  });
+</script>
+
+<style>
+  .peca-topo { display: grid; gap: 28px; }
+  @media (min-width: 960px) { .peca-topo { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 56px; align-items: start; } }
+  .galeria { min-width: 0; }
+  .galeria-palco { position: relative; border-radius: 22px; background: var(--plate); overflow: hidden; box-shadow: var(--shadow-1); }
+  .galeria-trilho { list-style: none; margin: 0; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; aspect-ratio: 1; }
+  .galeria-trilho::-webkit-scrollbar { display: none; }
+  .galeria-trilho li { flex: 0 0 100%; scroll-snap-align: center; display: grid; place-items: center; }
+  .galeria-trilho img { width: 100%; height: 100%; object-fit: contain; padding: 6%; cursor: zoom-in; }
+  .galeria-contador { position: absolute; right: 14px; bottom: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 650;
+                      background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); }
+  .galeria-miniaturas { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+  .galeria-miniaturas button { flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--plate);
+                               box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; transition: box-shadow .2s; }
+  .galeria-miniaturas button[aria-current="true"] { box-shadow: inset 0 0 0 2.5px var(--accent); }
+  .galeria-miniaturas img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+
+  .compra { min-width: 0; display: grid; gap: 14px; align-content: start; }
+  .compra-serve { display: inline-flex; align-items: center; gap: 8px; justify-self: start; margin: 0; padding: 8px 14px 8px 10px; border-radius: 12px;
+                  background: var(--accent-soft); color: var(--ink); font-size: 14.5px; }
+  .compra-serve :global(svg) { width: 20px; height: 20px; color: var(--accent-text); }
+  .compra-nome { overflow-wrap: anywhere; margin: 0; font-stretch: 84%; font-weight: 800; font-size: clamp(28px, 3.2vw, 40px); line-height: 1.04; letter-spacing: -.01em; text-wrap: balance; }
+  .compra-titulo-ml { margin: -6px 0 0; font-size: 13.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+  .compra-preco { margin: 6px 0 0; font-stretch: 80%; font-weight: 850; font-size: 46px; line-height: 1; letter-spacing: -.01em; }
+  .compra-preco small { font-size: 20px; font-weight: 700; color: var(--ink-2); }
+  .compra-preco small:first-child { margin-right: 4px; }
+  .compra-botoes { display: grid; gap: 10px; margin-top: 6px; }
+  .compra-botoes .botao { --h: 56px; font-size: 16.5px; }
+  .compra-aviso { margin: 0; font-size: 14px; color: var(--ink-2); text-wrap: pretty; }
+  .compra-cod { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 12px 12px 16px; border-radius: 14px;
+                background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line); }
+  .compra-cod span { display: block; font-size: 12.5px; color: var(--ink-3); }
+  .compra-cod b { font-size: 18px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+  .compra-cod > div { min-width: 0; }
+  .compra-cod .botao { --h: 40px; padding: 0 14px; font-size: 14px; }
+  .compra-garantias { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; }
+  .compra-garantias li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; color: var(--ink-2); }
+  .compra-garantias img { width: 30px; height: 30px; }
+</style>

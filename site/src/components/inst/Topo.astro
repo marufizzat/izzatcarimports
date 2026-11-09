@@ -1,0 +1,18 @@
+---
+// Cabeca das paginas institucionais: trilha visivel + H1 + apoio.
+import './inst.css';
+interface Props { titulo: string; lead?: string; trilha: { nome: string; href?: string }[]; }
+const { titulo, lead, trilha } = Astro.props;
+---
+<div class="moldura inst-topo">
+  <nav aria-label="Você está em">
+    <ol class="inst-trilha">
+      {trilha.map((t) => (
+        <li>{t.href ? <a href={t.href}>{t.nome}</a> : <span aria-current="page">{t.nome}</span>}</li>
+      ))}
+    </ol>
+  </nav>
+  <h1 class="display inst-h1">{titulo}</h1>
+  {lead && <p class="lead inst-lead">{lead}</p>}
+  <slot />
+</div>

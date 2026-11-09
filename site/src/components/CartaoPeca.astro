@@ -1,0 +1,26 @@
+---
+import type { Peca } from '../lib/dados';
+import { foto, fotoSrcset, brl } from '../lib/dados';
+interface Props { p: Peca; base?: string; eager?: boolean; }
+const { p, base = '/peca/', eager = false } = Astro.props;
+const carro = [p.b, p.m].filter(Boolean).join(' ') + (p.y ? `, ${p.y[0]}–${String(p.y[1])}` : '');
+const cod = (p.oem || '').split(/[\s,;/|]+/)[0];
+const [reais, cent] = brl(p.p).split(',');
+---
+<a class="etiqueta" href={`${base}${p.slug}.html`}>
+  <div class="etiqueta-foto">
+    <img src={foto(p.fotos[0], 'O')} srcset={fotoSrcset(p.fotos[0])}
+         sizes="(min-width:1024px) 230px, (min-width:640px) 30vw, 46vw"
+         alt={p.t} loading={eager ? 'eager' : 'lazy'} decoding="async" width="500" height="500" />
+    <span class="etiqueta-furo" aria-hidden="true"></span>
+  </div>
+  <div class="etiqueta-picote" aria-hidden="true"></div>
+  <div class="etiqueta-dados">
+    {carro && <span class="etiqueta-carro">{carro}</span>}
+    <span class="etiqueta-nome">{p.n}</span>
+    <div class="etiqueta-rodape">
+      <span class="etiqueta-preco num"><small>R$</small>{reais}<small style="margin:0 0 0 1px">,{cent}</small></span>
+      {cod && <span class="etiqueta-cod oem" title="Código gravado na peça">{cod}</span>}
+    </div>
+  </div>
+</a>

@@ -1,2 +1,13 @@
 __pycache__/
 *.pyc
+
+# Site novo (Astro): dados e build sao gerados no workflow, nunca commitados
+site/node_modules/
+site/dist/
+site/.astro/
+site/src/data/pecas.json
+site/src/data/resumo.json
+site/public/dados/
+__pycache__/
+site/dist-previa/
+site/.wrangler/

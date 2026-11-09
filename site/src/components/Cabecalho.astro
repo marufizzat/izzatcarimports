@@ -1,0 +1,101 @@
+---
+import Logo from './Logo.astro';
+import Icone from './Icone.astro';
+import { whatsUrl, resumo } from '../lib/dados';
+interface Props { escuro?: boolean; sobreposto?: boolean; }
+const { escuro = false, sobreposto = false } = Astro.props;
+const links: [string, string][] = [
+  ['Peças', '/catalogo.html'], ['Carros', '/carros.html'],
+  ['Como comprar', '/como-comprar.html'], ['O pátio', '/sobre.html'],
+];
+const atual = Astro.url.pathname;
+const ativo = (h: string) => atual === h || (h === '/catalogo.html' && atual.startsWith('/peca/')) ||
+  (h === '/carros.html' && atual.startsWith('/carros/'));
+const carros = resumo().carros.slice(0, 8);
+---
+<header class:list={['cab', { 'cab-escuro': escuro, 'cab-sobre': sobreposto }]}>
+  <div class="moldura cab-linha">
+    <Logo escuro={escuro} altura={64} />
+    <nav class="cab-nav" aria-label="Principal">
+      {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
+    </nav>
+    <div class="cab-acoes">
+      <a class="cab-icone" href="/catalogo.html#busca" aria-label="Buscar peça"><Icone nome="busca" /></a>
+      <a class="botao botao-laranja cab-whats" href={whatsUrl('Olá! Estou procurando uma peça.')} aria-label="Falar no WhatsApp">
+        <Icone nome="whats" /><span>WhatsApp</span>
+      </a>
+      <button class="cab-icone cab-menu" type="button" aria-label="Abrir menu" aria-controls="menu-movel" data-abrir-menu>
+        <Icone nome="menu" />
+      </button>
+    </div>
+  </div>
+</header>
+
+<dialog id="menu-movel" class="menu-movel" aria-label="Menu">
+  <div class="menu-topo">
+    <Logo altura={52} />
+    <button class="cab-icone" type="button" aria-label="Fechar menu" data-fechar-menu>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <nav class="menu-links" aria-label="Menu principal">
+    {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
+    <a href="/garantia.html">Garantia e trocas</a>
+    <a href="/procuro-peca.html">Não achou? Procuro peça</a>
+  </nav>
+  <p class="menu-rotulo">Carros com mais peças</p>
+  <div class="menu-carros">
+    {carros.map((c) => <a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a>)}
+  </div>
+  <a class="botao botao-laranja menu-whats" href={whatsUrl('Olá! Estou procurando uma peça.')}><Icone nome="whats" />Falar no WhatsApp</a>
+</dialog>
+
+<script>
+  const d = document.getElementById('menu-movel') as HTMLDialogElement | null;
+  document.querySelectorAll('[data-abrir-menu]').forEach((b) => b.addEventListener('click', () => d?.showModal()));
+  document.querySelectorAll('[data-fechar-menu]').forEach((b) => b.addEventListener('click', () => d?.close()));
+  d?.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+</script>
+
+<style>
+  .cab { position: sticky; top: 0; z-index: 50; background: color-mix(in oklab, var(--bg), transparent 12%);
+         backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+         border-bottom: 1px solid color-mix(in oklab, var(--line), transparent 25%); }
+  .cab-escuro { background: rgb(14 14 16 / .8); color: #f2f2f4; --line: #2a2b30; }
+  .cab-sobre { position: absolute; inset: 0 0 auto 0; background: linear-gradient(180deg, rgb(0 0 0 / .55), transparent); border: 0; backdrop-filter: none; color: #fff; }
+  .cab-linha { display: flex; align-items: center; gap: 20px; height: 68px; }
+  .cab-linha :global(.logo img) { height: 54px; width: auto; display: block; }
+  .cab-nav { display: none; gap: 2px; margin-left: 16px; }
+  .cab-nav a { position: relative; padding: 10px 14px; border-radius: 10px; font-weight: 560; font-size: 15.5px; color: var(--ink-2);
+               transition: color .2s, background-color .2s; }
+  .cab-nav a:hover { color: var(--ink); background: color-mix(in oklab, var(--ink), transparent 94%); }
+  .cab-nav a[aria-current="page"] { color: var(--ink); }
+  .cab-nav a[aria-current="page"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 3px; height: 3px; border-radius: 3px;
+               background: var(--accent); }
+  .cab-acoes { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .cab-icone { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: inherit; }
+  .cab-icone:hover { background: color-mix(in oklab, currentColor, transparent 92%); }
+  .cab-icone :global(svg), .cab-icone svg { width: 23px; height: 23px; }
+  .cab-whats { --h: 44px; padding: 0 13px; font-size: 15px; }
+  .cab-whats span { display: none; }
+  @media (min-width: 960px) {
+    .cab-linha { height: 84px; } .cab-linha :global(.logo img) { height: 66px; }
+    .cab-nav { display: flex; } .cab-whats { padding: 0 18px; } .cab-whats span { display: inline; } .cab-menu { display: none; }
+  }
+
+  .menu-movel { margin: 0 0 0 auto; width: min(100%, 420px); height: 100dvh; max-height: none; border: 0; padding: 18px 20px 28px;
+                background: var(--bg); color: var(--ink); display: none; flex-direction: column; gap: 18px; overflow-y: auto;
+                transform: translateX(100%); transition: transform .32s cubic-bezier(.2,.8,.2,1), overlay .32s allow-discrete, display .32s allow-discrete; }
+  .menu-movel[open] { display: flex; transform: none; }
+  @starting-style { .menu-movel[open] { transform: translateX(100%); } }
+  .menu-movel::backdrop { background: rgb(10 10 12 / .45); backdrop-filter: blur(4px); }
+  .menu-topo { display: flex; justify-content: space-between; align-items: center; }
+  .menu-topo :global(.logo img) { height: 52px; width: auto; }
+  .menu-links { display: grid; }
+  .menu-links a { padding: 14px 4px; font-stretch: 84%; font-weight: 800; font-size: 26px; border-bottom: 1px solid var(--line); }
+  .menu-links a[aria-current="page"] { color: var(--accent-text); }
+  .menu-rotulo { margin: 8px 0 -6px; font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
+  .menu-carros { display: flex; flex-wrap: wrap; gap: 8px; }
+  .menu-carros a { padding: 9px 13px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 14.5px; font-weight: 560; }
+  .menu-whats { margin-top: auto; --h: 54px; }
+</style>

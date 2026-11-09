@@ -1,0 +1,280 @@
+@import "tailwindcss";
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/geist-mono/index.css";
+
+/* =========================================================================
+   IZZAT CAR — sistema visual
+   Uma familia so (Archivo variavel). A LARGURA e a voz:
+     condensada e pesada nos titulos (o DNA das artes do Instagram),
+     normal no texto. Geist Mono so no codigo gravado na peca (OEM).
+   As 3 direcoes do checkpoint 1 mudam so os tokens (data-direcao no <html>).
+   Regra do manual: laranja #FF6A00 NUNCA com texto branco (2,9:1).
+   ========================================================================= */
+
+@theme {
+  --font-sans: "Archivo Variable", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+}
+
+:root,
+[data-direcao="a"] {
+  /* A · Oficina clara — neutros frios do manual da vitrine */
+  --bg: #f5f5f7;
+  --bg-2: #ececf0;
+  --surface: #ffffff;
+  --surface-2: #f7f7f9;
+  --ink: #1d1d1f;
+  --ink-2: #5b5b61;
+  --ink-3: #65656b;
+  --line: #e2e2e7;
+  --line-2: #d1d1d6;
+  --accent: #ff6a00;
+  --accent-press: #f25f00;
+  --on-accent: #1d1d1f;
+  --accent-text: #c2410c;
+  --accent-soft: #fff1e6;
+  --hero-ink: var(--ink);
+  --hero-ink-2: var(--ink-2);
+  --shadow-1: 0 1px 2px rgb(16 16 20 / .05), 0 6px 18px -6px rgb(16 16 20 / .10);
+  --shadow-2: 0 2px 6px rgb(16 16 20 / .06), 0 24px 48px -16px rgb(16 16 20 / .22);
+  --plate: #ffffff;                 /* fundo da foto da peca (ML vem com fundo branco) */
+  --display-wdth: 78%;
+  --display-wght: 820;
+  --display-case: none;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-direcao="a"] {
+    /* A no escuro: mesmo laranja, sempre com letra grafite */
+    --bg: #0f0f11; --bg-2: #151518; --surface: #1c1c20; --surface-2: #242429;
+    --ink: #f2f2f5; --ink-2: #b4b4bb; --ink-3: #9a9aa0; --line: #2b2b31; --line-2: #3a3a41;
+    --accent-text: #ff8a3d; --accent-soft: #2b1a0e; --plate: #f4f4f6;
+    --shadow-1: 0 1px 0 rgb(255 255 255 / .04) inset, 0 10px 28px -14px rgb(0 0 0 / .8);
+    --shadow-2: 0 1px 0 rgb(255 255 255 / .05) inset, 0 28px 56px -20px rgb(0 0 0 / .9);
+    color-scheme: dark;
+  }
+}
+
+/* faixa escura (secao "Por dentro do patio" e rodape) */
+.faixa-escura {
+  --bg: #111214;
+  --surface: #1a1b1e;
+  --surface-2: #222327;
+  --ink: #f2f2f4;
+  --ink-2: #b3b3ba;
+  --ink-3: #9a9aa0;
+  --line: #2a2b30;
+  --line-2: #36373d;
+  --accent-text: #ff8a3d;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------------------------- */
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-stretch: 100%;
+    font-size: 100%;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    scroll-padding-top: 88px;
+  }
+  body { min-height: 100dvh; line-height: 1.5; }
+  ::selection { background: var(--accent); color: var(--on-accent); }
+  :focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; border-radius: 6px; box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent), transparent 70%); }
+  img, video { display: block; max-width: 100%; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+}
+
+/* ---- Tipografia ---------------------------------------------------------- */
+.display {
+  font-stretch: var(--display-wdth);
+  font-weight: var(--display-wght);
+  text-transform: var(--display-case);
+  letter-spacing: -0.012em;
+  line-height: .92;
+  text-wrap: balance;
+}
+.titulo-secao {
+  font-stretch: var(--display-wdth);
+  font-weight: 800;
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: var(--display-case);
+  text-wrap: balance;
+}
+.lead { font-size: clamp(16px, 1.25vw, 19px); color: var(--ink-2); line-height: 1.5; text-wrap: pretty; }
+.num { font-variant-numeric: tabular-nums lining-nums; }
+.oem { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .02em; }
+
+/* pincelada laranja desenhada (SVG) sob uma palavra-chave do titulo */
+.pincel {
+  position: relative; white-space: nowrap; z-index: 0;
+}
+.pincel::after {
+  content: ""; position: absolute; z-index: -1;
+  left: -.06em; right: -.08em; bottom: -.02em; height: .36em;
+  background: url("/identidade/pincel.svg") center / 100% 100% no-repeat;
+}
+
+/* ---- Layout -------------------------------------------------------------- */
+.moldura { width: min(100% - 32px, 1240px); margin-inline: auto; }
+@media (min-width: 768px) { .moldura { width: min(100% - 64px, 1240px); } }
+.secao { padding-block: clamp(56px, 8vw, 112px); }
+
+/* ---- Botoes desenhados ----------------------------------------------------
+   Material: laranja com brilho de cima, borda interna clara, sombra quente
+   embaixo; ao apertar, afunda 1px. Nunca o botao padrao do navegador.        */
+.botao {
+  --h: 52px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  height: var(--h); padding: 0 22px; border-radius: 12px;
+  font-weight: 650; font-size: 16px; font-stretch: 96%; letter-spacing: .005em;
+  border: 0; position: relative; isolation: isolate; white-space: nowrap; max-width: 100%;
+  transition: transform .12s ease, box-shadow .2s ease, background-color .2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.botao:active { transform: translateY(1px); }
+.botao svg { width: 20px; height: 20px; flex: none; }
+.botao-laranja {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent), #fff 14%) 0%, var(--accent) 52%, var(--accent-press) 100%);
+  color: var(--on-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), inset 0 -1px 0 rgb(0 0 0 / .12),
+              0 1px 2px rgb(140 50 0 / .25), 0 8px 20px -8px color-mix(in oklab, var(--accent), transparent 30%);
+}
+.botao-laranja:hover { box-shadow: inset 0 1px 0 rgb(255 255 255 / .45), inset 0 -1px 0 rgb(0 0 0 / .12),
+              0 2px 4px rgb(140 50 0 / .25), 0 14px 28px -10px color-mix(in oklab, var(--accent), transparent 20%); }
+.botao-grafite {
+  background: linear-gradient(180deg, #3a3a3e, #1d1d1f 60%, #141416);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .16), 0 1px 2px rgb(0 0 0 / .3), 0 10px 22px -10px rgb(0 0 0 / .5);
+}
+.botao-linha {
+  background: var(--surface); color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--line-2), 0 1px 2px rgb(0 0 0 / .04);
+}
+.botao-linha:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 4px 12px -6px rgb(0 0 0 / .18); }
+.botao-vidro {
+  background: rgb(255 255 255 / .1); color: #fff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .28);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* ---- Etiqueta de patio (o cartao da peca) ---------------------------------
+   Forma de etiqueta de estoque: furo no alto, picote com dois entalhes entre
+   a foto e os dados. A foto fica numa placa branca (o ML fotografa no branco). */
+.etiqueta {
+  --r: 18px;
+  position: relative; display: flex; flex-direction: column;
+  background: var(--surface); border-radius: var(--r);
+  box-shadow: var(--shadow-1);
+  transition: transform .25s cubic-bezier(.2,.7,.2,1), box-shadow .25s ease;
+}
+@media (hover: hover) {
+  .etiqueta:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+  .etiqueta:hover .etiqueta-foto img { transform: scale(1.04); }
+}
+.etiqueta-foto {
+  position: relative; aspect-ratio: 1; margin: 8px 8px 0; border-radius: 12px;
+  background: var(--plate); overflow: hidden;
+}
+.etiqueta-foto img {
+  width: 100%; height: 100%; object-fit: contain; padding: 7%;
+  transition: transform .5s cubic-bezier(.2,.7,.2,1);
+}
+.etiqueta-furo {
+  position: absolute; top: 10px; left: 10px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--bg); box-shadow: inset 0 1px 2px rgb(0 0 0 / .25);
+}
+.etiqueta-picote {
+  position: relative; height: 0; margin: 12px 14px 0; border-top: 1.5px dashed var(--line-2);
+}
+/* os dois entalhes da etiqueta: circulos da cor do fundo da pagina */
+.etiqueta-picote::before, .etiqueta-picote::after {
+  content: ""; position: absolute; top: -9px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--bg); box-shadow: inset 0 1px 2px rgb(0 0 0 / .10);
+}
+.etiqueta-picote::before { left: -23px; }
+.etiqueta-picote::after { right: -23px; }
+.etiqueta-dados { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.etiqueta-carro { font-size: 12.5px; font-weight: 600; color: var(--accent-text); font-stretch: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etiqueta-nome {
+  font-size: 15.5px; font-weight: 560; line-height: 1.28; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  min-height: 2.56em;
+}
+.etiqueta-rodape { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; margin-top: auto; padding-top: 4px; min-width: 0; }
+.etiqueta-preco { flex: none; font-stretch: 84%; font-weight: 800; font-size: 22px; line-height: 1; letter-spacing: -.01em; }
+.etiqueta-preco small { font-size: 13px; font-weight: 650; margin-right: 2px; color: var(--ink-2); }
+.etiqueta-cod { color: var(--ink-3); min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+.etiqueta, .etiqueta-dados { min-width: 0; }
+
+/* ---- Selo em disco (icones aprovados dos destaques) ----------------------- */
+.selo { display: flex; align-items: center; gap: 12px; }
+.selo img { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 4px 8px rgb(200 70 0 / .25)); }
+.selo b { display: block; font-size: 14.5px; font-weight: 700; line-height: 1.2; font-stretch: 92%; }
+.selo span { display: block; font-size: 13px; color: var(--ink-2); line-height: 1.3; }
+@media (min-width: 900px) { .selo img { width: 46px; height: 46px; } .selo b { font-size: 15.5px; } }
+
+/* ---- Campos --------------------------------------------------------------- */
+.busca {
+  display: flex; align-items: center; gap: 8px;
+  height: 64px; padding: 0 8px 0 18px; border-radius: 16px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--line-2), var(--shadow-1);
+  transition: box-shadow .2s ease;
+}
+.busca:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 82%), var(--shadow-1); }
+.busca svg { width: 22px; height: 22px; color: var(--ink-3); flex: none; }
+.busca input {
+  flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent;
+  font-size: 17px; color: var(--ink); font-stretch: 100%;
+}
+.busca input::placeholder { color: var(--ink-3); }
+.busca .botao { --h: 48px; }
+
+.seletor {
+  position: relative; display: block;
+}
+.seletor select {
+  appearance: none; width: 100%; height: 52px; padding: 18px 40px 4px 14px; border-radius: 12px;
+  background: var(--surface); color: var(--ink); font-size: 15.5px; font-weight: 560;
+  border: 0; box-shadow: inset 0 0 0 1.5px var(--line-2); outline: 0;
+}
+.seletor select:focus { box-shadow: inset 0 0 0 2px var(--accent); }
+.seletor select:disabled { color: var(--ink-3); background: var(--surface-2); }
+.seletor > span {
+  position: absolute; left: 15px; top: 7px; z-index: 1; font-size: 11.5px; font-weight: 600; color: var(--ink-3);
+  pointer-events: none;
+}
+.seletor::after {
+  content: ""; z-index: 1; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px;
+  border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3);
+  transform: translateY(-70%) rotate(45deg); pointer-events: none;
+}
+
+/* ---- Trilho horizontal (scroll-snap) -------------------------------------- */
+.trilho {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(208px, 1fr);
+  gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 8px 4px 24px;
+  scrollbar-width: none; overscroll-behavior-x: contain;
+}
+.trilho::-webkit-scrollbar { display: none; }
+.trilho > * { scroll-snap-align: start; }
+@media (min-width: 1024px) { .trilho { grid-auto-columns: calc((100% - 4 * 16px) / 5); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; scroll-behavior: auto !important; }
+}
+
+/* botao com texto longo quebra a linha em tela estreita em vez de empurrar a pagina */
+@media (max-width: 420px) { .botao { white-space: normal; height: auto; min-height: var(--h); padding-block: 10px; text-align: center; line-height: 1.25; } }
+
+/* o anel de foco fica na caixa (.busca:focus-within); o campo de dentro nao ganha outro contorno */
+.busca input:focus, .busca input:focus-visible { outline: none; box-shadow: none; }
