@@ -87,7 +87,7 @@
 /* chamada final com arte ao lado (sem metade vazia) */
 .inst-chamada-com-arte { display: grid; gap: 24px; align-items: center; }
 .inst-chamada-texto { display: grid; gap: 16px; justify-items: start; }
-.inst-chamada-arte img { width: 100%; max-width: 380px; height: auto; border-radius: 20px; box-shadow: var(--shadow-1); margin-inline: auto; display: block; }
+.inst-chamada-arte img { width: 100%; max-width: 520px; height: auto; background: #efeeeb; border-radius: 20px; box-shadow: var(--shadow-1); margin-inline: auto; display: block; }
 @media (min-width: 900px) { .inst-chamada-com-arte { grid-template-columns: 1.2fr .8fr; } }
 /* video do galpao: corta a borda de baixo (mao de quem filmou) */
 .inst-janela video, .patio-videos video { object-position: 50% 32%; }

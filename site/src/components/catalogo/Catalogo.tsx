@@ -225,7 +225,7 @@ export default function Catalogo({ total: totalInicial }: { total: number }) {
 
           {busca && resultado.length === 0 && (
             <div className="cat-vazio">
-              <img src="/arte/vazio-busca.webp" alt="" width="360" height="360" />
+              <img src="/arte/v2/vazio-busca.webp" alt="" width="360" height="360" />
               <div>
                 <h2>Nada {f.q ? <>com “{f.q}”</> : 'com esses filtros'} no site.</h2>
                 <p>Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp que a gente procura no pátio.</p>

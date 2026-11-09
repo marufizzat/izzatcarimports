@@ -1,45 +1,27 @@
 ---
 import Pagina from '../layouts/Pagina.astro';
 import Icone from '../components/Icone.astro';
-import { WHATS, SITE, resumo } from '../lib/dados';
+import TopoArte from '../components/TopoArte.astro';
+import BannerV2 from '../components/v2/BannerV2.astro';
+import { WHATS, SITE, resumo, whatsUrl } from '../lib/dados';
 
 const canonical = `${SITE}/procuro-peca.html`;
 const marcas = resumo().marcas.map((m) => m.n);
 const ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
-const ld = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
-    { '@type': 'ListItem', position: 2, name: 'Não achou a peça?', item: canonical },
-  ],
-};
 ---
 <Pagina
   titulo="Não achou a peça? A gente procura | Izzat Car Imports"
   descricao="Não achou a peça no site? Conte a marca, o modelo, o ano e a peça. A gente procura no pátio e responde pelo WhatsApp."
   canonical={canonical}
 >
-  <Fragment slot="head">
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
-  </Fragment>
+  <TopoArte trilha={[['Início', '/index.html'], ['Não achou a peça?', '/procuro-peca.html']]}
+    titulo="Não achou a peça?"
+    lead="Nem toda peça está anunciada. Conte o carro e a peça que você procura. A gente procura no pátio e responde pelo WhatsApp."
+    arte="/arte/v2/topo-procuro.webp" />
 
-  <div class="moldura pc-topo">
-    <nav aria-label="Você está em">
-      <ol class="pc-trilha">
-        <li><a href="/index.html">Início</a></li>
-        <li><span aria-current="page">Não achou a peça?</span></li>
-      </ol>
-    </nav>
-    <div class="pc-hero">
-      <figure class="pc-arte">
-        <picture><source media="(max-width: 700px)" srcset="/arte/nao-achou-movel.webp" type="image/webp" width="768" height="1152" /><img src="/arte/banner-nao-achou.webp" alt="Não achou a peça? A gente procura no pátio. Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp." width="1536" height="1024" fetchpriority="high" decoding="async" /></picture>
-      </figure>
-      <div class="pc-texto">
-        <h1 class="display pc-h1">Não achou a peça?</h1>
-        <p class="lead pc-lead">Nem toda peça está anunciada. Conte o carro e a peça que você procura. A gente procura no pátio e responde pelo WhatsApp.</p>
-      </div>
-    </div>
+  <div class="moldura pc-banner">
+    <BannerV2 nome="banner-nao-achou" href={whatsUrl('Olá! Não achei a peça no site. Meu carro é ____ (modelo e ano) e procuro: ____')}
+      texto="Não achou a peça? A gente procura no pátio. Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp. Chamar no WhatsApp" />
   </div>
 
   <div class="moldura pc-corpo">
@@ -229,7 +211,7 @@ const ld = {
 </script>
 
 <style>
-  .pc-topo { padding-top: clamp(24px, 4vw, 48px); }
+  .pc-banner { padding-top: clamp(8px, 2vw, 16px); }
   .pc-trilha { display: flex; flex-wrap: wrap; align-items: center; margin: 0 0 clamp(16px, 2.6vw, 28px); padding: 0; list-style: none; font-size: 14px; color: var(--ink-3); }
   .pc-trilha li { display: inline-flex; align-items: center; }
   .pc-trilha li + li::before { content: "/"; margin: 0 10px; color: var(--line-2); }

@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write   # grava as capas de estudio novas no ramo "capas-estudio"
   pages: write
   id-token: write
 
@@ -68,6 +68,46 @@ jobs:
         run: |
           python -u preparar_dados.py
           python -u testes/test_dados.py
+
+      # ---- Capas de estudio (peca com fundo limpo). Ficam no ramo "capas-estudio";
+      # aqui so as das pecas NOVAS sao geradas (rembg) e o ramo e atualizado.
+      - name: Buscar capas de estudio ja prontas
+        continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
+        run: |
+          git fetch --depth=1 origin capas-estudio:capas-estudio 2>/dev/null || true
+          mkdir -p site/public/estudio
+          if git rev-parse --verify capas-estudio >/dev/null 2>&1; then
+            git --work-tree=site/public/estudio checkout capas-estudio -- . && git reset -q
+          fi
+          ls site/public/estudio | wc -l
+      - uses: actions/cache@v4
+        with:
+          path: ~/.u2net
+          key: rembg-isnet-v1
+      - uses: actions/cache@v4
+        with:
+          path: ~/.rembg
+          key: rembg-modelos-v1
+      - name: Gerar capas de estudio das pecas novas
+        continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
+        env:
+          PYTHONIOENCODING: utf-8
+          ESTUDIO_POR_RODADA: "150"
+        run: |
+          pip install "rembg[cpu]==2.0.*" scipy
+          python -u capas_estudio.py
+      - name: Guardar capas novas no ramo capas-estudio
+        continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
+        run: |
+          cd site/public/estudio
+          git init -q && git checkout -q -b capas-estudio
+          git config user.name "izzat-bot" && git config user.email "izzat-bot@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git fetch -q --depth=1 origin capas-estudio 2>/dev/null && git reset -q --soft FETCH_HEAD || true
+          git add -A .
+          if git diff --cached --quiet; then echo "nenhuma capa nova"; else
+            git commit -q -m "Capas de estudio: +$(git diff --cached --name-only | wc -l)" && git push -q origin capas-estudio; fi
+          rm -rf .git
 
       - uses: actions/setup-node@v4
         with:

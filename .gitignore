@@ -11,3 +11,5 @@ site/public/dados/
 __pycache__/
 site/dist-previa/
 site/.wrangler/
+site/public/estudio/
+estudio_falhas*.json

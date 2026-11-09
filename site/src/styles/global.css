@@ -278,3 +278,16 @@
 
 /* o anel de foco fica na caixa (.busca:focus-within); o campo de dentro nao ganha outro contorno */
 .busca input:focus, .busca input:focus-visible { outline: none; box-shadow: none; }
+
+/* capa de estúdio já vem com fundo e margem: ocupa a placa inteira */
+.etiqueta-foto img.estudio { padding: 0; object-fit: cover; }
+
+/* Painéis de estúdio (arte clara): SEMPRE com as cores do tema claro, mesmo no modo escuro do celular. */
+.tema-estudio {
+  --bg: #f5f5f7; --bg-2: #ececf0; --surface: #ffffff; --surface-2: #f7f7f9;
+  --ink: #1d1d1f; --ink-2: #5b5b61; --ink-3: #65656b; --line: #e2e2e7; --line-2: #d1d1d6;
+  --accent-text: #c2410c; --accent-soft: #fff1e6; --plate: #ffffff;
+  --shadow-1: 0 1px 2px rgb(16 16 20 / .05), 0 6px 18px -6px rgb(16 16 20 / .10);
+  --shadow-2: 0 2px 6px rgb(16 16 20 / .06), 0 24px 48px -16px rgb(16 16 20 / .22);
+  color: var(--ink); color-scheme: light;
+}

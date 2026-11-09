@@ -1,7 +1,7 @@
 ---
 // Topo da pagina da peca: galeria (deslizar, miniaturas, tela cheia) + compra.
 import type { Peca } from '../lib/dados';
-import { foto, brl, whatsUrl, SITE } from '../lib/dados';
+import { foto, brl, whatsUrl, temEstudio, SITE } from '../lib/dados';
 import Icone from './Icone.astro';
 interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
 const { p, nivel = 'h1' } = Astro.props;
@@ -12,14 +12,18 @@ const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
 const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n${serve ? `Meu carro é ${carro} ano ____. ` : ''}Serve e ainda tem?`;
 const cod = (p.oem || '').split(/[\s,;/|]+/)[0];
-const fotos = p.fotos.length ? p.fotos : [''];
+// 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça.
+const fotos: { g: string; m: string }[] = [
+  ...(temEstudio(p.id) ? [{ g: `/estudio/${p.id}.webp`, m: `/estudio/${p.id}.webp` }] : []),
+  ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'E') })),
+];
 ---
 <div class="peca-topo">
   <div class="galeria" data-galeria>
     <div class="galeria-palco">
       <ul class="galeria-trilho" data-trilho>
         {fotos.map((f, i) => (
-          <li><img src={foto(f, 'F')} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
+          <li><img src={f.g} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
                    loading={i === 0 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} decoding="async" /></li>
         ))}
       </ul>
@@ -29,7 +33,7 @@ const fotos = p.fotos.length ? p.fotos : [''];
       <div class="galeria-miniaturas" aria-label="Fotos da peça">
         {fotos.map((f, i) => (
           <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
-            <img src={foto(f, 'E')} alt="" width="72" height="72" loading="lazy" />
+            <img src={f.m} alt="" width="72" height="72" loading="lazy" />
           </button>
         ))}
       </div>
@@ -53,10 +57,10 @@ const fotos = p.fotos.length ? p.fotos : [''];
       </div>
     )}
     <ul class="compra-garantias">
-      <li><img src="/icones/garantia-96.webp" alt="" width="32" height="32" />90 dias de garantia</li>
-      <li><img src="/icones/nota-fiscal-96.webp" alt="" width="32" height="32" />Nota fiscal na venda</li>
-      <li><img src="/icones/patio-96.webp" alt="" width="32" height="32" />Retirada de carro com baixa legal, CDV nº 01060</li>
-      <li><img src="/icones/envios-96.webp" alt="" width="32" height="32" />Envio para todo o Brasil</li>
+      <li><img src="/arte/v2/selo-garantia.webp" alt="" width="32" height="32" />90 dias de garantia</li>
+      <li><img src="/arte/v2/selo-nota-fiscal.webp" alt="" width="32" height="32" />Nota fiscal na venda</li>
+      <li><img src="/arte/v2/selo-cdv.webp" alt="" width="32" height="32" />Retirada de carro com baixa legal, CDV nº 01060</li>
+      <li><img src="/arte/v2/selo-envio.webp" alt="" width="32" height="32" />Envio para todo o Brasil</li>
     </ul>
   </div>
 </div>

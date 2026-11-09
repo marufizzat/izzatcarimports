@@ -2,10 +2,10 @@
 import Pagina from '../../layouts/Pagina.astro';
 import PecaTopo from '../../components/PecaTopo.astro';
 import CartaoPeca from '../../components/CartaoPeca.astro';
-import BannerArte from '../../components/BannerArte.astro';
+import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import GaleriaTelaCheia from '../../components/ui/GaleriaTelaCheia';
-import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE } from '../../lib/dados';
+import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, temEstudio } from '../../lib/dados';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
@@ -47,7 +47,7 @@ const ld = {
 <Pagina titulo={titulo} descricao={descricao} ogImagem={foto(p.fotos[0], 'F') || undefined}
         produto={{ id: p.id, name: p.t, price: p.p, category: p.c }}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
-  <link slot="head" rel="preload" as="image" href={foto(p.fotos[0], 'F')} fetchpriority="high" />
+  <link slot="head" rel="preload" as="image" href={temEstudio(p.id) ? `/estudio/${p.id}.webp` : foto(p.fotos[0], 'F')} fetchpriority="high" />
 
   <div class="moldura">
     <nav class="trilha" aria-label="Você está em">
@@ -55,7 +55,7 @@ const ld = {
       <span aria-current="page">{p.n}</span>
     </nav>
     <section class="topo"><PecaTopo p={p} /></section>
-    <GaleriaTelaCheia client:idle fotos={p.fotos.map((k) => foto(k, 'F'))} titulo={p.n} />
+    <GaleriaTelaCheia client:idle fotos={[...(temEstudio(p.id) ? [`/estudio/${p.id}.webp`] : []), ...p.fotos.map((k) => foto(k, 'F'))]} titulo={p.n} />
   </div>
 
   <div class="barra-compra" data-barra-compra aria-hidden="true">
@@ -100,7 +100,7 @@ const ld = {
 
   <section class="secao">
     <div class="moldura">
-      <BannerArte arte="/banners/A_oficina_clara" movel="/arte/serve-movel" href={whatsUrl(`Olá! Quero confirmar se esta peça serve no meu carro:\n${p.t}\n${url}\n\nMeu carro é ____ (modelo) ____ (ano).`)}
+      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Quero confirmar se esta peça serve no meu carro:\n${p.t}\n${url}\n\nMeu carro é ____ (modelo) ____ (ano).`)}
         texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
     </div>
   </section>

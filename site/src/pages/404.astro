@@ -25,7 +25,7 @@ const ld = {
 
   <div class="moldura nf">
     <figure class="nf-arte">
-      <img src="/arte/404.webp" alt="Essa peça já saiu do pátio. Ela pode ter sido vendida. Procure outra ou fale com a gente." width="1536" height="1024" decoding="async" />
+      <img src="/arte/v2/404.webp" alt="Um parafuso sobre um pedestal de estúdio: essa página não está aqui. Procure a peça ou fale com a gente." width="800" height="800" decoding="async" />
     </figure>
 
     <div class="nf-texto">
@@ -58,7 +58,7 @@ const ld = {
 <style>
   .nf { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(32px, 5vw, 72px); align-items: center; padding-block: clamp(28px, 5vw, 72px) clamp(56px, 8vw, 112px); }
   @media (min-width: 900px) { .nf { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
-  .nf-arte { margin: 0; border-radius: 28px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--surface-2); box-shadow: var(--shadow-1); }
+  .nf-arte { margin: 0; border-radius: 28px; overflow: hidden; aspect-ratio: 1 / 1; max-width: 520px; width: 100%; justify-self: center; background: #f4f3f0; box-shadow: var(--shadow-1); }
   .nf-arte img { width: 100%; height: 100%; object-fit: cover; }
   .nf-texto { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; justify-items: start; min-width: 0; }
   .nf-texto > * { max-width: 100%; }
