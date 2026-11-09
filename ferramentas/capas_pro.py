@@ -115,6 +115,10 @@ def preparar(n=20):
             continue
         k, img = escolhida
         img.save(TRAB / "orig" / f"{i}.jpg", quality=95)
+        if min(img.size) < 600:   # foto pequena: etiqueta/detalhe ilegível, não dá para conferir a maquiada
+            v["status"], v["motivo"], v["foto"] = "pulada", f"foto pequena demais para conferir ({img.size[0]}x{img.size[1]})", k
+            print(f"  {i}  pulada (foto pequena {img.size[0]}x{img.size[1]})")
+            continue
         etq = tem_etiqueta(TRAB / "orig" / f"{i}.jpg")
         if etq:   # não gasta ChatGPT: fica com a capa automática (que já é boa)
             v["status"], v["motivo"], v["foto"] = "pulada", f"etiqueta impressa: {etq}", k
