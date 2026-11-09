@@ -16,7 +16,7 @@ const NO_CELULAR = 8;
     {fams.map((f, i) => (
       <li class:list={['cat', { 'cat-grande': i < 2, 'cat-extra': i >= NO_CELULAR }]}>
         <a href={`/categoria/${f.k}.html`} data-tipo={f.n} data-href-base={`/categoria/${f.k}.html`} data-base={f.c} aria-label={`${f.n}: ${f.c.toLocaleString('pt-BR')} peças`}>
-          <img src={`/arte/v2/cat-${f.k}.webp`} alt="" width="800" height="800" loading={i < 4 ? 'eager' : 'lazy'} decoding="async" />
+          <img src={`/arte/v2/cat-${f.k}.webp`} alt="" width="800" height="800" loading="lazy" decoding="async" />
           <span class="cat-qtd num" data-qtd>{f.c.toLocaleString('pt-BR')} peças</span>
         </a>
       </li>

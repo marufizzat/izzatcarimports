@@ -1,6 +1,7 @@
 ---
 import Logo from './Logo.astro';
 import Icone from './Icone.astro';
+import SugestoesBusca from './ui/SugestoesBusca';
 import MeuCarroEstilo from './ui/MeuCarroEstilo.astro';
 import { whatsUrl, resumo } from '../lib/dados';
 interface Props { escuro?: boolean; sobreposto?: boolean; }
@@ -13,6 +14,9 @@ const atual = Astro.url.pathname;
 const ativo = (h: string) => atual === h || (h === '/catalogo.html' && atual.startsWith('/peca/')) ||
   (h === '/carros.html' && atual.startsWith('/carros/'));
 const carros = resumo().carros.slice(0, 8);
+// Busca sempre à vista no PC (fora do catálogo, que tem a própria). Na home ela espera a busca grande da abertura sair da tela.
+const buscaNoTopo = !atual.startsWith('/catalogo');
+const buscaEspera = atual === '/' || atual === '/index.html';
 ---
 <MeuCarroEstilo />
 <header class:list={['cab', { 'cab-escuro': escuro, 'cab-sobre': sobreposto }]}>
@@ -21,6 +25,11 @@ const carros = resumo().carros.slice(0, 8);
     <nav class="cab-nav" aria-label="Principal">
       {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
     </nav>
+    {buscaNoTopo && (
+      <div class:list={['cab-busca', { 'cab-busca-espera': buscaEspera }]} data-cab-busca>
+        <SugestoesBusca client:media="(min-width: 1180px)" placeholder="Buscar peça, carro ou código" />
+      </div>
+    )}
     <div class="cab-acoes">
       <button class="cab-carro" type="button" data-abrir-carro aria-label="Meu carro: escolher o seu carro">
         <Icone nome="carro" />
@@ -157,4 +166,38 @@ const carros = resumo().carros.slice(0, 8);
   .menu-carros { display: flex; flex-wrap: wrap; gap: 8px; }
   .menu-carros a { padding: 9px 13px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 14.5px; font-weight: 560; }
   .menu-whats { margin-top: auto; --h: 54px; }
+</style>
+
+<script>
+  // home: a busca do topo aparece quando a busca grande da abertura sai da tela (e volta a se esconder se ela voltar)
+  const cabBusca = document.querySelector<HTMLElement>('[data-cab-busca].cab-busca-espera');
+  const buscaGrande = document.querySelector('main .sb-grande');
+  if (cabBusca) {
+    if (!buscaGrande || !('IntersectionObserver' in window)) cabBusca.classList.remove('cab-busca-espera');
+    else new IntersectionObserver(([e]) => cabBusca.classList.toggle('cab-busca-espera', e.isIntersecting),
+      { rootMargin: '-84px 0px 0px 0px' }).observe(buscaGrande);
+  }
+</script>
+
+<style>
+  /* busca no cabeçalho (PC largo): o mesmo campo com sugestões da abertura, em versão compacta; a lupa sai */
+  .cab-busca { display: none; }
+  @media (min-width: 1180px) {
+    .cab-busca ~ .cab-acoes, .cab-nav, .cab-linha > :global(.logo) { flex: none; }
+    .cab-nav a { white-space: nowrap; }
+    .cab-busca { display: block; flex: 1 1 340px; min-width: 200px; max-width: 440px; margin-left: auto;
+      transition: opacity .25s ease, transform .25s ease, visibility .25s; }
+    .cab-busca ~ .cab-acoes { margin-left: 10px; }
+    .cab-busca ~ .cab-acoes > a.cab-icone[href="/catalogo.html#busca"] { display: none; }
+    .cab-busca-espera:not(:focus-within) { opacity: 0; visibility: hidden; transform: translateY(-4px); }
+    .cab-busca :global(.sb-busca:not(.sb-grande)) { height: 46px; border-radius: 12px; padding: 0 4px 0 14px; gap: 6px; box-shadow: inset 0 0 0 1.5px var(--line-2); }
+    .cab-busca :global(.sb-busca:not(.sb-grande):focus-within) { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 82%); }
+    .cab-busca :global(.sb-busca input) { font-size: 15.5px; }
+    .cab-busca :global(.sb-lupa svg) { width: 19px; height: 19px; }
+    .cab-busca :global(.sb-limpar) { width: 36px; height: 36px; }
+    .cab-busca :global(.sb-btn) { --h: 38px; padding: 0 11px; border-radius: 9px; }
+    .cab-busca :global(.sb-btn span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .cab-busca :global(.sb-lista) { right: auto; width: max(100%, 520px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .cab-busca { transition: none; } }
 </style>

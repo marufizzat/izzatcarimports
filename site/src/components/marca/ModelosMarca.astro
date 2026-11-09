@@ -1,0 +1,162 @@
+---
+// Modelos de uma marca, do que tem MAIS peças para o que tem menos (página /marca/<k>.html).
+//  1. Destaque: os 3 modelos com mais peças, em cartões grandes com a arte do carro (arte/v2/carro-<k>.webp).
+//  2. Os outros carros com página própria: cartões menores (com a arte quando existir; sem ela, o logo).
+//  3. Modelos sem página (poucas peças): lista de links para o catálogo filtrado.
+// Sem anos no cartão: a faixa de anos ainda vem errada em alguns carros (auditoria, item 3).
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import type { Resumo } from '../../lib/dados';
+interface Logo { src: string; w: number; h: number; png: boolean }
+interface Props { marca: Resumo['marcas'][number]; carros: Resumo['carros']; logo: Logo | null; }
+const { marca, carros, logo } = Astro.props;
+
+const temArte = (k: string) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`));
+const comPagina = [...carros].sort((a, b) => b.c - a.c);
+const paginas = new Set(comPagina.map((c) => c.m));
+const destaque = comPagina.slice(0, 3);
+const demais = comPagina.slice(3);
+const outros = marca.m.filter((x) => !paginas.has(x.n)).sort((a, b) => b.c - a.c);
+const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça' : 'peças'}`;
+const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURIComponent(marca.n)}&modelo=${encodeURIComponent(modelo)}`;
+---
+{(comPagina.length > 0 || outros.length > 0) && (
+  <section class="mm" aria-labelledby="mm-titulo">
+    <h2 class="titulo-secao mm-titulo" id="mm-titulo">Escolha o seu {marca.n}</h2>
+
+    {destaque.length > 0 && (
+      <ul class:list={['mm-destaque', `mm-d${destaque.length}`]}>
+        {destaque.map((c, i) => (
+          <li>
+            <a class:list={['mm-dest', { 'sem-arte': !temArte(c.k) }]} href={`/carros/${c.k}.html`}>
+              <span class="mm-dest-arte">
+                {temArte(c.k)
+                  ? <img src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
+                  : logo && <img class:list={['mm-dest-logo-grande', { svg: !logo.png }]} src={logo.src} alt="" width={logo.w} height={logo.h} />}
+              </span>
+              <span class="mm-dest-info">
+                <span class="mm-dest-nome"><small>{marca.n}</small><b>{c.m}</b></span>
+                <span class="mm-dest-qtd num">{pecasTxt(c.c)}</span>
+                {destaque.length === 1 && c.fams.length > 0 && (
+                  <span class="mm-dest-fams">
+                    <small>Sistemas com mais peças</small>
+                    {c.fams.slice(0, 4).map(([f, n]) => <span><span>{f}</span><span class="num">{n}</span></span>)}
+                  </span>
+                )}
+                {destaque.length === 1 && <span class="botao botao-laranja mm-dest-botao">Ver as peças do {c.m}</span>}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {demais.length > 0 && (
+      <ul class="mm-grade">
+        {demais.map((c) => (
+          <li>
+            <a class="mm-mod" href={`/carros/${c.k}.html`}>
+              <span class:list={['mm-mod-arte', { 'sem-arte': !temArte(c.k) }]}>
+                {temArte(c.k)
+                  ? <img src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" />
+                  : logo && <img class:list={[{ svg: !logo.png }]} src={logo.src} alt="" width={logo.w} height={logo.h} loading="lazy" />}
+              </span>
+              <span class="mm-mod-txt"><b>{c.m}</b><small class="num">{pecasTxt(c.c)}</small></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {outros.length > 0 && (
+      <div class="mm-outros">
+        <h3 class="mm-outros-titulo">{comPagina.length > 0 ? `Outros modelos ${marca.n}` : `Modelos ${marca.n}`}</h3>
+        <ul class="mm-lista">
+          {outros.map((x) => (
+            <li><a href={linkCatalogo(x.n)}><span>{x.n}</span><small class="num">{pecasTxt(x.c)}</small></a></li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </section>
+)}
+<style>
+  .mm { padding-top: clamp(36px, 5vw, 64px); }
+  .mm-titulo { margin: 0 0 clamp(18px, 2.4vw, 28px); }
+
+  /* 1. destaque. Celular: o 1º inteiro, os outros dois lado a lado. PC: 1 grande + 2 empilhados.
+     A arte (carro no centro, piso embaixo) só é cortada em cima/embaixo, nunca nas laterais. */
+  .mm-destaque { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mm-destaque > li { display: flex; min-width: 0; }
+  .mm-destaque > li:first-child { grid-column: 1 / -1; }
+  .mm-d2 > li:first-child { grid-column: auto; }
+  .mm-dest { position: relative; isolation: isolate; flex: 1; display: flex; flex-direction: column; overflow: hidden; border-radius: 22px;
+    background: #efeeeb; box-shadow: var(--shadow-1); color: var(--ink); transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease; }
+  .mm-dest-arte { position: relative; display: block; aspect-ratio: 3 / 2; overflow: hidden; }
+  .mm-dest-arte > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%;
+    transition: transform .7s cubic-bezier(.2,.7,.2,1); }
+  .mm-dest.sem-arte .mm-dest-arte { display: grid; place-items: center; background: radial-gradient(closest-side, #fff 55%, #f4f3f0 100%); }
+  .mm-dest.sem-arte .mm-dest-arte > img { position: static; width: auto; height: auto; max-width: 38%; max-height: 34%; object-fit: contain; }
+  .mm-dest-logo-grande.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
+  .mm-dest-info { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px 14px; background: var(--surface); }
+  .mm-dest-nome { display: grid; gap: 1px; min-width: 0; }
+  .mm-dest-nome small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+  .mm-dest-nome b { font-stretch: 78%; font-weight: 820; font-size: clamp(21px, 2.4vw, 30px); line-height: 1; letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .mm-dest-qtd { flex: none; padding: 6px 10px; border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 13px; font-weight: 700;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 60%); }
+  .mm-dest-arte { flex: 1 0 auto; }
+  :is(.mm-d3, .mm-d1) > li:first-child .mm-dest-nome b { font-size: clamp(30px, 3.4vw, 46px); }
+  :is(.mm-d3, .mm-d1) > li:first-child .mm-dest-info { padding: 16px 20px 18px; }
+  :is(.mm-d3, .mm-d1) > li:first-child .mm-dest-qtd { font-size: 14.5px; padding: 8px 13px; }
+  .mm-dest-fams { display: grid; gap: 0; width: 100%; max-width: 360px; }
+  .mm-dest-fams small { margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--ink-3); }
+  .mm-dest-fams > span { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 15px; color: var(--ink-2); }
+  .mm-dest-fams > span > span:last-child { color: var(--ink); font-weight: 650; }
+  .mm-dest-botao { pointer-events: none; }
+  @media (max-width: 899px) { .mm-dest-fams, .mm-dest-botao { display: none; } }
+  @media (max-width: 899px) { .mm-destaque > li:not(:first-child) .mm-dest-info { flex-direction: column; align-items: flex-start; } }
+  @media (min-width: 900px) {
+    .mm-destaque { gap: 18px; }
+    .mm-d3 { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-rows: 1fr 1fr; }
+    .mm-d3 > li:first-child { grid-column: auto; grid-row: span 2; }
+    .mm-d3 > li:not(:first-child) .mm-dest-arte { aspect-ratio: auto; flex: 1; min-height: 0; }
+    .mm-d2 .mm-dest-arte { aspect-ratio: 2 / 1; }
+    .mm-d1 .mm-dest { flex-direction: row; }
+    .mm-d1 .mm-dest-arte { flex: 1.5 1 0; }
+    .mm-d1 > li:first-child .mm-dest-info { flex: 1 1 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 18px; padding: 32px 36px; }
+  }
+  @media (hover: hover) {
+    .mm-dest:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+    .mm-dest:hover .mm-dest-arte > img { transform: scale(1.035); }
+  }
+  .mm-dest:focus-visible, .mm-mod:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  /* 2. demais carros com página */
+  .mm-grade { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 700px) { .mm-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .mm-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 18px; } }
+  .mm-grade > li { display: flex; min-width: 0; }
+  .mm-mod { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1);
+    transition: transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s ease; }
+  .mm-mod-arte { position: relative; display: grid; place-items: center; aspect-ratio: 2 / 1; overflow: hidden; background: #efeeeb; }
+  .mm-mod-arte > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
+  .mm-mod-arte.sem-arte { background: radial-gradient(closest-side, #fff 60%, #f4f3f0 100%); }
+  .mm-mod-arte.sem-arte > img { position: static; width: auto; height: auto; max-width: 40%; max-height: 40%; object-fit: contain; }
+  .mm-mod-arte.sem-arte > img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
+  .mm-mod-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 11px 14px 13px; }
+  .mm-mod-txt b { font-stretch: 82%; font-weight: 820; font-size: clamp(17px, 1.6vw, 20px); line-height: 1.1; color: var(--ink); overflow-wrap: anywhere; }
+  .mm-mod-txt small { flex: none; font-size: 13px; color: var(--ink-2); }
+  @media (hover: hover) { .mm-mod:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); } }
+
+  /* 3. modelos sem página: lista de links */
+  .mm-outros { margin-top: clamp(28px, 4vw, 44px); }
+  .mm-outros-titulo { margin: 0 0 8px; font-stretch: 84%; font-weight: 800; font-size: 19px; color: var(--ink); }
+  .mm-lista { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+  @media (min-width: 700px) { .mm-lista { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .mm-lista { grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 32px; } }
+  .mm-lista a { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-height: 48px; padding: 13px 2px 12px;
+    border-bottom: 1px solid var(--line); font-size: 16px; font-weight: 600; color: var(--ink); }
+  .mm-lista a span { min-width: 0; overflow-wrap: anywhere; }
+  .mm-lista a small { flex: none; font-size: 13.5px; font-weight: 500; color: var(--ink-3); }
+  .mm-lista a:hover span { color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
+</style>

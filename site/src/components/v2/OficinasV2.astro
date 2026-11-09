@@ -1,0 +1,40 @@
+---
+// Oficinas e revendas (compra em lista): cartão escuro com texto vivo, os 3 passos e o botão de verdade.
+// Sem foto de pessoa (a arte com o Maruf fica só no banner "Não achou a peça?" da home).
+import Icone from '../Icone.astro';
+import { whatsUrl } from '../../lib/dados';
+const msg = 'Olá! Sou de oficina/revenda e quero mandar uma lista de peças. Carro e ano: ____. Peças: ____';
+const passos = ['Manda a lista com o carro e o ano', 'A gente confere no pátio', 'Responde com foto e código'];
+---
+<aside class="faixa-escura ofi" aria-labelledby="ofi-titulo">
+  <div class="ofi-texto">
+    <p class="ofi-antes"><img src="/icones/oficina-96.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />Oficinas e revendas</p>
+    <h2 class="ofi-titulo" id="ofi-titulo">Separamos as peças pra sua oficina.</h2>
+    <a class="botao botao-laranja ofi-botao" href={whatsUrl(msg)} rel="noopener"><Icone nome="whats" />Mandar a lista no WhatsApp</a>
+  </div>
+  <ul class="ofi-passos">
+    {passos.map((t) => <li><Icone nome="check" /><span>{t}</span></li>)}
+  </ul>
+</aside>
+<style>
+  .ofi { position: relative; isolation: isolate; overflow: hidden; display: grid; gap: 28px; align-items: center;
+    padding: clamp(28px, 4.4vw, 56px); border-radius: 28px;
+    background: radial-gradient(120% 140% at 100% 0%, #24201c 0%, #141416 55%, #111214 100%);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / .06), 0 30px 60px -30px rgb(0 0 0 / .55); }
+  .ofi::after { content: ""; position: absolute; z-index: -1; right: -120px; bottom: -160px; width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(255 106 0 / .22), transparent); }
+  .ofi-texto { display: grid; gap: 14px; justify-items: start; }
+  .ofi-antes { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 15.5px; font-weight: 650; color: #ff8a3d; }
+  .ofi-antes img { width: 34px; height: 34px; }
+  .ofi-titulo { margin: 0; font-stretch: 78%; font-weight: 820; font-size: clamp(32px, 4vw, 52px); line-height: .98; letter-spacing: -.012em;
+    color: #f2f2f4; text-wrap: balance; max-width: 16ch; }
+  .ofi-botao { margin-top: 10px; }
+  .ofi-passos { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .ofi-passos li { display: flex; align-items: center; gap: 14px; padding-block: 16px; border-top: 1px solid rgb(255 255 255 / .09);
+    font-size: clamp(16px, 1.5vw, 19px); font-weight: 600; color: #e6e6ea; }
+  .ofi-passos li:last-child { border-bottom: 1px solid rgb(255 255 255 / .09); }
+  .ofi-passos :global(svg) { flex: none; width: 24px; height: 24px; padding: 5px; box-sizing: content-box; border-radius: 50%;
+    color: #1d1d1f; background: var(--accent); }
+  @media (min-width: 900px) { .ofi { grid-template-columns: 1.1fr .9fr; gap: 56px; } }
+  @media (max-width: 600px) { .ofi-botao { width: 100%; } }
+</style>
