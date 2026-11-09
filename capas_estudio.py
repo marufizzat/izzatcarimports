@@ -20,6 +20,8 @@ VERSÃO 2 (ESTUDIO_VERSAO=2; o padrão continua 1 até o dono aprovar): 1000 px,
 (peso visual igual, piso comum, centro de massa, hastes na diagonal), logo da Izzat Car (ESTUDIO_LOGO=a|b|c|0),
 foto montagem separada sozinha e lista de capas suspeitas em <saída>/_revisar.json
 (folha: ferramentas/folha_revisar.py). Cópia sem logo para o Google Shopping: ESTUDIO_SAIDA_LIMPA=<pasta>.
+AJUSTES MANUAIS por peça (o olho humano decide, o robô respeita): capas_ajustes.json na raiz (ESTUDIO_AJUSTES) —
+foto escolhida, corte, áreas apagadas, sem capa ou falso alarme conferido (detalhes em AJUSTES, mais abaixo).
 Regenerar tudo no Mac (numa pasta nova, fora do site; depois ela substitui site/public/estudio e o ramo
 capas-estudio é semeado com ferramentas/semear_capas.sh — só com o dono mandando):
     ESTUDIO_VERSAO=2 ESTUDIO_LOGO=a ESTUDIO_MOTOR=vision ESTUDIO_PARALELO=8 ESTUDIO_REFAZER=1 \\
@@ -107,10 +109,12 @@ def prob_carro(img_rgba):
     return float(sum(p[i] for i in CLASSES_CARRO))
 
 
-def limpar_mascara(recorte, checar_cantos=True, cantos_baixo=False):
+def limpar_mascara(recorte, checar_cantos=True, cantos_baixo=False, confiar=False):
     """Separa os pedaços recortados; tira os que são CARRO INTEIRO e a sujeira.
     Devolve (recorte_limpo, tirou_carro) ou (None, x) se só sobrou carro.
-    cantos_baixo (v2): olha também os cantos de BAIXO (foto com o carrinho do anúncio colado na peça)."""
+    cantos_baixo (v2): olha também os cantos de BAIXO (foto com o carrinho do anúncio colado na peça).
+    confiar=True (foto escolhida a mão, ver capas_ajustes.json): sem o classificador de carro e sem o filtro
+    de papel — a PEÇA às vezes parece carro (lanterna, módulo) ou papel (módulo branco)."""
     import numpy as np
     from PIL import Image
     from scipy import ndimage
@@ -131,7 +135,7 @@ def limpar_mascara(recorte, checar_cantos=True, cantos_baixo=False):
         pedaco = recorte.crop((sl[1].start, sl[0].start, sl[1].stop, sl[0].stop))
         m = (rot[sl] == i).astype("uint8") * 255
         pedaco.putalpha(Image.fromarray(m))
-        if areas[i] > total * 0.01 and prob_carro(pedaco) > 0.30:
+        if not confiar and areas[i] > total * 0.01 and prob_carro(pedaco) > 0.30:
             tirou = True
             continue
         manter[i] = True
@@ -143,7 +147,7 @@ def limpar_mascara(recorte, checar_cantos=True, cantos_baixo=False):
     r = recorte.copy()
     r.putalpha(Image.fromarray(a))
     # etiqueta/cartão de papel com texto (foto de "informação", não da peça)
-    caixa0 = Image.fromarray(a).getbbox()
+    caixa0 = Image.fromarray(a).getbbox() if not confiar else None
     if caixa0:
         reg = np.asarray(r.convert("L").crop(caixa0), dtype="float32")
         al = np.asarray(Image.fromarray(a).crop(caixa0), dtype="float32") / 255
@@ -205,12 +209,12 @@ def realcar(peca, ganho):
     return im
 
 
-def compor(recorte, checar_cantos=True, original=None):
+def compor(recorte, checar_cantos=True, original=None, confiar=False):
     """Peça recortada (RGBA) -> capa LADOxLADO em estúdio (jeito A).
     Devolve (capa, cortada) — cortada = a peça encosta na borda da foto (falta pedaço)."""
     from PIL import Image, ImageDraw, ImageFilter
     global _FUNDO
-    recorte, _ = limpar_mascara(recorte, checar_cantos)
+    recorte, _ = limpar_mascara(recorte, checar_cantos, confiar=confiar)
     if recorte is None:
         return None, False
     if _FUNDO is None:
@@ -356,12 +360,12 @@ def _girar(peca, graus):
     return g.crop(caixa) if caixa else g
 
 
-def compor_v2(recorte, checar_cantos=True, original=None, info=None):
+def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=False):
     """Peça recortada (RGBA) -> capa LADO_V2 x LADO_V2, enquadrada pela REGRA (SEM logo; ver com_logo).
     Devolve (capa, cortada) como compor()."""
     import numpy as np
     from PIL import Image, ImageDraw, ImageFilter
-    recorte, tirou = limpar_mascara(recorte, checar_cantos, cantos_baixo=checar_cantos)
+    recorte, tirou = limpar_mascara(recorte, checar_cantos, cantos_baixo=checar_cantos, confiar=confiar)
     if recorte is None:
         if info is not None:
             info["so_carro"] = tirou            # carro inteiro ou colado na peça (ex.: o carrinho do anúncio)
@@ -675,6 +679,121 @@ def etiqueta_de_texto(original, recorte):
     return tem
 
 
+# ---- AJUSTES MANUAIS (capas_ajustes.json na raiz): o olho humano decide e o robô respeita ----
+# {"MLB...": {"chave": "<foto do ML>", "foto": 3, "corte": [x0, y0, x1, y1], "apagar": [[x0, y0, x1, y1]], "nota": "..."}}
+#   chave ..... a foto escolhida (chave do ML: não muda quando o anúncio reordena as fotos). Sem chave vale o
+#               índice "foto" na lista fotos do pecas.json. Foto que saiu do anúncio: volta ao automático (aviso).
+#   corte ..... recorta a FOTO antes de tirar o fundo, em frações da foto inteira (montagem, carrinho colado).
+#   apagar .... áreas que saem do recorte (o carrinho colado ENCOSTADO na peça), em frações da foto inteira:
+#               retângulo [x0, y0, x1, y1] ou polígono [[x, y], [x, y], ...] (contorno do carro).
+#   Na foto escolhida a mão não valem os filtros automáticos (etiqueta, montagem, carro no canto); o classificador
+#   de carro só tira pedaço solto e, se levar a peça inteira (lanterna, módulo), a foto é usada sem ele.
+# {"MLB...": {"sem_capa": true}} .............. nenhuma foto serve: a capa sai (o site mostra a foto do ML).
+# {"MLB...": {"ok": true, "chave": "<foto>"}} .. capa conferida (falso alarme): não volta para o _revisar.json
+#                                                enquanto o robô escolher a mesma foto.
+# Chaves que começam com "_" são comentário. O ajuste aplicado fica assinado em <saída>/_ajustes_aplicados.json:
+# ajuste novo ou mudado refaz a capa mesmo que ela já exista (o robô só gera peça nova).
+AJUSTES = Path(os.getenv("ESTUDIO_AJUSTES", str(ROOT / "capas_ajustes.json")))
+APLICADOS = "_ajustes_aplicados"
+
+
+def carregar_ajustes(arq=None):
+    """{MLB: ajuste} do capas_ajustes.json (sem os comentários "_..."). Arquivo ausente ou quebrado: {}."""
+    arq = Path(arq) if arq else AJUSTES
+    if not arq.exists():
+        return {}
+    try:
+        dados = json.loads(arq.read_text(encoding="utf-8"))
+    except ValueError as e:
+        print(f"  capas_ajustes.json ilegível ({e}): seguindo sem ajustes", flush=True)
+        return {}
+    return {k: v for k, v in dados.items() if not k.startswith("_") and isinstance(v, dict)}
+
+
+def eh_manual(aj):
+    """Ajuste que escolhe a foto (e talvez o corte) — não é 'sem_capa' nem 'ok'."""
+    return bool(aj) and not aj.get("sem_capa") and not aj.get("ok") and ("chave" in aj or "foto" in aj)
+
+
+def foto_escolhida(aj, fotos):
+    """Chave da foto do ajuste dentro de 'fotos' (lista do anúncio), ou None (ajuste vencido)."""
+    if aj.get("chave"):
+        return aj["chave"] if aj["chave"] in fotos else None   # nunca aplica o corte em outra foto
+    i = aj.get("foto")
+    if isinstance(i, int) and not isinstance(i, bool) and 0 <= i < len(fotos):
+        return fotos[i]
+    return None
+
+
+def assinatura(aj, chave=None):
+    """Impressão do que muda a capa (foto, corte, áreas apagadas): ajuste mudado = capa refeita."""
+    import hashlib
+    base = {"chave": chave or aj.get("chave"), "foto": None if (chave or aj.get("chave")) else aj.get("foto"),
+            "corte": aj.get("corte"), "apagar": aj.get("apagar")}
+    return hashlib.sha1(json.dumps(base, sort_keys=True).encode()).hexdigest()[:12]
+
+
+def caixa_px(frac, w, h):
+    """[x0, y0, x1, y1] em frações -> caixa em pixels (x0, y0, x1, y1). Fração fora de 0..1 ou caixa vazia: ValueError."""
+    x0, y0, x1, y1 = (float(v) for v in frac)
+    if not (0 <= x0 < x1 <= 1 and 0 <= y0 < y1 <= 1):
+        raise ValueError(f"corte inválido: {frac}")
+    return round(x0 * w), round(y0 * h), round(x1 * w), round(y1 * h)
+
+
+def recorte_manual(original, aj, recortar):
+    """Foto escolhida a mão: aplica o corte, tira o fundo e zera as áreas 'apagar'. Devolve (foto, recorte)."""
+    from PIL import Image, ImageDraw
+    W, H = original.size
+    cx0, cy0, cx1, cy1 = caixa_px(aj["corte"], W, H) if aj.get("corte") else (0, 0, W, H)
+    foto = original.crop((cx0, cy0, cx1, cy1)) if (cx0, cy0, cx1, cy1) != (0, 0, W, H) else original
+    recorte = recortar(foto)
+    if aj.get("apagar"):
+        alfa = recorte.split()[3]
+        if alfa.size != foto.size:
+            alfa = alfa.resize(foto.size)
+        d = ImageDraw.Draw(alfa)
+        for r in aj["apagar"]:
+            if r and isinstance(r[0], (list, tuple)):          # polígono [[x, y], ...] (contorno do carrinho)
+                pts = [(float(x) * W - cx0, float(y) * H - cy0) for x, y in r]
+                if len(pts) < 3 or not all(0 <= float(x) <= 1 and 0 <= float(y) <= 1 for x, y in r):
+                    raise ValueError(f"polígono inválido: {r}")
+                d.polygon(pts, fill=0)
+            else:                                               # retângulo [x0, y0, x1, y1]
+                ax0, ay0, ax1, ay1 = caixa_px(r, W, H)
+                d.rectangle((ax0 - cx0, ay0 - cy0, ax1 - cx0 - 1, ay1 - cy0 - 1), fill=0)
+        recorte = recorte.resize(foto.size) if recorte.size != foto.size else recorte.copy()
+        recorte.putalpha(alfa)
+    return foto, recorte
+
+
+def ler_aplicados(pasta=None):
+    """Assinaturas dos ajustes já aplicados nas capas da pasta (junta as fatias)."""
+    pasta = Path(pasta) if pasta else SAIDA
+    out = {}
+    for arq in sorted(pasta.glob(APLICADOS + "*.json")):
+        try:
+            out.update(json.loads(arq.read_text(encoding="utf-8")))
+        except ValueError:
+            pass
+    return out
+
+
+def tirar_sem_capa(ajustes, pastas=None):
+    """Peças 'sem_capa': apaga a capa automática (e a cópia sem logo), para o site mostrar a foto do ML.
+    Devolve o conjunto dessas peças."""
+    ids = {m for m, a in ajustes.items() if a.get("sem_capa")}
+    if pastas is None:
+        pastas = [SAIDA] + ([Path(SAIDA_LIMPA)] if SAIDA_LIMPA else [])
+    for m in sorted(ids):
+        for pasta in pastas:
+            arq = Path(pasta) / f"{m}.webp"
+            if arq.exists():
+                arq.unlink()
+                print(f"  {m}: sem capa de estúdio (capas_ajustes.json) — capa apagada de {pasta}", flush=True)
+    return ids
+
+
 def baixar(chave, tam="F"):
     url = f"https://http2.mlstatic.com/D_{chave}-{tam}.jpg"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (izzatcar-site)"})
@@ -696,25 +815,40 @@ def recortar_vision(img):
         return Image.open(sai).convert("RGBA").copy()
 
 
-def main():
+def main(recortar=None):
+    """recortar = função foto RGB -> recorte RGBA (testes); sem ela, ESTUDIO_MOTOR decide (vision | rembg)."""
     from PIL import Image
     t0 = time.time()
     SAIDA.mkdir(parents=True, exist_ok=True)
     pecas = json.loads(PECAS.read_text(encoding="utf-8"))
     falhas = json.loads(FALHAS.read_text(encoding="utf-8")) if FALHAS.exists() else {}
+    ajustes = carregar_ajustes()                    # capas_ajustes.json: o olho humano manda
+    sem_capa = tirar_sem_capa(ajustes)
+    aplicados = ler_aplicados()
     feitas = {p.stem for p in SAIDA.glob("*.webp")}
     refazer = os.getenv("ESTUDIO_REFAZER") == "1"   # gerar de novo numa SAIDA nova (retoma se parar)
     fila = []
     for x in pecas:
         fs = [k for k in (x.get("fotos") or []) if k and not k.startswith("http")]
-        if not fs:
+        if not fs or x["id"] in sem_capa:
             continue
         if VERSAO == "2":   # v2: até 6 fotos (há anúncio com o carrinho colado nas 3 primeiras); para na 1ª limpa
             cands = fs[:6] if x.get("limpa") else (fs[1:6] + fs[:1])
         else:
             cands = fs[:3] if x.get("limpa") else (fs[1:3] + fs[:1])
-        if x["id"] not in feitas and (refazer or x["id"] not in falhas):
-            fila.append((x["id"], cands))
+        aj = ajustes.get(x["id"])
+        manual = None
+        if eh_manual(aj):
+            k = foto_escolhida(aj, fs)
+            if k:
+                manual = dict(aj, _chave=k, _assinatura=assinatura(aj, k))
+            else:
+                print(f"  {x['id']}: a foto do ajuste manual saiu do anúncio — segue o automático", flush=True)
+        elif aj and aj.get("ok"):
+            manual = {"_ok": aj.get("chave")}     # só para não voltar ao _revisar
+        mudou = bool(manual and manual.get("_assinatura") and aplicados.get(x["id"]) != manual["_assinatura"])
+        if (x["id"] not in feitas or mudou) and (refazer or mudou or x["id"] not in falhas):
+            fila.append((x["id"], cands, manual))
     so = set(filter(None, os.getenv("ESTUDIO_IDS", "").split(",")))   # ex.: teste em poucas peças
     if so:
         fila = [f for f in fila if f[0] in so]
@@ -725,9 +859,12 @@ def main():
     limite = int(os.getenv("ESTUDIO_POR_RODADA", "400"))
     print(f"capas de estúdio: {len(feitas)} prontas | {len(fila)} faltando | esta rodada: {min(limite, len(fila))}")
     if not fila or limite <= 0:
-        marcar()
+        if not os.getenv("ESTUDIO_SAIDA"):
+            marcar()
         return
-    if os.getenv("ESTUDIO_MOTOR") == "vision":
+    if recortar is not None:
+        trabalhadores = 1
+    elif os.getenv("ESTUDIO_MOTOR") == "vision":
         recortar = recortar_vision
         trabalhadores = int(os.getenv("ESTUDIO_PARALELO", "10"))
     else:
@@ -751,23 +888,54 @@ def main():
               + (f", cópia sem logo em {limpa}" if limpa else ""), flush=True)
 
     revisar = {}    # v2: capas suspeitas para o olho humano (montagem, cortada, vários pedaços, reserva)
+    novos_aplicados = {}   # MLB -> assinatura do ajuste manual aplicado nesta rodada
 
     def cortar_fundo(img):
         with trava if trabalhadores > 1 and recortar is not recortar_vision else _nulo():
             return recortar(img)
 
-    def montar(recorte, original, checar_cantos=True, inf=None):
+    def montar(recorte, original, checar_cantos=True, inf=None, confiar=False):
         if v2:
-            return compor_v2(recorte, checar_cantos=checar_cantos, original=original, info=inf)
-        return compor(recorte, checar_cantos=checar_cantos, original=original)
+            return compor_v2(recorte, checar_cantos=checar_cantos, original=original, info=inf, confiar=confiar)
+        return compor(recorte, checar_cantos=checar_cantos, original=original, confiar=confiar)
+
+    def capa_manual(mlb, aj):
+        """Foto escolhida a mão (capas_ajustes.json): corte/apagar, sem os filtros automáticos.
+        Devolve (capa, info) ou (None, motivo)."""
+        k = aj["_chave"]
+        try:
+            original = Image.open(io.BytesIO(baixar(k))).convert("RGB")
+            original.thumbnail((fonte, fonte))
+            foto, recorte = recorte_manual(original, aj, cortar_fundo)
+            inf = {}
+            img, corte = montar(recorte, foto, checar_cantos=False, inf=inf)
+            if img is None:      # o classificador de carro levou a PEÇA (lanterna, módulo...): a foto é dela
+                inf = {}
+                img, corte = montar(recorte, foto, checar_cantos=False, inf=inf, confiar=True)
+            if img is None:
+                return None, f"ajuste manual sem peça ({k})"
+            if corte:
+                print(f"  {mlb}: ajuste manual — a peça encosta na borda da foto (conferir)", flush=True)
+            return img, dict(inf, foto=k, manual=True)
+        except Exception as e:  # noqa: BLE001  (rede, imagem corrompida, corte inválido)
+            return None, f"ajuste manual falhou: {str(e)[:60]}"
 
     def uma(item):
         if tempo_max and time.time() - t0 > tempo_max:
             return   # sem falha: fica pra proxima rodada
-        mlb, cands = item
+        mlb, cands = item[:2]
+        aj = item[2] if len(item) > 2 else None
         capa, motivo, reserva, cortada = None, "recorte vazio", None, None
         montagem = None                       # v2: montagem que não deu para separar (último recurso)
         notas, inf_de = [], {}                # v2: o que aconteceu com cada foto / info da capa escolhida
+        if aj and aj.get("_chave"):
+            img, r = capa_manual(mlb, aj)
+            if img is not None:
+                capa, inf_de, cands = img, r, []
+                with trava:
+                    novos_aplicados[mlb] = aj["_assinatura"]
+            else:
+                notas.append(r + " — seguiu o automático")
         for k in cands:
             try:
                 original = Image.open(io.BytesIO(baixar(k))).convert("RGB")
@@ -819,7 +987,8 @@ def main():
                 capa, inf_de = reserva, inf_reserva
                 notas.append("sem foto limpa (reserva)")
         capa = capa or cortada or reserva
-        if v2 and capa is not None:
+        conferida = inf_de.get("manual") or (aj and aj.get("_ok") and aj["_ok"] == inf_de.get("foto"))
+        if v2 and capa is not None and not conferida:   # capa conferida a olho (capas_ajustes.json) não volta
             if inf_de.get("pedacos", 1) > 1:
                 notas.append(f"{inf_de['pedacos']} pedaços grandes")
             if notas:
@@ -862,6 +1031,12 @@ def main():
             json.dumps(falhas, ensure_ascii=False), encoding="utf-8")
     else:
         FALHAS.write_text(json.dumps(falhas, ensure_ascii=False, indent=0), encoding="utf-8")
+    if novos_aplicados:   # assinatura dos ajustes aplicados (vai junto com as capas no ramo capas-estudio)
+        arq = SAIDA / (APLICADOS + (f".{fatia.replace('/', 'de')}" if fatia else "") + ".json")
+        antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
+        antigo.update(novos_aplicados)
+        arq.write_text(json.dumps(antigo, ensure_ascii=False, indent=0, sort_keys=True), encoding="utf-8")
+        print(f"  ajustes manuais aplicados: {len(novos_aplicados)} -> {arq}", flush=True)
     if v2:   # lista para o olho humano (ferramentas/folha_revisar.py monta a folha)
         arq = REVISAR if not fatia else Path(str(REVISAR).replace(".json", f".{fatia.replace('/', 'de')}.json"))
         antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
@@ -874,7 +1049,9 @@ def main():
 
 
 def marcar():
-    """Marca no pecas.json e no busca.json quais peças já têm capa de estúdio."""
+    """Marca no pecas.json e no busca.json quais peças já têm capa de estúdio.
+    Antes tira as capas das peças 'sem_capa' (capas_ajustes.json): roda sempre no robô, mesmo se a geração falhar."""
+    tirar_sem_capa(carregar_ajustes())
     feitas = {p.stem for p in SAIDA.glob("*.webp")}
     pecas = json.loads(PECAS.read_text(encoding="utf-8"))
     for x in pecas:
