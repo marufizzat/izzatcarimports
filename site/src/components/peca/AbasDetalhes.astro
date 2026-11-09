@@ -2,15 +2,23 @@
 // Ficha e descricao. No computador: as duas lado a lado. No celular: abas (sem paredao de texto).
 // Ficha: o codigo, onde serve, e o que o anuncio diz da peca (ja limpo no preparar_dados.py: sem o carro
 // repetido, sem "Original-123", com a maiuscula certa). Valor com quebra de linha = um carro por linha.
+// O título do anúncio do ML fica aqui, no fim da ficha (saiu de baixo do nome: lá repetia o nome; mas é nele que
+// estão detalhes como "xDrive30e 2.0t B48" do motor). Descrição longa: recolhida em ~10 linhas pelo script.
 import type { Peca } from '../../lib/dados';
 import { codigoDaPeca } from '../../lib/dados';
 interface Props { p: Peca; serve: string; serveRotulo?: string; }
 const { p, serve, serveRotulo = 'Serve em' } = Astro.props;
-const iCod = p.ficha.findIndex(([k]) => k.startsWith('Código'));
+const so = (s: string) => s.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+const codTodos = (p.oem || '').split(/[\s,;/|]+/).map(so).filter(Boolean);
+// "Modelo do veículo" só quando diz algo a mais: igual ao modelo (já está no "Serve em") ou igual ao código, sai
+const repete = ([k, v]: [string, string]) =>
+  k === 'Modelo do veículo' && (so(v) === so(p.m) || so(v) === so(`${p.b}${p.m}`) || codTodos.includes(so(v)));
+const fichaML = p.ficha.filter((l) => !repete(l));
+const iCod = fichaML.findIndex(([k]) => k.startsWith('Código'));
 const serveLinha: [string, string][] = serve ? [[serveRotulo, serve]] : [];
 const ficha: [string, string][] = iCod >= 0
-  ? [p.ficha[iCod], ...serveLinha, ...p.ficha.filter((_, i) => i !== iCod)]
-  : [...serveLinha, ...p.ficha];
+  ? [fichaML[iCod], ...serveLinha, ...fichaML.filter((_, i) => i !== iCod)]
+  : [...serveLinha, ...fichaML];
 // "C4 Cactus: Feel, Shine" -> o carro em destaque e as versoes do lado
 const linhas = (v: string) => v.split('\n').map((l) => { const m = /^([^:]{1,40}): (.+)$/.exec(l); return m ? { b: m[1], r: m[2] } : { b: '', r: l }; });
 // Texto padrao (o vendedor nao escreveu descricao): so fatos da peca, sem repetir o titulo do anuncio
@@ -43,6 +51,7 @@ const descTexto = [
                     : v}
                 </td></tr>
             ))}
+            <tr><th scope="row">Título do anúncio</th><td>{p.t}</td></tr>
             <tr><th scope="row">Procedência</th><td>Peça original de carro com baixa legal no <span class="sem-quebra">Detran-RS</span> · <span class="sem-quebra">CDV nº 01060</span></td></tr>
           </tbody>
         </table>
@@ -79,6 +88,27 @@ const descTexto = [
     });
     celular.addEventListener('change', aplicar);
     aplicar();
+
+    // Descrição longa do anúncio (a mediana tem ~1.900 letras): recolhida em ~10 linhas, com "Ler a descrição
+    // completa". Decidido pelo tamanho do texto (sem medir a tela); sem JavaScript, ela aparece inteira.
+    const desc = raiz.querySelector<HTMLElement>('div.descricao');
+    if (desc && (desc.textContent || '').length > 900) {
+      desc.classList.add('recolhida');
+      desc.id = 'descricao-texto';
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'descricao-mais';
+      b.setAttribute('aria-controls', desc.id);
+      b.setAttribute('aria-expanded', 'false');
+      b.textContent = 'Ler a descrição completa';
+      b.addEventListener('click', () => {
+        const abrir = desc.classList.toggle('recolhida') === false;
+        b.setAttribute('aria-expanded', String(abrir));
+        b.textContent = abrir ? 'Mostrar menos' : 'Ler a descrição completa';
+        if (!abrir && desc.getBoundingClientRect().top < 0) desc.scrollIntoView({ block: 'start' });
+      });
+      desc.after(b);
+    }
   });
 </script>
 
@@ -90,12 +120,15 @@ const descTexto = [
   .detalhes .abas button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 15px; font-weight: 650; color: var(--ink-2); cursor: pointer; }
   .detalhes .abas button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
   .detalhes .detalhes-grade { display: grid; gap: 40px; }
-  .detalhes .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: 24px; }
+  /* o mesmo tamanho de H2 em toda a página da peça (ficha, descrição, código, do mesmo carro) */
+  .detalhes .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.1; }
   .detalhes .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
   .detalhes .ficha th, .detalhes .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
   .detalhes .ficha tr:last-child th, .detalhes .ficha tr:last-child td { border-bottom: 0; }
   .detalhes .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
   .detalhes .ficha td { overflow-wrap: anywhere; }
+  /* o código é o dado-chave: no mesmo tamanho do resto da ficha (antes era a menor letra da tabela) */
+  .detalhes .ficha td.oem { font-size: 15px; font-weight: 560; letter-spacing: .03em; line-height: 1.45; }
   .detalhes .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
   .detalhes .descricao h3 { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
   .detalhes .descricao p { margin: 0 0 10px; }
@@ -105,6 +138,13 @@ const descTexto = [
   .detalhes .descricao ol { list-style: decimal; }
   .detalhes .descricao li { padding-left: 3px; }
   .detalhes .descricao li::marker { color: var(--ink-3); }
+  /* descrição longa recolhida: ~10 linhas e um degradê no fim (o botão abre) */
+  .detalhes .descricao.recolhida { max-height: 16.5em; overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 62%, transparent); mask-image: linear-gradient(#000 62%, transparent); }
+  .detalhes .descricao-mais { display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; padding: 0 2px; border: 0; background: none;
+    font: inherit; font-size: 15px; font-weight: 650; color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px; text-underline-offset: 4px; cursor: pointer; }
+  .detalhes .descricao-mais:hover { color: var(--accent-text); }
   .detalhes .ficha-linha { display: block; }
   .detalhes .sem-quebra { white-space: nowrap; }
   .detalhes .ficha-linha + .ficha-linha { margin-top: 7px; }
@@ -115,7 +155,7 @@ const descTexto = [
     .detalhes .subtitulo { display: none; }
   }
   @media (min-width: 960px) {
-    .detalhes .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; }
+    .detalhes .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
     .detalhes .painel[hidden] { display: block !important; }
   }
 </style>

@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import escopoCurto from './integracoes/escopo-curto.mjs';
+import cssJunto from './integracoes/css-junto.mjs';
 
 // URLs iguais as do site antigo: /index.html, /catalogo.html, /peca/<slug>.html
 // Peso: são 5 mil páginas de peça e o GitHub Pages aceita até 1 GB. Por isso o CSS e os scripts pequenos saem
@@ -15,7 +16,8 @@ export default defineConfig({
   trailingSlash: 'never',
   build: { format: 'file', inlineStylesheets: 'never' },
   compressHTML: true,
-  integrations: [react(), escopoCurto()],
+  // css-junto depois do escopo-curto: cada página fica com 2 folhas de estilo (a global e uma com o resto)
+  integrations: [react(), escopoCurto(), cssJunto()],
   vite: {
     plugins: [tailwindcss()],
     // script de componente nunca vai dentro do HTML (arquivo à parte, com cache); o resto segue o padrão do Vite
