@@ -1676,6 +1676,240 @@ def classificar(nome, familia, tipo):
 
 
 # --------------------------------------------------------------------------
+# BLOCO da peca (campo "c" e as paginas /categoria/<k>.html): o jeito que o CLIENTE procura (nov/2026),
+# e nao a divisao do Mercado Livre ("Peças de Interior", "Carroceria" com espelho, "Iluminação" com farol).
+# A familia do ML (acima) continua so para achar o tipo "s"; o bloco sai do TIPO (mapa abaixo) e, quando o
+# tipo e "Outros" (grupo do ML que mistura de tudo), do NOME da peca. Cada peca fica em UM bloco so.
+# Nomes, chaves e ordem sao os da arte (site/public/arte/v2/cat-<k>.webp): nao renomear sem a arte nova.
+# --------------------------------------------------------------------------
+BLOCOS = [   # (chave da URL, nome) na ordem da grade da home: do que mais se procura
+    ("retrovisores", "Retrovisores"),
+    ("farois-e-lanternas", "Faróis e Lanternas"),
+    ("macanetas-e-fechaduras", "Maçanetas e Fechaduras"),
+    ("vidro-eletrico", "Vidro Elétrico"),
+    ("painel-e-console", "Painel e Console"),
+    ("botoes-e-chaves-de-seta", "Botões e Chaves de Seta"),
+    ("acabamentos-e-forros", "Acabamentos e Forros"),
+    ("motor", "Motor"),
+    ("mangueiras-do-motor", "Mangueiras do Motor"),
+    ("filtro-de-ar-e-turbo", "Filtro de Ar e Turbo"),
+    ("injecao-e-combustivel", "Injeção e Combustível"),
+    ("arrefecimento", "Arrefecimento"),
+    ("ar-condicionado", "Ar-condicionado"),
+    ("modulos-e-eletrica", "Módulos e Elétrica"),
+    ("ignicao-e-partida", "Ignição e Partida"),
+    ("freios", "Freios"),
+    ("suspensao-e-direcao", "Suspensão e Direção"),
+    ("cambio-e-transmissao", "Câmbio e Transmissão"),
+    ("rodas", "Rodas"),
+    ("para-choques-e-lataria", "Para-choques e Lataria"),
+    ("limpador-e-lavador", "Limpador e Lavador"),
+    ("airbag-e-seguranca", "Airbag e Segurança"),
+    ("som-e-multimidia", "Som e Multimídia"),
+    ("pedais-e-volante", "Pedais e Volante"),
+    ("escapamento", "Escapamento"),
+]
+BLOCO_NOME = dict(BLOCOS)
+BLOCO_OUTROS = "Outros"     # o que nao cai em bloco nenhum: fica fora da grade (sem pagina propria)
+
+# Endereco antigo (familia do ML, que o Google ja conhece) -> o bloco mais proximo. As chaves que
+# continuam iguais (motor, freios, arrefecimento, som-e-multimidia, suspensao-e-direcao) nao entram.
+# Vira a pagina de redirecionamento /categoria/<antiga>.html e o ?tipo= antigo do catalogo.
+FAMILIAS_ANTIGAS = {
+    "pecas-de-interior": ("Peças de Interior", "painel-e-console"),
+    "carroceria": ("Carroceria", "para-choques-e-lataria"),
+    "pecas-de-exterior": ("Peças de Exterior", "para-choques-e-lataria"),
+    "sistema-eletrico": ("Sistema Elétrico", "modulos-e-eletrica"),
+    "climatizacao": ("Climatização", "ar-condicionado"),
+    "injecao": ("Injeção", "injecao-e-combustivel"),
+    "janelas-e-vedacoes": ("Janelas e Vedações", "vidro-eletrico"),
+    "fechaduras-e-chaves": ("Fechaduras e Chaves", "macanetas-e-fechaduras"),
+    "iluminacao": ("Iluminação", "farois-e-lanternas"),
+    "transmissao": ("Transmissão", "cambio-e-transmissao"),
+    "ignicao": ("Ignição", "ignicao-e-partida"),
+    "seguranca": ("Segurança", "airbag-e-seguranca"),
+    "filtros": ("Filtros", "filtro-de-ar-e-turbo"),
+    "escapamentos": ("Escapamentos", "escapamento"),
+}
+
+# Tipo da loja (s) -> bloco. Lista auditavel: TODO tipo que o site tem hoje esta aqui
+# (testes/test_dados.py avisa quando aparece um tipo novo do ML sem lugar).
+_TIPOS_DO_BLOCO = {
+    "retrovisores": """Retrovisores Externos | Retrovisores Internos | Capas e Molduras do Retrovisor |
+        Molduras de Retrovisores | Botões do Retrovisor""",
+    "farois-e-lanternas": """Faróis | Faróis Dianteiros | Lanternas Traseiras | Brake Light | Luzes de Placa | Faróis de Milha |
+        Refletores | Frisos dos Faróis | Luzes Internas | Reatores e Lâmpadas | Suportes do Farol""",
+    "macanetas-e-fechaduras": """Maçanetas das Portas | Maçanetas Internas | Fechaduras das Portas | Fechaduras do Porta-malas |
+        Fechaduras do Capô | Cilindros e Comutadores de Ignição | Chaves do Carro | Cabos e Alavancas de Abertura |
+        Botões da Trava Elétrica""",
+    "vidro-eletrico": """Máquinas e Motores de Vidro Elétrico | Máquinas de Vidro Manuais | Máquinas de Vidro |
+        Peças da Máquina de Vidro | Botões do Vidro Elétrico | Vidros Laterais | Guias e Canaletas do Vidro |
+        Guias e Frisos dos Vidros | Molduras das Janelas | Motores do Teto Solar | Motor Teto Solar | Botões do Teto Solar""",
+    "painel-e-console": """Acabamentos do Painel | Consoles | Painéis de Instrumentos | Difusores de Ar | Porta-luvas |
+        Porta-copos | Cinzeiros | Displays e Telas | Tomadas USB e Acendedores | Tampas da Caixa de Fusíveis""",
+    "botoes-e-chaves-de-seta": """Chaves de Seta e Luz | Chaves do Limpador | Botões do Pisca-alerta | Outros Botões |
+        Botões do Desembaçador | Botões de Partida""",
+    "acabamentos-e-forros": """Forros | Acabamentos de Coluna | Soleiras | Molduras das Portas | Molduras Laterais |
+        Molduras do Para-lama | Molduras Externas | Frisos das Portas | Tampões do Porta-malas | Quebra-sóis |
+        Tapetes e Protetores | Alças e Puxadores | Puxadores das Portas | Alças de Liberação | Apoios de Braço |
+        Peças de Banco | Encostos de Cabeça | Acabamentos da Tampa Traseira | Grades de Alto-falante""",
+    "motor": """Coxins do Motor | Coletores de Admissão | Coletores de Escapamento | Capas e Protetores do Motor |
+        Tampas de Válvulas | Tampas do Motor | Tampas de Óleo | Cárteres | Cabeçotes | Blocos do Motor | Virabrequins |
+        Bielas | Pistões | Bronzinas | Retentores | Parafusos do Cabeçote | Comandos de Válvulas | Peças da Distribuição |
+        Tampas da Distribuição | Tensores de Correia | Tensores de Corrente | Motores | Bombas de Óleo | Bombas de Vácuo |
+        Válvulas Solenoides | Sensores de Pressão do Óleo | Suportes do Filtro de Óleo | Radiadores de Óleo""",
+    "mangueiras-do-motor": """Mangueiras de Arrefecimento | Mangueiras de Admissão | Mangueiras do Turbo e Intercooler |
+        Mangueiras e Linhas do Motor | Linhas do Motor | Mangueiras de Calefação""",
+    "filtro-de-ar-e-turbo": """Caixas do Filtro de Ar | Turbinas | Intercoolers""",
+    "injecao-e-combustivel": """Corpos de Borboleta | Módulos de Injeção | Válvulas e Filtros Canister | Válvulas de Purga |
+        Flautas de Combustível | Sensores MAP | Sensores MAF | Sondas Lambda | Sensores de Detonação |
+        Sensores de Posição | Sensores de Rotação | Sensores de Velocidade | Sensores de Pressão | Bicos Injetores |
+        Canos dos Injetores | Reguladores de Pressão | Válvulas EGR | Bombas de Combustível | Bombas de Alta Pressão |
+        Tanques de Combustível | Boias de Combustível | Portinholas e Tampas do Tanque""",
+    "arrefecimento": """Radiadores | Bombas de Água | Reservatórios de Água | Válvulas Termostáticas | Eletroventiladores |
+        Motores Ventiladores | Motores de Ventilador | Defletores | Sensores de Temperatura | Suportes do Radiador |
+        Relés da Ventoinha | Interruptores de Eletroventilador""",
+    "ar-condicionado": """Comandos de Ar Condicionado | Botões de Climatização | Interruptores de Ar Condicionado |
+        Atuadores e Motores do Ar | Mangueiras de Ar Condicionado | Suportes do Compressor | Suportes de Ar Condicionado |
+        Resistências e Relés do Ar | Evaporadores | Compressores | Válvulas de Expansão | Radiadores do Ar Quente |
+        Condensadores | Kits de Ar Condicionado | Válvulas da Calefação""",
+    "modulos-e-eletrica": """Módulos de Conforto (BCM) | Módulos Eletrônicos | Unidades de Controle | Chicotes Elétricos |
+        Caixas de Fusíveis | Cabos e Terminais de Bateria | Caixas e Suportes da Bateria | Conversores e Módulos de Bateria |
+        Relés | Relés de Partida | Sensores de Estacionamento | Câmeras de Ré | Câmeras ADAS | Câmeras |
+        Módulos de Ignição e Imobilizador | Alarmes e Sirenes | Kits de Alarme | Controles de Alarme | Tomadas Elétricas |
+        Chicotes de Chassi | Outros Sensores | Buzinas""",
+    "ignicao-e-partida": """Bobinas de Ignição | Motores de Arranque | Alternadores | Suportes do Alternador |
+        Velas Aquecedoras | Reguladores de Voltagem | Sensores de Vácuo""",
+    "freios": """Hidrovácuos | Módulos ABS | Cilindros Mestres | Pinças de Freio | Sensores do Freio | Sensores ABS |
+        Mangueiras e Flexíveis do Freio | Reservatórios de Fluido | Alavancas do Freio de Mão | Cabo do Freio de Mão |
+        Botões do Freio de Mão""",
+    "suspensao-e-direcao": """Colunas de Direção | Braços da Suspensão | Bandejas da Suspensão | Mangas de Eixo |
+        Bombas de Direção e Suportes | Mangueiras da Direção | Amortecedores | Molas | Bieletas e Barras Estabilizadoras |
+        Coxins do Amortecedor | Terminais de Direção | Caixas de Direção | Cubos de Roda | Buchas de Suspensão |
+        Suspensão a Ar e Nivelamento | Quadros da Suspensão | Sensores da Direção""",
+    "cambio-e-transmissao": """Coxins do Câmbio | Módulos do Câmbio e da Tração | Trambuladores e Seletores |
+        Câmbios e Peças Internas | Semieixos | Semieixos e Suportes | Diferenciais | Volantes de Embreagem |
+        Caixas de Transferência | Cardans | Alavancas e Manoplas de Câmbio | Suportes da Transmissão""",
+    "rodas": """Rodas | Calotas | Suportes do Estepe | Sensores TPMS | Macacos e Chaves de Roda | Macacos Hidráulicos |
+        Parafusos Prisioneiros""",
+    "para-choques-e-lataria": """Para-choques | Grades do Para-choque | Grades do Para-brisa | Guias e Suportes do Para-choque |
+        Almas do Para-choque | Molduras do Para-choque | Para-lamas | Portas | Dobradiças e Limitadores de Porta |
+        Dobradiças do Capô | Dobradiças da Tampa Traseira | Amortecedores da Tampa e do Capô | Aerofólios | Spoilers |
+        Para-barros | Assoalhos | Suportes da Carroceria | Vigas de Reforço | Emblemas | Grades | Tomadas de Ar |
+        Isolamentos do Capô | Suportes da Placa | Ganchos de Reboque | Grampos e Presilhas | Borrachas de Vedação""",
+    "limpador-e-lavador": """Motores do Limpador | Braços do Limpador | Reservatórios do Lavador | Bombas do Lavador |
+        Sensores de Chuva""",
+    "airbag-e-seguranca": """Airbags, Módulos e Sensores | Cintos de Segurança | Triângulos de Segurança""",
+    "som-e-multimidia": """Centrais Multimídia | Rádios | Amplificadores | Interfaces de Som | Alto-falantes |
+        Molduras da Multimídia | Suportes da Multimídia | Telas Multimídia | Antenas""",
+    "pedais-e-volante": """Pedais | Volantes | Botões do Volante | Cabos do Acelerador""",
+    "escapamento": """Catalisadores | Tubos Flexíveis | Escapamentos""",
+}
+BLOCO_POR_TIPO = {t.strip(): k for k, ts in _TIPOS_DO_BLOCO.items() for t in ts.split("|") if t.strip()}
+
+# Tipo que junta pecas de 2 blocos: o NOME decide (regex no nome sem acento; a 1a que casa vale);
+# sem casar, fica o bloco do mapa acima.
+BLOCO_NO_TIPO = {
+    "Antenas": [(r"keyless|chave (de )?presenca|\bgps\b|receptor|imobilizador|\bsensor\b", "modulos-e-eletrica")],
+    "Defletores": [(r"\b(disco|espelho|freio)\b", "freios"), (r"\b(catalisador|escapamento)\b", "escapamento"),
+                   (r"\bturbina\b", "filtro-de-ar-e-turbo")],
+    "Guias e Frisos dos Vidros": [(r"vidro|canaleta|\bguia\b|pestana", "vidro-eletrico"), (r".", "acabamentos-e-forros")],
+    "Borrachas de Vedação": [(r"vidro|canaleta|pestana", "vidro-eletrico")],
+    "Buzinas": [(r"\bacionador\b", "pedais-e-volante")],
+    "Displays e Telas": [(r"multimidia", "som-e-multimidia")],
+    "Capas e Protetores do Motor": [(r"\b(transmissao|cambio)\b", "cambio-e-transmissao")],
+    "Suportes da Carroceria": [(r"\bbobina\b", "ignicao-e-partida"), (r"\bmodulo (de )?injecao\b", "injecao-e-combustivel"),
+                               (r"\b(bateria|modulo)\b", "modulos-e-eletrica")],
+    "Acabamentos do Painel": [(r"^(acabamento|moldura)( inferior| superior| interno)? coluna\b(?!.*\b(painel|direcao)\b)",
+                               "acabamentos-e-forros")],
+}
+_BLOCO_NO_TIPO = {t: [(re.compile(rx), b) for rx, b in rs] for t, rs in BLOCO_NO_TIPO.items()}
+# O nome manda mais que o tipo, em qualquer tipo: peca que o vendedor pos na categoria errada do ML
+# ("Sensor impacto" em Sondas Lambda, "Caixa ar condicionado" em Câmbios, "Botão freio" em Outros Botões).
+# So nomes que dizem a peca sem duvida.
+BLOCO_PELO_NOME = [
+    (r"^sensor (de )?impacto\b|\bimpacto srs\b", "airbag-e-seguranca"),
+    (r"^sensor (de )?nivel (da )?suspensao\b|^suporte (de |da )?suspensao\b|^suporte (da )?bomba (de )?direcao\b",
+     "suspensao-e-direcao"),
+    (r"^(sensor|modulo)\b.*\b(esp|esc|estabilidade)\b|^botao (do )?freio\b", "freios"),
+    (r"^caixa (de |do )?ar ?condicionado\b|^resistencia (do )?ventilador\b", "ar-condicionado"),
+    (r"^(modulo )?rele (da )?ventoinha\b", "arrefecimento"),
+    (r"^suporte (da )?(caixa )?bateria\b|^antena (do )?imobilizador\b", "modulos-e-eletrica"),
+    (r"^botao (de )?(start|partida)\b", "botoes-e-chaves-de-seta"),
+    (r"^fechadura\b", "macanetas-e-fechaduras"),
+]
+_BLOCO_PELO_NOME = [(re.compile(rx), b) for rx, b in BLOCO_PELO_NOME]
+
+# Peca sem tipo (o "Outros" do ML) ou com tipo novo: o NOME diz o bloco. Primeiro as palavras que dizem
+# a peca com certeza; depois a familia do ML, so onde ela e coerente (o "Outros" de Iluminação, Interior,
+# Carroceria e Exterior mistura modulo, rele, sensor e acabamento); por fim as palavras largas.
+PALAVRAS_FORTES = [
+    (r"^volante\b|\bpedal|\bpedaleira\b|\bacionador (da )?buzina\b", "pedais-e-volante"),
+    (r"\bretrovisor", "retrovisores"),
+    (r"\b(farol|farois|lanterna|lanternas|brake light|neblina)\b", "farois-e-lanternas"),
+    (r"\b(fechadura|macaneta|trinco)\b", "macanetas-e-fechaduras"),
+    (r"^(acabamento|grade|tela|moldura|tampa)\b.*\b(tweeter|alto-falante|falante)\b", "acabamentos-e-forros"),
+    (r"\b(multimidia|mylink|radio|som|amplificador|alto-falante|subwoofer|cd|dvd|microfone)\b", "som-e-multimidia"),
+    (r"\b(airbag|impacto|cinto)\b", "airbag-e-seguranca"),
+    (r"\b(freio|disco|pinca|abs|esp|estabilidade|epb)\b", "freios"),
+    (r"^(mangueira|conector)\b", "mangueiras-do-motor"),
+    (r"\b(ventoinha|radiador|reservatorio)\b|\bagua\b", "arrefecimento"),
+    (r"\bar condicionado\b|\bventilacao\b|\baquecedor\b|\btemperatura (interna|interior)\b|\bqualidade (do )?ar\b",
+     "ar-condicionado"),
+    (r"\b(escapamento|catalisador)\b", "escapamento"),
+    (r"\bfiltro (de )?ar\b|\bturbina\b|\bintercooler\b", "filtro-de-ar-e-turbo"),
+    (r"\b(suspensao|amortecedor|eixo|mola|bandeja)\b", "suspensao-e-direcao"),
+    (r"\b(chicote|rele|reles|bateria|keyless|imobilizador|antena|alarme|camera|bsi|bcm|localizacao)\b|\bcabo terra\b",
+     "modulos-e-eletrica"),
+    (r"^(acabamento|moldura|coifa)\b.*\b(cambio|marcha|seletor)\b|\bcoluna (de |da )?direcao\b", "painel-e-console"),
+    (r"\bpainel frontal\b|\bgrade\b|\bpara-choque|\bpara-lama|\bcapo\b", "para-choques-e-lataria"),
+    (r"^painel (de )?(botoes|interruptor)|\binterruptor\b|^botao\b|\bobturador\b", "botoes-e-chaves-de-seta"),
+    (r"\b(pestana|canaleta)\b|^vidro\b", "vidro-eletrico"),
+]
+FAMILIA_BLOCO = {   # familia do ML cujo "Outros" e mesmo daquele bloco
+    "Motor": "motor", "Freios": "freios", "Climatização": "ar-condicionado", "Filtros": "filtro-de-ar-e-turbo",
+    "Escapamentos": "escapamento", "Transmissão": "cambio-e-transmissao", "Suspensão e Direção": "suspensao-e-direcao",
+    "Som e Multimídia": "som-e-multimidia", "Arrefecimento": "arrefecimento", "Injeção": "injecao-e-combustivel",
+    "Segurança": "airbag-e-seguranca", "Fechaduras e Chaves": "macanetas-e-fechaduras",
+    "Janelas e Vedações": "vidro-eletrico", "Sistema Elétrico": "modulos-e-eletrica",
+}
+PALAVRAS_LARGAS = [
+    (r"\b(painel|tabelier|console|porta-objetos|relogio|tomada|carregador|isqueiro|acendedor|porta-copos|"
+     r"porta-luvas|difusor)\b", "painel-e-console"),
+    (r"\b(coluna|pilar|porta-malas|bagagito|acabamento|moldura|guarnicao|forro|tapete|inserto|pega|alca|puxador|"
+     r"banco|interior|interno|porta)\b", "acabamentos-e-forros"),
+    (r"\btriangulo\b", "airbag-e-seguranca"),
+    (r"\b(motor|valvetronic|coxim|coxins|oleo|cabecote)\b", "motor"),
+    (r"\b(modulo|sensor|crepuscular)\b", "modulos-e-eletrica"),
+]
+_PALAVRAS_FORTES = [(re.compile(rx), b) for rx, b in PALAVRAS_FORTES]
+_PALAVRAS_LARGAS = [(re.compile(rx), b) for rx, b in PALAVRAS_LARGAS]
+
+
+def bloco(nome, familia, tipo):
+    """Chave do bloco da peca (ou "" = Outros), pelo tipo da loja e, sem tipo, pelo nome."""
+    k = gi.strip_accents(nome or "").lower()
+    for rx, b in _BLOCO_PELO_NOME:
+        if rx.search(k):
+            return b
+    if tipo in _BLOCO_NO_TIPO:
+        for rx, b in _BLOCO_NO_TIPO[tipo]:
+            if rx.search(k):
+                return b
+    if tipo in BLOCO_POR_TIPO:
+        return BLOCO_POR_TIPO[tipo]
+    for rx, b in _PALAVRAS_FORTES:
+        if rx.search(k):
+            return b
+    if familia in FAMILIA_BLOCO:
+        return FAMILIA_BLOCO[familia]
+    for rx, b in _PALAVRAS_LARGAS:
+        if rx.search(k):
+            return b
+    return ""
+
+
+# --------------------------------------------------------------------------
 # Foto do ML: guardamos so a chave ("957636-MLB110353255009_042026"); o site
 # monta o tamanho certo (-V 320px no card, -O 500px, -F cheia na ficha).
 # --------------------------------------------------------------------------
@@ -2523,7 +2757,7 @@ def main():
             "b": mc,
             "m": mod,
             "y": [a0, a1] if a0 else None,
-            "c": fam or "Outros",
+            "c": BLOCO_NOME.get(bloco(n, fam, tipo)) or BLOCO_OUTROS,
             "s": tipo,
             "oem": " ".join(codigos_peca(p)),
             "o": codigos_busca(p),
@@ -2544,13 +2778,11 @@ def main():
         x["_seg"] = x["fotos"][1] if len(x["fotos"]) > 1 else None
     fotos_limpas.ordenar_fotos(pecas)
 
-    # 4) Familias: so as com 3+ pecas; o resto entra em "Outros" (uma vez so).
+    # 4) Blocos (campo "c"): a lista fixa de BLOCOS, na ordem dela; "Outros" (fora da grade) no fim.
     fam_cnt = Counter(x["c"] for x in pecas)
-    pequenas = {n for n, c in fam_cnt.items() if c < 3 or n == "Outros"}
-    for x in pecas:
-        if x["c"] in pequenas:
-            x["c"] = "Outros"
-    fam_cnt = Counter(x["c"] for x in pecas)
+    sobra = sorted(x["n"] for x in pecas if x["c"] == BLOCO_OUTROS)
+    if sobra:
+        print(f"blocos: {len(sobra)} pecas em Outros (por em PALAVRAS_FORTES/BLOCO_POR_TIPO): {sobra[:40]}")
 
     # 5) Marcas e modelos, carros (paginas /carros/), vitrines.
     #    A peca que serve em 2+ carros ("ms") conta em cada um deles (pagina do carro, Meu carro e filtro).
@@ -2596,7 +2828,9 @@ def main():
                   for n, c in sorted(mods.items(), key=lambda kv: (-kv[1], kv[0])) if c >= 2],
         })
 
-    familias = [{"n": n, "k": chave_url(n), "c": c} for n, c in fam_cnt.most_common()]
+    familias = [{"n": n, "k": k, "c": fam_cnt[n]} for k, n in BLOCOS if fam_cnt[n]]
+    if fam_cnt[BLOCO_OUTROS]:
+        familias.append({"n": BLOCO_OUTROS, "k": "outros", "c": fam_cnt[BLOCO_OUTROS]})
 
     # "Chegou agora": o numero do anuncio do ML cresce com o tempo, entao os
     # maiores sao os mais novos (nao ha data de criacao no dado).
@@ -2629,6 +2863,8 @@ def main():
         "total": len(pecas),
         "marcas": marcas,
         "familias": familias,
+        # endereco antigo (familia do ML) -> bloco: paginas de redirecionamento e o ?tipo= antigo do catalogo
+        "antigas": [{"k": k, "n": n, "para": para} for k, (n, para) in FAMILIAS_ANTIGAS.items()],
         "carros": carros,
         "chegou": chegou,
         "preco": {"min": precos[0], "max": precos[-1]},

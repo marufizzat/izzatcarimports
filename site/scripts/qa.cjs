@@ -16,7 +16,7 @@ const fs = require('fs'); const path = require('path');
   [...pecas].sort((a, b) => b.p - a.p).slice(0, 3).forEach((p) => am.set(p.id, p));
   const amostra = [...am.values()].slice(0, 60).map((p) => `/peca/${p.slug}.html`);
   const modelos = ['/index.html', '/catalogo.html', '/catalogo.html?q=farol%20compass', '/catalogo.html?marca=Volvo&modelo=XC60&ano=2020',
-    '/catalogo.html?q=zzzqqq', '/carros.html', '/carros/volvo-xc60.html', '/marca/volvo.html', '/categoria/iluminacao.html',
+    '/catalogo.html?q=zzzqqq', '/carros.html', '/carros/volvo-xc60.html', '/marca/volvo.html', '/categoria/farois-e-lanternas.html',
     '/como-comprar.html', '/garantia.html', '/envios.html', '/sobre.html', '/contato.html', '/procuro-peca.html', '/404.html', amostra[0]];
   const telas = [[320, 640], [360, 760], [390, 844], [414, 896], [844, 390], [768, 1024], [1024, 768], [1280, 800], [1440, 900], [1920, 1080]];
   const b = await chromium.launch();

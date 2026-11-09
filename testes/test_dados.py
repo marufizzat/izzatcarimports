@@ -561,9 +561,105 @@ def test_peca_na_familia_certa():
         import re
         for x in json.loads(pecas.read_text(encoding="utf-8")):
             n = gi_sem(x["n"])
-            assert not (re.match(r"chave (de )?roda\b", n) and x["c"] == "Fechaduras e Chaves"), x["id"]
-            assert not (re.match(r"modulo (do )?cambio\b", n) and x["c"] == "Ignição"), x["id"]
-            assert not (re.match(r"(motor|maquina) (de )?vidro\b(?!.*\bmanual)", n) and x["c"] == "Motor"), x["id"]
+            # "c" agora e o bloco (BLOCOS): chave de roda em Rodas, modulo do cambio no Cambio, motor de vidro no Vidro
+            assert not (re.match(r"chave (de )?roda\b", n) and x["c"] != "Rodas"), x["id"]
+            assert not (re.match(r"modulo (do )?cambio\b", n) and x["c"] != "Câmbio e Transmissão"), x["id"]
+            assert not (re.match(r"(motor|maquina) (de )?vidro\b(?!.*\bmanual)", n) and x["c"] != "Vidro Elétrico"), x["id"]
+
+
+def test_blocos_do_jeito_que_o_cliente_procura():
+    """Nov/2026: o dono reprovou "espelho em Carroceria" e "farol em Iluminação". O campo "c" virou um dos 25 BLOCOS
+    (nome, chave e ordem da arte), pelo tipo "s" e, quando o tipo e "Outros", pelo nome. Cada peca num bloco so."""
+    from preparar_dados import (BLOCOS, BLOCO_NOME, BLOCO_POR_TIPO, BLOCO_NO_TIPO, FAMILIAS_ANTIGAS, TIPO_LOJA,
+                                TIPO_LOJA_FAMILIA, SUBTIPO_ID, REGRAS_NOME, BOTAO_POR_NOME, OUTROS_POR_NOME,
+                                TIPO_FAMILIA, bloco, chave_url)
+    chaves = [k for k, _ in BLOCOS]
+    assert chaves == ["retrovisores", "farois-e-lanternas", "macanetas-e-fechaduras", "vidro-eletrico", "painel-e-console",
+                      "botoes-e-chaves-de-seta", "acabamentos-e-forros", "motor", "mangueiras-do-motor",
+                      "filtro-de-ar-e-turbo", "injecao-e-combustivel", "arrefecimento", "ar-condicionado",
+                      "modulos-e-eletrica", "ignicao-e-partida", "freios", "suspensao-e-direcao", "cambio-e-transmissao",
+                      "rodas", "para-choques-e-lataria", "limpador-e-lavador", "airbag-e-seguranca", "som-e-multimidia",
+                      "pedais-e-volante", "escapamento"]
+    assert all(chave_url(n) == k for k, n in BLOCOS), [(k, chave_url(n)) for k, n in BLOCOS if chave_url(n) != k]
+    # mapa completo (estatico): todo tipo que as tabelas produzem tem bloco, e todo bloco tem tipo
+    produzidos = (set(TIPO_LOJA.values()) | set(SUBTIPO_ID.values()) | set(TIPO_LOJA_FAMILIA.values())
+                  | {t for *_, t in REGRAS_NOME} | {t for _, t in BOTAO_POR_NOME} | set(TIPO_FAMILIA)
+                  | {t for rs in OUTROS_POR_NOME.values() for _, t in rs}) - {"Outros"}
+    sem = sorted(t for t in produzidos if t not in BLOCO_POR_TIPO and t not in TIPO_LOJA)
+    assert not sem, f"tipo sem bloco (por em _TIPOS_DO_BLOCO): {sem}"
+    assert set(BLOCO_POR_TIPO.values()) == set(chaves), set(chaves) - set(BLOCO_POR_TIPO.values())
+    assert all(b in BLOCO_NOME for rs in BLOCO_NO_TIPO.values() for _, b in rs)
+    assert all(t in BLOCO_POR_TIPO for t in BLOCO_NO_TIPO), [t for t in BLOCO_NO_TIPO if t not in BLOCO_POR_TIPO]
+    # enderecos antigos: so as chaves que sairam, cada uma para um bloco que existe
+    assert all(para in BLOCO_NOME and k not in BLOCO_NOME for k, (_, para) in FAMILIAS_ANTIGAS.items())
+    assert set(FAMILIAS_ANTIGAS) >= {"pecas-de-interior", "carroceria", "pecas-de-exterior", "sistema-eletrico",
+                                     "climatizacao", "injecao", "janelas-e-vedacoes", "fechaduras-e-chaves",
+                                     "iluminacao", "transmissao", "ignicao", "seguranca", "filtros", "escapamentos"}
+    # o que o dono apontou e o que a lista do pedido pos em cada bloco
+    casos = [
+        (("Retrovisor externo direito", "Carroceria", "Retrovisores Externos"), "retrovisores"),
+        (("Retrovisor interno", "Peças de Interior", "Retrovisores Internos"), "retrovisores"),
+        (("Botão retrovisor", "Peças de Interior", "Botões do Retrovisor"), "retrovisores"),
+        (("Farol esquerdo", "Iluminação", "Faróis"), "farois-e-lanternas"),
+        (("Luz teto", "Peças de Interior", "Luzes Internas"), "farois-e-lanternas"),
+        (("Maçaneta externa", "Carroceria", "Maçanetas das Portas"), "macanetas-e-fechaduras"),
+        (("Botão trava portas", "Peças de Interior", "Botões da Trava Elétrica"), "macanetas-e-fechaduras"),
+        (("Botão vidro", "Peças de Interior", "Botões do Vidro Elétrico"), "vidro-eletrico"),
+        (("Motor teto solar", "Carroceria", "Motores do Teto Solar"), "vidro-eletrico"),
+        (("Chave limpador", "Peças de Interior", "Chaves do Limpador"), "botoes-e-chaves-de-seta"),
+        (("Bomba vácuo", "Freios", "Bombas de Vácuo"), "motor"),
+        (("Mangueira calefação", "Climatização", "Mangueiras de Calefação"), "mangueiras-do-motor"),
+        (("Sirene alarme", "Segurança", "Alarmes e Sirenes"), "modulos-e-eletrica"),
+        (("Macaco tesoura", "Segurança", "Macacos e Chaves de Roda"), "rodas"),
+        (("Semieixo dianteiro", "Suspensão e Direção", "Semieixos"), "cambio-e-transmissao"),
+        (("Volante", "Peças de Interior", "Volantes"), "pedais-e-volante"),
+        (("Volante motor", "Transmissão", "Volantes de Embreagem"), "cambio-e-transmissao"),
+        (("Grade alto-falante porta", "Som e Multimídia", "Grades de Alto-falante"), "acabamentos-e-forros"),
+        (("Difusor ar", "Peças de Interior", "Difusores de Ar"), "painel-e-console"),
+        # tipo que junta 2 blocos: o nome decide
+        (("Antena shark teto", "Peças de Exterior", "Antenas"), "som-e-multimidia"),
+        (("Antena chave presença", "Outros", "Antenas"), "modulos-e-eletrica"),
+        (("Defletor radiador", "Arrefecimento", "Defletores"), "arrefecimento"),
+        (("Defletor disco traseiro esquerdo", "Arrefecimento", "Defletores"), "freios"),
+        # o nome manda mais que o tipo errado do ML
+        (("Sensor impacto", "Injeção", "Sondas Lambda"), "airbag-e-seguranca"),
+        (("Caixa ar condicionado", "Transmissão", "Câmbios e Peças Internas"), "ar-condicionado"),
+        (("Botão freio estacionamento", "Peças de Interior", "Outros Botões"), "freios"),
+        # "Outros" do ML: pelo nome
+        (("Acabamento retrovisor dianteiro direito", "Carroceria", "Outros"), "retrovisores"),
+        (("Acabamento painel esquerdo", "Carroceria", "Outros"), "painel-e-console"),
+        (("Módulo freio mão elétrico EPB", "Iluminação", "Outros"), "freios"),
+        (("Relé auxiliar", "Iluminação", "Outros"), "modulos-e-eletrica"),
+        (("Amplificador som", "Sistema Elétrico", "Outros"), "som-e-multimidia"),
+        (("Suporte motor", "Motor", "Outros"), "motor"),
+        (("Sensor aceleração", "Freios", "Outros"), "freios"),          # familia coerente
+        (("Suporte base fixação", "Peças de Interior", "Outros"), ""),  # nada diz: fica em Outros
+    ]
+    for (nome, fam, tipo), esperado in casos:
+        assert bloco(nome, fam, tipo) == esperado, (nome, tipo, bloco(nome, fam, tipo), esperado)
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    resumo = ROOT / "site" / "src" / "data" / "resumo.json"
+    if pecas.exists() and resumo.exists():
+        from collections import Counter
+        lista = json.loads(pecas.read_text(encoding="utf-8"))
+        r = json.loads(resumo.read_text(encoding="utf-8"))
+        validos = set(BLOCO_NOME.values()) | {"Outros"}
+        assert all(x["c"] in validos for x in lista), {x["c"] for x in lista} - validos
+        cont = Counter(x["c"] for x in lista)
+        # resumo: os blocos na ordem fixa, com a contagem real; "Outros" (fora da grade) no fim
+        fams = r["familias"]
+        assert [f["k"] for f in fams if f["k"] != "outros"] == [k for k in chaves if cont[BLOCO_NOME[k]]]
+        assert all(f["c"] == cont[f["n"]] for f in fams) and sum(f["c"] for f in fams) == len(lista)
+        assert all(f["n"] != "Outros" for f in fams[:-1]) and all(f["k"] == "outros" for f in fams if f["n"] == "Outros")
+        # o estoque muda: tipo novo do ML sem lugar, bloco vazio e "Outros" grande so AVISAM (nao travam a publicacao)
+        novos = sorted({x["s"] for x in lista if x["s"] and x["s"] != "Outros" and x["s"] not in BLOCO_POR_TIPO})
+        if novos:
+            print(f"AVISO: tipo sem bloco no mapa (por em _TIPOS_DO_BLOCO): {novos}")
+        vazios = [k for k in chaves if not cont[BLOCO_NOME[k]]]
+        if vazios:
+            print(f"AVISO: bloco sem peca agora (a pagina sai do ar e o endereco antigo vai pro catalogo): {vazios}")
+        if cont["Outros"] >= 30:
+            print(f"AVISO: {cont['Outros']} pecas em Outros (meta: menos de 30)")
 
 
 def test_peca_em_dois_carros():

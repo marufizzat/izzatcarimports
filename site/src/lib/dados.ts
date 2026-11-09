@@ -17,7 +17,10 @@ export type Peca = {
 export type Resumo = {
   updated: string; total: number;
   marcas: { n: string; k: string; c: number; m: { n: string; k: string; c: number }[] }[];
+  /** Blocos (o jeito que o cliente procura, preparar_dados.py: BLOCOS), na ordem da grade; "Outros" (k "outros") no fim. */
   familias: { n: string; k: string; c: number }[];
+  /** Endereço antigo (família do ML que o Google conhece) -> bloco: /categoria/<k>.html redireciona para <para>. */
+  antigas?: { k: string; n: string; para: string }[];
   carros: { k: string; b: string; m: string; c: number; anos: [number, number] | null;
             fams: [string, number][]; capas: string[] }[];
   chegou: string[]; preco: { min: number; max: number };
