@@ -70,7 +70,7 @@ const carro = nomeModelos({ b, m, ms });
       // falta o ano: neutro (nada de verde). Peça com anos: pergunta o ano ali mesmo; peça sem anos: confira o código.
       'falta-ano': `<div class="enc-estado" data-estado="falta-ano"><span class="enc-icone">${iconeCarro}</span><p class="enc-txt">`
         + `<span data-com-anos>Serve no <b data-modelo-carro>${esc(p.m)}</b> de <span data-anos-carro>${anos}</span></span>`
-        + `<small class="enc-pergunta" data-com-anos>Qual o ano do seu? <span class="enc-ano-campo"><select data-ano-carro aria-label="Ano do seu carro"><option value="">Escolher</option>${ANOS}</select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span></small>`
+        + `<small class="enc-pergunta" data-com-anos>Qual o ano do seu? <span class="enc-ano-campo"><span aria-hidden="true">Escolher</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><select data-ano-carro aria-label="Ano do seu carro"><option value="">Escolher</option>${ANOS}</select></span></small>`
         + `<span data-sem-anos>Serve em <b>${carro}</b></span><small data-sem-anos>O anúncio não traz o ano. Confira o código gravado ou pergunte no WhatsApp.</small>`
         + `</p>${TROCAR}</div>`,
       outro: `<div class="enc-estado" data-estado="outro"><span class="enc-icone">${iconeCarro}</span><p class="enc-txt"><span>Serve em <b>${carro}</b>${anos ? `, ${anos}` : ''}</span>${SALVO}</p>${TROCAR}</div>`,
@@ -138,16 +138,18 @@ const carro = nomeModelos({ b, m, ms });
   .enc-ano .enc-icone { background: #f5b700; color: #1d1d1f; box-shadow: none; }
   .enc-ano .enc-txt, .enc-ano .enc-txt b { color: #6b4100; }
   .enc-ano .enc-txt small, .enc-ano .enc-trocar { color: #7a4a00; }
-  /* falta o ano: o campo do ano tem a altura de uma linha (a faixa não cresce) e a área de toque maior por fora */
+  /* falta o ano: o campo do ano tem a altura de uma linha (a faixa não cresce). O <select> de verdade fica transparente
+     por cima do texto "Escolher ▾", com 16 px (abaixo disso o iPhone dá zoom na página ao tocar) e área de toque maior */
   .enc-pergunta { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; }
   .enc-txt [hidden] { display: none; }
-  .enc-ano-campo { position: relative; display: inline-flex; align-items: center; gap: 3px; color: var(--ink); }
-  .enc-ano-campo select { appearance: none; -webkit-appearance: none; margin: -8px 0; padding: 8px 18px 8px 0; border: 0; background: none; cursor: pointer;
-                          font: inherit; font-size: 14px; font-weight: 650; color: inherit; line-height: 1.3;
-                          text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
-  .enc-ano-campo svg { position: absolute; right: 0; width: 15px; height: 15px; pointer-events: none; fill: none; stroke: currentColor; stroke-width: 2.2;
-                       stroke-linecap: round; stroke-linejoin: round; }
+  .enc-ano-campo { position: relative; display: inline-flex; align-items: center; gap: 3px; color: var(--ink); font-size: 14px; font-weight: 650;
+                   line-height: 1.3; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px;
+                   text-underline-offset: 3px; }
+  .enc-ano-campo svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .enc-ano-campo select { position: absolute; inset: -9px -6px; width: calc(100% + 12px); height: calc(100% + 18px); margin: 0; padding: 0; border: 0;
+                          opacity: 0; appearance: none; -webkit-appearance: none; font-size: 16px; cursor: pointer; }
   .enc-ano-campo:hover { color: var(--accent-text); }
+  .enc-ano-campo:has(select:focus-visible) { outline: 3px solid var(--accent-text); outline-offset: 3px; border-radius: 6px; }
   .enc-link { font-weight: 650; color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent);
               text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
   .enc-link:hover { color: var(--accent-text); }
