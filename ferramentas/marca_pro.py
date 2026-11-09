@@ -3,7 +3,9 @@ IZZAT CAR — logo e enquadramento v2 nas capas MAQUIADAS (ChatGPT) de site/publ
 
 NÃO mexe nas originais: grava numa pasta de saída (padrão ~/.cache/izzatcar-capas-pro/v2/<logo>/).
 Fonte de cada capa: o PNG do ChatGPT (sem perda, 1254 px) em ~/.cache/izzatcar-capas-pro/chatgpt/<MLB>.png;
-sem ele, a própria capa instalada em site/public/estudio-pro (800 px).
+sem ele, a capa instalada em site/public/estudio-pro (800 px, sem logo), guardada na 1ª vez em
+~/.cache/izzatcar-capas-pro/chatgpt/<MLB>.webp (rodar de novo nunca põe o logo duas vezes).
+Capa maquiada NOVA: depois do `capas_pro.py instalar <MLB>`, rodar este para ela (sai em 1000 px com o logo).
 
 Como (rota 2, padrão — a peça e a sombra do ChatGPT intactas, só reenquadradas):
   1. ganho global igual ao do capas_pro.instalar (fundo no tom do estúdio; mesma cor da capa aprovada);
@@ -35,7 +37,10 @@ FUNDO_ALVO = (238, 237, 234)   # o mesmo do capas_pro.instalar
 
 
 def fonte(mlb):
-    """(imagem RGB, de onde veio). PNG do ChatGPT quando existe (sem perda); senão a capa instalada."""
+    """(imagem RGB, de onde veio). PNG do ChatGPT quando existe (sem perda); senão a capa instalada SEM logo.
+    A instalada (800 px, sem logo) é guardada em TRAB/chatgpt/<MLB>.webp na 1ª vez: se a pasta estudio-pro for
+    trocada pela v2 (1000 px, com logo), rodar de novo não recorta capa já reenquadrada nem põe logo duas vezes."""
+    import shutil
     from PIL import Image
     png = TRAB / "chatgpt" / f"{mlb}.png"
     if png.exists():
@@ -44,7 +49,21 @@ def fonte(mlb):
         lado = min(w, h)   # o instalar recorta o quadrado do meio: mesma coisa aqui
         im = im.crop(((w - lado) // 2, (h - lado) // 2, (w - lado) // 2 + lado, (h - lado) // 2 + lado))
         return im, "png"
-    return Image.open(PRO / f"{mlb}.webp").convert("RGB"), "webp"
+    guardada = TRAB / "chatgpt" / f"{mlb}.webp"
+    if not guardada.exists():
+        inst = PRO / f"{mlb}.webp"
+        with Image.open(inst) as t:
+            if t.size[0] != capas_pro_lado():
+                raise RuntimeError(f"a capa instalada já é v2 ({t.size[0]} px) e não há original guardada: "
+                                   f"instale de novo pelo capas_pro.py e rode este de novo")
+        guardada.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(inst, guardada)
+    return Image.open(guardada).convert("RGB"), "webp"
+
+
+def capas_pro_lado():
+    """Lado das capas que o capas_pro.instalar grava (800): a v2 grava ce.LADO_V2 (1000)."""
+    return 800
 
 
 def ganho_estudio(im):

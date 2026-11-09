@@ -709,7 +709,10 @@ def main():
         fs = [k for k in (x.get("fotos") or []) if k and not k.startswith("http")]
         if not fs:
             continue
-        cands = fs[:3] if x.get("limpa") else (fs[1:3] + fs[:1])
+        if VERSAO == "2":   # v2: até 6 fotos (há anúncio com o carrinho colado nas 3 primeiras); para na 1ª limpa
+            cands = fs[:6] if x.get("limpa") else (fs[1:6] + fs[:1])
+        else:
+            cands = fs[:3] if x.get("limpa") else (fs[1:3] + fs[:1])
         if x["id"] not in feitas and (refazer or x["id"] not in falhas):
             fila.append((x["id"], cands))
     so = set(filter(None, os.getenv("ESTUDIO_IDS", "").split(",")))   # ex.: teste em poucas peças
