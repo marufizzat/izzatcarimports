@@ -9,6 +9,10 @@ const marcas = resumo().marcas;
 const kMarca = (b: string) => marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
 const temArte = (k: string) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`));
 const carros = todos ? resumo().carros : resumo().carros.filter((c) => temArte(c.k)).slice(0, limite);
+// "T-Cross" não parte no hífen ("T-" numa linha e "Cross" na outra): hífen que não quebra (U+2011)
+const semQuebra = (s: string) => s.replace(/-/g, '\u2011');
+// anos no mesmo formato dos cartões de peça (2013–2026)
+const anosTxt = (a: [number, number]) => (a[0] === a[1] ? `${a[0]}` : `${a[0]}–${a[1]}`);
 ---
 <ul class:list={["carros-v2", { todos }]}>
   {carros.map((c) => { const l = logoInfo(kMarca(c.b), 40, 26); return (
@@ -18,16 +22,22 @@ const carros = todos ? resumo().carros : resumo().carros.filter((c) => temArte(c
         : (() => { const g = logoInfo(kMarca(c.b), 110, 64); return <span class="carro-v2-arte carro-v2-sem">{g && <img src={g.src} alt="" width={g.w} height={g.h} style={`width:${g.w}px;height:${g.h}px`} class={g.png ? 'png' : 'svg'} loading="lazy" />}</span>; })()}
       <span class="carro-v2-info">
         <span class="carro-v2-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>
-        <span class="carro-v2-txt"><b>{`${c.b} ${c.m}`}</b><small class="num">{c.anos ? `${c.anos[0]} a ${c.anos[1]} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</small></span>
+        <span class="carro-v2-txt"><b>{semQuebra(`${c.b} ${c.m}`)}</b><small class="num">{c.anos ? `${anosTxt(c.anos)} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</small></span>
         <svg class="carro-v2-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </span>
     </a></li>); })}
 </ul>
+<script>
+  import { focoNoTrilho } from '../../lib/trilhoFoco';
+  // trilho do celular (home): o carro com o foco do teclado fica inteiro na tela (o snap puxava de volta)
+  focoNoTrilho('.carros-v2:not(.todos)');
+</script>
 <style>
   .carros-v2 { list-style: none; margin: 0; padding: 4px 2px 14px; display: grid; gap: 12px; grid-auto-flow: column; grid-auto-columns: 80%;
     overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .carros-v2::-webkit-scrollbar { display: none; }
-  .carros-v2 li { scroll-snap-align: start; }
+  /* cartões da mesma linha com a mesma altura (nome em 2 linhas não desalinha a fileira) */
+  .carros-v2 li { scroll-snap-align: start; display: grid; }
   .carros-v2 li[hidden] { display: none; }
   /* lista completa (página de carros): no celular vira grade de 2, não trilho */
   .carros-v2.todos { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; gap: 10px; }
@@ -42,7 +52,7 @@ const carros = todos ? resumo().carros : resumo().carros.filter((c) => temArte(c
   }
   @media (min-width: 700px) { .carros-v2 { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; gap: 16px; } }
   @media (min-width: 1080px) { .carros-v2 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
-  .carro-v2 { display: grid; border-radius: 22px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1);
+  .carro-v2 { display: grid; grid-template-rows: auto 1fr; height: 100%; border-radius: 22px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1);
     transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
   .carro-v2-arte { display: block; background: #efeeeb; overflow: hidden; }
   .carro-v2-arte img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; transition: transform .7s cubic-bezier(.2,.7,.2,1); }
@@ -62,5 +72,7 @@ const carros = todos ? resumo().carros : resumo().carros.filter((c) => temArte(c
     .carro-v2:hover .carro-v2-arte img { transform: scale(1.035); }
     .carro-v2:hover .carro-v2-seta { transform: translateX(3px); color: var(--accent-text); }
   }
-  .carro-v2:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .carro-v2:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+  /* trilho do celular (home): o overflow cortaria o anel de fora; ali ele vai para dentro do cartão */
+  @media (max-width: 699px) { .carros-v2:not(.todos) .carro-v2:focus-visible { outline-offset: -3px; } }
 </style>

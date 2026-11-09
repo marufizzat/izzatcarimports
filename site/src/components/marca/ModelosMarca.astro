@@ -102,12 +102,12 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
   .mm-dest-nome { display: grid; gap: 1px; min-width: 0; }
   .mm-dest-nome small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
   .mm-dest-nome b { font-stretch: 78%; font-weight: 820; font-size: clamp(21px, 2.4vw, 30px); line-height: 1; letter-spacing: -.01em; overflow-wrap: anywhere; }
-  .mm-dest-qtd { flex: none; padding: 6px 10px; border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 13px; font-weight: 700;
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 60%); }
+  /* contagem: o MESMO estilo nos destaques e nos cartões menores (texto cinza, como em /carros) */
+  .mm-dest-qtd { flex: none; font-size: 14px; font-weight: 600; color: var(--ink-2); }
   .mm-dest-arte { flex: 1 0 auto; }
   :is(.mm-d3, .mm-d1) > li:first-child .mm-dest-nome b { font-size: clamp(30px, 3.4vw, 46px); }
   :is(.mm-d3, .mm-d1) > li:first-child .mm-dest-info { padding: 16px 20px 18px; }
-  :is(.mm-d3, .mm-d1) > li:first-child .mm-dest-qtd { font-size: 14.5px; padding: 8px 13px; }
+  :is(.mm-d3, .mm-d1) > li:first-child .mm-dest-qtd { font-size: 15.5px; }
   .mm-dest-fams { display: grid; gap: 0; width: 100%; max-width: 360px; }
   .mm-dest-fams small { margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--ink-3); }
   .mm-dest-fams > span { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 15px; color: var(--ink-2); }
@@ -129,7 +129,7 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
     .mm-dest:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
     .mm-dest:hover .mm-dest-arte > img { transform: scale(1.035); }
   }
-  .mm-dest:focus-visible, .mm-mod:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .mm-dest:focus-visible, .mm-mod:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
 
   /* 2. demais carros com página */
   .mm-grade { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -145,7 +145,7 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
   .mm-mod-arte.sem-arte > img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
   .mm-mod-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 11px 14px 13px; }
   .mm-mod-txt b { font-stretch: 82%; font-weight: 820; font-size: clamp(17px, 1.6vw, 20px); line-height: 1.1; color: var(--ink); overflow-wrap: anywhere; }
-  .mm-mod-txt small { flex: none; font-size: 13px; color: var(--ink-2); }
+  .mm-mod-txt small { flex: none; font-size: 14px; font-weight: 600; color: var(--ink-2); }
   @media (hover: hover) { .mm-mod:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); } }
 
   /* 3. modelos sem página: lista de links */
