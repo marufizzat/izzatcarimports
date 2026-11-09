@@ -240,7 +240,7 @@ def generate_page(product, idx=None, parecidas=None):
   .trilha a:hover {{ color: var(--primary); }}
   .trilha span {{ margin: 0 6px; opacity: .5; }}
 
-  .peca {{ display: grid; grid-template-columns: 1.05fr .95fr; gap: var(--s7); align-items: start; padding-block: var(--s5) var(--s7); }}
+  .peca {{ display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: var(--s7); align-items: start; padding-block: var(--s5) var(--s7); }}
 
   .foto {{ background: #fff; border-radius: var(--r-lg); aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }}
   .foto img {{ width: 100%; height: 100%; object-fit: contain; padding: var(--s5); }}
@@ -285,7 +285,7 @@ def generate_page(product, idx=None, parecidas=None):
   .desc-caixa summary::-webkit-details-marker {{ display: none; }}
 
   @media (max-width: 900px) {{
-    .peca {{ grid-template-columns: 1fr; gap: var(--s5); }}
+    .peca {{ grid-template-columns: minmax(0, 1fr); gap: var(--s5); }}
     .preco {{ font-size: 34px; }}
   }}
 </style>

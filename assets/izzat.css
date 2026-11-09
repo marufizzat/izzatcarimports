@@ -326,3 +326,8 @@ select.field:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 330px) {
   .grid-products { grid-template-columns: 1fr; }
 }
+
+/* --- Página de peça: a fileira de miniaturas não pode alargar a coluna ---
+   Item de grid tem min-width:auto; com 5+ miniaturas (66 px cada) a coluna
+   crescia até ~900 px e a página estourava a tela do celular. */
+.peca > * { min-width: 0; }
