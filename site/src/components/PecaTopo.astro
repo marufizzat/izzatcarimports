@@ -1,8 +1,10 @@
 ---
-// Topo da pagina da peca: galeria (deslizar, miniaturas, tela cheia) + compra.
+// Topo da pagina da peca: galeria (deslizar, miniaturas, zoom, tela cheia) + compra.
 import type { Peca } from '../lib/dados';
 import { foto, brl, whatsUrl, capaEstudio, SITE } from '../lib/dados';
 import Icone from './Icone.astro';
+import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
+import Compartilhar from './peca/Compartilhar.astro';
 interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
 const { p, nivel = 'h1' } = Astro.props;
 const Titulo = nivel;
@@ -10,7 +12,11 @@ const carro = [p.b, p.m].filter(Boolean).join(' ');
 const serve = carro ? `${carro}${p.y ? `, ${p.y[0]} a ${p.y[1]}` : ''}` : '';
 const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
-const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n${serve ? `Meu carro é ${carro} ano ____. ` : ''}Serve e ainda tem?`;
+// Mensagem do WhatsApp: sem carro salvo usa "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
+const cabeca = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n`;
+const semCarro = serve ? `Meu carro é ${carro} ano ____. ` : '';
+const cauda = 'Serve e ainda tem?';
+const msg = cabeca + semCarro + cauda;
 const cod = (p.oem || '').split(/[\s,;/|]+/)[0];
 // 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça.
 const est = capaEstudio(p.id);
@@ -21,7 +27,7 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
 ---
 <div class="peca-topo">
   <div class="galeria" data-galeria>
-    <div class="galeria-palco">
+    <div class="galeria-palco" data-palco>
       <ul class="galeria-trilho" data-trilho>
         {fotos.map((f, i) => (
           <li><img class:list={[{ estudio: f.e }]} src={f.g} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
@@ -29,6 +35,8 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
         ))}
       </ul>
       <span class="galeria-contador num" data-contador>1 / {fotos.length}</span>
+      <span class="galeria-dica galeria-dica-mouse" aria-hidden="true">Passe o mouse para ver de perto</span>
+      <span class="galeria-dica galeria-dica-toque" aria-hidden="true">Toque para ampliar</span>
     </div>
     {fotos.length > 1 && (
       <div class="galeria-miniaturas" aria-label="Fotos da peça">
@@ -42,33 +50,56 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
   </div>
 
   <div class="compra">
-    {serve && <p class="compra-serve"><Icone nome="carro" /> Serve em <b>{serve}</b></p>}
+    <FaixaMeuCarro b={p.b} m={p.m} y={p.y} />
     <Titulo class="compra-nome">{p.n}</Titulo>
+    {serve && <p class="compra-serve">Serve em <b>{serve}</b></p>}
     <p class="compra-titulo-ml">{p.t}</p>
     <p class="compra-preco num"><small>R$</small>{reais}<small>,{cent}</small></p>
     <div class="compra-botoes" data-compra-botoes>
-      <a class="botao botao-laranja" href={whatsUrl(msg)}><Icone nome="whats" />Pedir pelo WhatsApp</a>
+      <a class="botao botao-laranja" href={whatsUrl(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir pelo WhatsApp</a>
       <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
     </div>
     <p class="compra-aviso">Na dúvida se serve? Mande o modelo e o ano do seu carro no WhatsApp que a gente confere na peça.</p>
     {cod && (
       <div class="compra-cod">
-        <div><span>Código gravado na peça</span><b class="oem">{cod}</b></div>
+        <div>
+          <span>Código gravado na peça</span>
+          <b class="oem">{cod}</b>
+          <a class="compra-ajuda" href="#como-achar-codigo">Onde fica o código na sua peça?</a>
+        </div>
         <button type="button" class="botao botao-linha" data-copiar={cod}><Icone nome="copiar" />Copiar</button>
       </div>
     )}
+    <Compartilhar titulo={p.t} url={url} />
     <ul class="compra-garantias">
       <li><img src="/arte/v2/selo-garantia.webp" alt="" width="32" height="32" />90 dias de garantia</li>
       <li><img src="/arte/v2/selo-nota-fiscal.webp" alt="" width="32" height="32" />Nota fiscal na venda</li>
       <li><img src="/arte/v2/selo-cdv.webp" alt="" width="32" height="32" />Retirada de carro com baixa legal, CDV nº 01060</li>
       <li><img src="/arte/v2/selo-envio.webp" alt="" width="32" height="32" />Envio para todo o Brasil</li>
     </ul>
+    {/* Lugar do selo de reputacao do Mercado Livre (outra equipe). Fica vazio e oculto ate ser preenchido. */}
+    <div id="selo-reputacao-ml" class="selo-reputacao" data-selo-reputacao />
   </div>
 </div>
 
 <script>
+  import { lerMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
+
+  // WhatsApp leva o carro salvo na mensagem (troca só a linha "Meu carro é ...").
+  const pedidos = [...document.querySelectorAll<HTMLAnchorElement>('[data-whats]')];
+  const atualizarWhats = (c: MeuCarro | null) => {
+    pedidos.forEach((a) => {
+      const base = a.getAttribute('href')!.split('?')[0];
+      const linha = c ? `Meu carro é ${nomeCarro(c)}. ` : (a.dataset.sem || '');
+      a.href = `${base}?text=${encodeURIComponent((a.dataset.cabeca || '') + linha + (a.dataset.cauda || ''))}`;
+    });
+  };
+  atualizarWhats(lerMeuCarro());
+  window.addEventListener(EVENTO, (e) => atualizarWhats((e as CustomEvent<MeuCarro | null>).detail ?? null));
+
   document.querySelectorAll<HTMLElement>('[data-galeria]').forEach((g) => {
     const trilho = g.querySelector<HTMLElement>('[data-trilho]')!;
+    const palco = g.querySelector<HTMLElement>('[data-palco]')!;
     const cont = g.querySelector<HTMLElement>('[data-contador]');
     const minis = [...g.querySelectorAll<HTMLButtonElement>('[data-ir]')];
     const total = trilho.children.length;
@@ -79,7 +110,7 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
       minis[i]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     };
     trilho.addEventListener('scroll', () => requestAnimationFrame(marcar), { passive: true });
-    // toque/clique na foto abre a galeria em tela cheia (ilha GaleriaTelaCheia)
+    // toque/clique na foto abre a galeria em tela cheia (ilha GaleriaTelaCheia; pinça la para ampliar)
     trilho.addEventListener('click', () => {
       const i = Math.round(trilho.scrollLeft / trilho.clientWidth);
       (window as any).__galeriaPendente = i; // se a ilha ainda nao montou, ela abre ao montar
@@ -87,7 +118,19 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
     });
     minis.forEach((b) => b.addEventListener('click', () =>
       trilho.scrollTo({ left: Number(b.dataset.ir) * trilho.clientWidth, behavior: 'smooth' })));
+
+    // computador: lupa que segue o mouse (só com mouse de verdade)
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      palco.addEventListener('pointermove', (e) => {
+        const r = palco.getBoundingClientRect();
+        palco.style.setProperty('--zx', `${((e.clientX - r.left) / r.width) * 100}%`);
+        palco.style.setProperty('--zy', `${((e.clientY - r.top) / r.height) * 100}%`);
+        palco.classList.add('lupa');
+      });
+      palco.addEventListener('pointerleave', () => palco.classList.remove('lupa'));
+    }
   });
+
   document.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((b) => {
     b.addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(b.dataset.copiar || ''); } catch {}
@@ -101,15 +144,28 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
   .peca-topo { display: grid; gap: 28px; }
   @media (min-width: 960px) { .peca-topo { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 56px; align-items: start; } }
   .galeria { min-width: 0; }
-  .galeria-palco { position: relative; border-radius: 22px; background: var(--plate); overflow: hidden; box-shadow: var(--shadow-1); }
+  .galeria-palco { position: relative; border-radius: 22px; background: var(--plate); overflow: hidden; box-shadow: var(--shadow-1); --zx: 50%; --zy: 50%; }
   .galeria-trilho { list-style: none; margin: 0; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; aspect-ratio: 1; }
   .galeria-trilho::-webkit-scrollbar { display: none; }
-  .galeria-trilho li { flex: 0 0 100%; scroll-snap-align: center; display: grid; place-items: center; }
-  .galeria-trilho img { width: 100%; height: 100%; object-fit: contain; padding: 6%; cursor: zoom-in; }
+  .galeria-trilho li { flex: 0 0 100%; scroll-snap-align: center; display: grid; place-items: center; overflow: hidden; }
+  .galeria-trilho img { width: 100%; height: 100%; object-fit: contain; padding: 6%; cursor: zoom-in; transition: transform .18s ease-out; }
   /* capa de estúdio já tem o próprio fundo: ocupa o palco inteiro, sem caixa dentro da caixa */
   .galeria-trilho img.estudio { padding: 0; object-fit: cover; }
+  /* lupa: a foto amplia onde o mouse está (só no computador) */
+  .galeria-palco.lupa .galeria-trilho img { transform: scale(2.2); transform-origin: var(--zx) var(--zy); transition: none; }
   .galeria-contador { position: absolute; right: 14px; bottom: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 650;
-                      background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); }
+                      background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); z-index: 1; }
+  .galeria-dica { position: absolute; left: 14px; bottom: 14px; z-index: 1; padding: 6px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+                  background: rgb(255 255 255 / .9); color: #1d1d1f; box-shadow: var(--shadow-1); pointer-events: none; }
+  .galeria-dica-toque { display: none; }
+  .galeria-palco.lupa .galeria-dica-mouse { opacity: 0; }
+  @media (hover: none) {
+    .galeria-dica-mouse { display: none; }
+    .galeria-dica-toque { display: inline-block; }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .galeria-dica-toque { display: none; }
+  }
   .galeria-miniaturas { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
   .galeria-miniaturas button { flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--plate);
                                box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; transition: box-shadow .2s; }
@@ -118,9 +174,8 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
   .galeria-miniaturas img.estudio { padding: 0; object-fit: cover; }
 
   .compra { min-width: 0; display: grid; gap: 14px; align-content: start; }
-  .compra-serve { display: inline-flex; align-items: center; gap: 8px; justify-self: start; margin: 0; padding: 8px 14px 8px 10px; border-radius: 12px;
-                  background: var(--accent-soft); color: var(--ink); font-size: 14.5px; }
-  .compra-serve :global(svg) { width: 20px; height: 20px; color: var(--accent-text); }
+  .compra-serve { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+  .compra-serve b { color: var(--ink); font-weight: 650; }
   .compra-nome { overflow-wrap: anywhere; margin: 0; font-stretch: 84%; font-weight: 800; font-size: clamp(28px, 3.2vw, 40px); line-height: 1.04; letter-spacing: -.01em; text-wrap: balance; }
   .compra-titulo-ml { margin: -6px 0 0; font-size: 13.5px; color: var(--ink-3); overflow-wrap: anywhere; }
   .compra-preco { margin: 6px 0 0; font-stretch: 80%; font-weight: 850; font-size: 46px; line-height: 1; letter-spacing: -.01em; }
@@ -135,7 +190,14 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
   .compra-cod b { font-size: 18px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
   .compra-cod > div { min-width: 0; }
   .compra-cod .botao { --h: 40px; padding: 0 14px; font-size: 14px; }
+  .compra-ajuda { display: inline-block; margin-top: 4px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .compra-ajuda:hover { color: var(--ink); }
   .compra-garantias { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; }
   .compra-garantias li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; color: var(--ink-2); }
   .compra-garantias img { width: 30px; height: 30px; }
+  .selo-reputacao:empty { display: none; }
+
+  @media (max-width: 959px) {
+    .compra-nome { font-size: clamp(26px, 7vw, 34px); }
+  }
 </style>

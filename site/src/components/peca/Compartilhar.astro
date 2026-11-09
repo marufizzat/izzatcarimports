@@ -1,0 +1,31 @@
+---
+// Botao "Mandar esta peca para alguem": papel de compartilhar do celular; no computador abre o WhatsApp com o link.
+interface Props { titulo: string; url: string; }
+const { titulo, url } = Astro.props;
+---
+<button type="button" class="compartilhar" data-compartilhar data-titulo={titulo} data-url={url}>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+  </svg>
+  Mandar esta peça para alguém
+</button>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-compartilhar]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      const titulo = b.dataset.titulo || '';
+      const url = b.dataset.url || '';
+      if (navigator.share) {
+        try { await navigator.share({ title: titulo, text: titulo, url }); return; }
+        catch (e) { if ((e as Error)?.name === 'AbortError') return; }
+      }
+      window.open(`https://wa.me/?text=${encodeURIComponent(`${titulo}\n${url}`)}`, '_blank', 'noopener');
+    });
+  });
+</script>
+
+<style>
+  .compartilhar { justify-self: start; display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 6px 2px; font: inherit; font-size: 14.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .compartilhar:hover { color: var(--ink); }
+  .compartilhar svg { width: 18px; height: 18px; }
+</style>

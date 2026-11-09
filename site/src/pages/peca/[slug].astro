@@ -1,22 +1,48 @@
 ---
 import Pagina from '../../layouts/Pagina.astro';
 import PecaTopo from '../../components/PecaTopo.astro';
-import CartaoPeca from '../../components/CartaoPeca.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import GaleriaTelaCheia from '../../components/ui/GaleriaTelaCheia';
+import AbasDetalhes from '../../components/peca/AbasDetalhes.astro';
+import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
+import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio } from '../../lib/dados';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
   return pecas().map((p) => ({ params: { slug: p.slug }, props: { id: p.id } }));
 }
+
+// Pecas por carro (marca + modelo), montadas uma vez por build.
+let _porCarro: Map<string, Peca[]> | null = null;
+function porCarro(): Map<string, Peca[]> {
+  if (!_porCarro) {
+    _porCarro = new Map();
+    for (const x of pecas()) {
+      if (!x.b || !x.m) continue;
+      const k = `${x.b}|${x.m}`;
+      const lista = _porCarro.get(k) ?? [];
+      lista.push(x);
+      _porCarro.set(k, lista);
+    }
+  }
+  return _porCarro;
+}
+
 const p = pecaPorId(Astro.props.id) as Peca;
 const r = resumo();
 const fam = r.familias.find((f) => f.n === p.c);
 const carro = p.m ? r.carros.find((c) => c.b === p.b && c.m === p.m) : undefined;
 const marca = r.marcas.find((m) => m.n === p.b);
-const rel = p.rel.map(pecaPorId).filter((x): x is Peca => !!x).slice(0, 8);
+// Do mesmo carro: mesma subfamilia primeiro, depois a mesma familia, depois o resto (ordem estavel por nome).
+const nivel = (x: Peca) => (x.s && x.s === p.s ? 0 : x.c === p.c ? 1 : 2);
+const doCarro = (p.b && p.m ? (porCarro().get(`${p.b}|${p.m}`) ?? []) : [])
+  .filter((x) => x.id !== p.id)
+  .sort((a, b) => nivel(a) - nivel(b) || a.n.localeCompare(b.n, 'pt-BR'))
+  .slice(0, 8);
+const rel = doCarro.length ? doCarro : p.rel.map(pecaPorId).filter((x): x is Peca => !!x).slice(0, 8);
+const mesmaFamiliaAqui = doCarro.length > 0 && nivel(doCarro[0]) < 2;
 const url = `${SITE}/peca/${p.slug}.html`;
 const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
 const serve = nomeCarro + (p.y ? `, ${p.y[0]} a ${p.y[1]}` : '');
@@ -60,42 +86,18 @@ const ld = {
 
   <div class="barra-compra" data-barra-compra aria-hidden="true">
     <div class="barra-preco num"><small>R$</small> {brl(p.p)}</div>
-    <a class="botao botao-laranja" href={whatsUrl(msg)} tabindex="-1"><Icone nome="whats" />Pedir pelo WhatsApp</a>
+    <a class="botao botao-laranja" href={whatsUrl(msg)} data-whats data-cabeca={`Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n`} data-sem={nomeCarro ? `Meu carro é ${nomeCarro} ano ____. ` : ''} data-cauda="Serve e ainda tem?" tabindex="-1"><Icone nome="whats" />Pedir pelo WhatsApp</a>
   </div>
 
-  <section class="secao detalhes">
-    <div class="moldura detalhes-grade">
-      {p.ficha.length > 0 && (
-        <div>
-          <h2 class="subtitulo">Ficha da peça</h2>
-          <table class="ficha">
-            <tbody>
-              {p.ficha.map(([k, v]) => <tr><th scope="row">{k}</th><td class={k.startsWith('Código') ? 'oem' : ''}>{v}</td></tr>)}
-              {serve && <tr><th scope="row">Serve em</th><td>{serve}</td></tr>}
-              <tr><th scope="row">Procedência</th><td>Carro com baixa legal no Detran-RS · CDV nº 01060</td></tr>
-            </tbody>
-          </table>
-        </div>
-      )}
-      <div>
-        <h2 class="subtitulo">Descrição</h2>
-        {p.desc ? <div class="descricao" set:html={p.desc} />
-                : <p class="descricao">{p.t}. Peça original retirada de carro com baixa legal, conferida e fotografada no nosso pátio. Confira o código gravado e, na dúvida, mande o modelo e o ano do seu carro no WhatsApp.</p>}
-      </div>
-    </div>
-  </section>
+  <AbasDetalhes p={p} serve={serve} />
+
+  {codigo && <GuiaCodigo />}
 
   {rel.length > 0 && (
-    <section class="secao faixa">
-      <div class="moldura">
-        <div class="cabeca linha">
-          <h2 class="titulo-secao">{carro ? `Outras peças do ${carro.b} ${carro.m}` : marca ? `Outras peças ${marca.n}` : 'Outras peças'}</h2>
-          {carro ? <a class="botao botao-linha" href={`/carros/${carro.k}.html`}>Ver as {carro.c} peças</a>
-                 : marca ? <a class="botao botao-linha" href={`/marca/${marca.k}.html`}>Ver todas</a> : null}
-        </div>
-        <div class="trilho">{rel.map((x) => <CartaoPeca p={x} />)}</div>
-      </div>
-    </section>
+    <DoMesmoCarro carro={carro ? `${carro.b} ${carro.m}` : marca ? `Outras peças ${marca.n}` : 'Outras peças'}
+                  link={carro ? `/carros/${carro.k}.html` : marca ? `/marca/${marca.k}.html` : '/catalogo.html'}
+                  total={carro ? carro.c : marca ? marca.c : 0} pecas={rel}
+                  familia={mesmaFamiliaAqui ? p.c : ''} />
   )}
 
   <section class="secao">
@@ -125,22 +127,6 @@ const ld = {
   .trilha a:hover { color: var(--ink); text-decoration: underline; }
   .trilha [aria-current] { color: var(--ink-3); max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topo { padding-bottom: 32px; }
-  .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: 24px; }
-  .detalhes { padding-top: 24px; }
-  .detalhes-grade { display: grid; gap: 40px; }
-  @media (min-width: 960px) { .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; } }
-  .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
-  .ficha th, .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
-  .ficha tr:last-child th, .ficha tr:last-child td { border-bottom: 0; }
-  .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
-  .ficha td { overflow-wrap: anywhere; }
-  .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
-  .descricao :global(h3) { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
-  .descricao :global(p) { margin: 0 0 10px; }
-  .faixa { background: var(--bg-2); }
-  .cabeca { display: grid; gap: 16px; margin-bottom: 24px; align-items: end; }
-  @media (min-width: 768px) { .cabeca.linha { grid-template-columns: 1fr auto; } }
-  .titulo-secao { margin: 0; }
 
   .barra-compra { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 40;
                   display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 18px;
@@ -153,4 +139,5 @@ const ld = {
   .barra-compra .botao { --h: 48px; font-size: 15px; padding: 0 16px; }
   @media (min-width: 960px) { .barra-compra { display: none; } }
   @media (max-width: 959px) { :global(body:has(.barra-compra)) { padding-bottom: 84px; } }
+  @media (prefers-reduced-motion: reduce) { .barra-compra { transition: none; } }
 </style>
