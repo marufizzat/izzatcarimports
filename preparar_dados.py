@@ -414,6 +414,15 @@ def ficha(p):
     return linhas
 
 
+def estoque(p):
+    """Unidades em estoque que o ML informa ("available"). So inteiro >= 1; qualquer outra coisa
+    vira None e a pagina nao fala de estoque (nada de "peca unica" sem o dado de verdade)."""
+    q = p.get("available")
+    if isinstance(q, bool) or not isinstance(q, int) or q < 1:
+        return None
+    return q
+
+
 def codigos_busca(p):
     cods = " ".join(filter(None, [p.get("oem", ""), p.get("part_number", "")]))
     cods = re.sub(r"[,;/|]+", " ", cods)                    # varios codigos numa linha so
@@ -588,6 +597,9 @@ def main():
             "ficha": ficha(p),
             "desc": descricao(p.get("desc")),
         })
+        q = estoque(p)
+        if q:   # sem o dado do ML, a pagina nao diz nada sobre estoque
+            pecas[-1]["q"] = q
 
     # 3b) Capa limpa: a 1a foto que mostra so a peca (sem o carro colado) vai pra frente.
     import fotos_limpas

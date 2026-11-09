@@ -6,6 +6,8 @@ export type Peca = {
   id: string; slug: string; t: string; n: string; limpa?: boolean; p: number; fotos: string[]; ml: string;
   f: boolean; b: string; m: string; y: [number, number] | null; c: string; s: string;
   oem: string; o: string; ficha: [string, string][]; desc: string; rel: string[];
+  /** Unidades em estoque no ML ("available"). Ausente = sem o dado: a página não fala de estoque. */
+  q?: number;
 };
 export type Resumo = {
   updated: string; total: number;
@@ -101,4 +103,21 @@ export function logoInfo(k: string, caixaL = 54, caixaA = 30): { src: string; w:
   } else { rw = arq.readUInt32BE(16); rh = arq.readUInt32BE(20); }
   const esc = Math.min(caixaL / rw, caixaA / rh);
   return { src, w: Math.round(rw * esc), h: Math.round(rh * esc), png: src.endsWith('.png') };
+}
+
+/** "Código gravado" com cara de código de verdade: 5+ caracteres com letra e número, ou 6+ dígitos
+ *  (só números, podendo ter traço ou ponto no meio, como "6940294-01"; lista de anos não conta).
+ *  Lixo da extração ("Par", "Fiat", "2019", "60629") some da página em vez de virar um código para copiar. */
+export function codigoValido(c: string | null | undefined): boolean {
+  const s = (c || '').trim();
+  if (/^[\d.-]+$/.test(s)) {
+    if (/^((19|20)\d{2}[-.]?)+$/.test(s)) return false;
+    return (s.match(/\d/g) || []).length >= 6;
+  }
+  return s.length >= 5 && /[a-z]/i.test(s) && /\d/.test(s);
+}
+/** 1º código do campo OEM, em maiúsculas, só se for válido; senão ''. */
+export function codigoDaPeca(oem: string | null | undefined): string {
+  const c = (oem || '').trim().split(/[\s,;/|]+/)[0] || '';
+  return codigoValido(c) ? c.toUpperCase() : '';
 }

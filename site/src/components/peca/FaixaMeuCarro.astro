@@ -1,32 +1,57 @@
 ---
-// Faixa "Meu carro" no topo da compra: diz se a peça serve no carro salvo no navegador.
-// Os 4 estados (convite, serve, confira o ano, outro carro) ficam no HTML; o script mostra o certo.
-// Nunca escrevemos "não serve".
+// "Serve no seu carro?" logo abaixo do nome: UMA linha de encaixe (antes eram a faixa + o "Serve em" repetido).
+// Peça com marca e modelo: 4 estados no HTML (convite, serve, confira o ano, outro carro); o script mostra o certo.
+// Altura mínima reservada (2 linhas): no PC a troca de estado não mexe em nada; no celular, "serve" e
+// "confira o ano" podem quebrar em 3 linhas e descer o preço uns 15-30 px (o botão segue na primeira tela).
+// Peça só com a marca: "Peça de <marca>, anos" (sem prometer o modelo). Nunca escrevemos "não serve".
 import Icone from '../Icone.astro';
 interface Props { b: string; m: string; y: [number, number] | null; }
 const { b, m, y } = Astro.props;
-const faixaAnos = y ? `${y[0]} a ${y[1]}` : '';
+const anos = y ? `${y[0]} a ${y[1]}` : '';
+const carro = [b, m].filter(Boolean).join(' ');
 ---
-{b && m && (
-  <section class="mc" data-meu-carro data-b={b} data-m={m} data-y0={y ? y[0] : ''} data-y1={y ? y[1] : ''} aria-label="Meu carro">
-    <div class="mc-estado" data-estado="convite">
-      <p class="mc-txt"><Icone nome="carro" />Escolha seu carro para conferir se serve</p>
-      <button type="button" class="botao botao-linha mc-botao" data-abrir-meu-carro>Escolher carro</button>
+{b && m ? (
+  <section class="enc" data-meu-carro data-b={b} data-m={m} data-y0={y ? y[0] : ''} data-y1={y ? y[1] : ''} aria-label="Serve no seu carro?" aria-live="polite">
+    <div class="enc-estado" data-estado="convite">
+      <span class="enc-icone"><Icone nome="carro" /></span>
+      <p class="enc-txt">
+        <span>Serve em <b>{carro}</b>{anos && `, ${anos}`}</span>
+        <button type="button" class="enc-acao" data-abrir-meu-carro>Conferir no meu carro</button>
+      </p>
     </div>
-    <div class="mc-estado mc-sim" data-estado="sim" hidden>
-      <p class="mc-txt"><span class="mc-ok"><Icone nome="check" /></span><span>Serve no seu <b data-nome-carro>carro</b></span></p>
-      <button type="button" class="mc-trocar" data-abrir-meu-carro>Trocar</button>
+    <div class="enc-estado enc-sim" data-estado="sim" hidden>
+      <span class="enc-icone"><Icone nome="check" /></span>
+      <p class="enc-txt">
+        <span>Serve no seu <b data-nome-carro>carro</b></span>
+        <small>{anos ? `Peça de ${anos}` : `Peça do ${carro}`}</small>
+      </p>
+      <button type="button" class="enc-trocar" data-abrir-meu-carro>Trocar</button>
     </div>
-    <div class="mc-estado mc-ano" data-estado="confira-ano" hidden>
-      <p class="mc-txt"><span>Confira o ano: esta peça é de {faixaAnos}</span></p>
-      <button type="button" class="mc-trocar" data-abrir-meu-carro>Trocar</button>
+    <div class="enc-estado enc-ano" data-estado="confira-ano" hidden>
+      <span class="enc-icone" aria-hidden="true">!</span>
+      <p class="enc-txt">
+        <span>Confira o ano: esta peça é de <b>{anos}</b></span>
+        <small>Seu carro salvo: <span data-nome-carro>carro</span></small>
+      </p>
+      <button type="button" class="enc-trocar" data-abrir-meu-carro>Trocar</button>
     </div>
-    <div class="mc-estado" data-estado="outro" hidden>
-      <p class="mc-txt"><span>Seu carro salvo: <b data-nome-carro>carro</b></span></p>
-      <button type="button" class="mc-trocar" data-abrir-meu-carro>Trocar</button>
+    <div class="enc-estado" data-estado="outro" hidden>
+      <span class="enc-icone"><Icone nome="carro" /></span>
+      <p class="enc-txt">
+        <span>Serve em <b>{carro}</b>{anos && `, ${anos}`}</span>
+        <small>Seu carro salvo: <span data-nome-carro>carro</span></small>
+      </p>
+      <button type="button" class="enc-trocar" data-abrir-meu-carro>Trocar</button>
     </div>
   </section>
-)}
+) : b ? (
+  <section class="enc" aria-label="Carro da peça">
+    <div class="enc-estado enc-fixo">
+      <span class="enc-icone"><Icone nome="carro" /></span>
+      <p class="enc-txt"><span>Peça de <b>{b}</b>{anos && `, ${anos}`}</span></p>
+    </div>
+  </section>
+) : null}
 
 <script>
   import { lerMeuCarro, serveNoMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';
@@ -53,26 +78,43 @@ const faixaAnos = y ? `${y[0]} a ${y[1]}` : '';
 
 <style>
   [hidden] { display: none !important; }
-  .mc { display: grid; }
-  .mc-estado { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; padding: 14px 16px; border-radius: 16px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line); }
-  .mc-txt { flex: 1 1 200px; margin: 0; display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 15px; line-height: 1.35; color: var(--ink); }
-  .mc-txt > :global(svg) { flex: none; width: 22px; height: 22px; color: var(--ink-2); }
-  .mc-botao { --h: 40px; font-size: 14px; padding: 0 14px; }
-  .mc-trocar { flex: none; border: 0; background: none; padding: 6px 2px; font: inherit; font-size: 14px; font-weight: 620; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-  .mc-trocar:hover { color: var(--ink); }
-  .mc-sim { background: #e9f8ee; color: #14532d; box-shadow: inset 0 0 0 1.5px #b7e4c7; }
-  .mc-sim .mc-txt { color: #14532d; }
-  .mc-sim .mc-trocar { color: #166534; }
-  .mc-ok { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #16a34a; color: #fff; display: grid; place-items: center; }
-  .mc-ok :global(svg) { width: 15px; height: 15px; color: #fff; stroke-width: 2.8; }
-  .mc-ano { background: #fff7e6; color: #7a4a00; box-shadow: inset 0 0 0 1.5px #f1d9a6; }
-  .mc-ano .mc-txt { color: #7a4a00; }
-  .mc-ano .mc-trocar { color: #7a4a00; }
+  .enc { display: grid; }
+  .enc-estado { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px 10px 10px; border-radius: 14px;
+                background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .enc-fixo { min-height: 0; }
+  .enc-icone { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+               background: var(--surface-2); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line);
+               font-weight: 850; font-size: 18px; line-height: 1; }
+  .enc-icone :global(svg) { width: 20px; height: 20px; }
+  .enc-txt { flex: 1; min-width: 0; margin: 0; display: grid; gap: 2px; font-size: 15px; line-height: 1.3; color: var(--ink-2); }
+  .enc-txt b { color: var(--ink); font-weight: 680; }
+  .enc-txt small { font-size: 13.5px; color: var(--ink-3); }
+  .enc-acao, .enc-trocar { justify-self: start; border: 0; background: none; padding: 2px 0; font: inherit; font-size: 14px; font-weight: 650;
+                           color: var(--ink); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; cursor: pointer; }
+  .enc-acao { text-decoration-color: var(--accent); }
+  .enc-acao:hover, .enc-trocar:hover { color: var(--accent-text); }
+  .enc-trocar { flex: none; align-self: center; padding: 8px 4px; color: var(--ink-2); }
+
+  /* serve: verde */
+  .enc-sim { background: #ecf8f0; box-shadow: inset 0 0 0 1px #bfe6cc; }
+  .enc-sim .enc-icone { background: #16a34a; color: #fff; box-shadow: none; }
+  .enc-sim .enc-icone :global(svg) { stroke-width: 2.8; width: 18px; height: 18px; }
+  .enc-sim .enc-txt, .enc-sim .enc-txt b { color: #14532d; }
+  .enc-sim .enc-txt small { color: #2f6b45; }
+  .enc-sim .enc-trocar { color: #166534; }
+  /* confira o ano: âmbar (nunca "não serve") */
+  .enc-ano { background: #fff7e6; box-shadow: inset 0 0 0 1px #f1d9a6; }
+  .enc-ano .enc-icone { background: #f5b700; color: #1d1d1f; box-shadow: none; }
+  .enc-ano .enc-txt, .enc-ano .enc-txt b { color: #6b4100; }
+  .enc-ano .enc-txt small, .enc-ano .enc-trocar { color: #7a4a00; }
+
   @media (prefers-color-scheme: dark) {
-    .mc-sim { background: #0f2a1a; color: #bdf0d1; box-shadow: inset 0 0 0 1.5px #1f5133; }
-    .mc-sim .mc-txt { color: #bdf0d1; }
-    .mc-sim .mc-trocar { color: #8ee3ad; }
-    .mc-ano { background: #2b200c; color: #ffd58a; box-shadow: inset 0 0 0 1.5px #5a4217; }
-    .mc-ano .mc-txt, .mc-ano .mc-trocar { color: #ffd58a; }
+    .enc-sim { background: #0f2a1a; box-shadow: inset 0 0 0 1px #1f5133; }
+    .enc-sim .enc-txt, .enc-sim .enc-txt b { color: #c9f2d8; }
+    .enc-sim .enc-txt small { color: #93d6ad; }
+    .enc-sim .enc-trocar { color: #8ee3ad; }
+    .enc-ano { background: #2b200c; box-shadow: inset 0 0 0 1px #5a4217; }
+    .enc-ano .enc-txt, .enc-ano .enc-txt b { color: #ffe1a8; }
+    .enc-ano .enc-txt small, .enc-ano .enc-trocar { color: #ffd58a; }
   }
 </style>

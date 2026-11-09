@@ -52,6 +52,26 @@ def test_dados_gerados():
     assert not ruins, f"{len(ruins)} descricoes com promessa nao confirmada: {ruins[:5]}"
 
 
+def test_estoque_so_com_dado_de_verdade():
+    """"q" (estoque) so existe com inteiro >= 1 vindo do ML: sem dado, a pagina nao fala de estoque."""
+    from preparar_dados import estoque
+    assert estoque({"available": 1}) == 1          # peca unica
+    assert estoque({"available": 3}) == 3
+    assert estoque({"available": 0}) is None       # zerado: nada de "peca unica"
+    assert estoque({"available": None}) is None
+    assert estoque({}) is None
+    assert estoque({"available": True}) is None    # bool nao e quantidade
+    assert estoque({"available": "2"}) is None     # texto nao e quantidade
+    assert estoque({"available": -1}) is None
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        lista = json.loads(pecas.read_text(encoding="utf-8"))
+        qs = [x["q"] for x in lista if "q" in x]
+        assert all(isinstance(q, int) and not isinstance(q, bool) and q >= 1 for q in qs), "q fora do contrato"
+        if lista and not qs:
+            print("AVISO: nenhuma peca com estoque (q) no pecas.json")
+
+
 def test_reputacao_do_robo():
     import tempfile
     from preparar_dados import ler_reputacao

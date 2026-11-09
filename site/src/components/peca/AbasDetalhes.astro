@@ -1,8 +1,8 @@
 ---
 // Ficha e descricao. No computador: as duas lado a lado. No celular: abas (sem paredao de texto).
 import type { Peca } from '../../lib/dados';
-interface Props { p: Peca; serve: string; }
-const { p, serve } = Astro.props;
+interface Props { p: Peca; serve: string; serveRotulo?: string; }
+const { p, serve, serveRotulo = 'Serve em' } = Astro.props;
 const ficha = p.ficha;
 const descTexto = `${p.t}. Peça original retirada de carro com baixa legal, conferida e fotografada no nosso pátio. Confira o código gravado e, na dúvida, mande o modelo e o ano do seu carro no WhatsApp.`;
 ---
@@ -18,7 +18,7 @@ const descTexto = `${p.t}. Peça original retirada de carro com baixa legal, con
         <table class="ficha">
           <tbody>
             {ficha.map(([k, v]) => <tr><th scope="row">{k}</th><td class={k.startsWith('Código') ? 'oem' : ''}>{v}</td></tr>)}
-            {serve && <tr><th scope="row">Serve em</th><td>{serve}</td></tr>}
+            {serve && <tr><th scope="row">{serveRotulo}</th><td>{serve}</td></tr>}
             <tr><th scope="row">Procedência</th><td>Carro com baixa legal no Detran-RS · CDV nº 01060</td></tr>
           </tbody>
         </table>
