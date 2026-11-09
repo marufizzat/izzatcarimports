@@ -5,7 +5,7 @@ import {
   useEffect, useId, useMemo, useRef, useState,
   type FocusEvent as FE, type FormEvent as FormE, type KeyboardEvent as KE,
 } from 'react';
-import { Busca, foto, type Item } from '../../lib/busca';
+import { Busca, capaItem, type Item } from '../../lib/busca';
 
 type Props = {
   placeholder?: string;
@@ -210,7 +210,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
                 onClick={() => irPeca(it.h)}
               >
                 <span className="sb-foto">
-                  {it.i && <img src={foto(it.i, 'E')} alt="" width={56} height={56} loading="lazy" decoding="async" />}
+                  {it.i && <img src={capaItem(it, 'E')} alt="" width={56} height={56} loading="lazy" decoding="async" />}
                 </span>
                 <span className="sb-txt">
                   <b>{it.n}</b>

@@ -2,7 +2,7 @@
 // Estado na URL com os MESMOS parametros do site antigo:
 //   q, marca, modelo, ano, tipo, preco, frete, ordem
 import { useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
-import { Busca, FAIXAS, foto, type Filtros, type Indice, type Item } from '../../lib/busca';
+import { Busca, FAIXAS, capaItem, foto, type Filtros, type Indice, type Item } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
 
 const LOTE = 48;
@@ -44,7 +44,8 @@ function Etiqueta({ it, eager }: { it: Item; eager?: boolean }) {
   return (
     <a className="etiqueta" href={`/peca/${it.h}.html`}>
       <div className="etiqueta-foto">
-        <img src={foto(it.i, 'O')} srcSet={`${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`}
+        <img src={capaItem(it)} srcSet={it.e !== '0' ? undefined : `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`}
+             className={it.e !== '0' ? 'estudio' : undefined}
              sizes="(min-width:1280px) 230px, (min-width:768px) 28vw, 46vw" alt={it.t} width={500} height={500}
              loading={eager ? 'eager' : 'lazy'} decoding="async" />
         <span className="etiqueta-furo" aria-hidden="true" />

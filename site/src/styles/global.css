@@ -281,6 +281,8 @@
 
 /* capa de estúdio já vem com fundo e margem: ocupa a placa inteira */
 .etiqueta-foto img.estudio { padding: 0; object-fit: cover; }
+/* foto de estúdio é a vitrine: sem o furo da etiqueta por cima (no escuro virava um buraco preto na foto) */
+.etiqueta-foto:has(img.estudio) .etiqueta-furo { display: none; }
 
 /* Painéis de estúdio (arte clara): SEMPRE com as cores do tema claro, mesmo no modo escuro do celular. */
 .tema-estudio {

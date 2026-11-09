@@ -1,16 +1,17 @@
 ---
 import type { Peca } from '../lib/dados';
-import { foto, fotoSrcset, brl, temEstudio } from '../lib/dados';
+import { foto, fotoSrcset, brl, capaEstudio } from '../lib/dados';
 interface Props { p: Peca; base?: string; eager?: boolean; }
 const { p, base = '/peca/', eager = false } = Astro.props;
 const carro = [p.b, p.m].filter(Boolean).join(' ') + (p.y ? `, ${p.y[0]}–${String(p.y[1])}` : '');
 const cod = (p.oem || '').split(/[\s,;/|]+/)[0];
 const [reais, cent] = brl(p.p).split(',');
+const est = capaEstudio(p.id);
 ---
 <a class="etiqueta" href={`${base}${p.slug}.html`}>
   <div class="etiqueta-foto">
-    <img src={temEstudio(p.id) ? `/estudio/${p.id}.webp` : foto(p.fotos[0], 'O')} srcset={temEstudio(p.id) ? undefined : fotoSrcset(p.fotos[0])}
-         sizes="(min-width:1024px) 230px, (min-width:640px) 30vw, 46vw" class:list={[{ estudio: temEstudio(p.id) }]}
+    <img src={est ?? foto(p.fotos[0], 'O')} srcset={est ? undefined : fotoSrcset(p.fotos[0])}
+         sizes="(min-width:1024px) 230px, (min-width:640px) 30vw, 46vw" class:list={[{ estudio: !!est }]}
          alt={p.t} loading={eager ? 'eager' : 'lazy'} decoding="async" width="500" height="500" />
     <span class="etiqueta-furo" aria-hidden="true"></span>
   </div>

@@ -54,18 +54,27 @@ export function whatsUrl(texto: string) {
   return `https://wa.me/${WHATS}?text=${encodeURIComponent(texto)}`;
 }
 
-// Capa de ESTÚDIO (fundo limpo, gerada por capas_estudio.py) quando existir;
-// senão a foto do ML no tamanho pedido.
-let _estudio: Set<string> | null = null;
-export function temEstudio(id: string): boolean {
-  if (!_estudio) {
-    const dir = join(process.cwd(), 'public', 'estudio');
-    _estudio = new Set(existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.webp')).map((f) => f.slice(0, -5)) : []);
+// Capa de ESTÚDIO quando existir; senão a foto do ML no tamanho pedido.
+// public/estudio-pro/<id>.webp = foto maquiada no ChatGPT e conferida (peças em destaque) — tem preferência;
+// public/estudio/<id>.webp = capa automática (capas_estudio.py), todas as peças.
+const _dirs: Record<string, Set<string>> = {};
+function arquivos(pasta: string): Set<string> {
+  if (!_dirs[pasta]) {
+    const dir = join(process.cwd(), 'public', pasta);
+    _dirs[pasta] = new Set(existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.webp')).map((f) => f.slice(0, -5)) : []);
   }
-  return _estudio.has(id);
+  return _dirs[pasta];
+}
+export function capaEstudio(id: string): string | null {
+  if (arquivos('estudio-pro').has(id)) return `/estudio-pro/${id}.webp`;
+  if (arquivos('estudio').has(id)) return `/estudio/${id}.webp`;
+  return null;
+}
+export function temEstudio(id: string): boolean {
+  return capaEstudio(id) !== null;
 }
 export function capa(p: { id: string; fotos: string[] }, tam: Tam = 'O'): string {
-  return temEstudio(p.id) ? `/estudio/${p.id}.webp` : foto(p.fotos[0], tam);
+  return capaEstudio(p.id) ?? foto(p.fotos[0], tam);
 }
 export function logoMarca(k: string): string | null {
   for (const ext of ['svg', 'png']) if (existsSync(join(process.cwd(), 'public', 'marcas', `${k}.${ext}`))) return `/marcas/${k}.${ext}`;

@@ -1,7 +1,7 @@
 ---
 // Topo da pagina da peca: galeria (deslizar, miniaturas, tela cheia) + compra.
 import type { Peca } from '../lib/dados';
-import { foto, brl, whatsUrl, temEstudio, SITE } from '../lib/dados';
+import { foto, brl, whatsUrl, capaEstudio, SITE } from '../lib/dados';
 import Icone from './Icone.astro';
 interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
 const { p, nivel = 'h1' } = Astro.props;
@@ -13,8 +13,9 @@ const url = `${SITE}/peca/${p.slug}.html`;
 const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n${serve ? `Meu carro é ${carro} ano ____. ` : ''}Serve e ainda tem?`;
 const cod = (p.oem || '').split(/[\s,;/|]+/)[0];
 // 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça.
-const fotos: { g: string; m: string }[] = [
-  ...(temEstudio(p.id) ? [{ g: `/estudio/${p.id}.webp`, m: `/estudio/${p.id}.webp` }] : []),
+const est = capaEstudio(p.id);
+const fotos: { g: string; m: string; e?: boolean }[] = [
+  ...(est ? [{ g: est, m: est, e: true }] : []),
   ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'E') })),
 ];
 ---
@@ -23,7 +24,7 @@ const fotos: { g: string; m: string }[] = [
     <div class="galeria-palco">
       <ul class="galeria-trilho" data-trilho>
         {fotos.map((f, i) => (
-          <li><img src={f.g} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
+          <li><img class:list={[{ estudio: f.e }]} src={f.g} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
                    loading={i === 0 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} decoding="async" /></li>
         ))}
       </ul>
@@ -33,7 +34,7 @@ const fotos: { g: string; m: string }[] = [
       <div class="galeria-miniaturas" aria-label="Fotos da peça">
         {fotos.map((f, i) => (
           <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
-            <img src={f.m} alt="" width="72" height="72" loading="lazy" />
+            <img class:list={[{ estudio: f.e }]} src={f.m} alt="" width="72" height="72" loading="lazy" />
           </button>
         ))}
       </div>
@@ -105,6 +106,8 @@ const fotos: { g: string; m: string }[] = [
   .galeria-trilho::-webkit-scrollbar { display: none; }
   .galeria-trilho li { flex: 0 0 100%; scroll-snap-align: center; display: grid; place-items: center; }
   .galeria-trilho img { width: 100%; height: 100%; object-fit: contain; padding: 6%; cursor: zoom-in; }
+  /* capa de estúdio já tem o próprio fundo: ocupa o palco inteiro, sem caixa dentro da caixa */
+  .galeria-trilho img.estudio { padding: 0; object-fit: cover; }
   .galeria-contador { position: absolute; right: 14px; bottom: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 650;
                       background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); }
   .galeria-miniaturas { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
@@ -112,6 +115,7 @@ const fotos: { g: string; m: string }[] = [
                                box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; transition: box-shadow .2s; }
   .galeria-miniaturas button[aria-current="true"] { box-shadow: inset 0 0 0 2.5px var(--accent); }
   .galeria-miniaturas img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+  .galeria-miniaturas img.estudio { padding: 0; object-fit: cover; }
 
   .compra { min-width: 0; display: grid; gap: 14px; align-content: start; }
   .compra-serve { display: inline-flex; align-items: center; gap: 8px; justify-self: start; margin: 0; padding: 8px 14px 8px 10px; border-radius: 12px;

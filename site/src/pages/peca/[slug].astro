@@ -5,7 +5,7 @@ import CartaoPeca from '../../components/CartaoPeca.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import GaleriaTelaCheia from '../../components/ui/GaleriaTelaCheia';
-import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, temEstudio } from '../../lib/dados';
+import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio } from '../../lib/dados';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
@@ -32,7 +32,7 @@ else if (marca) trilha.push([marca.n, `/marca/${marca.k}.html`]);
 const ld = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'Product', name: p.t, image: p.fotos.slice(0, 6).map((k) => foto(k, 'F')), sku: p.id,
+    { '@type': 'Product', name: p.t, image: [...(capaEstudio(p.id) ? [SITE + capaEstudio(p.id)] : []), ...p.fotos.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
       mpn: (p.oem || '').split(/\s+/)[0] || p.id,
       description: `${p.t}. Peça original com procedência legal, nota fiscal e 90 dias de garantia. Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
       brand: { '@type': 'Brand', name: p.b || 'Original' },
@@ -47,7 +47,7 @@ const ld = {
 <Pagina titulo={titulo} descricao={descricao} ogImagem={foto(p.fotos[0], 'F') || undefined}
         produto={{ id: p.id, name: p.t, price: p.p, category: p.c }}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
-  <link slot="head" rel="preload" as="image" href={temEstudio(p.id) ? `/estudio/${p.id}.webp` : foto(p.fotos[0], 'F')} fetchpriority="high" />
+  <link slot="head" rel="preload" as="image" href={capaEstudio(p.id) ?? foto(p.fotos[0], 'F')} fetchpriority="high" />
 
   <div class="moldura">
     <nav class="trilha" aria-label="Você está em">
@@ -55,7 +55,7 @@ const ld = {
       <span aria-current="page">{p.n}</span>
     </nav>
     <section class="topo"><PecaTopo p={p} /></section>
-    <GaleriaTelaCheia client:idle fotos={[...(temEstudio(p.id) ? [`/estudio/${p.id}.webp`] : []), ...p.fotos.map((k) => foto(k, 'F'))]} titulo={p.n} />
+    <GaleriaTelaCheia client:idle fotos={[...(capaEstudio(p.id) ? [capaEstudio(p.id)!] : []), ...p.fotos.map((k) => foto(k, 'F'))]} titulo={p.n} />
   </div>
 
   <div class="barra-compra" data-barra-compra aria-hidden="true">

@@ -7,10 +7,11 @@ export type Indice = {
   v: number; updated: string; marcas: string[]; familias: string[]; tipos: string[];
   id: string[]; t: string[]; n: string[]; p: number[]; i: string[]; h: string[]; f: string;
   b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[]; s: number[]; o: string[];
+  e?: string; // capa de estúdio por peça: '0' nenhuma, '1' automática, '2' maquiada (estudio-pro)
 };
 export type Item = {
   k: number; id: string; t: string; n: string; p: number; i: string; h: string; f: boolean;
-  b: string; m: string; y: [number, number] | null; c: string; s: string; o: string;
+  b: string; m: string; y: [number, number] | null; c: string; s: string; o: string; e: string;
 };
 export type Filtros = {
   q?: string; marca?: string; modelo?: string; ano?: number; tipo?: string;
@@ -48,7 +49,7 @@ export class Busca {
   ms: MiniSearch<Item>;
   constructor(ix: Indice) {
     this.itens = ix.id.map((id, k) => ({
-      k, id, t: ix.t[k], n: ix.n[k], p: ix.p[k], i: ix.i[k], h: ix.h[k], f: ix.f[k] === '1',
+      k, id, t: ix.t[k], n: ix.n[k], p: ix.p[k], i: ix.i[k], h: ix.h[k], f: ix.f[k] === '1', e: ix.e?.[k] || '0',
       b: ix.marcas[ix.b[k]] ?? '', m: ix.m[k], y: ix.y[k] || null,
       c: ix.familias[ix.c[k]] ?? '', s: ix.tipos[ix.s[k]] ?? '', o: ix.o[k],
     }));
@@ -131,4 +132,11 @@ export class Busca {
 export function foto(chave: string, tam = 'V') {
   if (!chave) return '';
   return chave.startsWith('http') ? chave : `https://http2.mlstatic.com/D_${chave}-${tam}.webp`;
+}
+
+/** Capa da peça na busca: a de estúdio quando existe (igual às páginas), senão a foto do ML. */
+export function capaItem(it: Item, tam = 'O') {
+  if (it.e === '2') return `/estudio-pro/${it.id}.webp`;
+  if (it.e === '1') return `/estudio/${it.id}.webp`;
+  return foto(it.i, tam);
 }
