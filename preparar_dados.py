@@ -422,6 +422,33 @@ def codigos_busca(p):
     return " ".join(dict.fromkeys(cods.split()))[:120]
 
 
+# Reputacao do Mercado Livre (reputation.json, gravado por atualizar_catalogo.py).
+# Termometro: level_id -> (cor, barras acesas de 1 a 5). Lider: MercadoLider.
+NIVEIS_REPUTACAO = {"1_red": ("vermelho", 1), "2_orange": ("laranja", 2), "3_yellow": ("amarelo", 3),
+                    "4_light_green": ("verde-claro", 4), "5_green": ("verde", 5)}
+LIDERES_REPUTACAO = {"silver": "prata", "gold": "ouro", "platinum": "platina"}
+
+
+def ler_reputacao(caminho=None):
+    """reputation.json -> {nivel, n, lider?, vendas?} ou None. So leva o que o ML informou:
+    sem nivel conhecido nao ha termometro; sem lider ou sem vendas, some so essa linha."""
+    try:
+        d = json.loads((caminho or ROOT / "reputation.json").read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    nivel = NIVEIS_REPUTACAO.get(str(d.get("level_id") or ""))
+    if not nivel:
+        return None
+    rep = {"nivel": nivel[0], "n": nivel[1]}
+    lider = LIDERES_REPUTACAO.get(str(d.get("power_seller_status") or "").lower())
+    if lider:
+        rep["lider"] = lider
+    vendas = d.get("completed")
+    if isinstance(vendas, int) and not isinstance(vendas, bool) and vendas > 0:
+        rep["vendas"] = vendas
+    return rep
+
+
 def main():
     t0 = time.time()
     print("=" * 52)
@@ -656,6 +683,10 @@ def main():
         "chegou": chegou,
         "preco": {"min": precos[0], "max": precos[-1]},
     }
+    rep = ler_reputacao()
+    if rep:
+        resumo["reputacao"] = rep
+        print(f"reputacao: {rep}")
 
     # 6) Indice de busca do navegador: colunas paralelas (bem menor que objetos).
     idx_marca = {m["n"]: i for i, m in enumerate(marcas)}

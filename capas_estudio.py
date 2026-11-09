@@ -235,6 +235,74 @@ def compor(recorte, checar_cantos=True, original=None):
     return tela.convert("RGB"), cortada
 
 
+# ---- filtro de etiqueta: foto de PAPEL/ETIQUETA com texto (informação, não a peça) ----
+# Regra: caixas de texto (OCR) cujo centro cai na peça somam > LIMITE_TEXTO da área da peça E a peça
+# é de papel claro. A trava do "papel claro" poupa peça com etiqueta técnica (ECU, sensor, motor):
+# texto sobre metal/plástico escuro não conta. Sem rapidocr: segue sem o filtro (nunca quebra).
+LIMITE_TEXTO = float(os.getenv("ESTUDIO_LIMITE_TEXTO", "0.15"))
+_OCR = None
+_OCR_FALHOU = False
+
+
+def _ocr():
+    global _OCR, _OCR_FALHOU
+    if _OCR is None and not _OCR_FALHOU:
+        try:
+            from rapidocr_onnxruntime import RapidOCR
+            _OCR = RapidOCR()
+        except Exception as e:
+            _OCR_FALHOU = True
+            print(f"  filtro de etiqueta desligado (rapidocr: {str(e)[:80]})", flush=True)
+    return _OCR
+
+
+def decidir_etiqueta(razao, frac_clara):
+    """Puro (sem imagem): True = etiqueta. razao = area do texto / area da peça; frac_clara = fracao da
+    peça que e papel claro e sem cor (branco/cinza claro)."""
+    return razao is not None and razao > LIMITE_TEXTO and frac_clara > 0.40
+
+
+def etiqueta_de_texto(original, recorte):
+    """True se a foto da peça e etiqueta/papel com texto. Mede o tempo (ver ESTUDIO_DEBUG=1)."""
+    ocr = _ocr()
+    if ocr is None:
+        return False
+    import numpy as np
+    from PIL import Image
+    t0 = time.time()
+    alfa = recorte.split()[3]
+    if alfa.size != original.size:
+        alfa = alfa.resize(original.size)
+    m = np.asarray(alfa) > 128
+    area = int(m.sum())
+    if area < 400:
+        return False
+    rgb = np.asarray(original.convert("RGB"))
+    px = rgb[m].astype(float)
+    sat = px.max(axis=1) - px.min(axis=1)
+    frac_clara = float(np.mean((px.mean(axis=1) > 190) & (sat < 35)))
+    g = original.convert("RGB")
+    k = 640 / max(g.size)
+    if k < 1:
+        g = g.resize((round(g.size[0] * k), round(g.size[1] * k)), Image.BILINEAR)
+    sx, sy = original.size[0] / g.size[0], original.size[1] / g.size[1]
+    res, _ = ocr(np.asarray(g))
+    t_area = 0.0
+    for box, txt, conf in (res or []):
+        if float(conf) < 0.6 or len(txt.strip()) < 2:
+            continue
+        xs = [p[0] * sx for p in box]
+        ys = [p[1] * sy for p in box]
+        cx, cy = int((min(xs) + max(xs)) / 2), int((min(ys) + max(ys)) / 2)
+        if 0 <= cy < m.shape[0] and 0 <= cx < m.shape[1] and m[cy, cx]:
+            t_area += (max(xs) - min(xs)) * (max(ys) - min(ys))
+    razao = t_area / area
+    tem = decidir_etiqueta(razao, frac_clara)
+    if os.getenv("ESTUDIO_DEBUG") == "1":
+        print(f"    etiqueta? razao={razao:.3f} clara={frac_clara:.2f} -> {tem} ({time.time() - t0:.2f}s)", flush=True)
+    return tem
+
+
 def baixar(chave, tam="F"):
     url = f"https://http2.mlstatic.com/D_{chave}-{tam}.jpg"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (izzatcar-site)"})
@@ -296,7 +364,11 @@ def main():
     trava = threading.Lock()
     contagem = {"ok": 0, "i": 0}
 
+    tempo_max = float(os.getenv("ESTUDIO_TEMPO_MAX", "0") or 0)   # orcamento da rodada (s); 0 = sem limite
+
     def uma(item):
+        if tempo_max and time.time() - t0 > tempo_max:
+            return   # sem falha: fica pra proxima rodada
         mlb, cands = item
         capa, motivo, reserva, cortada = None, "recorte vazio", None, None
         for k in cands:
@@ -305,6 +377,9 @@ def main():
                 original.thumbnail((1000, 1000))
                 with trava if trabalhadores > 1 and recortar is not recortar_vision else _nulo():
                     recorte = recortar(original)
+                if etiqueta_de_texto(original, recorte):
+                    motivo = "etiqueta de texto"
+                    continue   # proxima foto candidata
                 img, corte = compor(recorte, original=original)
                 if img is not None and not corte:
                     capa = img
@@ -335,6 +410,7 @@ def main():
         import concurrent.futures as cf
         global _FUNDO
         _FUNDO = _FUNDO or fundo()                                   # inicia antes das threads
+        _ocr()                                                        # carrega o OCR antes das threads
         prob_carro(Image.new("RGBA", (32, 32), (255, 255, 255, 255)))
         with cf.ThreadPoolExecutor(trabalhadores) as ex:
             list(ex.map(uma, fila[:limite]))
@@ -369,4 +445,15 @@ def marcar():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    if "--so-marcar" in sys.argv:          # so grava "estudio"/"e" no pecas.json e busca.json (sem rembg)
+        marcar()
+        sys.exit(0)
+    try:
+        sys.exit(main())
+    finally:
+        # busca.json SEMPRE com o campo "e", mesmo se a geracao de capas falhar no meio
+        if not os.getenv("ESTUDIO_SAIDA"):
+            try:
+                marcar()
+            except Exception as e:
+                print(f"capas de estúdio: marcar falhou ({e})", flush=True)
