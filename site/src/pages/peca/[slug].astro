@@ -8,6 +8,7 @@ import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
 import { doMesmoCarro } from '../../lib/relacionadas';
+import { nomeModelos } from '../../lib/meuCarro';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
@@ -45,7 +46,8 @@ const mesmaFamiliaAqui = doCarro.mesma.length > 0 && doCarro.mesma[0].c === p.c;
 const url = `${SITE}/peca/${p.slug}.html`;
 const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
 const anosTxt = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
-const serve = nomeCarro + (anosTxt ? `, ${anosTxt}` : '');
+// "Serve em": todos os carros da peça ("Volvo S60 e XC60" quando o título diz os dois)
+const serve = nomeModelos(p) + (anosTxt ? `, ${anosTxt}` : '');
 // so com marca e modelo dizemos "Serve em"; peca so com a marca fica "Carro" (sem prometer o modelo)
 const serveRotulo = p.m ? 'Serve em' : 'Carro';
 const unica = p.q === 1;

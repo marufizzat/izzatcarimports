@@ -69,10 +69,12 @@ const inicial = (): Estado => ({ etapa: 'marca', marca: null, modelo: null, ano:
 
 // ---- desenho (funções puras: rodam no build para a abertura e no navegador) ----
 
+// logo que é só letreiro bem largo (Dodge, Iveco) viraria um fio no disco: vai o nome escrito no lugar
+const nomeNoDisco = (m: Marca) => !(m.logo && m.lh > 0 && m.lw / m.lh < 4.2);
+
 function disco(m: Marca): string {
-  // logo que é só letreiro bem largo (Dodge, Iveco) viraria um fio no disco: vai o nome escrito no lugar
-  if (m.logo && m.lh > 0 && m.lw / m.lh < 4.2)
-    return `<span class="mc-disco"><img src="${esc(m.logo)}" alt="" width="${m.lw}" height="${m.lh}" loading="lazy" decoding="async" /></span>`;
+  if (!nomeNoDisco(m))
+    return `<span class="mc-disco"><img src="${esc(m.logo!)}" alt="" width="${m.lw}" height="${m.lh}" loading="lazy" decoding="async" /></span>`;
   return `<span class="mc-disco mc-disco-nome" aria-hidden="true">${esc(m.n)}</span>`;
 }
 
@@ -104,7 +106,7 @@ function htmlMarcas(g: Garagem, e: Estado): string {
   const tiles = lista
     .map((m) => `
       <li><button type="button" class="mc-marca" data-acao="marca" data-n="${esc(m.n)}" data-chave="marca:${esc(m.n)}"${m.n === foco ? ' data-foco' : ''} aria-pressed="${e.marca?.n === m.n}" aria-label="${esc(m.n)}, ${pecasTxt(m.c)}" title="${esc(m.n)}">
-        ${disco(m)}<span class="mc-marca-nome" aria-hidden="true">${esc(m.n)}</span></button></li>`)
+        ${disco(m)}${nomeNoDisco(m) ? '' : `<span class="mc-marca-nome" aria-hidden="true">${esc(m.n)}</span>`}</button></li>`)
     .join('');
   return `
     <ul class="mc-marcas"${e.todas ? ' data-todas' : ''} aria-label="Marcas">${tiles}</ul>

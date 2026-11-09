@@ -45,9 +45,15 @@
     var base = { content_name: (prod && prod.name) || document.title };
     if (prod && prod.id) { base.content_ids = [prod.id]; base.value = prod.price; base.currency = 'BRL'; }
     if (href.indexOf('wa.me') > -1 || href.indexOf('api.whatsapp') > -1) {
-      fbq('track', 'Contact', base); gtag('event', 'contato_whatsapp', { pagina: location.pathname });
+      fbq('track', 'Contact', base);
+      gtag('event', 'contato_whatsapp', { pagina: location.pathname, botao: (a.textContent || '').trim().slice(0, 40) || 'icone' });
     } else if (a.hasAttribute('data-compra')) {
       fbq('track', 'InitiateCheckout', base); gtag('event', 'saida_mercado_livre', { pagina: location.pathname });
     }
   }, true);
+  /* Meu carro: qual carro o cliente escolheu (so marca/modelo/ano, nada pessoal) */
+  window.addEventListener('meu-carro', function (e) {
+    var c = e && e.detail; if (!c || !c.b) return;
+    gtag('event', 'meu_carro', { marca: c.b, modelo: c.m, ano: c.y || undefined });
+  });
 })();

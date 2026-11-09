@@ -17,10 +17,12 @@ import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS } from '../../lib/dados'
 import { textosCarro, tituloCarro } from '../../lib/textos';
 import { fotoVitrine } from '../../lib/vitrine';
 import { linkAviso } from '../../lib/aviso';
+import { serveNoModelo } from '../../lib/meuCarro';
 export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
 const r = resumo();
 const c = r.carros.find((x) => x.k === Astro.props.k)!;
-const lista = pecas().filter((p) => p.b === c.b && p.m === c.m).sort((a, b) => (b.id > a.id ? 1 : -1));
+// a peça que serve em 2+ carros ("Volvo S60 Xc60") aparece na página de cada um (lib/meuCarro.ts)
+const lista = pecas().filter((p) => p.b === c.b && serveNoModelo(p, c.m)).sort((a, b) => (b.id > a.id ? 1 : -1));
 const N = lista.length;
 const nome = `${c.b} ${c.m}`;
 const fmt = (n: number) => n.toLocaleString('pt-BR');

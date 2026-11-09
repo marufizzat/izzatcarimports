@@ -10,7 +10,9 @@ Capa maquiada NOVA: depois do `capas_pro.py instalar <MLB>`, rodar este para ela
 Como (rota 2, padrão — a peça e a sombra do ChatGPT intactas, só reenquadradas):
   1. ganho global igual ao do capas_pro.instalar (fundo no tom do estúdio; mesma cor da capa aprovada);
   2. recorte nativo (Vision) para MEDIR e separar a peça;
-  3. a sombra/reflexo do ChatGPT vira um mapa (foto ÷ fundo estimado) e vai junto com a peça;
+  3. a sombra/reflexo do ChatGPT vira um mapa (foto ÷ fundo estimado) e vai junto com a peça, mas só na zona
+     junto dela (ZONA: em volta, no piso logo abaixo, e caindo a zero antes da borda do quadro). A vinheta e o
+     chão do ChatGPT ficam de fora: senão aparece a "caixa", o quadro do ChatGPT colado no fundo do estúdio;
   4. peça + sombra são reenquadradas pela MESMA regra da v2 (capas_estudio.enquadrar) sobre o MESMO
      fundo de estúdio das capas automáticas;
   5. logo (mesma opção da v2: a | b | c | 0).
@@ -34,6 +36,15 @@ import capas_estudio as ce  # noqa: E402
 PRO = ROOT / "site" / "public" / "estudio-pro"
 TRAB = Path(os.getenv("CAPAS_PRO_TRAB", str(Path.home() / ".cache" / "izzatcar-capas-pro")))
 FUNDO_ALVO = (238, 237, 234)   # o mesmo do capas_pro.instalar
+# Zona onde a sombra/reflexo do ChatGPT vale (frações do lado da foto do ChatGPT). Fora dela o fundo é o do
+# estúdio, igual ao das capas automáticas. Sem isso o mapa levava junto a vinheta e o chão do ChatGPT (bordas
+# até ~10% mais escuras), cortados em linha reta na borda do quadro: a "caixa" vista na vitrine (auditoria M2).
+ZONA = dict(
+    R0=0.015,     # até esta distância da peça (ou do trecho abaixo dela) a sombra vale inteira
+    R1=0.09,      # a partir desta, não vale nada (entre R0 e R1, rampa suave)
+    BAIXO=0.35,   # o reflexo/sombra no piso pode descer até 35% da altura da peça abaixo dela
+    RAMPA=0.07,   # e tudo vai a zero, suave, nos últimos 7% até a borda do quadro do ChatGPT
+)
 
 
 def fonte(mlb):
@@ -104,6 +115,35 @@ def fundo_estimado(a, livre):
     return B, coef
 
 
+def _suave(t):
+    import numpy as np
+    t = np.clip(t, 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def zona_sombra(alfa, z=ZONA):
+    """Peso 0..1 da sombra do ChatGPT em cada pixel da foto (alfa 0..1 da peça): 1 junto da peça e no piso logo
+    abaixo dela, caindo suave para 0 longe dela e na borda do quadro. Tudo que fica fora (vinheta e chão do
+    ChatGPT) vira fundo de estúdio, sem emenda."""
+    import numpy as np
+    from scipy import ndimage
+    H, W = alfa.shape
+    peca = alfa > 0.5
+    ys = np.flatnonzero(peca.any(1))
+    if len(ys) == 0:
+        return np.zeros_like(alfa)
+    alt = ys[-1] - ys[0] + 1
+    yy = np.arange(H)[:, None].repeat(W, 1)
+    ult = np.maximum.accumulate(np.where(peca, yy, -10 ** 6), axis=0)    # última linha da peça acima, por coluna
+    abaixo = (ult > -10 ** 6) & ((yy - ult) <= z["BAIXO"] * alt)
+    d = ndimage.distance_transform_edt(~(peca | abaixo))
+    r0, r1 = z["R0"] * W, z["R1"] * W
+    perto = _suave((r1 - d) / (r1 - r0))
+    xx = np.arange(W)[None, :].repeat(H, 0)
+    borda = np.minimum(np.minimum(xx, W - 1 - xx), np.minimum(yy, H - 1 - yy))
+    return perto * _suave(borda / (z["RAMPA"] * W))
+
+
 def capa_v2(mlb, logo="a", rota=2):
     """Devolve (capa_com_logo, capa_sem_logo, info)."""
     import numpy as np
@@ -153,7 +193,9 @@ def capa_v2(mlb, logo="a", rota=2):
         S = np.where(fora, S, num / np.maximum(den, 1e-3))
         S = ndimage.gaussian_filter(S, 1.0)
         S = 1 - np.maximum(0, (1 - S) - 0.012)       # tira o "grão" do fundo (< 1,2%): só sombra de verdade
+        S = 1 - (1 - S) * zona_sombra(alfa)          # só a sombra junto da peça; vinheta/chão do ChatGPT fora
         Ws, Hs = max(1, round(W * s)), max(1, round(H * s))
+        info.update(quadro=(round(ox), round(oy), Ws, Hs))   # onde o quadro do ChatGPT cai na capa (conferência)
         Sm = Image.fromarray(np.clip(S * 255, 0, 255).astype("uint8")).resize((Ws, Hs), Image.BILINEAR)
         mapa = Image.new("L", (L, L), 255)
         mapa.paste(Sm, (round(ox), round(oy)))
