@@ -36,6 +36,13 @@ export function resumo(): Resumo {
   return _resumo!;
 }
 
+/** Marcas que o site mostra para escolher (abertura, caixa "Meu carro" e nuvem de marcas): 5+ peças.
+ *  UMA fonte para o número de marcas em todo lugar ("Ver todas as N marcas" = N cartões na nuvem). */
+export const MARCA_MIN_PECAS = 5;
+export function marcasVisiveis(): Resumo['marcas'] {
+  return resumo().marcas.filter((m) => m.c >= MARCA_MIN_PECAS);
+}
+
 // Foto do ML pela chave: tamanho por sufixo (V=320, C=400, O=500, W=568 quadrada, F=cheia)
 export type Tam = 'E' | 'V' | 'C' | 'O' | 'W' | 'F';
 export function foto(chave: string, tam: Tam = 'O'): string {

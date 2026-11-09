@@ -9,7 +9,7 @@ import BannerV2 from '../components/v2/BannerV2.astro';
 import Coverflow from '../components/v2/Coverflow.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
-import { pecaPorId, resumo, whatsUrl, temEstudio, SITE } from '../lib/dados';
+import { pecaPorId, resumo, marcasVisiveis, whatsUrl, temEstudio, SITE } from '../lib/dados';
 
 const r = resumo();
 const chegou = r.chegou.map(pecaPorId).filter((p): p is NonNullable<typeof p> => !!p && temEstudio(p.id)).slice(0, 14);
@@ -46,7 +46,7 @@ const ld = {
   <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio-celular.webp" media="(max-width: 767px)" fetchpriority="high" />
 
   <AberturaV2 arte="/arte/v2/abertura-estudio.webp" arteCelular="/arte/v2/abertura-estudio-celular.webp">
-    <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Peça, carro ou código" />
+    <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Nome da peça ou código" />
   </AberturaV2>
 
   <section class="selos-faixa" aria-label="Garantias da Izzat Car">
@@ -90,7 +90,7 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-marcas" class="titulo-secao">Escolha pela marca do seu carro</h2>
-        <p class="lead">{r.marcas.length} marcas no estoque. Toque na sua para ver só as peças dela.</p>
+        <p class="lead">{marcasVisiveis().length} marcas para escolher. Toque na sua para ver só as peças dela.</p>
       </div>
       <NuvemMarcas />
     </div>

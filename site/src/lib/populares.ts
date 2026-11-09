@@ -1,22 +1,39 @@
-// Atalhos da abertura: as peças que mais aparecem no pátio (contagem real dos anúncios).
-// Lado (esquerda/direita) sai do nome: "Lanterna traseira esquerda" e "...direita" viram um atalho só.
+// Atalhos da aba "Pelo nome ou código": TIPOS de peça que mais aparecem no pátio (contagem real dos anúncios).
+// Cada tipo junta as variações do nome ("Motor vidro elétrico diant esq" e "Motor vidro traseiro" são
+// "Motor do vidro"); um tipo por família do carro, para os atalhos nunca saírem quase iguais. No máximo 4.
+// A busca `q` usa palavras que estão no nome das peças (o catálogo busca com E entre as palavras).
 import { pecas } from './dados';
 
-const LADO = /\b(esquerd[ao]s?|direit[ao]s?|esq|dir)\b/gi;
+type Tipo = { n: string; q: string; familia: string; re: RegExp };
 
-export function populares(n = 6): { q: string; n: string; c: number }[] {
-  const cont = new Map<string, { n: string; c: number }>();
+const TIPOS: Tipo[] = [
+  { n: 'Lanternas', q: 'lanterna', familia: 'iluminacao', re: /^lanterna\b/ },
+  { n: 'Faróis', q: 'farol', familia: 'iluminacao', re: /^farol\b/ },
+  { n: 'Retrovisores', q: 'retrovisor', familia: 'carroceria', re: /^retrovisor\b/ },
+  { n: 'Motor do vidro', q: 'motor vidro', familia: 'portas', re: /^(motor|maquina)( de| do)? vidro\b/ },
+  { n: 'Fechaduras', q: 'fechadura', familia: 'portas', re: /^fechadura\b/ },
+  { n: 'Maçanetas', q: 'maçaneta', familia: 'portas', re: /^macaneta\b/ },
+  { n: 'Módulos', q: 'módulo', familia: 'eletrica', re: /^modulo\b/ },
+  { n: 'Painel de instrumentos', q: 'painel instrumentos', familia: 'eletrica', re: /^painel (de )?instrumentos?\b/ },
+  { n: 'Coxins do motor', q: 'coxim', familia: 'motor', re: /\bcoxim\b/ },
+  { n: 'Alternadores', q: 'alternador', familia: 'motor', re: /^alternador\b/ },
+];
+
+const normal = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+export function populares(n = 4): { q: string; n: string; c: number }[] {
+  const cont = new Map<Tipo, number>();
   for (const p of pecas()) {
-    const base = (p.n || '').replace(LADO, ' ').replace(/\btras\b/gi, 'traseiro').replace(/\bdiant\b/gi, 'dianteiro').replace(/\s+/g, ' ').trim();
-    if (base.length < 4) continue;
-    const k = base.toLowerCase();
-    const e = cont.get(k);
-    if (e) e.c++;
-    else cont.set(k, { n: base.charAt(0).toUpperCase() + base.slice(1), c: 1 });
+    const nome = normal(p.n || '');
+    for (const t of TIPOS) if (t.re.test(nome)) cont.set(t, (cont.get(t) ?? 0) + 1);
   }
-  return [...cont.values()]
-    .filter((e) => e.c >= 8)
-    .sort((a, b) => b.c - a.c || a.n.localeCompare(b.n, 'pt-BR'))
-    .slice(0, n)
-    .map((e) => ({ q: e.n, n: e.n, c: e.c }));
+  const usadas = new Set<string>();
+  const out: { q: string; n: string; c: number }[] = [];
+  for (const [t, c] of [...cont.entries()].filter(([, c]) => c >= 10).sort((a, b) => b[1] - a[1])) {
+    if (usadas.has(t.familia)) continue;
+    usadas.add(t.familia);
+    out.push({ q: t.q, n: t.n, c });
+    if (out.length >= Math.min(n, 4)) break;
+  }
+  return out;
 }

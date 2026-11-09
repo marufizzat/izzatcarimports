@@ -1,75 +1,159 @@
 ---
-// Estilos do "Meu carro" (seletor, caixa do cabeçalho, selo nos cartões). Globais e todos com prefixo mc- / cab-carro / etiqueta-serve.
+// Estilos do "Meu carro" (seletor, caixa do cabeçalho, selo nos cartões). Globais de propósito: o seletor é
+// desenhado por script (innerHTML), sem os atributos de escopo do Astro.
+// Seletor: tudo preso a .mc-raiz (a faixa da página da peça tem classes .mc-* próprias e não herda nada daqui).
+// Logos com as cores reais da marca, num disco CLARO fixo (contraste também no modo escuro), sem filtro.
 ---
 <style is:global>
-  /* ---- cartão da abertura e caixa do cabeçalho ---- */
-  .mc-cartao { display: grid; gap: 6px; padding: 18px 18px 20px; border-radius: 24px; background: var(--surface);
-    box-shadow: var(--shadow-2); color: var(--ink); }
-  .mc-titulo { margin: 0; font-stretch: 86%; font-weight: 820; font-size: clamp(20px, 1.7vw, 24px); line-height: 1.1; }
-  .mc-sub { margin: 0 0 6px; font-size: 14.5px; color: var(--ink-2); line-height: 1.4; }
-  .mc-raiz { display: grid; gap: 12px; min-height: 120px; }
-  .mc-aviso { margin: 0; padding: 14px; border-radius: 14px; background: var(--surface-2); color: var(--ink-2); font-size: 15px; }
-  .mc-pergunta { margin: 4px 0 0; font-weight: 700; font-size: 15.5px; color: var(--ink); }
-  .mc-opc { font-weight: 500; color: var(--ink-3); font-size: 13.5px; }
+  /* ---- seletor: campos Marca | Modelo | Ano + a escolha do campo aberto ---- */
+  .mc-raiz { --disco: 56px; --rotulo: 17px; --linha-marca: calc(var(--disco) + 6px + var(--rotulo));
+    position: relative; min-width: 0; color: var(--ink); }
+  .mc-raiz .mc-conteudo { display: grid; gap: 14px; min-width: 0; }
+  .mc-raiz .mc-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .mc-raiz .mc-seta { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+    transition: transform .2s ease; }
 
-  .mc-pilulas { display: flex; flex-wrap: wrap; gap: 6px; }
-  .mc-pilula { min-height: 36px; padding: 0 12px; border: 0; border-radius: 99px; background: var(--surface-2); color: var(--ink-2);
-    font-size: 14px; font-weight: 650; box-shadow: inset 0 0 0 1px var(--line-2); }
-  .mc-pilula[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .mc-raiz .mc-campos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .mc-raiz .mc-campo { position: relative; min-width: 0; min-height: 56px; display: grid; align-content: center; gap: 2px; margin: 0; padding: 8px 30px 8px 13px;
+    border: 0; border-radius: 14px; background: var(--surface); color: var(--ink); text-align: left; font: inherit; cursor: pointer;
+    box-shadow: inset 0 0 0 1.5px var(--line-2); transition: box-shadow .18s ease, background-color .18s ease; }
+  .mc-raiz .mc-campo small { font-size: 12px; font-weight: 600; line-height: 1.15; color: var(--ink-3); }
+  .mc-raiz .mc-campo b { min-width: 0; font-size: 15.5px; font-weight: 560; font-stretch: 92%; line-height: 1.25; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-raiz .mc-campo-cheio b { color: var(--ink); font-weight: 760; }
+  .mc-raiz .mc-campo .mc-seta { position: absolute; right: 11px; top: 50%; margin-top: -8px; color: var(--ink-3); }
+  .mc-raiz .mc-campo:hover:not(:disabled):not([data-off]) { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .mc-raiz .mc-campo[aria-current="step"],
+  .mc-raiz .mc-campo-ano:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 84%); }
+  .mc-raiz .mc-campo[aria-current="step"] .mc-seta { transform: rotate(180deg); color: var(--ink); }
+  .mc-raiz .mc-convite { box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--accent), transparent 25%); }
+  .mc-raiz .mc-convite .mc-seta { color: var(--accent-text); }
+  .mc-raiz .mc-campo:disabled, .mc-raiz .mc-campo[data-off] { cursor: default; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .mc-raiz .mc-campo:disabled b, .mc-raiz .mc-campo[data-off] b { color: color-mix(in oklab, var(--ink-3), transparent 35%); }
+  .mc-raiz .mc-campo:disabled .mc-seta, .mc-raiz .mc-campo[data-off] .mc-seta { opacity: .4; }
+  /* o Ano é um <select> de verdade por cima do campo: abre a lista do aparelho (a rodinha, no celular) */
+  .mc-raiz .mc-campo-ano select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0;
+    appearance: none; font-size: 16px; cursor: pointer; }
+  .mc-raiz .mc-campo-ano select:disabled { cursor: default; }
+  .mc-raiz .mc-campo-ano:has(select:focus-visible) { outline: 3px solid var(--accent-text); outline-offset: 3px; }
 
-  .mc-marcas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .mc-marca { width: 100%; min-height: 84px; display: grid; justify-items: center; align-content: center; gap: 6px; padding: 8px 4px 9px;
-    border: 0; border-radius: 16px; background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
-    transition: box-shadow .2s, background-color .2s, transform .12s; }
-  .mc-marca:active { transform: scale(.98); }
-  .mc-logo { width: 100%; height: 38px; display: grid; place-items: center; border-radius: 10px; background: #fff; box-shadow: inset 0 0 0 1px #ececf0; }
-  .mc-logo img { max-width: 66px; max-height: 30px; width: auto; height: auto; object-fit: contain; }
-  .mc-logo b { font-size: 13px; color: #1d1d1f; font-weight: 800; }
-  .mc-marca-nome { max-width: 100%; font-size: 12.5px; font-weight: 650; line-height: 1.15; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mc-marca[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
-  .mc-mais { justify-self: start; min-height: 40px; padding: 0 4px; border: 0; background: none; font-weight: 650; font-size: 14.5px; color: var(--accent-text); }
+  .mc-raiz .mc-corpo { display: grid; gap: 12px; align-content: start; min-width: 0; }
+  /* na abertura o corpo tem a altura da grade de marcas: trocar de passo não empurra nada */
+  .mc-raiz[data-hero] .mc-corpo { min-height: calc(2 * var(--linha-marca) + 12px + 12px + 40px); }
+  .mc-raiz[data-hero] .mc-corpo[data-etapa="pronto"] { align-content: center; }
 
-  .mc-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-  .mc-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 0; border-radius: 12px;
-    background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); font-size: 15px; }
-  .mc-chip b { font-weight: 700; }
-  .mc-chip small { font-size: 12.5px; color: var(--ink-3); }
-  .mc-chip[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
-  .mc-chip[aria-pressed="true"] small { color: var(--accent-text); }
-  .mc-chip-ano { min-width: 74px; justify-content: center; }
+  /* marcas: logo com as cores da marca num disco claro (sem caixa dentro de caixa) */
+  .mc-raiz .mc-marcas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 6px; }
+  .mc-raiz .mc-marcas > li { min-width: 0; display: grid; }
+  .mc-raiz .mc-marca { min-width: 0; display: grid; justify-items: center; align-content: start; gap: 6px; padding: 0; border: 0; border-radius: 14px;
+    background: none; color: var(--ink); }
+  .mc-raiz .mc-disco { width: var(--disco); height: var(--disco); display: grid; place-items: center; border-radius: 50%; background: #f3f2ef;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); transition: transform .22s cubic-bezier(.2, .7, .2, 1), box-shadow .22s ease, background-color .22s ease; }
+  /* o logo cabe numa caixa de até 46x34 (largo fica largo, redondo fica redondo) e encolhe junto com o disco */
+  .mc-raiz .mc-disco img { display: block; width: auto; height: auto; max-width: min(46px, 78%); max-height: min(34px, 58%); }
+  .mc-raiz .mc-disco-nome { padding: 0 5px; font-stretch: 78%; font-weight: 820; font-size: 12.5px; line-height: 1; letter-spacing: -.005em; text-align: center; color: #1d1d1f; }
+  .mc-raiz .mc-marca-nome { max-width: 100%; font-size: 13px; font-weight: 620; font-stretch: 92%; line-height: var(--rotulo); color: var(--ink-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (hover: hover) {
+    .mc-raiz .mc-marca:hover .mc-disco { transform: translateY(-2px); background: #fff; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .05), 0 10px 20px -10px rgb(20 20 25 / .45); }
+    .mc-raiz .mc-marca:hover .mc-marca-nome { color: var(--ink); }
+  }
+  .mc-raiz .mc-marca:active .mc-disco { transform: scale(.95); }
+  .mc-raiz .mc-marca[aria-pressed="true"] .mc-disco { background: #fff; box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 80%); }
+  .mc-raiz .mc-marca[aria-pressed="true"] .mc-marca-nome { color: var(--ink); font-weight: 750; }
+  .mc-raiz .mc-marca[data-esperando] .mc-disco { animation: mc-brilho .9s ease-in-out infinite; }
+  @media (max-width: 639px) { .mc-raiz .mc-marcas:not([data-todas]) > li:nth-child(n+9) { display: none; } }
+  @media (min-width: 640px) {
+    .mc-raiz { --disco: 60px; }
+    .mc-raiz .mc-marcas { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  }
+  /* "Ver todas": discos menores e mais colunas, sem virar uma rolagem gigante */
+  .mc-raiz .mc-marcas[data-todas] { --disco: 48px; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px 4px; }
+  .mc-raiz .mc-marcas[data-todas] .mc-marca-nome { font-size: 12px; }
+  @media (min-width: 640px) { .mc-raiz .mc-marcas[data-todas] { --disco: 52px; grid-template-columns: repeat(7, minmax(0, 1fr)); } }
+  .mc-raiz .mc-mais { justify-self: center; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 99px;
+    background: none; color: var(--accent-text); font-size: 14.5px; font-weight: 680; }
+  .mc-raiz .mc-mais:hover { background: var(--accent-soft); }
+  .mc-raiz .mc-mais[aria-expanded="true"] .mc-seta { transform: rotate(180deg); }
 
-  .mc-resultado { display: grid; gap: 12px; margin-top: 4px; padding: 16px; border-radius: 18px; background: var(--accent-soft);
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 60%); }
-  .mc-frase { margin: 0; font-size: 17px; line-height: 1.35; color: var(--ink); }
-  .mc-frase b { font-weight: 800; }
-  .mc-frase .num { font-stretch: 84%; font-size: 26px; font-weight: 820; }
-  .mc-acoes { display: flex; flex-wrap: wrap; gap: 10px; }
-  .mc-acoes .botao { --h: 48px; }
-  .mc-nota { margin: 0; font-size: 13.5px; color: var(--ink-2); }
-  .mc-link { border: 0; background: none; padding: 0; font-weight: 650; color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; font-size: 13.5px; }
+  /* carregando (só a caixa do cabeçalho, que não vem pronta no HTML) */
+  .mc-raiz .mc-esqueleto .mc-disco { background: var(--surface-2); box-shadow: none; animation: mc-brilho 1.2s ease-in-out infinite; }
+  .mc-raiz .mc-esqueleto .mc-marca-nome { width: 64%; border-radius: 6px; background: var(--surface-2); }
+  .mc-raiz .mc-esqueleto-txt { width: 170px; }
+  /* abertura de quem já tem carro salvo: os campos já mostram o carro; a grade fica guardada até o resultado */
+  .mc-raiz[data-salvo][data-ssr] .mc-corpo { position: relative; }
+  .mc-raiz[data-salvo][data-ssr] .mc-corpo > * { visibility: hidden; }
+  .mc-raiz[data-salvo][data-ssr] .mc-corpo::before,
+  .mc-raiz[data-salvo][data-ssr] .mc-corpo::after { content: ""; position: absolute; left: 0; right: 0; border-radius: 14px; background: var(--surface-2);
+    animation: mc-brilho 1.2s ease-in-out infinite; }
+  .mc-raiz[data-salvo][data-ssr] .mc-corpo::before { top: calc(50% - 64px); height: 40px; right: 30%; }
+  .mc-raiz[data-salvo][data-ssr] .mc-corpo::after { top: calc(50% - 10px); height: 56px; }
+  @keyframes mc-brilho { 50% { opacity: .5; } }
 
-  @media (min-width: 640px) { .mc-marcas { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-  @media (max-width: 380px) { .mc-marcas { gap: 6px; } .mc-marca { min-height: 78px; } }
+  /* modelos: grade de 3 colunas (nome + quantas peças), na ordem do estoque */
+  .mc-raiz .mc-modelos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .mc-raiz .mc-modelos > li { min-width: 0; display: grid; }
+  .mc-raiz .mc-modelo { min-width: 0; min-height: 52px; display: grid; align-content: center; gap: 1px; padding: 7px 12px; border: 0; border-radius: 12px;
+    background: var(--surface); color: var(--ink); text-align: left; box-shadow: inset 0 0 0 1.5px var(--line-2);
+    transition: box-shadow .18s ease, background-color .18s ease, transform .12s ease; }
+  .mc-raiz .mc-modelo b { min-width: 0; font-size: 15.5px; font-weight: 760; font-stretch: 92%; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-raiz .mc-modelo small { font-size: 12.5px; line-height: 1.25; color: var(--ink-3); white-space: nowrap; }
+  .mc-raiz .mc-modelo:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .mc-raiz .mc-modelo:active { transform: translateY(1px); }
+  .mc-raiz .mc-modelo[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+  .mc-raiz .mc-modelo[aria-pressed="true"] small { color: var(--accent-text); }
+  .mc-raiz .mc-modelo-mais { background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent), transparent 55%); }
+  .mc-raiz .mc-modelo-mais b { color: var(--accent-text); }
+  .mc-raiz .mc-link { justify-self: start; display: inline-flex; align-items: center; min-height: 36px; font-size: 14px; font-weight: 600; color: var(--ink-2);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
+  .mc-raiz .mc-link:hover { color: var(--ink); text-decoration-color: currentColor; }
 
-  /* na abertura o cartão é o quarto bloco da coluna: largura igual ao texto */
-  .mc-hero-cartao { padding: 18px; }
+  /* resultado */
+  .mc-raiz .mc-resumo { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; }
+  .mc-raiz .mc-resumo .mc-disco { --disco: 54px; background: #f3f2ef; }
+  .mc-raiz .mc-frase { margin: 0; font-size: 16.5px; line-height: 1.35; color: var(--ink-2); text-wrap: pretty; }
+  .mc-raiz .mc-frase b { color: var(--ink); font-weight: 760; }
+  .mc-raiz .mc-frase .num { display: inline-block; margin-right: 3px; font-stretch: 80%; font-weight: 840; font-size: 34px; line-height: .9; letter-spacing: -.01em;
+    vertical-align: -3px; }
+  .mc-raiz .mc-ver { --h: 56px; width: 100%; font-size: 17px; }
+  .mc-raiz .mc-nota { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 16px; font-size: 13.5px; color: var(--ink-3); }
+  .mc-raiz .mc-nota span { margin-right: auto; }
+  .mc-raiz .mc-nota button, .mc-raiz .mc-aviso button { min-height: 32px; padding: 0; border: 0; background: none; font: inherit; font-weight: 650; color: var(--ink-2);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .mc-raiz .mc-nota button:hover, .mc-raiz .mc-aviso button:hover { color: var(--ink); text-decoration-color: currentColor; }
+  .mc-raiz .mc-aviso { margin: 0; padding: 14px; border-radius: 14px; background: var(--surface-2); color: var(--ink-2); font-size: 15px; }
 
-  /* ---- caixa do cabeçalho (dialogo) ---- */
-  .mc-dialogo { width: min(560px, calc(100vw - 24px)); max-width: none; max-height: 88dvh; margin: auto; padding: 0; border: 0; border-radius: 24px;
+  @media (max-width: 479px) {
+    .mc-raiz .mc-campos { grid-template-columns: minmax(0, 1.18fr) minmax(0, 1.07fr) minmax(0, .75fr); gap: 6px; }
+    .mc-raiz .mc-campo { padding: 7px 22px 7px 11px; }
+    .mc-raiz .mc-campo .mc-seta { right: 6px; width: 14px; height: 14px; margin-top: -7px; }
+  }
+  @media (max-width: 380px) {
+    .mc-raiz .mc-campo { padding: 7px 19px 7px 9px; }
+    .mc-raiz .mc-campo .mc-seta { right: 4px; width: 13px; height: 13px; }
+    .mc-raiz .mc-campo b { font-size: 14.5px; }
+    .mc-raiz .mc-modelo { padding: 7px 9px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mc-raiz .mc-disco, .mc-raiz .mc-esqueleto .mc-disco, .mc-raiz[data-salvo][data-ssr] .mc-corpo::before,
+    .mc-raiz[data-salvo][data-ssr] .mc-corpo::after { animation: none; transition: none; }
+  }
+
+  /* ---- caixa do cabeçalho (diálogo) ---- */
+  .mc-dialogo { width: min(600px, calc(100vw - 24px)); max-width: none; max-height: 88dvh; margin: auto; padding: 0; border: 0; border-radius: 24px;
     background: var(--bg); color: var(--ink); box-shadow: var(--shadow-2); overflow: hidden; }
   .mc-dialogo::backdrop { background: rgb(10 10 12 / .45); backdrop-filter: blur(4px); }
   .mc-dialogo[open] { display: flex; flex-direction: column; animation: mc-sobe .28s cubic-bezier(.2,.8,.2,1); }
   @keyframes mc-sobe { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  .mc-dlg-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 20px 4px; }
+  .mc-dlg-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 20px 6px; }
   .mc-dlg-titulo { margin: 0; font-stretch: 84%; font-weight: 820; font-size: 26px; line-height: 1.05; }
   .mc-dlg-sub { margin: 6px 0 0; font-size: 14.5px; color: var(--ink-2); line-height: 1.4; }
   .mc-dlg-fechar { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink);
     box-shadow: inset 0 0 0 1px var(--line-2); }
   .mc-dlg-fechar svg { width: 20px; height: 20px; }
   .mc-dialogo .mc-raiz { padding: 12px 20px 22px; overflow-y: auto; min-height: 0; }
-  .mc-dialogo .mc-cartao { box-shadow: none; }
   @media (max-width: 639px) {
     .mc-dialogo { position: fixed; inset: auto 0 0 0; margin: 0; width: 100%; max-width: 100%; border-radius: 24px 24px 0 0; max-height: 90dvh; }
+    .mc-dialogo .mc-raiz { padding: 12px 16px calc(20px + env(safe-area-inset-bottom)); }
   }
   @media (prefers-reduced-motion: reduce) { .mc-dialogo[open] { animation: none; } }
 

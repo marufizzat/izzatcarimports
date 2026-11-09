@@ -1,17 +1,36 @@
 ---
-// Cartao "Escolha o seu carro" da abertura: marca (logo) -> modelo -> ano, com contagem real de peças.
-// O mesmo seletor abre na caixa do cabeçalho (ui/meuCarroPicker.ts). Monta quando o navegador esta ocioso.
+// Aba "Pelo carro" da abertura: marca (logo) -> modelo -> ano, com contagem real de peças.
+// A grade de marcas já vem no HTML, gerada pela MESMA função do script e com os MESMOS dados do
+// /dados/meu-carro.json: a primeira tela nasce pronta, sem "carregando" e sem pulo de layout.
+// O mesmo seletor abre na caixa do cabeçalho (ui/meuCarroPicker.ts).
+import { garagem } from '../lib/garagem';
+import { htmlInicial } from './ui/meuCarroPicker';
+const html = htmlInicial(garagem());
 ---
-<section class="mc-cartao mc-hero-cartao" aria-labelledby="mc-titulo-hero">
-  <h2 class="mc-titulo" id="mc-titulo-hero">Escolha o seu carro</h2>
-  <p class="mc-sub">Escolha uma vez e veja as peças dele em todo o site.</p>
-  <div class="mc-raiz" data-mc-raiz data-hero>
-    <p class="mc-aviso">Carregando os carros…</p>
-  </div>
-</section>
+<div class="mc-raiz" data-mc-raiz data-hero data-ssr><div class="mc-conteudo" data-mc-conteudo set:html={html} /><p class="mc-sr" aria-live="polite" data-mc-voz></p></div>
+<script is:inline>
+  // Quem já escolheu o carro: os campos já mostram o carro dele antes do script principal
+  // (a grade de marcas fica guardada, com a mesma altura, até o resultado chegar).
+  (function () {
+    try {
+      var c = JSON.parse(localStorage.getItem('izzatcar.meuCarro') || 'null');
+      if (!c || typeof c.b !== 'string' || typeof c.m !== 'string') return;
+      var r = document.currentScript.previousElementSibling;
+      var campos = r.querySelectorAll('.mc-campo');
+      var v = [c.b, c.m, typeof c.y === 'number' ? String(c.y) : 'Todos'];
+      for (var i = 0; i < campos.length && i < 3; i++) {
+        campos[i].querySelector('b').textContent = v[i];
+        campos[i].removeAttribute('aria-current');
+        campos[i].removeAttribute('data-off');
+        if (i < 2 || typeof c.y === 'number') campos[i].classList.add('mc-campo-cheio');
+        if (campos[i].disabled) campos[i].disabled = false;
+      }
+      r.setAttribute('data-salvo', '');
+    } catch (e) {}
+  })();
+</script>
 <script>
   import { montarPicker } from './ui/meuCarroPicker';
   const raiz = document.querySelector<HTMLElement>('[data-mc-raiz][data-hero]');
-  const agendar = (f: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(f) : window.setTimeout(f, 300));
-  if (raiz) agendar(() => montarPicker(raiz));
+  if (raiz) montarPicker(raiz);
 </script>
