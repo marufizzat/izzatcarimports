@@ -30,6 +30,7 @@ const previa = process.env.PREVIA === '1';
   <meta property="og:locale" content="pt_BR" />
   <meta property="og:site_name" content="Izzat Car Imports" />
   <meta property="og:title" content={titulo} />
+  <meta property="og:url" content={canon} />
   <meta property="og:description" content={descricao} />
   <meta property="og:image" content={new URL(ogImagem, Astro.site).href} />
   <slot name="head" />

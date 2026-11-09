@@ -25,8 +25,6 @@ SITE_DIR = Path(__file__).resolve().parent
 BACKEND = os.getenv("BACKEND_URL", "https://izzat-backend.izzatcar.workers.dev")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 
-headers = {"Authorization": f"Bearer {TOKEN}"}
-
 def fetch_items_backend():
     """Puxa todos os anuncios ativos (item completo) pelo proxy do backend.
 
@@ -253,30 +251,44 @@ def save_js_files(products):
 
 
 def save_seller_reputation():
-    """Busca reputacao do vendedor e salva em reputation.json pra exibir no site."""
+    """Reputacao do vendedor (nivel do termometro, MercadoLider, vendas) -> reputation.json (raiz).
+
+    A rota publica de usuarios do ML e chamada SEM token: o ML_ACCESS_TOKEN do .env local
+    (Windows) nao existe no GitHub Actions. Qualquer falha (rede, bloqueio, resposta sem
+    nivel ou sem vendas) mantem o reputation.json anterior. preparar_dados.py le este arquivo
+    logo depois, para o selo de reputacao do site.
+    """
+    destino = SITE_DIR / "reputation.json"
     try:
-        r = requests.get(f"https://api.mercadolibre.com/users/{SELLER_ID}", headers=headers, timeout=15)
-        if r.status_code == 200:
-            d = r.json()
-            rep = d.get("seller_reputation", {})
-            metrics = rep.get("transactions", {}).get("ratings", {})
-            out = {
-                "level_id": rep.get("level_id", ""),
-                "power_seller_status": rep.get("power_seller_status", ""),
-                "total_transactions": rep.get("transactions", {}).get("total", 0),
-                "completed": rep.get("transactions", {}).get("completed", 0),
-                "canceled": rep.get("transactions", {}).get("canceled", 0),
-                "positive": metrics.get("positive", 0),
-                "neutral": metrics.get("neutral", 0),
-                "negative": metrics.get("negative", 0),
-                "nickname": d.get("nickname", ""),
-                "registration_date": d.get("registration_date", ""),
-            }
-            with open(SITE_DIR / "reputation.json", "w", encoding="utf-8") as f:
-                json.dump(out, f, ensure_ascii=False, indent=2)
-            print(f"Reputacao salva: {out['level_id']} / {out['total_transactions']} vendas / {out['positive']*100:.0f}% positivas")
-    except Exception as e:
-        print(f"Erro reputacao: {e}")
+        r = requests.get(f"https://api.mercadolibre.com/users/{SELLER_ID}", timeout=15)
+        if r.status_code != 200:
+            print(f"Reputacao: http {r.status_code} - mantendo o reputation.json anterior")
+            return
+        d = r.json()
+        rep = d.get("seller_reputation") or {}
+        tx = rep.get("transactions") or {}
+        ratings = tx.get("ratings") or {}
+        out = {
+            "level_id": rep.get("level_id") or "",
+            "power_seller_status": rep.get("power_seller_status") or "",
+            "total_transactions": tx.get("total") or 0,
+            "completed": tx.get("completed") or 0,
+            "canceled": tx.get("canceled") or 0,
+            "positive": ratings.get("positive") or 0,
+            "neutral": ratings.get("neutral") or 0,
+            "negative": ratings.get("negative") or 0,
+            "nickname": d.get("nickname") or "",
+            "registration_date": d.get("registration_date") or "",
+        }
+        if not out["level_id"] or not isinstance(out["completed"], int) or out["completed"] <= 0:
+            print("Reputacao: resposta sem nivel/vendas - mantendo o reputation.json anterior")
+            return
+        tmp = destino.with_name(destino.name + ".tmp")
+        tmp.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(tmp, destino)   # troca atomica: nunca fica arquivo pela metade
+        print(f"Reputacao salva: {out['level_id']} / {out['power_seller_status'] or 'sem lider'} / {out['completed']} vendas concluidas")
+    except Exception as e:   # reputacao nunca derruba a atualizacao do catalogo
+        print(f"Reputacao: falhou ({e}) - mantendo o reputation.json anterior")
 
 def main():
     print("=" * 50)

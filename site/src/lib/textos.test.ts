@@ -1,0 +1,134 @@
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import type { Peca, Resumo } from './dados';
+import {
+  juntar, minuscula, contar, faixaAnos, escolha, textosCategoria, textosCarro, textosMarca,
+  tituloCategoria, tituloCarro, tituloMarca, PROIBIDOS,
+} from './textos';
+
+const peca = (o: Partial<Peca>): Peca => ({
+  id: 'MLB1', slug: 's', t: 't', n: 'n', p: 100, fotos: [], ml: '', f: false, b: 'Volvo', m: 'XC60',
+  y: null, c: 'Motor', s: 'Bielas', oem: '', o: '', ficha: [], desc: '', rel: [], ...o,
+});
+
+describe('textos: funcoes basicas', () => {
+  it('juntar faz lista em portugues', () => {
+    expect(juntar([])).toBe('');
+    expect(juntar(['A'])).toBe('A');
+    expect(juntar(['A', 'B'])).toBe('A e B');
+    expect(juntar(['A', 'B', 'C'])).toBe('A, B e C');
+  });
+  it('minuscula preserva siglas e codigos', () => {
+    expect(minuscula('Bielas')).toBe('bielas');
+    expect(minuscula('Módulo ABS')).toBe('módulo ABS');
+    expect(minuscula('Sensor XC60')).toBe('sensor XC60');
+  });
+  it('contar ignora vazios e Outros, ordena por quantidade', () => {
+    expect(contar(['A', 'B', 'B', '', null, 'Outros', 'C', 'B', 'A'], 3)).toEqual(['B', 'A', 'C']);
+  });
+  it('faixaAnos ignora pecas sem ano', () => {
+    expect(faixaAnos([peca({ y: [2010, 2015] }), peca({ y: null }), peca({ y: [2008, 2012] })])).toEqual([2008, 2015]);
+    expect(faixaAnos([peca({ y: null })])).toBeNull();
+  });
+  it('escolha e deterministica e usa as opcoes', () => {
+    const ops = ['a', 'b', 'c'];
+    expect(escolha('x', ops)).toBe(escolha('x', ops));
+    expect(ops).toContain(escolha('qualquer', ops));
+  });
+});
+
+describe('textos: categoria, carro e marca (fixtures)', () => {
+  const lista = [
+    peca({ id: 'MLB1', b: 'Volvo', m: 'XC60', s: 'Bielas', y: [2014, 2018] }),
+    peca({ id: 'MLB2', b: 'Volvo', m: 'S60', s: 'Bielas', y: [2011, 2014] }),
+    peca({ id: 'MLB3', b: 'Chevrolet', m: 'Onix', s: 'Cabeçote', y: null }),
+  ];
+
+  it('categoria: traz quantidade, subtipos e marcas', () => {
+    const t = textosCategoria({ n: 'Motor', k: 'motor' }, lista);
+    expect(t.paragrafos[0]).toMatch(/3 peças/);
+    expect(t.paragrafos.join(' ')).toMatch(/bielas/);
+    expect(t.meta).toMatch(/^3 peças originais de motor/);
+    expect(t.meta.length).toBeLessThanOrEqual(160);
+  });
+  it('categoria "Peças de X": nao duplica o "peças de"', () => {
+    const t = textosCategoria({ n: 'Peças de Interior', k: 'pecas-de-interior' }, [peca({ c: 'Peças de Interior' })]);
+    expect(t.paragrafos[0]).toMatch(/1 peça de interior original/);
+    expect(t.paragrafos.join(' ')).not.toMatch(/peças de peças/);
+  });
+  it('carro: singular, ano unico e sem invencao', () => {
+    const t = textosCarro({ k: 'x', b: 'Volvo', m: 'XC60', c: 1, anos: [2015, 2015], fams: [['Motor', 1]] }, [peca({ y: [2015, 2015] })]);
+    expect(t.paragrafos[0]).toMatch(/1 peça original para Volvo XC60 \(2015\)/);
+    expect(t.paragrafos.join(' ')).not.toMatch(/undefined|NaN/);
+  });
+  it('marca: plural de modelos e faixa de anos', () => {
+    const t = textosMarca({ n: 'Volvo', c: 3, m: [{ n: 'XC60', c: 2 }, { n: 'S60', c: 1 }] }, lista.slice(0, 2));
+    expect(t.paragrafos[0]).toMatch(/3 peças originais de Volvo/);
+    expect(t.paragrafos.join(' ')).toMatch(/com carros de 2011 a 2018/);
+  });
+  it('lista vazia nao quebra', () => {
+    expect(textosCategoria({ n: 'Motor', k: 'motor' }, []).paragrafos).toEqual([]);
+    expect(textosCarro({ k: 'x', b: 'A', m: 'B', c: 0, anos: null, fams: [] }, []).paragrafos).toEqual([]);
+  });
+  it('titulos saem no formato', () => {
+    expect(tituloCategoria('Motor')).toBe('Motor: peças originais | Izzat Car Imports');
+    expect(tituloCarro('Volvo', 'XC60', [2014, 2026])).toBe('Peças Volvo XC60 2014 a 2026 originais | Izzat Car Imports');
+    expect(tituloMarca('Volvo')).toBe('Peças Volvo originais | Izzat Car Imports');
+  });
+});
+
+describe('textos: todas as paginas de lista do estoque real', () => {
+  const pecas: Peca[] = JSON.parse(readFileSync('src/data/pecas.json', 'utf-8'));
+  const r: Resumo = JSON.parse(readFileSync('src/data/resumo.json', 'utf-8'));
+  const paginas: { tipo: string; titulo: string; t: ReturnType<typeof textosMarca>; primeiro: string }[] = [];
+
+  for (const f of r.familias.filter((x) => x.n !== 'Outros')) {
+    const t = textosCategoria(f, pecas.filter((p) => p.c === f.n));
+    paginas.push({ tipo: 'categoria', titulo: tituloCategoria(f.n), t, primeiro: t.paragrafos[0] ?? '' });
+  }
+  for (const c of r.carros) {
+    const t = textosCarro(c, pecas.filter((p) => p.b === c.b && p.m === c.m));
+    paginas.push({ tipo: 'carro', titulo: tituloCarro(c.b, c.m, c.anos), t, primeiro: t.paragrafos[0] ?? '' });
+  }
+  for (const m of r.marcas) {
+    const t = textosMarca(m, pecas.filter((p) => p.b === m.n));
+    paginas.push({ tipo: 'marca', titulo: tituloMarca(m.n), t, primeiro: t.paragrafos[0] ?? '' });
+  }
+
+  it('cada pagina tem texto e meta', () => {
+    expect(paginas.length).toBeGreaterThan(100);
+    for (const p of paginas) {
+      expect(p.t.paragrafos.length).toBeGreaterThanOrEqual(2);
+      expect(p.t.meta.length).toBeGreaterThan(20);
+    }
+  });
+  it('meta description unica e com no maximo 160 caracteres', () => {
+    const metas = paginas.map((p) => p.t.meta);
+    expect(new Set(metas).size).toBe(metas.length);
+    for (const m of metas) expect(m.length).toBeLessThanOrEqual(160);
+  });
+  it('titulos unicos', () => {
+    const tits = paginas.map((p) => p.titulo);
+    expect(new Set(tits).size).toBe(tits.length);
+  });
+  it('paragrafos unicos entre as paginas', () => {
+    const todos = paginas.flatMap((p) => p.t.paragrafos);
+    expect(new Set(todos).size).toBe(todos.length);
+  });
+  it('nenhum termo proibido nos textos', () => {
+    const todos = paginas.flatMap((p) => [p.titulo, p.t.meta, ...p.t.paragrafos]).join('\n').toLowerCase();
+    for (const termo of PROIBIDOS) expect(todos.includes(termo.toLowerCase()), termo).toBe(false);
+  });
+  it('abertura variada: nenhuma primeira frase domina a lista', () => {
+    for (const tipo of ['categoria', 'carro', 'marca']) {
+      const grupo = paginas.filter((p) => p.tipo === tipo);
+      const cont = new Map<string, number>();
+      for (const p of grupo) {
+        const abre = p.primeiro.replace(/\d[\d.]*/g, '#').split(' ').slice(0, 3).join(' ');
+        cont.set(abre, (cont.get(abre) ?? 0) + 1);
+      }
+      const maior = Math.max(...cont.values()) / grupo.length;
+      expect(maior, tipo).toBeLessThan(0.6);
+    }
+  });
+});

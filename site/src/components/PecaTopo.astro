@@ -1,84 +1,182 @@
 ---
-// Topo da pagina da peca: galeria (deslizar, miniaturas, tela cheia) + compra.
+// Topo da pagina da peca: galeria (deslizar, miniaturas, zoom, tela cheia) + compra.
+// Ordem da compra (pensada para vender, no PC e no celular): nome, serve no seu carro, preco forte,
+// estoque real (peca unica), botao principal, e a confianca logo abaixo. Depois: codigo, perguntas, compartilhar.
+// Gatilhos so com dado de verdade: estoque = p.q (ML), reputacao = resumo().reputacao, CDV/nota/garantia do site.
 import type { Peca } from '../lib/dados';
-import { foto, brl, whatsUrl, temEstudio, SITE } from '../lib/dados';
+import { foto, brl, whatsUrl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
 import Icone from './Icone.astro';
+import SeloReputacao from './SeloReputacao.astro';
+import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
+import Compartilhar from './peca/Compartilhar.astro';
+import Acordeao from './ui/Acordeao.astro';
 interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
 const { p, nivel = 'h1' } = Astro.props;
 const Titulo = nivel;
 const carro = [p.b, p.m].filter(Boolean).join(' ');
-const serve = carro ? `${carro}${p.y ? `, ${p.y[0]} a ${p.y[1]}` : ''}` : '';
+const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
 const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
-const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n${serve ? `Meu carro é ${carro} ano ____. ` : ''}Serve e ainda tem?`;
-const cod = (p.oem || '').split(/[\s,;/|]+/)[0];
+// Mensagem do WhatsApp: sem carro salvo usa "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
+const cabeca = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n`;
+const semCarro = carro ? `Meu carro é ${carro} ano ____. ` : '';
+const cauda = 'Serve e ainda tem?';
+const msg = cabeca + semCarro + cauda;
+// só código com cara de código (lixo da extração, como "Par", não vira caixa com "Copiar")
+const cod = codigoDaPeca(p.oem);
+// Estoque real do ML: 1 = peca unica (usada: quando vende, acabou); mais de 1 = so a quantidade, sem pressa inventada.
+const q = typeof p.q === 'number' && p.q >= 1 ? p.q : 0;
 // 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça.
-const fotos: { g: string; m: string }[] = [
-  ...(temEstudio(p.id) ? [{ g: `/estudio/${p.id}.webp`, m: `/estudio/${p.id}.webp` }] : []),
+const est = capaEstudio(p.id);
+const fotos: { g: string; m: string; e?: boolean }[] = [
+  ...(est ? [{ g: est, m: est, e: true }] : []),
   ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'E') })),
+];
+// Objeções da compra, respondidas com o que o site ja diz (inicio, garantia, envios, como comprar). Nada novo.
+const perguntas = [
+  {
+    pergunta: 'Como sei que serve no meu carro?',
+    resposta: [
+      carro ? `Esta peça é ${p.m ? 'do' : 'de'} ${carro}${anos ? `, ${anos}` : ''}.` : '',
+      cod ? `Compare o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.` : '',
+      'Na dúvida, mande o modelo e o ano do seu carro no WhatsApp que a gente confere na peça antes de você comprar.',
+    ].filter(Boolean).join(' '),
+    link: cod ? { href: '#como-achar-codigo', texto: 'Onde achar o código' } : undefined,
+  },
+  {
+    pergunta: 'E se não servir?',
+    resposta: 'A gente confere antes para isso não acontecer: mande o modelo e o ano do seu carro, ou a foto do código, no WhatsApp antes de fechar. '
+      + 'E toda peça tem 90 dias de garantia: se der problema, chame no WhatsApp com o número do pedido e fotos, que a gente avalia o caso e resolve com troca ou devolução. '
+      + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
+    link: { href: '/garantia.html', texto: 'Ver garantia e trocas' },
+  },
+  {
+    pergunta: 'Como é o envio?',
+    resposta: 'Para todo o Brasil, com código de rastreio, e a peça vai embalada com cuidado. No Mercado Livre, o frete aparece no anúncio, antes de você fechar a compra. Pelo WhatsApp, a gente cota o frete para o seu CEP.',
+    link: { href: '/envios.html', texto: 'Ver envios' },
+  },
+  {
+    pergunta: 'Tem nota fiscal?',
+    resposta: 'Sim, em toda venda. E a peça é original, de carro com baixa legal no Detran-RS: somos desmanche credenciado, CDV nº 01060.',
+  },
 ];
 ---
 <div class="peca-topo">
   <div class="galeria" data-galeria>
-    <div class="galeria-palco">
+    <div class="galeria-palco" data-palco>
       <ul class="galeria-trilho" data-trilho>
         {fotos.map((f, i) => (
-          <li><img src={f.g} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
+          <li><img class:list={[{ estudio: f.e }]} src={f.g} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
                    loading={i === 0 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} decoding="async" /></li>
         ))}
       </ul>
       <span class="galeria-contador num" data-contador>1 / {fotos.length}</span>
+      <span class="galeria-dica galeria-dica-mouse" aria-hidden="true">Passe o mouse para ver de perto</span>
+      <span class="galeria-dica galeria-dica-toque" aria-hidden="true">Toque para ampliar</span>
     </div>
-    {fotos.length > 1 && (
+    {fotos.length > 1 && (<>
+      <div class="galeria-pontos" aria-hidden="true">
+        {fotos.map((_, i) => <i class:list={[{ on: i === 0 }]} data-ponto />)}
+      </div>
       <div class="galeria-miniaturas" aria-label="Fotos da peça">
         {fotos.map((f, i) => (
           <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
-            <img src={f.m} alt="" width="72" height="72" loading="lazy" />
+            <img class:list={[{ estudio: f.e }]} src={f.m} alt="" width="72" height="72" loading="lazy" />
           </button>
         ))}
       </div>
-    )}
+    </>)}
   </div>
 
   <div class="compra">
-    {serve && <p class="compra-serve"><Icone nome="carro" /> Serve em <b>{serve}</b></p>}
-    <Titulo class="compra-nome">{p.n}</Titulo>
-    <p class="compra-titulo-ml">{p.t}</p>
-    <p class="compra-preco num"><small>R$</small>{reais}<small>,{cent}</small></p>
-    <div class="compra-botoes" data-compra-botoes>
-      <a class="botao botao-laranja" href={whatsUrl(msg)}><Icone nome="whats" />Pedir pelo WhatsApp</a>
-      <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
+    <div class="compra-cabeca">
+      <Titulo class="compra-nome">{p.n}</Titulo>
+      <p class="compra-titulo-ml">{p.t}</p>
     </div>
-    <p class="compra-aviso">Na dúvida se serve? Mande o modelo e o ano do seu carro no WhatsApp que a gente confere na peça.</p>
+    <FaixaMeuCarro b={p.b} m={p.m} y={p.y} />
+
+    <div class="compra-caixa">
+      <div class="compra-preco-linha">
+        <p class="compra-preco num"><small>R$</small>{reais}<small>,{cent}</small></p>
+        {q === 1 && <span class="estoque estoque-unica"><i aria-hidden="true"></i>Peça única</span>}
+        {q > 1 && <span class="estoque"><i aria-hidden="true"></i>{q} em estoque</span>}
+      </div>
+      {q === 1 && <p class="estoque-txt">Só 1 em estoque. Peça usada: quando vende, acabou.</p>}
+      <div class="compra-botoes" data-compra-botoes>
+        <a class="botao botao-laranja" href={whatsUrl(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir pelo WhatsApp</a>
+        <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
+      </div>
+      <ul class="compra-facil">
+        <li><b>Na dúvida se serve?</b> A gente confere na peça antes de você comprar.</li>
+        <li><b>WhatsApp:</b> mensagem pronta com a peça<span data-whats-carro></span>.</li>
+        <li><b>Mercado Livre:</b> compra com a proteção da plataforma.</li>
+      </ul>
+    </div>
+
+    <div class="confianca">
+      <ul class="confianca-itens" aria-label="Garantias da compra">
+        <li><a href="/garantia.html"><img src="/arte/v2/selo-garantia.webp" alt="" width="36" height="36" decoding="async" /><span><b>90 dias de garantia</b><small class="confianca-link">Ver como funciona</small></span></a></li>
+        <li><span><img src="/arte/v2/selo-nota-fiscal.webp" alt="" width="36" height="36" decoding="async" /><span><b>Nota fiscal</b><small>Em toda venda</small></span></span></li>
+        <li><span><img src="/arte/v2/selo-cdv.webp" alt="" width="36" height="36" decoding="async" /><span><b>Desmanche credenciado</b><small>Detran-RS · CDV nº 01060</small></span></span></li>
+        <li><span><img src="/arte/v2/selo-envio.webp" alt="" width="36" height="36" decoding="async" /><span><b>Envio para todo o Brasil</b><small>Com código de rastreio</small></span></span></li>
+      </ul>
+      <SeloReputacao variante="linha" />
+    </div>
+
     {cod && (
       <div class="compra-cod">
-        <div><span>Código gravado na peça</span><b class="oem">{cod}</b></div>
+        <div>
+          <span>Código gravado na peça</span>
+          <b class="oem">{cod}</b>
+          <a class="compra-ajuda" href="#como-achar-codigo">Onde fica o código na sua peça?</a>
+        </div>
         <button type="button" class="botao botao-linha" data-copiar={cod}><Icone nome="copiar" />Copiar</button>
       </div>
     )}
-    <ul class="compra-garantias">
-      <li><img src="/arte/v2/selo-garantia.webp" alt="" width="32" height="32" />90 dias de garantia</li>
-      <li><img src="/arte/v2/selo-nota-fiscal.webp" alt="" width="32" height="32" />Nota fiscal na venda</li>
-      <li><img src="/arte/v2/selo-cdv.webp" alt="" width="32" height="32" />Retirada de carro com baixa legal, CDV nº 01060</li>
-      <li><img src="/arte/v2/selo-envio.webp" alt="" width="32" height="32" />Envio para todo o Brasil</li>
-    </ul>
+
+    <section class="compra-perguntas" aria-labelledby="perguntas-peca">
+      <h2 class="compra-perguntas-titulo" id="perguntas-peca">Antes de comprar</h2>
+      <Acordeao itens={perguntas} ld={false} compacto />
+    </section>
+
+    <Compartilhar titulo={p.t} url={url} />
   </div>
 </div>
 
 <script>
+  import { lerMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
+
+  // WhatsApp leva o carro salvo na mensagem (troca só a linha "Meu carro é ...").
+  const pedidos = [...document.querySelectorAll<HTMLAnchorElement>('[data-whats]')];
+  const avisos = [...document.querySelectorAll<HTMLElement>('[data-whats-carro]')];
+  const atualizarWhats = (c: MeuCarro | null) => {
+    pedidos.forEach((a) => {
+      const base = a.getAttribute('href')!.split('?')[0];
+      const linha = c ? `Meu carro é ${nomeCarro(c)}. ` : (a.dataset.sem || '');
+      a.href = `${base}?text=${encodeURIComponent((a.dataset.cabeca || '') + linha + (a.dataset.cauda || ''))}`;
+    });
+    avisos.forEach((s) => { s.textContent = c ? ` e o seu ${nomeCarro(c)}` : ''; });
+  };
+  atualizarWhats(lerMeuCarro());
+  window.addEventListener(EVENTO, (e) => atualizarWhats((e as CustomEvent<MeuCarro | null>).detail ?? null));
+
   document.querySelectorAll<HTMLElement>('[data-galeria]').forEach((g) => {
     const trilho = g.querySelector<HTMLElement>('[data-trilho]')!;
+    const palco = g.querySelector<HTMLElement>('[data-palco]')!;
     const cont = g.querySelector<HTMLElement>('[data-contador]');
     const minis = [...g.querySelectorAll<HTMLButtonElement>('[data-ir]')];
+    const pontos = [...g.querySelectorAll<HTMLElement>('[data-ponto]')];
     const total = trilho.children.length;
     const marcar = () => {
       const i = Math.round(trilho.scrollLeft / trilho.clientWidth);
       if (cont) cont.textContent = `${i + 1} / ${total}`;
       minis.forEach((b, j) => b.setAttribute('aria-current', String(i === j)));
-      minis[i]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      pontos.forEach((d, j) => d.classList.toggle('on', i === j));
+      // só rola as miniaturas quando elas aparecem (no celular ficam escondidas; rolar ali mexia na página)
+      if (minis[i]?.offsetParent) minis[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
     };
     trilho.addEventListener('scroll', () => requestAnimationFrame(marcar), { passive: true });
-    // toque/clique na foto abre a galeria em tela cheia (ilha GaleriaTelaCheia)
+    // toque/clique na foto abre a galeria em tela cheia (ilha GaleriaTelaCheia; pinça la para ampliar)
     trilho.addEventListener('click', () => {
       const i = Math.round(trilho.scrollLeft / trilho.clientWidth);
       (window as any).__galeriaPendente = i; // se a ilha ainda nao montou, ela abre ao montar
@@ -86,7 +184,19 @@ const fotos: { g: string; m: string }[] = [
     });
     minis.forEach((b) => b.addEventListener('click', () =>
       trilho.scrollTo({ left: Number(b.dataset.ir) * trilho.clientWidth, behavior: 'smooth' })));
+
+    // computador: lupa que segue o mouse (só com mouse de verdade)
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      palco.addEventListener('pointermove', (e) => {
+        const r = palco.getBoundingClientRect();
+        palco.style.setProperty('--zx', `${((e.clientX - r.left) / r.width) * 100}%`);
+        palco.style.setProperty('--zy', `${((e.clientY - r.top) / r.height) * 100}%`);
+        palco.classList.add('lupa');
+      });
+      palco.addEventListener('pointerleave', () => palco.classList.remove('lupa'));
+    }
   });
+
   document.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((b) => {
     b.addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(b.dataset.copiar || ''); } catch {}
@@ -97,41 +207,104 @@ const fotos: { g: string; m: string }[] = [
 </script>
 
 <style>
-  .peca-topo { display: grid; gap: 28px; }
+  .peca-topo { display: grid; gap: 22px; }
   @media (min-width: 960px) { .peca-topo { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 56px; align-items: start; } }
   .galeria { min-width: 0; }
-  .galeria-palco { position: relative; border-radius: 22px; background: var(--plate); overflow: hidden; box-shadow: var(--shadow-1); }
+  /* no computador a foto acompanha a leitura da coluna de compra */
+  @media (min-width: 960px) { .galeria { position: sticky; top: 100px; } }
+  .galeria-palco { position: relative; border-radius: 22px; background: var(--plate); overflow: hidden; box-shadow: var(--shadow-1); --zx: 50%; --zy: 50%; }
   .galeria-trilho { list-style: none; margin: 0; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; aspect-ratio: 1; }
   .galeria-trilho::-webkit-scrollbar { display: none; }
-  .galeria-trilho li { flex: 0 0 100%; scroll-snap-align: center; display: grid; place-items: center; }
-  .galeria-trilho img { width: 100%; height: 100%; object-fit: contain; padding: 6%; cursor: zoom-in; }
+  .galeria-trilho li { flex: 0 0 100%; scroll-snap-align: center; display: grid; place-items: center; overflow: hidden; }
+  .galeria-trilho img { width: 100%; height: 100%; object-fit: contain; padding: 6%; cursor: zoom-in; transition: transform .18s ease-out; }
+  /* capa de estúdio já tem o próprio fundo: ocupa o palco inteiro, sem caixa dentro da caixa */
+  .galeria-trilho img.estudio { padding: 0; object-fit: cover; }
+  /* lupa: a foto amplia onde o mouse está (só no computador) */
+  .galeria-palco.lupa .galeria-trilho img { transform: scale(2.2); transform-origin: var(--zx) var(--zy); transition: none; }
   .galeria-contador { position: absolute; right: 14px; bottom: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 650;
-                      background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); }
+                      background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); z-index: 1; }
+  .galeria-dica { position: absolute; left: 14px; bottom: 14px; z-index: 1; padding: 6px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+                  background: rgb(255 255 255 / .9); color: #1d1d1f; box-shadow: var(--shadow-1); pointer-events: none; }
+  .galeria-dica-toque { display: none; }
+  .galeria-palco.lupa .galeria-dica-mouse { opacity: 0; }
+  @media (hover: none) {
+    .galeria-dica-mouse { display: none; }
+    .galeria-dica-toque { display: inline-block; }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .galeria-dica-toque { display: none; }
+  }
   .galeria-miniaturas { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
   .galeria-miniaturas button { flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--plate);
                                box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; transition: box-shadow .2s; }
   .galeria-miniaturas button[aria-current="true"] { box-shadow: inset 0 0 0 2.5px var(--accent); }
   .galeria-miniaturas img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+  .galeria-miniaturas img.estudio { padding: 0; object-fit: cover; }
+  /* celular: pontinhos no lugar das miniaturas (a foto grande + nome + preço + botão cabem na primeira tela) */
+  .galeria-pontos { display: none; justify-content: center; gap: 6px; margin-top: 10px; }
+  .galeria-pontos i { width: 6px; height: 6px; border-radius: 3px; background: var(--line-2); transition: width .25s ease, background-color .25s ease; }
+  .galeria-pontos i.on { width: 18px; background: var(--ink); }
+  @media (max-width: 959px) {
+    .galeria-miniaturas { display: none; }
+    .galeria-pontos { display: flex; }
+  }
 
-  .compra { min-width: 0; display: grid; gap: 14px; align-content: start; }
-  .compra-serve { display: inline-flex; align-items: center; gap: 8px; justify-self: start; margin: 0; padding: 8px 14px 8px 10px; border-radius: 12px;
-                  background: var(--accent-soft); color: var(--ink); font-size: 14.5px; }
-  .compra-serve :global(svg) { width: 20px; height: 20px; color: var(--accent-text); }
-  .compra-nome { overflow-wrap: anywhere; margin: 0; font-stretch: 84%; font-weight: 800; font-size: clamp(28px, 3.2vw, 40px); line-height: 1.04; letter-spacing: -.01em; text-wrap: balance; }
-  .compra-titulo-ml { margin: -6px 0 0; font-size: 13.5px; color: var(--ink-3); overflow-wrap: anywhere; }
-  .compra-preco { margin: 6px 0 0; font-stretch: 80%; font-weight: 850; font-size: 46px; line-height: 1; letter-spacing: -.01em; }
-  .compra-preco small { font-size: 20px; font-weight: 700; color: var(--ink-2); }
+  .compra { min-width: 0; display: grid; gap: 16px; align-content: start; }
+  .compra-cabeca { display: grid; gap: 8px; }
+  .compra-nome { overflow-wrap: anywhere; margin: 0; font-stretch: 84%; font-weight: 800; font-size: clamp(28px, 3.2vw, 42px); line-height: 1.04; letter-spacing: -.01em; text-wrap: balance; }
+  .compra-titulo-ml { margin: 0; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); overflow-wrap: anywhere; }
+
+  /* preço + estoque real + botões: o centro da decisão */
+  .compra-caixa { display: grid; gap: 10px; margin-top: 4px; }
+  .compra-preco-linha { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+  .compra-preco { margin: 0; font-stretch: 80%; font-weight: 850; font-size: 50px; line-height: 1; letter-spacing: -.01em; }
+  .compra-preco small { font-size: 21px; font-weight: 700; color: var(--ink-2); }
   .compra-preco small:first-child { margin-right: 4px; }
+  .estoque { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 11px; border-radius: 999px; white-space: nowrap;
+             font-size: 13.5px; font-weight: 700; font-stretch: 94%; color: var(--ink-2); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .estoque i { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; flex: none; }
+  .estoque-unica { color: var(--accent-text); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
+  .estoque-unica i { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 78%); }
+  .estoque-txt { margin: -2px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
   .compra-botoes { display: grid; gap: 10px; margin-top: 6px; }
   .compra-botoes .botao { --h: 56px; font-size: 16.5px; }
-  .compra-aviso { margin: 0; font-size: 14px; color: var(--ink-2); text-wrap: pretty; }
+  .compra-botoes .botao-linha { --h: 52px; }
+  .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
+  .compra-facil b { font-weight: 650; color: var(--ink-2); }
+
+  /* confiança logo abaixo do botão: garantia, nota, credenciamento, envio e a reputação real do ML */
+  .confianca { display: grid; gap: 14px; padding: 16px; border-radius: 18px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  .confianca-itens { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+  .confianca-itens li > * { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .confianca-itens img { width: 36px; height: 36px; flex: none; }
+  .confianca-itens b { display: block; font-size: 14px; font-weight: 720; font-stretch: 92%; line-height: 1.2; color: var(--ink); }
+  .confianca-itens small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--ink-3); }
+  .confianca-itens .confianca-link { color: var(--ink-2); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+  .confianca-itens a:hover b { color: var(--accent-text); }
+  .confianca :global(.rep-linha) { padding-top: 14px; border-top: 1px solid var(--line); }
+  /* celular estreito: uma coluna (em duas, os títulos quebravam em 3 linhas) */
+  @media (max-width: 559px) {
+    .confianca { gap: 12px; padding: 14px 14px 14px 12px; }
+    .confianca-itens { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .confianca-itens img { width: 32px; height: 32px; }
+  }
+
   .compra-cod { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 12px 12px 16px; border-radius: 14px;
-                background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line); }
+                background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
   .compra-cod span { display: block; font-size: 12.5px; color: var(--ink-3); }
   .compra-cod b { font-size: 18px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
   .compra-cod > div { min-width: 0; }
   .compra-cod .botao { --h: 40px; padding: 0 14px; font-size: 14px; }
-  .compra-garantias { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; }
-  .compra-garantias li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; color: var(--ink-2); }
-  .compra-garantias img { width: 30px; height: 30px; }
+  .compra-ajuda { display: inline-block; margin-top: 4px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .compra-ajuda:hover { color: var(--ink); }
+
+  .compra-perguntas { margin-top: 6px; }
+  .compra-perguntas-titulo { margin: 0 0 6px; font-stretch: 84%; font-weight: 800; font-size: 22px; line-height: 1.1; }
+
+  @media (max-width: 959px) {
+    .compra { gap: 14px; }
+    .compra-nome { font-size: clamp(26px, 7vw, 34px); }
+    .compra-preco { font-size: 44px; }
+    .compra-preco small { font-size: 19px; }
+  }
 </style>

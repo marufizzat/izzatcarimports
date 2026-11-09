@@ -1,0 +1,27 @@
+---
+// "Do mesmo carro": pecas do mesmo carro, as da mesma familia primeiro (ordem feita no build).
+import CartaoPeca from '../CartaoPeca.astro';
+import type { Peca } from '../../lib/dados';
+interface Props { carro: string; link: string; total: number; pecas: Peca[]; familia: string; }
+const { carro, link, total, pecas, familia } = Astro.props;
+---
+<section class="secao faixa">
+  <div class="moldura">
+    <div class="cabeca linha">
+      <div>
+        <h2 class="titulo-secao">Do mesmo carro</h2>
+        <p class="sub">{carro}{familia ? '. Primeiro as da mesma família da peça.' : '.'}</p>
+      </div>
+      <a class="botao botao-linha" href={link}>Ver as {total} peças</a>
+    </div>
+    <div class="trilho">{pecas.map((x) => <CartaoPeca p={x} />)}</div>
+  </div>
+</section>
+
+<style>
+  .faixa { background: var(--bg-2); }
+  .cabeca { display: grid; gap: 16px; margin-bottom: 24px; align-items: end; }
+  @media (min-width: 768px) { .cabeca.linha { grid-template-columns: 1fr auto; } }
+  .titulo-secao { margin: 0; }
+  .sub { margin: 6px 0 0; font-size: 15px; color: var(--ink-2); }
+</style>

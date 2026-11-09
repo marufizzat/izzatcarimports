@@ -3,17 +3,9 @@ import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import CarrosPatio from '../../components/v2/CarrosPatio.astro';
 import { resumo, logoInfo } from '../../lib/dados';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 const r = resumo();
 const marcas = [...new Set(r.carros.map((c) => c.b))];
 const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
-const temArte = (k: string) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`));
-const semArte = r.carros.filter((c) => !temArte(c.k));
-const grupos = marcas
-  .map((b) => ({ b, k: kMarca(b), cars: semArte.filter((c) => c.b === b) }))
-  .filter((g) => g.cars.length > 0);
-const nArte = r.carros.length - semArte.length;
 ---
 <Pagina titulo="Peças por carro | Izzat Car Imports"
         descricao={`Escolha o seu carro e veja as peças originais que saíram dele: ${r.carros.slice(0, 8).map((c) => `${c.b} ${c.m}`).join(', ')} e mais ${r.carros.length - 8} modelos.`}>
@@ -27,36 +19,16 @@ const nArte = r.carros.length - semArte.length;
         <input type="search" placeholder="Digite o modelo, por exemplo Compass" aria-label="Filtrar carros" data-filtro-carros /></label>
       <div class="marcas-filtro" data-marcas>
         <button type="button" aria-pressed="true" data-marca="">Todas</button>
-        {marcas.map((m) => <button type="button" aria-pressed="false" data-marca={m}>{m}</button>)}
+        {marcas.map((m) => { const l = logoInfo(kMarca(m), 26, 18); return (
+          <button type="button" aria-pressed="false" data-marca={m}>
+            <span class="chip-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>{m}
+          </button>); })}
       </div>
     </div>
 
-    {nArte > 0 && (
-      <section class="bloco-carros" aria-labelledby="h-com-arte">
-        <div class="cabeca"><h2 class="titulo-secao" id="h-com-arte">Carros em destaque</h2><p class="lead">Os {nArte} carros com mais peças no estoque.</p></div>
-        <CarrosPatio limite={12} />
-      </section>
-    )}
-
-    <section class="bloco-carros" aria-labelledby="h-outros">
-      <div class="cabeca"><h2 class="titulo-secao" id="h-outros">Todos os outros carros</h2><p class="lead">Por marca. Toque no carro para ver as peças dele.</p></div>
-      <div class="grupos" data-grade>
-        {grupos.map((g) => { const l = logoInfo(g.k, 44, 28); return (
-          <section class="grupo" data-grupo data-b={g.b} aria-label={g.b}>
-            <h3 class="grupo-cab">
-              <span class="grupo-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? '' : 'svg'} loading="lazy" />}</span>
-              <span>{g.b}</span><small class="num">{g.cars.length} {g.cars.length === 1 ? 'carro' : 'carros'}</small>
-            </h3>
-            <ul class="linhas">
-              {g.cars.map((c) => (
-                <li data-carro={`${c.b} ${c.m}`.toLowerCase()} data-b={c.b}>
-                  <a href={`/carros/${c.k}.html`}><b>{c.m}</b><span class="num">{c.anos ? `${c.anos[0]} a ${c.anos[1]} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</span></a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ); })}
-      </div>
+    <section class="bloco-carros" aria-labelledby="h-carros">
+      <div class="cabeca"><h2 class="titulo-secao" id="h-carros">Todos os carros do pátio</h2><p class="lead">{r.carros.length} carros, do que tem mais peças para o que tem menos. Toque no seu.</p></div>
+      <CarrosPatio todos />
     </section>
     <p class="nenhum" data-nenhum hidden>Nenhum carro com esse nome por aqui. <a href="/procuro-peca.html">Peça para a gente procurar no pátio</a>.</p>
   </div>
@@ -66,8 +38,7 @@ const nArte = r.carros.length - semArte.length;
   const botoes = [...document.querySelectorAll<HTMLButtonElement>('[data-marca]')];
   const nenhum = document.querySelector<HTMLElement>('[data-nenhum]');
   // cartoes com arte (CarrosPatio) e linhas da lista: o modelo e a marca vem do texto do cartao
-  const itens = [...document.querySelectorAll<HTMLElement>('.carros-v2 > li, [data-carro]')];
-  const grupos = [...document.querySelectorAll<HTMLElement>('[data-grupo]')];
+  const itens = [...document.querySelectorAll<HTMLElement>('.carros-v2 > li')];
   const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const dadosDe = (el: HTMLElement) => {
     const nome = (el.querySelector('b')?.textContent || '').trim();
@@ -83,7 +54,6 @@ const nArte = r.carros.length - semArte.length;
       const ok = (!marcaAtiva || marca === marcaAtiva) && (!q || norm(nome).includes(q));
       el.hidden = !ok; if (ok) n++;
     });
-    grupos.forEach((g) => { g.hidden = ![...g.querySelectorAll('[data-carro]')].some((el) => !(el as HTMLElement).hidden); });
     if (nenhum) nenhum.hidden = n > 0;
   };
   inp?.addEventListener('input', aplicar);
@@ -96,23 +66,16 @@ const nArte = r.carros.length - semArte.length;
   .filtro-carros .busca { max-width: 640px; }
   .marcas-filtro { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
   @media (min-width: 900px) { .marcas-filtro { flex-wrap: wrap; } }
-  .marcas-filtro button { flex: none; height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; font-size: 14.5px; }
+  .marcas-filtro button { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px 0 6px; border: 0; border-radius: 12px;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 650; font-size: 14.5px; color: var(--ink); cursor: pointer; transition: box-shadow .2s; }
+  .marcas-filtro button:first-child { padding-left: 14px; }
+  .marcas-filtro button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .chip-logo { width: 32px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: #f3f2ef; }
+  .chip-logo:empty { display: none; }
+  .chip-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
   .marcas-filtro button[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
   .bloco-carros { padding-top: clamp(40px, 6vw, 72px); }
   .cabeca { display: grid; gap: 8px; margin-bottom: 24px; }
   .cabeca .lead { margin: 0; }
-  .grupos { display: grid; gap: 28px; padding-bottom: 72px; }
-  .grupo[hidden], .carros-v2 > li[hidden], [data-carro][hidden] { display: none; }
-  .grupo-cab { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; font-stretch: 84%; font-weight: 800; font-size: clamp(22px, 2.4vw, 28px); }
-  .grupo-cab small { font-size: 14px; font-weight: 600; color: var(--ink-3); font-stretch: 100%; }
-  .grupo-logo { width: 52px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-1); flex: none; }
-  .grupo-logo img { max-width: 40px; max-height: 28px; width: auto; height: auto; }
-  .grupo-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
-  .linhas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  @media (min-width: 900px) { .linhas { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  .linhas a { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 16px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); min-height: 76px; justify-content: center; }
-  .linhas a:hover { box-shadow: inset 0 0 0 1.5px var(--accent); }
-  .linhas b { font-weight: 700; font-size: 16.5px; line-height: 1.2; }
-  .linhas span { font-size: 13px; color: var(--ink-2); }
   .nenhum { padding-bottom: 72px; color: var(--ink-2); } .nenhum a { color: var(--accent-text); font-weight: 600; text-decoration: underline; }
 </style>

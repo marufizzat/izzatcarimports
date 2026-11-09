@@ -1,0 +1,85 @@
+---
+// Ficha e descricao. No computador: as duas lado a lado. No celular: abas (sem paredao de texto).
+import type { Peca } from '../../lib/dados';
+interface Props { p: Peca; serve: string; serveRotulo?: string; }
+const { p, serve, serveRotulo = 'Serve em' } = Astro.props;
+const ficha = p.ficha;
+const descTexto = `${p.t}. Peça original retirada de carro com baixa legal, conferida e fotografada no nosso pátio. Confira o código gravado e, na dúvida, mande o modelo e o ano do seu carro no WhatsApp.`;
+---
+<section class="secao detalhes" data-abas>
+  <div class="moldura">
+    <div class="abas" role="tablist" aria-label="Detalhes da peça">
+      <button type="button" role="tab" id="aba-ficha" aria-controls="painel-ficha" aria-selected="true" data-aba="ficha">Ficha da peça</button>
+      <button type="button" role="tab" id="aba-desc" aria-controls="painel-desc" aria-selected="false" tabindex="-1" data-aba="desc">Descrição</button>
+    </div>
+    <div class="detalhes-grade">
+      <div class="painel" id="painel-ficha" role="tabpanel" aria-labelledby="aba-ficha" data-painel="ficha">
+        <h2 class="subtitulo">Ficha da peça</h2>
+        <table class="ficha">
+          <tbody>
+            {ficha.map(([k, v]) => <tr><th scope="row">{k}</th><td class={k.startsWith('Código') ? 'oem' : ''}>{v}</td></tr>)}
+            {serve && <tr><th scope="row">{serveRotulo}</th><td>{serve}</td></tr>}
+            <tr><th scope="row">Procedência</th><td>Carro com baixa legal no Detran-RS · CDV nº 01060</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="painel" id="painel-desc" role="tabpanel" aria-labelledby="aba-desc" data-painel="desc">
+        <h2 class="subtitulo">Descrição</h2>
+        {p.desc ? <div class="descricao" set:html={p.desc} /> : <p class="descricao">{descTexto}</p>}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-abas]').forEach((raiz) => {
+    const abas = [...raiz.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const paineis = [...raiz.querySelectorAll<HTMLElement>('[data-painel]')];
+    const celular = window.matchMedia('(max-width: 959px)');
+    let atual = 'ficha';
+    const aplicar = () => {
+      abas.forEach((b) => {
+        const on = b.dataset.aba === atual;
+        b.setAttribute('aria-selected', String(on));
+        b.tabIndex = on ? 0 : -1;
+      });
+      paineis.forEach((p) => { p.hidden = celular.matches && p.dataset.painel !== atual; });
+    };
+    abas.forEach((b, i) => {
+      b.addEventListener('click', () => { atual = b.dataset.aba!; aplicar(); });
+      b.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const prox = abas[(i + (e.key === 'ArrowRight' ? 1 : abas.length - 1)) % abas.length];
+        atual = prox.dataset.aba!; aplicar(); prox.focus();
+      });
+    });
+    celular.addEventListener('change', aplicar);
+    aplicar();
+  });
+</script>
+
+<style>
+  .detalhes { padding-top: 24px; }
+  .abas { display: none; gap: 6px; padding: 5px; margin-bottom: 18px; border-radius: 14px; background: var(--bg-2); }
+  .abas button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 15px; font-weight: 650; color: var(--ink-2); cursor: pointer; }
+  .abas button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+  .detalhes-grade { display: grid; gap: 40px; }
+  .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: 24px; }
+  .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
+  .ficha th, .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .ficha tr:last-child th, .ficha tr:last-child td { border-bottom: 0; }
+  .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
+  .ficha td { overflow-wrap: anywhere; }
+  .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
+  .descricao :global(h3) { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
+  .descricao :global(p) { margin: 0 0 10px; }
+  @media (max-width: 959px) {
+    .abas { display: flex; }
+    .detalhes-grade { gap: 0; }
+    .subtitulo { display: none; }
+  }
+  @media (min-width: 960px) {
+    .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; }
+    .painel[hidden] { display: block !important; }
+  }
+</style>

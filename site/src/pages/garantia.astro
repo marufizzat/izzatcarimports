@@ -1,81 +1,77 @@
 ---
+// Garantia e trocas: só o que o site já afirma (90 dias em toda peça, nota fiscal em toda venda, como acionar
+// pelo WhatsApp, troca ou devolução depois da avaliação, proteção de compra do Mercado Livre, CDV nº 01060).
+// Cobertura detalhada, frete da troca e prazos de resposta ficam para o Maruf confirmar antes de entrar aqui.
 import Pagina from '../layouts/Pagina.astro';
 import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
+import IconeInst from '../components/inst/IconeInst.astro';
 import Icone from '../components/Icone.astro';
+import Acordeao from '../components/ui/Acordeao.astro';
+import SeloReputacao from '../components/SeloReputacao.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/garantia.html`;
 const canonicalPath = '/garantia.html';
+const passos = [
+  { i: 'conversa', t: 'Chame pelo WhatsApp', s: 'Dentro do prazo de garantia. Informe o número do pedido e o que aconteceu com a peça.' },
+  { i: 'camera', t: 'Mande fotos', s: 'Fotos da peça, mostrando o problema. Se tiver, inclua também a etiqueta ou o código gravado.' },
+  { i: 'troca', t: 'A gente resolve', s: 'A gente avalia o caso e resolve com troca ou devolução.' },
+];
+const perguntas = [
+  { pergunta: 'Quanto tempo de garantia a peça tem?', resposta: '90 dias, em toda peça que a gente vende.' },
+  { pergunta: 'E quem compra pelo Mercado Livre?', resposta: 'Quem comprou pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.' },
+  { pergunta: 'Como eu aciono a garantia?', resposta: 'Chame no WhatsApp dentro do prazo, com o número do pedido, o que aconteceu e fotos da peça mostrando o problema. Se tiver, mande também a etiqueta ou o código gravado.' },
+  { pergunta: 'É troca ou devolução?', resposta: 'A gente avalia o caso e resolve com troca ou devolução.' },
+  { pergunta: 'A compra tem nota fiscal?', resposta: 'Sim. Toda compra sai com nota fiscal, para você guardar.' },
+];
 ---
 <Pagina
   titulo="Garantia e trocas | Izzat Car Imports"
   descricao="90 dias de garantia em toda peça e nota fiscal em toda venda. Se algo der errado, fale pelo WhatsApp com o número do pedido e a gente resolve."
   canonical={canonical}
 >
-    <TopoArte trilha={[['Início', '/index.html'], ['Garantia e trocas', canonicalPath]]}
+  <TopoArte trilha={[['Início', '/index.html'], ['Garantia e trocas', canonicalPath]]}
     titulo="Garantia e trocas"
     lead="Toda peça tem 90 dias de garantia e toda venda sai com nota fiscal. Se algo der errado, a gente resolve com você."
     arte="/arte/v2/topo-garantia.webp" />
 
   <div class="moldura">
-    <section class="inst-sec gar-destaque" aria-labelledby="h-prazo">
-      <div class="gar-selo">
-        <img src="/arte/v2/selo-garantia.webp" alt="" width="320" height="320" />
-        <p class="inst-grande display" aria-hidden="true">90 dias</p>
-        <h2 class="titulo-secao inst-h2 gar-sr" id="h-prazo">90 dias de garantia</h2>
+    <!-- certificado: o prazo grande e os três fatos que sustentam a garantia -->
+    <section class="gar-cert" aria-labelledby="h-prazo">
+      <div class="gar-cert-prazo">
+        <p class="gar-cert-num display" aria-hidden="true">90<span>dias</span></p>
+        <h2 class="gar-cert-titulo" id="h-prazo">de garantia em toda peça</h2>
+        <p class="gar-cert-sub">A garantia vale para toda peça que a gente vende.</p>
       </div>
-      <div class="inst-texto">
-        <p class="gar-item"><img src="/icones/pecas-96.webp" alt="" width="44" height="44" /><span><b>Em toda peça.</b> A garantia vale para toda peça que a gente vende.</span></p>
-        <p class="gar-item"><img src="/icones/nota-fiscal-96.webp" alt="" width="44" height="44" /><span><b>Nota fiscal em toda venda.</b> Toda compra sai com nota fiscal, para você guardar.</span></p>
-      </div>
+      <ul class="gar-cert-fatos">
+        <li><span class="inst-disco"><IconeInst nome="nota" /></span><span><b>Nota fiscal em toda venda</b>Toda compra sai com nota fiscal, para você guardar.</span></li>
+        <li><span class="inst-disco"><IconeInst nome="carro" /></span><span><b>Peça original</b>Vem de carro com baixa legal, conferida e fotografada no pátio.</span></li>
+        <li><span class="inst-disco"><IconeInst nome="escudo" /></span><span><b>Desmanche credenciado</b>Detran-RS, CDV nº 01060.</span></li>
+      </ul>
     </section>
 
-    <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-problema">
-      <div class="inst-texto">
-        <h2 class="titulo-secao inst-h2" id="h-problema">Se a peça der problema</h2>
-        <p>Fale com a gente dentro do prazo de garantia. Quanto mais fotos e detalhes você mandar, mais rápido a gente resolve.</p>
-        <div class="inst-acoes">
-          <a class="botao botao-laranja inst-botao" href={whatsUrl('Olá! Comprei uma peça e preciso de ajuda com a garantia. Número do pedido:')} rel="noopener">
-            <Icone nome="whats" />Falar sobre a garantia
-          </a>
+    <section class="inst-sec" aria-labelledby="h-problema">
+      <div class="gar-cabeca">
+        <div>
+          <h2 class="titulo-secao inst-h2" id="h-problema">Se a peça der problema</h2>
+          <p class="inst-lead-sec">Fale com a gente dentro do prazo. Quanto mais fotos e detalhes você mandar, mais rápido a gente resolve.</p>
         </div>
+        <a class="botao botao-laranja inst-botao" href={whatsUrl('Olá! Comprei uma peça e preciso de ajuda com a garantia. Número do pedido:')} rel="noopener">
+          <Icone nome="whats" />Falar sobre a garantia
+        </a>
       </div>
-      <ol class="inst-numeros">
-        <li>
-          <div>
-            <b>Chame pelo WhatsApp</b>
-            <p>Informe o número do pedido e o que aconteceu com a peça.</p>
-          </div>
-        </li>
-        <li>
-          <div>
-            <b>Mande fotos</b>
-            <p>Fotos da peça, mostrando o problema. Se tiver, inclua também a etiqueta ou o código gravado.</p>
-          </div>
-        </li>
-        <li>
-          <div>
-            <b>A gente resolve</b>
-            <p>A gente avalia o caso e resolve com troca ou devolução.</p>
-          </div>
-        </li>
+      <ol class="inst-trilho">
+        {passos.map((p) => (
+          <li><span class="inst-disco inst-disco-g"><IconeInst nome={p.i} /></span><b>{p.t}</b><p>{p.s}</p></li>
+        ))}
       </ol>
     </section>
 
-    <section class="inst-sec inst-sec--linha" aria-labelledby="h-ml">
+    <section class="inst-sec inst-sec--linha inst-duas gar-evitar" aria-labelledby="h-evitar">
       <div class="inst-texto">
-        <h2 class="titulo-secao inst-h2" id="h-ml">Compra pelo Mercado Livre</h2>
-        <p>Quem comprou pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.</p>
-      </div>
-    </section>
-
-    <section class="inst-sec inst-sec--linha" aria-labelledby="h-evitar">
-      <div class="inst-duas">
-        <div class="inst-texto">
-          <h2 class="titulo-secao inst-h2" id="h-evitar">Evite a peça errada</h2>
-          <p>Antes de fechar a compra, confira estes pontos. Assim a peça chega certa na primeira vez.</p>
-        </div>
+        <h2 class="titulo-secao inst-h2" id="h-evitar">Evite a peça errada</h2>
+        <p>Antes de fechar a compra, confira estes pontos. Assim a peça chega certa na primeira vez.</p>
         <ul class="inst-lista">
           <li><Icone nome="check" /><span>Confirme o <b>modelo, o ano e o motor</b> do seu carro antes de comprar.</span></li>
           <li><Icone nome="check" /><span>Compare o <b>código gravado</b> da sua peça velha com o código do anúncio.</span></li>
@@ -83,6 +79,36 @@ const canonicalPath = '/garantia.html';
           <li><Icone nome="check" /><span>Na dúvida, manda o carro e o código no WhatsApp <b>antes</b> de fechar.</span></li>
         </ul>
       </div>
+      <form class="gar-codigo" action="/catalogo.html" method="get" role="search" aria-labelledby="h-codigo">
+        <span class="gar-codigo-etiqueta" aria-hidden="true"><span class="gar-codigo-furo"></span>Cód. <span class="oem">95992471</span></span>
+        <h3 class="gar-codigo-titulo" id="h-codigo">Tem o código gravado?</h3>
+        <p>Digite o código da sua peça velha e veja as peças com o mesmo código.</p>
+        <div class="busca gar-codigo-campo">
+          <IconeInst nome="lupa" />
+          <input type="search" name="q" placeholder="Ex.: 95992471" aria-label="Código gravado na peça" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
+          <button class="botao botao-laranja" type="submit">Buscar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="gar-ml" aria-labelledby="h-ml">
+      <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
+      <div class="gar-ml-texto">
+        <h2 class="gar-ml-titulo" id="h-ml">Comprou pelo Mercado Livre?</h2>
+        <p>Quem comprou pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.</p>
+      </div>
+      <div class="gar-ml-lado">
+        <div class="gar-ml-selo"><SeloReputacao variante="compacto" /></div>
+        <a class="botao botao-linha" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Ver a loja no Mercado Livre</a>
+      </div>
+    </section>
+
+    <section class="inst-sec inst-sec--linha inst-faq" aria-labelledby="h-faq">
+      <div>
+        <h2 class="titulo-secao inst-h2" id="h-faq">Perguntas sobre a garantia</h2>
+        <p class="inst-faq-apoio">Ficou outra dúvida? <a href={whatsUrl('Olá! Tenho uma dúvida sobre a garantia:')} rel="noopener">Pergunte no WhatsApp</a>.</p>
+      </div>
+      <Acordeao itens={perguntas} />
     </section>
   </div>
 
@@ -95,14 +121,52 @@ const canonicalPath = '/garantia.html';
 </Pagina>
 
 <style>
-  .gar-destaque { display: grid; gap: clamp(24px, 4vw, 56px); }
-  @media (min-width: 900px) { .gar-destaque { grid-template-columns: 1.1fr 0.9fr; align-items: center; } }
-  .gar-selo { display: flex; align-items: center; gap: clamp(16px, 3vw, 36px); }
-  .gar-selo img { width: clamp(88px, 12vw, 150px); height: auto; filter: drop-shadow(0 18px 30px rgb(200 70 0 / .3)); }
-  .gar-selo .inst-grande { font-size: clamp(80px, 13vw, 190px); }
-  .gar-item { display: flex; gap: 14px; align-items: flex-start; padding: 18px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1); }
-  .gar-item img { width: 44px; height: 44px; flex: none; }
-  .gar-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .gar-destaque .inst-texto p { margin-bottom: 1.2em; }
-  .gar-destaque .inst-texto p:last-child { margin-bottom: 0; }
+  /* certificado */
+  .gar-cert { position: relative; display: grid; gap: 0; margin-top: clamp(28px, 4vw, 48px); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-1); overflow: hidden; }
+  .gar-cert::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; background: linear-gradient(90deg, transparent, var(--accent) 20%, var(--accent) 80%, transparent); }
+  .gar-cert-prazo { display: grid; gap: 6px; align-content: center; padding: clamp(26px, 4vw, 48px); }
+  .gar-cert-num { margin: 0; display: flex; align-items: baseline; gap: 10px; font-size: clamp(96px, 13vw, 168px); line-height: .82; color: var(--ink); }
+  .gar-cert-num span { font-size: .34em; letter-spacing: 0; }
+  .gar-cert-titulo { margin: 4px 0 0; font-stretch: 80%; font-weight: 820; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.05; }
+  .gar-cert-sub { margin: 6px 0 0; max-width: 40ch; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+  .gar-cert-fatos { list-style: none; margin: 0; padding: clamp(22px, 3.4vw, 40px); display: grid; gap: 20px; align-content: center;
+    border-top: 1.5px dashed var(--line-2); background: var(--surface-2); }
+  .gar-cert-fatos li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+  .gar-cert-fatos b { display: block; color: var(--ink); font-size: 17px; font-weight: 700; line-height: 1.3; }
+  @media (min-width: 900px) {
+    .gar-cert { grid-template-columns: 1fr 1fr; }
+    .gar-cert-fatos { border-top: 0; border-left: 1.5px dashed var(--line-2); }
+  }
+
+  .gar-cabeca { display: grid; gap: 18px; margin-bottom: clamp(24px, 3vw, 36px); }
+  .gar-cabeca .inst-h2 { margin-bottom: 10px; }
+  @media (min-width: 900px) { .gar-cabeca { grid-template-columns: 1fr auto; align-items: end; gap: 40px; } }
+
+  /* código gravado: etiqueta de exemplo + busca de verdade */
+  .gar-evitar { align-items: start; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 900px) { .gar-evitar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .gar-codigo { min-width: 0; display: grid; gap: 10px; justify-items: start; padding: clamp(22px, 3vw, 32px); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .gar-codigo-etiqueta { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px 9px 30px; border-radius: 8px 14px 14px 8px;
+    background: var(--accent-soft); color: var(--ink); font-size: 14px; font-weight: 650; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent), transparent 55%); }
+  .gar-codigo-etiqueta .oem { font-size: 15px; font-weight: 600; }
+  .gar-codigo-furo { position: absolute; left: 11px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 1px 2px rgb(0 0 0 / .25); }
+  .gar-codigo-titulo { margin: 8px 0 0; font-stretch: 80%; font-weight: 820; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.05; }
+  .gar-codigo p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
+  .gar-codigo-campo { width: 100%; height: 58px; margin-top: 8px; padding-left: 16px; border-radius: 14px; }
+  .gar-codigo-campo :global(svg) { width: 20px; height: 20px; color: var(--ink-3); flex: none; }
+  .gar-codigo-campo input { width: 100%; min-width: 0; font-family: var(--font-mono); font-size: 16px; letter-spacing: .02em; }
+  .gar-codigo-campo input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+  .gar-codigo-campo .botao { --h: 44px; padding: 0 18px; }
+
+  /* Mercado Livre: cartão baixo, texto no meio e a loja do lado */
+  .gar-ml { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 20px; align-items: start; margin-block: clamp(8px, 2vw, 16px);
+    padding: clamp(20px, 3vw, 32px); border-radius: 26px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .gar-ml-titulo { margin: 0 0 6px; font-stretch: 80%; font-weight: 820; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.05; }
+  .gar-ml-texto p { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+  .gar-ml-lado { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .gar-ml-selo:empty { display: none; }
+  @media (min-width: 960px) {
+    .gar-ml { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+    .gar-ml-lado { grid-column: auto; flex-direction: column; align-items: flex-end; }
+  }
 </style>

@@ -1,0 +1,80 @@
+---
+// Selo de reputacao do Mercado Livre: termometro de 5 barras (5 cores, o 5o verde no nivel maximo),
+// "MercadoLider <Prata|Ouro|Platina>" e "N vendas concluidas". Vem de resumo.json (reputation.json,
+// gravado pelo robo). Sem o dado, nao renderiza nada. Sem logo do Mercado Livre e sem percentual.
+import { resumo } from '../lib/dados';
+
+interface Props { variante?: 'faixa' | 'compacto' | 'rodape' | 'linha' }
+const variante = Astro.props.variante ?? 'faixa';
+const rep = resumo().reputacao;
+// barra 1 (vermelho) -> barra 5 (verde)
+const CORES = ['#e5484d', '#f76b15', '#f5b700', '#8bc34a', '#1f9d55'];
+const barras = [1, 2, 3, 4, 5];
+const lider = rep?.lider ? rep.lider.charAt(0).toUpperCase() + rep.lider.slice(1) : '';
+const vendas = typeof rep?.vendas === 'number' ? rep.vendas.toLocaleString('pt-BR') : '';
+const acessivel = rep ? `Reputação no Mercado Livre: ${rep.n} de 5${lider ? `, MercadoLíder ${lider}` : ''}` : '';
+---
+{rep && variante === 'compacto' && (
+  <div class="rep-pilula">
+    <span class="termo" role="img" aria-label={acessivel}>
+      {barras.map((i) => <i class:list={[i <= rep.n && 'acesa']} style={`--c:${CORES[i - 1]};--h:${6 + i * 4}px`} />)}
+    </span>
+    <span class="rep-texto">
+      {lider && <b>MercadoLíder {lider}</b>}
+      {vendas && <small>{vendas} vendas concluídas no Mercado Livre</small>}
+    </span>
+  </div>
+)}
+{rep && variante === 'linha' && (
+  <div class="rep-linha">
+    <span class="termo" role="img" aria-label={acessivel}>
+      {barras.map((i) => <i class:list={[i <= rep.n && 'acesa']} style={`--c:${CORES[i - 1]};--h:${6 + i * 4}px`} />)}
+    </span>
+    <span class="rep-texto">
+      {lider && <b>MercadoLíder {lider}</b>}
+      {vendas && <small>{vendas} vendas concluídas no Mercado Livre</small>}
+    </span>
+  </div>
+)}
+{rep && variante !== 'compacto' && variante !== 'linha' && (
+  <li class={`rep-cartao rep-${variante}`}>
+    <span class="termo" role="img" aria-label={acessivel}>
+      {barras.map((i) => <i class:list={[i <= rep.n && 'acesa']} style={`--c:${CORES[i - 1]};--h:${6 + i * 4}px`} />)}
+    </span>
+    <span class="rep-texto">
+      {lider && <b>MercadoLíder {lider}</b>}
+      {vendas && <small>{vendas} vendas concluídas no Mercado Livre</small>}
+    </span>
+  </li>
+)}
+
+<style>
+  .termo { display: inline-flex; align-items: flex-end; gap: 4px; height: 26px; flex: none; }
+  .termo i { display: block; width: 9px; height: var(--h); border-radius: 3px; background: var(--line-2); }
+  .termo i.acesa { background: var(--c); }
+
+  .rep-cartao { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+    border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-1); }
+  @media (min-width: 1000px) { .rep-cartao { gap: 18px; padding: 16px 22px; } }
+  .rep-rodape { box-shadow: inset 0 0 0 1px var(--line); }
+
+  .rep-texto { display: grid; gap: 3px; min-width: 0; }
+  .rep-texto b { font-stretch: 86%; font-weight: 800; font-size: clamp(15px, 1.25vw, 18.5px); line-height: 1.15; color: var(--ink); }
+  .rep-texto small { font-size: clamp(12.5px, 1vw, 14.5px); color: var(--ink-2); line-height: 1.3; }
+
+  .rep-pilula { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 10px; border-radius: 999px;
+    background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); max-width: 100%; }
+  .rep-pilula .termo { height: 16px; gap: 3px; }
+  .rep-pilula .termo i { width: 5px; height: calc(var(--h) * .6); border-radius: 2px; }
+  .rep-pilula .rep-texto { gap: 0; }
+  .rep-pilula .rep-texto b { font-size: 13px; }
+  .rep-pilula .rep-texto small { font-size: 12px; }
+
+  /* linha: dentro de um cartão (página da peça), sem fundo próprio */
+  .rep-linha { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .rep-linha .termo { height: 22px; gap: 3px; }
+  .rep-linha .termo i { width: 7px; height: calc(var(--h) * .82); border-radius: 2.5px; }
+  .rep-linha .rep-texto { gap: 1px; }
+  .rep-linha .rep-texto b { font-size: 15px; }
+  .rep-linha .rep-texto small { font-size: 13px; }
+</style>

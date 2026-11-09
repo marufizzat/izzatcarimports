@@ -1,16 +1,21 @@
 ---
 import Icone from './Icone.astro';
+import SeloReputacao from './SeloReputacao.astro';
 import { whatsUrl, resumo, logoInfo } from '../lib/dados';
+// selos={false}: a pagina da peca ja mostra as garantias e a reputacao junto da compra (sem repetir no fim).
+interface Props { selos?: boolean }
+const { selos = true } = Astro.props;
 const r = resumo();
 const marcas = r.marcas.slice(0, 8);
 ---
-<footer class="rodape faixa-escura">
-  <ul class="moldura rodape-selos" aria-label="Garantias">
+<footer class:list={['rodape faixa-escura', { 'rodape-sem-selos': !selos }]}>
+  {selos && <ul class="moldura rodape-selos" aria-label="Garantias">
     {[['garantia', '90 dias de garantia', 'Em toda peça'], ['nota-fiscal', 'Nota fiscal', 'Em toda venda'],
       ['cdv', 'Desmanche credenciado', 'Detran-RS · CDV nº 01060'], ['envio', 'Envio para todo o Brasil', 'Com código de rastreio']].map(([k, t, s]) => (
       <li><img src={`/arte/v2/selo-${k}.webp`} alt="" width="56" height="56" loading="lazy" decoding="async" /><span><b>{t}</b><small>{s}</small></span></li>
     ))}
-  </ul>
+    <SeloReputacao variante="rodape" />
+  </ul>}
   <div class="moldura rodape-topo">
     <div class="rodape-marca">
       <img src="/identidade/logo-dark.png" alt="Izzat Car Imports" width="99" height="72" loading="lazy" />
@@ -20,7 +25,7 @@ const marcas = r.marcas.slice(0, 8);
     <nav aria-label="Peças"><b>Peças</b>
       <a href="/catalogo.html">Catálogo completo</a>
       <a href="/carros.html">Peças por carro</a>
-      {marcas.map((m) => { const l = logoInfo(m.k, 22, 16); return <a class="rodape-marca-link" href={`/marca/${m.k}.html`}><span class="rodape-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>{m.n}</a>; })}
+      {marcas.map((m) => { const l = logoInfo(m.k, 20, 15); return <a class="rodape-marca-link" href={`/marca/${m.k}.html`}><span class="rodape-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>{m.n}</a>; })}
     </nav>
     <nav aria-label="Comprar"><b>Comprar</b>
       <a href="/como-comprar.html">Como comprar</a>
@@ -42,6 +47,7 @@ const marcas = r.marcas.slice(0, 8);
 </footer>
 <style>
   .rodape { padding-block: 0 28px; margin-top: 0; }
+  .rodape-sem-selos { padding-top: 48px; }
   .rodape-selos { list-style: none; margin: 0 auto 48px; padding: 28px 0; display: grid; gap: 16px 24px; grid-template-columns: repeat(2, minmax(0, 1fr));
     border-bottom: 1px solid var(--line); }
   @media (min-width: 1000px) { .rodape-selos { grid-template-columns: repeat(4, minmax(0, 1fr)); padding-block: 32px; } }
@@ -51,10 +57,11 @@ const marcas = r.marcas.slice(0, 8);
   .rodape-selos b { display: block; font-stretch: 86%; font-weight: 800; font-size: 15.5px; line-height: 1.15; color: var(--ink); }
   .rodape-selos small { display: block; font-size: 13px; color: var(--ink-3); }
   .rodape-marca-link { display: inline-flex; align-items: center; gap: 10px; }
-  .rodape-logo { width: 22px; height: 18px; display: grid; place-items: center; flex: none; }
-  .rodape-logo img.svg { filter: brightness(0) invert(.78); }
-  .rodape-logo img.png { filter: invert(.78); }
-  .rodape-marca-link:hover .rodape-logo img.svg { filter: brightness(0) invert(1); }
+  /* logo com as cores da marca num disco claro (no rodapé escuro também) */
+  .rodape-logo { width: 28px; height: 28px; border-radius: 50%; background: #f3f2ef; display: grid; place-items: center; flex: none;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); transition: transform .2s ease; }
+  .rodape-logo img { display: block; }
+  .rodape-marca-link:hover .rodape-logo { transform: scale(1.08); }
   .rodape-topo { display: grid; gap: 36px; grid-template-columns: 1fr; }
   @media (min-width: 900px) { .rodape-topo { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; } }
   .rodape-marca { display: grid; gap: 16px; justify-items: start; align-content: start; }

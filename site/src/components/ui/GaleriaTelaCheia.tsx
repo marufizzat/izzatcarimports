@@ -44,9 +44,13 @@ const CSS = `
 .gt-palco.amplo{cursor:grab}
 .gt-palco.amplo:active{cursor:grabbing}
 .gt-trilho{display:flex;height:100%;width:100%;transition:transform .34s cubic-bezier(.2,.8,.2,1);will-change:transform}
-.gt-slide{flex:0 0 100%;height:100%;display:grid;place-items:center;min-width:0}
+/* flex, nao grid: no grid a altura 100% da foto nao resolvia, a foto ficava do tamanho da largura (1440x1440 no PC) e cortava */
+.gt-slide{flex:0 0 100%;height:100%;display:flex;align-items:center;justify-content:center;min-width:0}
 .gt-foto{width:100%;height:100%;object-fit:contain;padding:5%;-webkit-user-drag:none;pointer-events:none;transform-origin:center center;
   transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+.gt-dica{display:none;position:absolute;left:50%;top:12px;z-index:2;transform:translateX(-50%);padding:6px 12px;border-radius:999px;
+  background:rgb(255 255 255 / .92);color:#1d1d1f;font-size:12.5px;font-weight:600;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px -6px rgb(0 0 0 / .3)}
+@media (hover:none){.gt-dica{display:block}}
 .gt-seta{position:absolute;top:50%;z-index:2;width:48px;height:48px;margin-top:-24px;border:0;border-radius:50%;display:none;place-items:center;padding:0;
   background:rgb(255 255 255 / .92);color:#1d1d1f;box-shadow:0 6px 18px -6px rgb(0 0 0 / .25),inset 0 0 0 1px #e2e2e7;cursor:pointer}
 .gt-seta:disabled{opacity:.35;cursor:default}
@@ -306,6 +310,7 @@ export default function GaleriaTelaCheia({ fotos, titulo }: Props) {
       </header>
 
       <div className="gt-meio">
+        <span className="gt-dica" aria-hidden="true">Aperte com dois dedos para ampliar</span>
         <div
           ref={palco}
           className={`gt-palco${ampliada ? ' amplo' : ''}`}

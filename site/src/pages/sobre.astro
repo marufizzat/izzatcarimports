@@ -5,6 +5,11 @@ import Chamada from '../components/inst/Chamada.astro';
 import Icone from '../components/Icone.astro';
 import SeloCDV from '../components/SeloCDV.astro';
 import { SITE } from '../lib/dados';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+// arte do troféu (orquestrador entrega em /arte/v2/destaque-acegua.webp): só aparece se o arquivo existir
+const temTrofeu = existsSync(join(process.cwd(), 'public', 'arte', 'v2', 'destaque-acegua.webp'));
 
 const canonical = `${SITE}/sobre.html`;
 const canonicalPath = '/sobre.html';
@@ -52,12 +57,20 @@ const historia = [
       </div>
     </section>
 
-    <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-destaque">
-      <div class="inst-texto">
-        <h2 class="titulo-secao inst-h2" id="h-destaque">Destaque em Aceguá</h2>
-        <p>O pátio ganhou o Destaque Aceguá 2025 no Melhores do Ano Aceguá, na categoria desmanche de veículos.</p>
+    <section class="inst-sec sob-premio-sec" aria-labelledby="h-destaque">
+      <div class="sob-premio" class:list={[{ 'com-arte': temTrofeu }]}>
+        {temTrofeu && (
+          <div class="sob-premio-arte">
+            <img src="/arte/v2/destaque-acegua.webp" alt="Troféu Destaque Aceguá 2025" width="1200" height="800" loading="lazy" decoding="async" />
+          </div>
+        )}
+        <div class="sob-premio-txt">
+          <span class="sob-premio-selo" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5.5" /><path d="M8.6 13.4 7.4 21l4.6-2.4 4.6 2.4-1.2-7.6" /></svg></span>
+          <h2 class="titulo-secao inst-h2" id="h-destaque">Destaque em Aceguá</h2>
+          <p>O pátio ganhou o Destaque Aceguá 2025 no Melhores do Ano Aceguá, na categoria desmanche de veículos.</p>
+          <p class="sob-destaque display"><span>Destaque</span> Aceguá 2025</p>
+        </div>
       </div>
-      <p class="sob-destaque display"><span>Destaque</span> Aceguá 2025</p>
     </section>
 
     <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-onde">
@@ -110,6 +123,34 @@ const historia = [
   }
   .sob-pino-icone :global(svg) { width: 30px; height: 30px; }
   .sob-pino p { margin: 0; font-size: 22px; font-weight: 700; font-stretch: 84%; color: var(--ink); }
-  .sob-destaque { margin: 0; font-size: clamp(48px, 9vw, 116px); color: var(--ink); line-height: .9; }
+  .sob-premio-sec { padding-block: clamp(8px, 2vw, 16px); }
+  .sob-premio {
+    position: relative; overflow: hidden; display: grid; gap: clamp(20px, 3vw, 36px); align-items: center;
+    padding: clamp(26px, 4.4vw, 56px); border-radius: 32px; background: var(--surface); box-shadow: var(--shadow-1);
+    isolation: isolate;
+  }
+  /* fio laranja em degradê na borda superior: a marca do prêmio, sem enfeite */
+  .sob-premio::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; z-index: 1;
+    background: linear-gradient(90deg, transparent, var(--accent) 22%, var(--accent) 78%, transparent);
+  }
+  .sob-premio::after {
+    content: ""; position: absolute; right: -90px; top: -90px; width: 260px; height: 260px; border-radius: 50%; z-index: -1;
+    background: radial-gradient(closest-side, var(--accent-soft), transparent);
+  }
+  @media (min-width: 900px) { .sob-premio.com-arte { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); } }
+  .sob-premio-arte { border-radius: 24px; overflow: hidden; background: #efeeeb; }
+  .sob-premio-arte img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
+  .sob-premio-txt { display: grid; gap: 14px; justify-items: start; }
+  .sob-premio-selo {
+    display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px;
+    background: var(--accent); color: var(--on-accent);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 8px 16px -8px rgb(255 106 0 / .7);
+  }
+  .sob-premio-selo svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .sob-premio-txt .inst-h2 { margin: 0; }
+  .sob-premio-txt p:not(.sob-destaque) { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink-2); max-width: 52ch; }
+  .sob-destaque { margin: 8px 0 0; font-size: clamp(44px, 7.4vw, 96px); color: var(--ink); line-height: .92; }
   .sob-destaque span { display: block; font-size: .42em; font-weight: 700; color: var(--accent-text); letter-spacing: 0; text-transform: none; }
+  @media (prefers-reduced-motion: no-preference) { .sob-premio-selo { transition: transform .4s ease; } }
 </style>

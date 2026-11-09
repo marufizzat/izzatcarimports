@@ -1,51 +1,36 @@
 ---
-// Marca -> modelo -> ano. Envia pro catalogo com os MESMOS parametros do site
-// antigo (marca, modelo, ano), pra nenhum link de fora quebrar.
-import { resumo } from '../lib/dados';
-interface Props { compacto?: boolean; }
-const { compacto = false } = Astro.props;
-const marcas = resumo().marcas.filter((m) => m.c >= 5);
-const dados = Object.fromEntries(marcas.map((m) => [m.n, m.m.map((x) => x.n)]));
-const anoAtual = new Date().getFullYear() + 1;
-const anos = Array.from({ length: anoAtual - 1994 }, (_, i) => anoAtual - i);
+// Aba "Pelo carro" da abertura: marca (logo) -> modelo -> ano, com contagem real de peças.
+// A grade de marcas já vem no HTML, gerada pela MESMA função do script e com os MESMOS dados do
+// /dados/meu-carro.json: a primeira tela nasce pronta, sem "carregando" e sem pulo de layout.
+// O mesmo seletor abre na caixa do cabeçalho (ui/meuCarroPicker.ts).
+import { garagem } from '../lib/garagem';
+import { htmlInicial } from './ui/meuCarroPicker';
+const html = htmlInicial(garagem());
 ---
-<form class:list={['seletor-carro', { compacto }]} action="/catalogo.html" method="get" data-seletor>
-  <label class="seletor"><span>Marca</span>
-    <select name="marca" data-marca>
-      <option value="">Escolha</option>
-      {marcas.map((m) => <option value={m.n}>{m.n}</option>)}
-    </select>
-  </label>
-  <label class="seletor"><span>Modelo</span>
-    <select name="modelo" data-modelo disabled><option value="">Escolha a marca</option></select>
-  </label>
-  <label class="seletor"><span>Ano</span>
-    <select name="ano"><option value="">Qualquer</option>{anos.map((a) => <option value={a}>{a}</option>)}</select>
-  </label>
-  <button class="botao botao-grafite" type="submit">Ver peças</button>
-  <script type="application/json" data-modelos set:html={JSON.stringify(dados)} />
-</form>
-<script>
-  document.querySelectorAll<HTMLFormElement>('[data-seletor]').forEach((f) => {
-    const dados = JSON.parse(f.querySelector('[data-modelos]')!.textContent || '{}');
-    const marca = f.querySelector<HTMLSelectElement>('[data-marca]')!;
-    const modelo = f.querySelector<HTMLSelectElement>('[data-modelo]')!;
-    marca.addEventListener('change', () => {
-      const lista: string[] = dados[marca.value] || [];
-      modelo.innerHTML = '<option value="">' + (marca.value ? 'Todos os modelos' : 'Escolha a marca') + '</option>' +
-        lista.map((m) => `<option value="${m}">${m}</option>`).join('');
-      modelo.disabled = !marca.value;
-    });
-    f.addEventListener('submit', () => {
-      f.querySelectorAll('select').forEach((s) => { if (!s.value) s.disabled = true; });
-    });
-  });
+<div class="mc-raiz" data-mc-raiz data-hero data-ssr><div class="mc-conteudo" data-mc-conteudo set:html={html} /><p class="mc-sr" aria-live="polite" data-mc-voz></p></div>
+<script is:inline>
+  // Quem já escolheu o carro: os campos já mostram o carro dele antes do script principal
+  // (a grade de marcas fica guardada, com a mesma altura, até o resultado chegar).
+  (function () {
+    try {
+      var c = JSON.parse(localStorage.getItem('izzatcar.meuCarro') || 'null');
+      if (!c || typeof c.b !== 'string' || typeof c.m !== 'string') return;
+      var r = document.currentScript.previousElementSibling;
+      var campos = r.querySelectorAll('.mc-campo');
+      var v = [c.b, c.m, typeof c.y === 'number' ? String(c.y) : 'Todos'];
+      for (var i = 0; i < campos.length && i < 3; i++) {
+        campos[i].querySelector('b').textContent = v[i];
+        campos[i].removeAttribute('aria-current');
+        campos[i].removeAttribute('data-off');
+        if (i < 2 || typeof c.y === 'number') campos[i].classList.add('mc-campo-cheio');
+        if (campos[i].disabled) campos[i].disabled = false;
+      }
+      r.setAttribute('data-salvo', '');
+    } catch (e) {}
+  })();
 </script>
-<style>
-  .seletor-carro { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .seletor-carro .botao { height: 52px; }
-  @media (min-width: 640px) {
-    .seletor-carro { grid-template-columns: 1.1fr 1.1fr .8fr auto; }
-    .seletor-carro .botao { grid-column: auto; }
-  }
-</style>
+<script>
+  import { montarPicker } from './ui/meuCarroPicker';
+  const raiz = document.querySelector<HTMLElement>('[data-mc-raiz][data-hero]');
+  if (raiz) montarPicker(raiz);
+</script>

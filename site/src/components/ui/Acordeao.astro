@@ -2,11 +2,13 @@
 // Acordeao de perguntas frequentes: zero JavaScript (details/summary nativos).
 // A altura anima com ::details-content + interpolate-size (Chrome, Edge, Safari recentes);
 // onde nao existir, abre e fecha direto, sem quebrar nada.
-// Uma pergunta aberta por vez (atributo name). Gera FAQPage em JSON-LD para o Google.
-interface Item { pergunta: string; resposta: string }
-interface Props { itens: Item[] }
+// Uma pergunta aberta por vez (atributo name). Gera FAQPage em JSON-LD para o Google
+// (ld={false} desliga: a pagina da peca repete as mesmas perguntas em milhares de paginas).
+// compacto: linhas mais baixas, para caber na coluna de compra da peca. link: atalho no fim da resposta.
+interface Item { pergunta: string; resposta: string; link?: { href: string; texto: string } }
+interface Props { itens: Item[]; ld?: boolean; compacto?: boolean }
 
-const { itens } = Astro.props;
+const { itens, ld = true, compacto = false } = Astro.props;
 // nome do grupo unico por lista (uma aberta por vez, sem misturar com outro acordeao da pagina)
 const grupo = `faq-${[...itens.map((i) => i.pergunta).join('|')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`;
 const jsonLd = JSON.stringify({
@@ -20,18 +22,18 @@ const jsonLd = JSON.stringify({
 }).replace(/</g, '\\u003c');
 ---
 
-<div class="acd">
+<div class:list={['acd', { 'acd-compacto': compacto }]}>
   {itens.map((it) => (
     <details class="acd-item" name={grupo}>
       <summary class="acd-pergunta">
         <span>{it.pergunta}</span>
         <i class="acd-sinal" aria-hidden="true"></i>
       </summary>
-      <p class="acd-resposta">{it.resposta}</p>
+      <p class="acd-resposta">{it.resposta}{it.link && <> <a class="acd-link" href={it.link.href}>{it.link.texto}</a></>}</p>
     </details>
   ))}
 </div>
-<script type="application/ld+json" set:html={jsonLd} />
+{ld && <script type="application/ld+json" set:html={jsonLd} />}
 
 <style>
   .acd { interpolate-size: allow-keywords; border-top: 1px solid var(--line); }
@@ -61,6 +63,8 @@ const jsonLd = JSON.stringify({
   }
   .acd-sinal::after { transform: rotate(90deg); }
   .acd-item[open] .acd-sinal { background: var(--accent); box-shadow: none; }
+  /* laranja sempre com grafite (no escuro, --ink fica quase branco) */
+  .acd-item[open] .acd-sinal::before, .acd-item[open] .acd-sinal::after { background: var(--on-accent); }
   .acd-item[open] .acd-sinal::after { transform: rotate(0deg); opacity: 0; }
 
   .acd-resposta {
@@ -73,6 +77,15 @@ const jsonLd = JSON.stringify({
     transition: block-size .36s cubic-bezier(.2,.8,.2,1), content-visibility .36s allow-discrete;
   }
   .acd-item[open]::details-content { block-size: auto; }
+
+  .acd-link { font-weight: 650; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+  .acd-link:hover { color: var(--accent-text); }
+
+  /* compacto (coluna de compra da peca) */
+  .acd-compacto .acd-pergunta { min-height: 52px; padding: 12px 2px; font-size: 15.5px; }
+  .acd-compacto .acd-sinal { width: 30px; height: 30px; border-radius: 10px; }
+  .acd-compacto .acd-sinal::before, .acd-compacto .acd-sinal::after { width: 12px; margin-left: -6px; }
+  .acd-compacto .acd-resposta { padding: 0 8px 16px 2px; font-size: 14.5px; line-height: 1.55; }
 
   @media (prefers-reduced-motion: reduce) {
     .acd-item::details-content, .acd-sinal, .acd-sinal::before, .acd-sinal::after, .acd-pergunta span { transition: none; }

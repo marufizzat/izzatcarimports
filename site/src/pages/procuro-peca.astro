@@ -1,124 +1,116 @@
 ---
+// "Não achou a peça?": o formulário na PRIMEIRA tela. PC: título e dicas à esquerda, formulário à direita.
+// Celular: título, formulário e só depois as dicas. Obrigatórios só marca, modelo, ano e peça; o modelo
+// sugere os da marca escolhida e, se a pessoa já salvou o "Meu carro", o carro vem preenchido.
 import Pagina from '../layouts/Pagina.astro';
 import Icone from '../components/Icone.astro';
-import TopoArte from '../components/TopoArte.astro';
-import BannerV2 from '../components/v2/BannerV2.astro';
-import { WHATS, SITE, resumo, whatsUrl } from '../lib/dados';
+import { WHATS, SITE, resumo } from '../lib/dados';
 
 const canonical = `${SITE}/procuro-peca.html`;
-const marcas = resumo().marcas.map((m) => m.n);
-const ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+const marcas = resumo().marcas;
+const modelosPorMarca = Object.fromEntries(marcas.map((m) => [m.n, m.m.map((x) => x.n)]));
+const trilha: [string, string][] = [['Início', '/index.html'], ['Não achou a peça?', '/procuro-peca.html']];
+const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
 ---
 <Pagina
   titulo="Não achou a peça? A gente procura | Izzat Car Imports"
   descricao="Não achou a peça no site? Conte a marca, o modelo, o ano e a peça. A gente procura no pátio e responde pelo WhatsApp."
   canonical={canonical}
 >
-  <TopoArte trilha={[['Início', '/index.html'], ['Não achou a peça?', '/procuro-peca.html']]}
-    titulo="Não achou a peça?"
-    lead="Nem toda peça está anunciada. Conte o carro e a peça que você procura. A gente procura no pátio e responde pelo WhatsApp."
-    arte="/arte/v2/topo-procuro.webp" />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
 
-  <div class="moldura pc-banner">
-    <BannerV2 nome="banner-nao-achou" href={whatsUrl('Olá! Não achei a peça no site. Meu carro é ____ (modelo e ano) e procuro: ____')}
-      texto="Não achou a peça? A gente procura no pátio. Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp. Chamar no WhatsApp" />
-  </div>
+  <div class="moldura pc-pagina">
+    <nav class="pc-trilha" aria-label="Você está em">
+      <a href="/index.html">Início</a><span aria-hidden="true">/</span><span aria-current="page">Não achou a peça?</span>
+    </nav>
 
-  <div class="moldura pc-corpo">
-    <aside class="pc-dicas" aria-labelledby="h-dicas">
-      <h2 class="titulo-secao" id="h-dicas">O que ajuda a gente</h2>
-      <ul class="pc-lista">
-        <li><Icone nome="check" /><span><b>Marca, modelo e ano</b> do carro.</span></li>
-        <li><Icone nome="check" /><span><b>A peça</b>, como você fala. Por exemplo, farol, retrovisor ou caixa de câmbio.</span></li>
-        <li><Icone nome="check" /><span><b>O código gravado</b>, se você tiver. É o jeito mais certo de achar.</span></li>
-        <li><Icone nome="check" /><span><b>Cidade e estado</b>, para a gente combinar o envio.</span></li>
-      </ul>
-      <p class="pc-dica">Uma foto da peça velha também ajuda muito. Manda depois, pelo WhatsApp.</p>
-    </aside>
-
-    <form class="pc-form" id="form-procuro" novalidate data-whats={WHATS} aria-describedby="pc-nota">
-      <fieldset class="pc-grupo">
-        <legend>Sobre o carro</legend>
-        <div class="pc-grade">
-          <div class="campo">
-            <label for="f-marca">Marca</label>
-            <input id="f-marca" name="marca" type="text" list="lista-marcas" autocomplete="off" placeholder="Ex.: Volkswagen" required aria-describedby="e-marca" />
-            <p class="erro" id="e-marca" hidden></p>
-          </div>
-          <div class="campo">
-            <label for="f-modelo">Modelo</label>
-            <input id="f-modelo" name="modelo" type="text" autocomplete="off" placeholder="Ex.: Gol" required aria-describedby="e-modelo" />
-            <p class="erro" id="e-modelo" hidden></p>
-          </div>
-          <div class="campo">
-            <label for="f-ano">Ano</label>
-            <input id="f-ano" name="ano" type="text" inputmode="numeric" autocomplete="off" placeholder="Ex.: 2015 ou 2015/2018" required aria-describedby="e-ano" />
-            <p class="erro" id="e-ano" hidden></p>
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset class="pc-grupo">
-        <legend>Sobre a peça</legend>
-        <div class="pc-grade">
-          <div class="campo pc-largo">
-            <label for="f-peca">Qual peça você procura?</label>
-            <input id="f-peca" name="peca" type="text" autocomplete="off" placeholder="Ex.: farol dianteiro esquerdo" required aria-describedby="e-peca" />
-            <p class="erro" id="e-peca" hidden></p>
-          </div>
-          <div class="campo pc-largo">
-            <label for="f-codigo">Código gravado <span class="opc">(opcional)</span></label>
-            <input id="f-codigo" name="codigo" type="text" autocomplete="off" placeholder="Se você tiver, copie da peça" />
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset class="pc-grupo">
-        <legend>Para a gente te responder</legend>
-        <div class="pc-grade">
-          <div class="campo">
-            <label for="f-nome">Seu nome</label>
-            <input id="f-nome" name="nome" type="text" autocomplete="name" required aria-describedby="e-nome" />
-            <p class="erro" id="e-nome" hidden></p>
-          </div>
-          <div class="campo">
-            <label for="f-cidade">Cidade</label>
-            <input id="f-cidade" name="cidade" type="text" autocomplete="address-level2" required aria-describedby="e-cidade" />
-            <p class="erro" id="e-cidade" hidden></p>
-          </div>
-          <div class="campo pc-uf">
-            <label for="f-uf">Estado</label>
-            <div class="seletor">
-              <select id="f-uf" name="uf" required aria-describedby="e-uf">
-                <option value="">Escolha</option>
-                {ufs.map((u) => <option value={u}>{u}</option>)}
-              </select>
-            </div>
-            <p class="erro" id="e-uf" hidden></p>
-          </div>
-        </div>
-      </fieldset>
-
-      <datalist id="lista-marcas">
-        {marcas.map((m) => <option value={m} />)}
-      </datalist>
-
-      <div class="pc-acao">
-        <button type="submit" class="botao botao-laranja pc-enviar"><Icone nome="whats" />Enviar pelo WhatsApp</button>
-        <p class="pc-nota" id="pc-nota">Abre o WhatsApp com tudo preenchido. Você confere e envia por lá.</p>
-        <p class="pc-status" role="status" aria-live="polite" id="pc-status"></p>
+    <div class="pc-grade">
+      <div class="pc-intro">
+        <h1 class="display pc-h1">Não achou a peça?</h1>
+        <p class="lead pc-lead">Nem toda peça está anunciada. Conte o carro e a peça: a gente procura no pátio e responde pelo WhatsApp.</p>
       </div>
-    </form>
+
+      <form class="pc-form" id="form-procuro" novalidate data-whats={WHATS} data-modelos={JSON.stringify(modelosPorMarca)} aria-describedby="pc-nota">
+        <div class="pc-form-topo">
+          <img class="pc-rosto" src="/arte/v2/atendimento-rosto.webp" alt="" width="192" height="192" fetchpriority="low" decoding="async" />
+          <p><b>A gente procura no pátio</b><span>e responde pelo WhatsApp, com foto.</span></p>
+        </div>
+
+        <p class="pc-salvo" id="pc-salvo" hidden></p>
+
+        <fieldset class="pc-grupo">
+          <legend>O carro</legend>
+          <div class="pc-campos pc-campos-carro">
+            <div class="campo">
+              <label for="f-marca">Marca</label>
+              <input id="f-marca" name="marca" type="text" list="lista-marcas" autocomplete="off" placeholder="Ex.: Volkswagen" required aria-describedby="e-marca" />
+              <p class="erro" id="e-marca" hidden></p>
+            </div>
+            <div class="campo">
+              <label for="f-modelo">Modelo</label>
+              <input id="f-modelo" name="modelo" type="text" list="lista-modelos" autocomplete="off" placeholder="Ex.: Gol" required aria-describedby="e-modelo" />
+              <p class="erro" id="e-modelo" hidden></p>
+            </div>
+            <div class="campo">
+              <label for="f-ano">Ano</label>
+              <input id="f-ano" name="ano" type="text" inputmode="numeric" autocomplete="off" placeholder="Ex.: 2015" required aria-describedby="e-ano" />
+              <p class="erro" id="e-ano" hidden></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="pc-grupo">
+          <legend>A peça</legend>
+          <div class="pc-campos pc-campos-2">
+            <div class="campo pc-largo">
+              <label for="f-peca">Qual peça você procura?</label>
+              <input id="f-peca" name="peca" type="text" autocomplete="off" placeholder="Ex.: farol dianteiro esquerdo" required aria-describedby="e-peca" />
+              <p class="erro" id="e-peca" hidden></p>
+            </div>
+            <div class="campo">
+              <label for="f-codigo">Código gravado <span class="opc">(opcional)</span></label>
+              <input id="f-codigo" name="codigo" type="text" autocomplete="off" placeholder="Se tiver, copie da peça" />
+            </div>
+            <div class="campo">
+              <label for="f-cidade">Cidade e estado <span class="opc">(opcional)</span></label>
+              <input id="f-cidade" name="cidade" type="text" autocomplete="address-level2" placeholder="Ex.: Pelotas/RS" />
+            </div>
+          </div>
+        </fieldset>
+
+        <datalist id="lista-marcas">{marcas.map((m) => <option value={m.n} />)}</datalist>
+        <datalist id="lista-modelos"></datalist>
+
+        <div class="pc-acao">
+          <button type="submit" class="botao botao-laranja pc-enviar"><Icone nome="whats" />Enviar pelo WhatsApp</button>
+          <p class="pc-nota" id="pc-nota">Abre o WhatsApp com tudo preenchido. Você confere e envia por lá.</p>
+          <p class="pc-status" role="status" aria-live="polite" id="pc-status"></p>
+        </div>
+      </form>
+
+      <aside class="pc-dicas" aria-labelledby="h-dicas">
+        <h2 class="pc-dicas-titulo" id="h-dicas">O que ajuda a gente</h2>
+        <ul class="pc-lista">
+          <li><Icone nome="check" /><span><b>Marca, modelo e ano</b> do carro.</span></li>
+          <li><Icone nome="check" /><span><b>A peça</b>, como você fala. Por exemplo, farol, retrovisor ou caixa de câmbio.</span></li>
+          <li><Icone nome="check" /><span><b>O código gravado</b>, se você tiver. É o jeito mais certo de achar.</span></li>
+          <li><Icone nome="check" /><span><b>Cidade e estado</b>, para a gente combinar o envio.</span></li>
+        </ul>
+        <p class="pc-dica">Uma foto da peça velha também ajuda muito. Manda depois, pelo WhatsApp.</p>
+      </aside>
+    </div>
   </div>
 </Pagina>
 
 <script>
+  import { lerMeuCarro, norm } from '../lib/meuCarro';
+
   const form = document.getElementById('form-procuro') as HTMLFormElement | null;
   const status = document.getElementById('pc-status');
 
   const regras: Record<string, { ok: (v: string) => boolean; msg: string }> = {
     marca: { ok: (v) => v.trim().length >= 2, msg: 'Conte a marca do carro, por exemplo Volkswagen.' },
-    modelo: { ok: (v) => v.trim().length >= 2, msg: 'Falta o modelo. Por exemplo, Gol ou Polo.' },
+    modelo: { ok: (v) => v.trim().length >= 1, msg: 'Falta o modelo. Por exemplo, Gol ou Polo.' },
     ano: {
       ok: (v) => {
         const m = v.trim().match(/^(\d{4})(?:\s*[\/-]\s*(\d{4}))?$/);
@@ -129,16 +121,38 @@ const ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', '
       msg: 'Use o ano com 4 números, por exemplo 2015 ou 2015/2018.',
     },
     peca: { ok: (v) => v.trim().length >= 3, msg: 'Diga qual peça você procura.' },
-    nome: { ok: (v) => v.trim().length >= 2, msg: 'Como a gente pode chamar você?' },
-    cidade: { ok: (v) => v.trim().length >= 2, msg: 'Diga a cidade.' },
-    uf: { ok: (v) => v !== '', msg: 'Escolha o estado.' },
   };
 
   if (form && status) {
     const campos = Object.keys(regras);
+    const campo = (nome: string) => form.elements.namedItem(nome) as HTMLInputElement;
+
+    // modelos da marca digitada (sugestões do campo Modelo)
+    const modelos: Record<string, string[]> = JSON.parse(form.dataset.modelos || '{}');
+    const lista = document.getElementById('lista-modelos');
+    const sugerirModelos = () => {
+      const alvo = norm(campo('marca').value);
+      const marca = Object.keys(modelos).find((m) => norm(m) === alvo);
+      lista?.replaceChildren(...(marca ? modelos[marca] : []).map((m) => Object.assign(document.createElement('option'), { value: m })));
+    };
+    campo('marca').addEventListener('input', sugerirModelos);
+
+    // quem já salvou o "Meu carro" não precisa digitar de novo
+    const c = lerMeuCarro();
+    if (c && !campo('marca').value && !campo('modelo').value) {
+      campo('marca').value = c.b;
+      campo('modelo').value = c.m;
+      if (c.y) campo('ano').value = String(c.y);
+      sugerirModelos();
+      const aviso = document.getElementById('pc-salvo');
+      if (aviso) {
+        aviso.textContent = `Já preenchemos com o seu carro: ${c.b} ${c.m}${c.y ? ' ' + c.y : ''}. Se for outro, é só trocar.`;
+        aviso.hidden = false;
+      }
+    }
 
     const checar = (nome: string, mostrar: boolean) => {
-      const el = form.elements.namedItem(nome) as HTMLInputElement | HTMLSelectElement | null;
+      const el = campo(nome);
       const erro = document.getElementById('e-' + nome);
       if (!el || !erro) return true;
       const ok = regras[nome].ok(el.value);
@@ -151,8 +165,7 @@ const ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', '
     };
 
     campos.forEach((nome) => {
-      const el = form.elements.namedItem(nome);
-      if (!el) return;
+      const el = campo(nome);
       el.addEventListener('input', () => checar(nome, false));
       el.addEventListener('change', () => checar(nome, false));
     });
@@ -161,9 +174,7 @@ const ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', '
       e.preventDefault();
       let primeiro: HTMLElement | null = null;
       campos.forEach((nome) => {
-        if (!checar(nome, true) && !primeiro) {
-          primeiro = form.elements.namedItem(nome) as HTMLElement;
-        }
+        if (!checar(nome, true) && !primeiro) primeiro = campo(nome);
       });
       if (primeiro) {
         status.textContent = '';
@@ -171,22 +182,10 @@ const ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', '
         return;
       }
 
-      const v: Record<string, string> = {};
-      campos.forEach((nome) => {
-        v[nome] = ((form.elements.namedItem(nome) as HTMLInputElement).value || '').trim();
-      });
-      v.codigo = ((form.elements.namedItem('codigo') as HTMLInputElement).value || '').trim();
-
-      const linhas = [
-        'Olá! Procuro uma peça pelo site.',
-        '',
-        `Marca: ${v.marca}`,
-        `Modelo: ${v.modelo}`,
-        `Ano: ${v.ano}`,
-        `Peça: ${v.peca}`,
-      ];
-      if (v.codigo) linhas.push(`Código gravado: ${v.codigo}`);
-      linhas.push(`Nome: ${v.nome}`, `Cidade/UF: ${v.cidade} / ${v.uf}`);
+      const v = (nome: string) => (campo(nome).value || '').trim();
+      const linhas = ['Olá! Procuro uma peça pelo site.', '', `Carro: ${v('marca')} ${v('modelo')} ${v('ano')}`, `Peça: ${v('peca')}`];
+      if (v('codigo')) linhas.push(`Código gravado: ${v('codigo')}`);
+      if (v('cidade')) linhas.push(`Cidade: ${v('cidade')}`);
       const url = `https://wa.me/${form.dataset.whats}?text=${encodeURIComponent(linhas.join('\n'))}`;
 
       // link de verdade: o clique preserva o gesto e a rastreio.js conta o Contact
@@ -211,63 +210,72 @@ const ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', '
 </script>
 
 <style>
-  .pc-banner { padding-top: clamp(8px, 2vw, 16px); }
-  .pc-trilha { display: flex; flex-wrap: wrap; align-items: center; margin: 0 0 clamp(16px, 2.6vw, 28px); padding: 0; list-style: none; font-size: 14px; color: var(--ink-3); }
-  .pc-trilha li { display: inline-flex; align-items: center; }
-  .pc-trilha li + li::before { content: "/"; margin: 0 10px; color: var(--line-2); }
-  .pc-trilha a { color: var(--ink-2); padding-block: 8px; }
-  .pc-trilha a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-  .pc-trilha span { color: var(--ink-2); padding-block: 8px; }
+  .pc-pagina { padding-block: 14px clamp(56px, 8vw, 112px); }
+  .pc-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: clamp(14px, 2vw, 22px); font-size: 13.5px; color: var(--ink-3); }
+  .pc-trilha a { color: var(--ink-2); padding-block: 6px; }
+  .pc-trilha a:hover { color: var(--ink); text-decoration: underline; }
 
-  .pc-hero { display: grid; gap: clamp(24px, 4vw, 48px); align-items: center; }
-  .pc-arte { margin: 0; border-radius: 28px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--surface-2); box-shadow: var(--shadow-1); }
-  @media (max-width: 700px) { .pc-arte { aspect-ratio: 2 / 3; } }
-  .pc-arte img { width: 100%; height: 100%; object-fit: cover; }
-  .pc-h1 { font-size: clamp(40px, 8.6vw, 104px); margin: 0; }
-  .pc-lead { margin: clamp(16px, 2vw, 24px) 0 0; max-width: 46ch; }
-  @media (min-width: 900px) {
-    .pc-hero { grid-template-columns: 1fr 1fr; }
-    .pc-arte { order: 2; }
+  /* celular: título, formulário, dicas. PC: título e dicas à esquerda, formulário à direita */
+  .pc-grade { display: grid; gap: 22px; grid-template-areas: "intro" "form" "dicas"; }
+  .pc-intro { grid-area: intro; display: grid; gap: 12px; align-content: start; }
+  .pc-form { grid-area: form; }
+  .pc-dicas { grid-area: dicas; }
+  @media (min-width: 960px) {
+    .pc-grade { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); grid-template-areas: "intro form" "dicas form";
+                grid-template-rows: auto 1fr; column-gap: clamp(40px, 5vw, 72px); row-gap: 32px; align-items: start; }
+    .pc-intro { padding-top: 18px; }
   }
+  .pc-h1 { margin: 0; font-size: clamp(42px, 5.6vw, 78px); }
+  .pc-lead { margin: 0; max-width: 40ch; }
 
-  .pc-corpo { display: grid; gap: clamp(36px, 5vw, 72px); padding-block: clamp(40px, 6vw, 80px) clamp(56px, 8vw, 112px); }
-  @media (min-width: 900px) { .pc-corpo { grid-template-columns: 0.8fr 1.2fr; align-items: start; } }
-  .pc-dicas { display: grid; gap: 22px; }
-  .pc-dicas .titulo-secao { margin: 0; }
-  .pc-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-  .pc-lista li { display: flex; gap: 12px; align-items: flex-start; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
-  .pc-lista :global(svg) { width: 22px; height: 22px; flex: none; margin-top: 2px; color: var(--accent-text); }
-  .pc-lista b { color: var(--ink); font-weight: 650; }
-  .pc-dica { margin: 0; padding: 18px 20px; border-radius: 18px; background: var(--accent-soft); color: var(--ink); font-size: 15.5px; line-height: 1.5; }
+  /* formulário em cartão */
+  .pc-form { display: grid; gap: 24px; padding: clamp(20px, 3vw, 34px); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-2); }
+  .pc-form-topo { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .pc-rosto { flex: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: #efeeeb;
+              box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
+  .pc-form-topo p { margin: 0; display: grid; gap: 1px; }
+  .pc-form-topo b { font-stretch: 86%; font-weight: 800; font-size: clamp(19px, 1.8vw, 22px); line-height: 1.15; color: var(--ink); }
+  .pc-form-topo span { font-size: 15px; color: var(--ink-2); }
+  .pc-salvo { margin: -6px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); font-size: 14.5px; line-height: 1.45; color: var(--ink); }
+  .pc-salvo[hidden] { display: none; }
 
-  .pc-form { display: grid; gap: 36px; }
   .pc-grupo { margin: 0; padding: 0; border: 0; min-width: 0; }
-  .pc-grupo legend { padding: 0; margin-bottom: 16px; font-stretch: 78%; font-weight: 820; font-size: clamp(22px, 2.6vw, 28px); line-height: 1.1; color: var(--ink); }
-  .pc-grade { display: grid; gap: 18px 16px; grid-template-columns: 1fr; }
-  @media (min-width: 640px) { .pc-grade { grid-template-columns: 1fr 1fr; } .pc-grade .pc-largo { grid-column: 1 / -1; } }
-  .pc-form .pc-grade .pc-uf { max-width: 100%; }
+  .pc-grupo legend { padding: 0; margin-bottom: 12px; font-stretch: 80%; font-weight: 820; font-size: 21px; line-height: 1.1; color: var(--ink); }
+  .pc-campos { display: grid; gap: 14px; }
+  .pc-campos-carro { grid-template-columns: 1fr 1fr; }
+  .pc-campos-carro > .campo:first-child { grid-column: 1 / -1; }
+  @media (min-width: 520px) { .pc-campos-carro { grid-template-columns: 1.15fr 1fr .8fr; } .pc-campos-carro > .campo:first-child { grid-column: auto; } }
+  .pc-campos-2 { grid-template-columns: 1fr; }
+  @media (min-width: 520px) { .pc-campos-2 { grid-template-columns: 1fr 1fr; } .pc-campos-2 > .pc-largo { grid-column: 1 / -1; } }
 
-  .campo { display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .campo { display: grid; gap: 7px; align-content: start; min-width: 0; }
   .campo label { font-size: 14.5px; font-weight: 620; color: var(--ink); }
   .campo .opc { font-weight: 500; color: var(--ink-3); }
   .campo input {
-    width: 100%; height: 52px; padding: 0 16px; border: 0; outline: 0; border-radius: 12px;
+    width: 100%; height: 50px; padding: 0 14px; border: 0; outline: 0; border-radius: 12px;
     background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; font-weight: 500;
     box-shadow: inset 0 0 0 1.5px var(--line-2); transition: box-shadow .2s ease;
   }
   .campo input::placeholder { color: var(--ink-3); opacity: 1; }
   .campo input:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 82%); }
   .campo input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--accent-text); }
-  .pc-form .seletor select { height: 52px; padding: 0 40px 0 16px; font-size: 16px; font-weight: 500; }
-  .pc-form .seletor select:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 82%); }
-  .pc-form .seletor select[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--accent-text); }
   .erro { margin: 0; font-size: 14px; line-height: 1.4; font-weight: 580; color: var(--accent-text); }
   .erro[hidden] { display: none; }
 
-  .pc-acao { display: grid; gap: 14px; justify-items: start; padding-top: 8px; }
+  .pc-acao { display: grid; gap: 12px; justify-items: start; }
   .pc-enviar { min-height: 56px; height: auto; padding: 14px 26px; font-size: 17px; }
-  .pc-nota { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-3); max-width: 46ch; }
+  @media (max-width: 600px) { .pc-enviar { width: 100%; } }
+  .pc-nota { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-3); max-width: 46ch; }
   .pc-status { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
   .pc-status:empty { display: none; }
   .pc-status a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* dicas */
+  .pc-dicas { display: grid; gap: 16px; align-content: start; }
+  .pc-dicas-titulo { margin: 0; font-stretch: 80%; font-weight: 820; font-size: clamp(22px, 2.2vw, 26px); line-height: 1.1; }
+  .pc-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .pc-lista li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
+  .pc-lista :global(svg) { width: 22px; height: 22px; flex: none; margin-top: 2px; color: var(--accent-text); }
+  .pc-lista b { color: var(--ink); font-weight: 650; }
+  .pc-dica { margin: 0; padding: 16px 18px; border-radius: 18px; background: var(--accent-soft); color: var(--ink); font-size: 15px; line-height: 1.5; }
 </style>

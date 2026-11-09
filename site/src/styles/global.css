@@ -166,54 +166,103 @@
   backdrop-filter: blur(14px) saturate(140%);
 }
 
-/* ---- Etiqueta de patio (o cartao da peca) ---------------------------------
-   Forma de etiqueta de estoque: furo no alto, picote com dois entalhes entre
-   a foto e os dados. A foto fica numa placa branca (o ML fotografa no branco). */
+/* ---- Cartão da peça (vitrine) ---------------------------------------------
+   A foto de estúdio é a protagonista: ocupa o topo inteiro do cartão, sem moldura.
+   Embaixo: carro e anos, nome (2 linhas), código gravado, preço forte e a linha
+   de confiança. .etiqueta-cx segura o cartão (a.etiqueta) e a ação rápida do
+   WhatsApp, que é um link irmão (link dentro de link quebra o HTML).
+   Os furos e o picote de etiqueta saíram: no escuro viravam "mordidas" pretas
+   na borda e roubavam altura da foto e do preço.                               */
+.etiqueta-cx {
+  position: relative; display: flex; flex-direction: column; min-width: 0;
+  container: etiqueta / inline-size;
+  transition: transform .28s cubic-bezier(.2,.7,.2,1);
+}
 .etiqueta {
-  --r: 18px;
-  position: relative; display: flex; flex-direction: column;
-  background: var(--surface); border-radius: var(--r);
-  box-shadow: var(--shadow-1);
-  transition: transform .25s cubic-bezier(.2,.7,.2,1), box-shadow .25s ease;
+  --r: 16px;
+  position: relative; flex: 1; display: flex; flex-direction: column; min-width: 0;
+  background: var(--surface); color: var(--ink); border-radius: var(--r); overflow: hidden;
+  box-shadow: 0 0 0 1px var(--line), var(--shadow-1);
+  transition: box-shadow .28s ease;
 }
+.etiqueta:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; border-radius: var(--r); box-shadow: 0 0 0 1px var(--line-2), var(--shadow-2); }
+.etiqueta-foto { position: relative; aspect-ratio: 1; background: var(--plate); overflow: hidden; }
+.etiqueta-foto img { width: 100%; height: 100%; object-fit: contain; padding: 8%; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+/* capa de estúdio já vem com fundo, sombra e margem: ocupa a placa inteira */
+.etiqueta-foto img.estudio { padding: 0; object-fit: cover; }
 @media (hover: hover) {
-  .etiqueta:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
-  .etiqueta:hover .etiqueta-foto img { transform: scale(1.04); }
+  .etiqueta-cx:hover { transform: translateY(-3px); }
+  .etiqueta-cx:hover .etiqueta { box-shadow: 0 0 0 1px var(--line-2), var(--shadow-2); }
+  .etiqueta-cx:hover .etiqueta-foto img { transform: scale(1.045); }
 }
-.etiqueta-foto {
-  position: relative; aspect-ratio: 1; margin: 8px 8px 0; border-radius: 12px;
-  background: var(--plate); overflow: hidden;
+/* selo das peças mais novas: discreto (pílula clara com o ponto laranja), para não gritar em 24 cartões seguidos */
+.etiqueta-novo {
+  position: absolute; z-index: 1; top: 10px; left: 10px;
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px 0 9px; border-radius: 99px;
+  background: rgb(255 255 255 / .94); color: #1d1d1f; font-size: 12px; font-weight: 700; font-stretch: 94%; line-height: 1; white-space: nowrap;
+  box-shadow: 0 0 0 1px rgb(16 16 20 / .06), 0 2px 8px -3px rgb(16 16 20 / .28);
 }
-.etiqueta-foto img {
-  width: 100%; height: 100%; object-fit: contain; padding: 7%;
-  transition: transform .5s cubic-bezier(.2,.7,.2,1);
+.etiqueta-novo::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgb(255 106 0 / .22); }
+@container etiqueta (max-width: 214px) { .etiqueta-novo { top: 8px; left: 8px; height: 22px; padding: 0 8px 0 7px; gap: 5px; font-size: 11px; } }
+.etiqueta-dados { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; padding: 12px 14px 14px; }
+.etiqueta-carro { font-size: 12.5px; font-weight: 650; font-stretch: 94%; line-height: 1.3; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etiqueta-anos { font-weight: 500; color: var(--ink-3); }
+/* cartão estreito (celular): carro numa linha e os anos na outra, para o ano nunca ser cortado */
+@container etiqueta (max-width: 214px) {
+  .etiqueta-modelo, .etiqueta-anos { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .etiqueta-sep { display: none; }
+  .etiqueta-dados { padding: 11px 12px 12px; }
+  .etiqueta-preco { padding-top: 8px; font-size: 26px; }
+  .etiqueta-confia { margin-top: 9px; padding-top: 9px; }
 }
-.etiqueta-furo {
-  position: absolute; top: 10px; left: 10px; width: 14px; height: 14px; border-radius: 50%;
-  background: var(--bg); box-shadow: inset 0 1px 2px rgb(0 0 0 / .25);
-}
-.etiqueta-picote {
-  position: relative; height: 0; margin: 12px 14px 0; border-top: 1.5px dashed var(--line-2);
-}
-/* os dois entalhes da etiqueta: circulos da cor do fundo da pagina */
-.etiqueta-picote::before, .etiqueta-picote::after {
-  content: ""; position: absolute; top: -9px; width: 18px; height: 18px; border-radius: 50%;
-  background: var(--bg); box-shadow: inset 0 1px 2px rgb(0 0 0 / .10);
-}
-.etiqueta-picote::before { left: -23px; }
-.etiqueta-picote::after { right: -23px; }
-.etiqueta-dados { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
-.etiqueta-carro { font-size: 12.5px; font-weight: 600; color: var(--accent-text); font-stretch: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .etiqueta-nome {
-  font-size: 15.5px; font-weight: 560; line-height: 1.28; color: var(--ink);
+  margin-top: 1px; font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  min-height: 2.56em;
 }
-.etiqueta-rodape { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; margin-top: auto; padding-top: 4px; min-width: 0; }
-.etiqueta-preco { flex: none; font-stretch: 84%; font-weight: 800; font-size: 22px; line-height: 1; letter-spacing: -.01em; }
-.etiqueta-preco small { font-size: 13px; font-weight: 650; margin-right: 2px; color: var(--ink-2); }
-.etiqueta-cod { color: var(--ink-3); min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
-.etiqueta, .etiqueta-dados { min-width: 0; }
+.etiqueta-cod { font-size: 12px; line-height: 1.4; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etiqueta-cod .oem { font-size: 11.5px; letter-spacing: .03em; color: var(--ink-2); }
+.etiqueta-preco {
+  display: flex; align-items: flex-start; margin-top: auto; padding-top: 10px;
+  font-stretch: 84%; font-weight: 820; font-size: 27px; line-height: .9; letter-spacing: -.012em; color: var(--ink);
+}
+.etiqueta-preco small { font-size: 13px; font-weight: 700; line-height: 1; letter-spacing: 0; }
+.etiqueta-preco small:first-child { margin: 3px 3px 0 0; color: var(--ink-2); }
+.etiqueta-preco small:last-child { margin: 1px 0 0 1px; }
+.etiqueta-confia {
+  display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+  font-size: 12px; font-weight: 560; line-height: 1.25; color: var(--ink-2);
+}
+.etiqueta-confia svg { width: 15px; height: 15px; flex: none; color: var(--accent-text); }
+.etiqueta-confia > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@container etiqueta (max-width: 214px) { .etiqueta-confia-longo { display: none; } }
+/* "Serve no seu XC60" (equipe Meu carro): o script troca o texto, então o visto é desenhado no ::before */
+.etiqueta .etiqueta-serve {
+  display: block; align-self: flex-start; max-width: 100%; margin: 0 0 5px; padding: 3px 9px 3px 4px; border-radius: 99px;
+  background: var(--serve-bg); color: var(--serve-ink); box-shadow: inset 0 0 0 1px var(--serve-borda);
+  font-size: 12px; font-weight: 700; line-height: 16px; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.etiqueta .etiqueta-serve::before {
+  content: ""; display: inline-block; width: 16px; height: 16px; margin-right: 5px; vertical-align: top; border-radius: 50%;
+  background: #1f9d55 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.6 8.4 7 10.6l4.4-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
+}
+.etiqueta .etiqueta-serve[hidden] { display: none; }
+/* ação rápida: só com mouse (no toque, um link invisível sobre a foto roubaria o toque que abre a peça) */
+.etiqueta-acao { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .etiqueta-acao {
+    position: absolute; z-index: 2; left: 10px; right: 10px; top: calc(100cqi - 50px); height: 40px;
+    display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 11px;
+    background: linear-gradient(180deg, color-mix(in oklab, var(--accent), #fff 14%) 0%, var(--accent) 52%, var(--accent-press) 100%);
+    color: #1d1d1f; font-weight: 700; font-size: 14px; font-stretch: 96%; white-space: nowrap;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), 0 8px 18px -8px rgb(140 50 0 / .6);
+    opacity: 0; transform: translateY(8px); pointer-events: none;
+    transition: opacity .2s ease, transform .28s cubic-bezier(.2,.7,.2,1), filter .2s;
+  }
+  .etiqueta-acao svg { width: 18px; height: 18px; flex: none; }
+  .etiqueta-cx:hover .etiqueta-acao, .etiqueta-cx:focus-within .etiqueta-acao { opacity: 1; transform: none; pointer-events: auto; }
+  .etiqueta-acao:hover { filter: brightness(1.05); }
+  .etiqueta-acao:focus-visible { outline: 3px solid #1d1d1f; outline-offset: 2px; border-radius: 11px; box-shadow: 0 0 0 5px #fff; }
+}
 
 /* ---- Selo em disco (icones aprovados dos destaques) ----------------------- */
 .selo { display: flex; align-items: center; gap: 12px; }
@@ -279,9 +328,6 @@
 /* o anel de foco fica na caixa (.busca:focus-within); o campo de dentro nao ganha outro contorno */
 .busca input:focus, .busca input:focus-visible { outline: none; box-shadow: none; }
 
-/* capa de estúdio já vem com fundo e margem: ocupa a placa inteira */
-.etiqueta-foto img.estudio { padding: 0; object-fit: cover; }
-
 /* Painéis de estúdio (arte clara): SEMPRE com as cores do tema claro, mesmo no modo escuro do celular. */
 .tema-estudio {
   --bg: #f5f5f7; --bg-2: #ececf0; --surface: #ffffff; --surface-2: #f7f7f9;
@@ -291,3 +337,15 @@
   --shadow-2: 0 2px 6px rgb(16 16 20 / .06), 0 24px 48px -16px rgb(16 16 20 / .22);
   color: var(--ink); color-scheme: light;
 }
+
+/* === vitrine === (catálogo e cartões; equipe vitrine) */
+/* selo verde "Serve no seu ..." (verde = combina com o carro DELE; o laranja fica com a marca) */
+:root { --serve-bg: #e8f6ee; --serve-ink: #0f6235; --serve-borda: rgb(23 131 74 / .22); }
+@media (prefers-color-scheme: dark) {
+  [data-direcao="a"] { --serve-bg: rgb(70 201 133 / .12); --serve-ink: #93e2b7; --serve-borda: rgb(70 201 133 / .3); }
+}
+.tema-estudio { --serve-bg: #e8f6ee; --serve-ink: #0f6235; --serve-borda: rgb(23 131 74 / .22); }
+/* lugar do selo de reputação do ML: some quando vazio */
+[data-selo-reputacao]:empty, [data-selo-reputacao]:has(> astro-slot:empty) { display: none; }
+/* na faixa "Chegou no pátio" da home todas são novas: o selo seria repetido em todos */
+[aria-labelledby="t-chegou"] .etiqueta-novo { display: none; }

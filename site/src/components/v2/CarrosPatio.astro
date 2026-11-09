@@ -3,16 +3,19 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { resumo, logoInfo } from '../../lib/dados';
-interface Props { limite?: number }
-const { limite = 12 } = Astro.props;
+interface Props { limite?: number; todos?: boolean }
+const { limite = 12, todos = false } = Astro.props;
 const marcas = resumo().marcas;
 const kMarca = (b: string) => marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
-const carros = resumo().carros.filter((c) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${c.k}.webp`))).slice(0, limite);
+const temArte = (k: string) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`));
+const carros = todos ? resumo().carros : resumo().carros.filter((c) => temArte(c.k)).slice(0, limite);
 ---
-<ul class="carros-v2">
+<ul class:list={["carros-v2", { todos }]}>
   {carros.map((c) => { const l = logoInfo(kMarca(c.b), 40, 26); return (
-    <li><a class="carro-v2" href={`/carros/${c.k}.html`}>
-      <span class="carro-v2-arte"><img src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" /></span>
+    <li data-b={c.b}><a class="carro-v2" href={`/carros/${c.k}.html`}>
+      {temArte(c.k)
+        ? <span class="carro-v2-arte"><img src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" /></span>
+        : (() => { const g = logoInfo(kMarca(c.b), 110, 64); return <span class="carro-v2-arte carro-v2-sem">{g && <img src={g.src} alt="" width={g.w} height={g.h} style={`width:${g.w}px;height:${g.h}px`} class={g.png ? 'png' : 'svg'} loading="lazy" />}</span>; })()}
       <span class="carro-v2-info">
         <span class="carro-v2-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>
         <span class="carro-v2-txt"><b>{`${c.b} ${c.m}`}</b><small class="num">{c.anos ? `${c.anos[0]} a ${c.anos[1]} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</small></span>
@@ -25,12 +28,29 @@ const carros = resumo().carros.filter((c) => existsSync(join(process.cwd(), 'pub
     overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .carros-v2::-webkit-scrollbar { display: none; }
   .carros-v2 li { scroll-snap-align: start; }
+  .carros-v2 li[hidden] { display: none; }
+  /* lista completa (página de carros): no celular vira grade de 2, não trilho */
+  .carros-v2.todos { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; gap: 10px; }
+  @media (min-width: 760px) { .carros-v2.todos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
+  @media (min-width: 1180px) { .carros-v2.todos { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
+  @media (max-width: 699px) {
+    .carros-v2.todos .carro-v2-info { grid-template-columns: 1fr; gap: 6px; padding: 10px 12px 12px; }
+    .carros-v2.todos .carro-v2-logo { width: 40px; height: 30px; }
+    .carros-v2.todos .carro-v2-seta { display: none; }
+    .carros-v2.todos .carro-v2-txt b { font-size: 17px; }
+    .carros-v2.todos .carro-v2-txt small { font-size: 12.5px; }
+  }
   @media (min-width: 700px) { .carros-v2 { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; gap: 16px; } }
   @media (min-width: 1080px) { .carros-v2 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
   .carro-v2 { display: grid; border-radius: 22px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1);
     transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
   .carro-v2-arte { display: block; background: #efeeeb; overflow: hidden; }
   .carro-v2-arte img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; transition: transform .7s cubic-bezier(.2,.7,.2,1); }
+  /* carro ainda sem arte: painel de estúdio com o logo grande da marca */
+  .carro-v2-sem { aspect-ratio: 3 / 2; display: grid; place-items: center;
+    background: radial-gradient(70% 60% at 50% 42%, #fbfaf8 0%, #efeeeb 62%, #e6e4e0 100%); }
+  .carro-v2-sem img { width: auto; height: auto; aspect-ratio: auto; opacity: .9; }
+  .carro-v2-sem img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
   .carro-v2-info { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 12px 16px 14px 12px; }
   .carro-v2-logo { width: 52px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: #f3f2ef; }
   .carro-v2-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }

@@ -3,8 +3,8 @@
 import Base from './Base.astro';
 import Cabecalho from '../components/Cabecalho.astro';
 import Rodape from '../components/Rodape.astro';
-interface Props { titulo: string; descricao?: string; canonical?: string; ogImagem?: string; noindex?: boolean; produto?: object; }
-const { produto, ...resto } = Astro.props;
+interface Props { titulo: string; descricao?: string; canonical?: string; ogImagem?: string; noindex?: boolean; produto?: object; rodapeSelos?: boolean; }
+const { produto, rodapeSelos = true, ...resto } = Astro.props;
 ---
 <Base {...resto} direcao="a">
   <Fragment slot="head">
@@ -15,7 +15,7 @@ const { produto, ...resto } = Astro.props;
   <a class="pular" href="#conteudo">Pular para o conteúdo</a>
   <Cabecalho />
   <main id="conteudo"><slot /></main>
-  <Rodape />
+  <Rodape selos={rodapeSelos} />
 </Base>
 <style is:global>
   .pular { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: 10px; background: var(--ink); color: var(--bg); }
