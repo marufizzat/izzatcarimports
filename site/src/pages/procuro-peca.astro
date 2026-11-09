@@ -1,10 +1,13 @@
 ---
 // "Não achou a peça?": o formulário na PRIMEIRA tela. PC: título e dicas à esquerda, formulário à direita.
 // Celular: título, formulário e só depois as dicas. Obrigatórios só marca, modelo, ano e peça; o modelo
-// sugere os da marca escolhida e, se a pessoa já salvou o "Meu carro", o carro vem preenchido.
+// sugere os da marca escolhida (também com "VW", "GM", "Mercedes" ou o começo do nome) e, se a pessoa já salvou
+// o "Meu carro", o carro vem preenchido. No fim do formulário: "Avise-me quando chegar peça para o meu <carro>"
+// (WhatsApp com a mensagem pronta, sem prometer prazo).
 import Pagina from '../layouts/Pagina.astro';
 import Icone from '../components/Icone.astro';
 import { WHATS, SITE, resumo } from '../lib/dados';
+import { linkAviso } from '../lib/aviso';
 
 const canonical = `${SITE}/procuro-peca.html`;
 const marcas = resumo().marcas;
@@ -86,6 +89,14 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
           <p class="pc-nota" id="pc-nota">Abre o WhatsApp com tudo preenchido. Você confere e envia por lá.</p>
           <p class="pc-status" role="status" aria-live="polite" id="pc-status"></p>
         </div>
+
+        <div class="pc-aviso">
+          <p>Quer saber quando chegar peça do seu carro no pátio?</p>
+          <a class="botao botao-linha pc-aviso-botao" href={linkAviso(WHATS, 'carro')} rel="noopener" data-aviso>
+            <Icone nome="whats" /><span data-aviso-txt>Avise-me quando chegar peça para o meu carro</span>
+          </a>
+          <p class="pc-aviso-erro" id="pc-aviso-erro" role="status" aria-live="polite" hidden>Preencha a marca e o modelo do carro para a gente saber qual é.</p>
+        </div>
       </form>
 
       <aside class="pc-dicas" aria-labelledby="h-dicas">
@@ -103,7 +114,8 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 </Pagina>
 
 <script>
-  import { lerMeuCarro, norm } from '../lib/meuCarro';
+  import { lerMeuCarro, norm, EVENTO } from '../lib/meuCarro';
+  import { linkAviso } from '../lib/aviso';
 
   const form = document.getElementById('form-procuro') as HTMLFormElement | null;
   const status = document.getElementById('pc-status');
@@ -127,15 +139,57 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
     const campos = Object.keys(regras);
     const campo = (nome: string) => form.elements.namedItem(nome) as HTMLInputElement;
 
-    // modelos da marca digitada (sugestões do campo Modelo)
+    // modelos da marca digitada (sugestões do campo Modelo). Vale o nome inteiro, um apelido (VW, GM, Chevy, MB)
+    // ou o começo do nome com 3+ letras ("Mercedes", "Land", "Citroen"). Empate no começo: a marca com mais peças.
     const modelos: Record<string, string[]> = JSON.parse(form.dataset.modelos || '{}');
+    const APELIDOS: Record<string, string> = { vw: 'volkswagen', gm: 'chevrolet', chevy: 'chevrolet', mb: 'mercedesbenz', benz: 'mercedesbenz' };
+    const marcaDe = (texto: string): string | undefined => {
+      const t = norm(texto);
+      if (!t) return undefined;
+      const alvo = APELIDOS[t] ?? t;
+      const nomes = Object.keys(modelos);
+      return nomes.find((m) => norm(m) === alvo) ?? (alvo.length >= 3 ? nomes.find((m) => norm(m).startsWith(alvo)) : undefined);
+    };
     const lista = document.getElementById('lista-modelos');
     const sugerirModelos = () => {
-      const alvo = norm(campo('marca').value);
-      const marca = Object.keys(modelos).find((m) => norm(m) === alvo);
+      const marca = marcaDe(campo('marca').value);
       lista?.replaceChildren(...(marca ? modelos[marca] : []).map((m) => Object.assign(document.createElement('option'), { value: m })));
     };
     campo('marca').addEventListener('input', sugerirModelos);
+
+    // "Avise-me quando chegar peça para o meu <carro>": o link acompanha o que está nos campos. O ano vem do campo;
+    // sem ano no campo, o do "Meu carro" salvo, só se for o MESMO carro.
+    const aviso = form.querySelector<HTMLAnchorElement>('[data-aviso]');
+    const avisoTxt = form.querySelector<HTMLElement>('[data-aviso-txt]');
+    const avisoErro = document.getElementById('pc-aviso-erro');
+    const carroDoForm = () => {
+      const marcaTxt = campo('marca').value.trim();
+      const modelo = campo('modelo').value.trim();
+      if (marcaTxt.length < 2 || !modelo) return null;
+      const marca = marcaDe(marcaTxt) ?? marcaTxt;
+      const anoCampo = campo('ano').value.trim();
+      const salvo = lerMeuCarro();
+      const mesmo = !!salvo && norm(salvo.b) === norm(marca) && norm(salvo.m) === norm(modelo);
+      const ano = regras.ano.ok(anoCampo) ? anoCampo : mesmo && salvo!.y ? String(salvo!.y) : '';
+      return { nome: `${marca} ${modelo}`, ano };
+    };
+    const pintarAviso = () => {
+      if (!aviso) return;
+      const c = carroDoForm();
+      aviso.href = linkAviso(form.dataset.whats || '', c ? c.nome : 'carro', c ? c.ano : null);
+      if (avisoTxt) avisoTxt.textContent = `Avise-me quando chegar peça para o meu ${c ? c.nome : 'carro'}`;
+      if (c && avisoErro) avisoErro.hidden = true;
+    };
+    ['marca', 'modelo', 'ano'].forEach((n) => { campo(n).addEventListener('input', pintarAviso); campo(n).addEventListener('change', pintarAviso); });
+    window.addEventListener(EVENTO, pintarAviso);
+    aviso?.addEventListener('click', (e) => {
+      if (carroDoForm()) return; // link de verdade: o WhatsApp abre com a mensagem pronta
+      e.preventDefault();
+      checar('marca', true);
+      checar('modelo', true);
+      if (avisoErro) avisoErro.hidden = false;
+      (regras.marca.ok(campo('marca').value) ? campo('modelo') : campo('marca')).focus();
+    });
 
     // quem já salvou o "Meu carro" não precisa digitar de novo
     const c = lerMeuCarro();
@@ -144,12 +198,13 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       campo('modelo').value = c.m;
       if (c.y) campo('ano').value = String(c.y);
       sugerirModelos();
-      const aviso = document.getElementById('pc-salvo');
-      if (aviso) {
-        aviso.textContent = `Já preenchemos com o seu carro: ${c.b} ${c.m}${c.y ? ' ' + c.y : ''}. Se for outro, é só trocar.`;
-        aviso.hidden = false;
+      const salvo = document.getElementById('pc-salvo');
+      if (salvo) {
+        salvo.textContent = `Já preenchemos com o seu carro: ${c.b} ${c.m}${c.y ? ' ' + c.y : ''}. Se for outro, é só trocar.`;
+        salvo.hidden = false;
       }
     }
+    pintarAviso();
 
     const checar = (nome: string, mostrar: boolean) => {
       const el = campo(nome);
@@ -225,17 +280,17 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
                 grid-template-rows: auto 1fr; column-gap: clamp(40px, 5vw, 72px); row-gap: 32px; align-items: start; }
     .pc-intro { padding-top: 18px; }
   }
-  .pc-h1 { margin: 0; font-size: clamp(42px, 5.6vw, 78px); }
+  .pc-h1 { margin: 0; font-size: var(--h1-pagina); }
   .pc-lead { margin: 0; max-width: 40ch; }
 
   /* formulário em cartão */
-  .pc-form { display: grid; gap: 24px; padding: clamp(20px, 3vw, 34px); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-2); }
+  .pc-form { display: grid; gap: 24px; padding: clamp(20px, 3vw, 34px); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-2); min-width: 0; }
   .pc-form-topo { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
   .pc-rosto { flex: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: #efeeeb;
               box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
   .pc-form-topo p { margin: 0; display: grid; gap: 1px; }
   .pc-form-topo b { font-stretch: 86%; font-weight: 800; font-size: clamp(19px, 1.8vw, 22px); line-height: 1.15; color: var(--ink); }
-  .pc-form-topo span { font-size: 15px; color: var(--ink-2); }
+  .pc-form-topo span { font-size: 15px; color: var(--ink-2); text-wrap: balance; }
   .pc-salvo { margin: -6px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); font-size: 14.5px; line-height: 1.45; color: var(--ink); }
   .pc-salvo[hidden] { display: none; }
 
@@ -248,19 +303,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   .pc-campos-2 { grid-template-columns: 1fr; }
   @media (min-width: 520px) { .pc-campos-2 { grid-template-columns: 1fr 1fr; } .pc-campos-2 > .pc-largo { grid-column: 1 / -1; } }
 
-  .campo { display: grid; gap: 7px; align-content: start; min-width: 0; }
-  .campo label { font-size: 14.5px; font-weight: 620; color: var(--ink); }
-  .campo .opc { font-weight: 500; color: var(--ink-3); }
-  .campo input {
-    width: 100%; height: 50px; padding: 0 14px; border: 0; outline: 0; border-radius: 12px;
-    background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; font-weight: 500;
-    box-shadow: inset 0 0 0 1.5px var(--line-2); transition: box-shadow .2s ease;
-  }
-  .campo input::placeholder { color: var(--ink-3); opacity: 1; }
-  .campo input:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 82%); }
-  .campo input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--accent-text); }
-  .erro { margin: 0; font-size: 14px; line-height: 1.4; font-weight: 580; color: var(--accent-text); }
-  .erro[hidden] { display: none; }
+  /* campos: estilo comum no global.css (.campo), com o foco visível também no campo com erro */
 
   .pc-acao { display: grid; gap: 12px; justify-items: start; }
   .pc-enviar { min-height: 56px; height: auto; padding: 14px 26px; font-size: 17px; }
@@ -269,6 +312,15 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   .pc-status { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
   .pc-status:empty { display: none; }
   .pc-status a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* "Avise-me quando chegar peça": discreto, no fim do formulário */
+  .pc-aviso { display: grid; gap: 10px; justify-items: start; padding-top: 20px; border-top: 1px solid var(--line); }
+  .pc-aviso p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+  .pc-aviso-botao { --h: 46px; height: auto; min-height: var(--h); padding: 9px 16px; font-size: 15px; white-space: normal; text-align: left; line-height: 1.3; max-width: 100%; }
+  .pc-aviso-botao :global(svg) { width: 19px; height: 19px; }
+  @media (max-width: 600px) { .pc-aviso-botao { width: 100%; justify-content: flex-start; } }
+  .pc-aviso .pc-aviso-erro { font-size: 14px; font-weight: 580; color: var(--accent-text); }
+  .pc-aviso-erro[hidden] { display: none; }
 
   /* dicas */
   .pc-dicas { display: grid; gap: 16px; align-content: start; }

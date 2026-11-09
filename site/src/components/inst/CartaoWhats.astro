@@ -1,25 +1,27 @@
 ---
-// Cartão "conversa no WhatsApp": quem é (logo + número), a mensagem que o botão já manda pronta (balão) e,
+// Cartão "conversa no WhatsApp": quem é (logo + número), a mensagem que o BOTÃO manda pronta (balão) e,
 // no PC, o QR que abre a conversa no celular (public/icones/qr-whatsapp.svg, gerado com o pacote qrcode do
-// Python para https://wa.me/5553991170950?text=Olá! Vim pelo site.). O QR fica SEMPRE numa placa branca
-// (no escuro também), senão o celular não lê. Sem foto de pessoa.
+// Python para https://wa.me/5553991170950?text=Olá! Vim pelo site.). O QR é um só para o site todo: por isso o
+// texto dele diz só que abre a conversa (a mensagem de cada página vai pelo botão). Placa branca, sem foto de pessoa.
+// Os "____" da mensagem (lugar para a pessoa completar no WhatsApp) aparecem como "…" no balão.
 import './inst.css';
 interface Props { mensagem: string; qr?: boolean; class?: string; }
 const { mensagem, qr = true, class: cls } = Astro.props;
+const balao = mensagem.replace(/\s*_{2,}\.?/g, ' …');
 ---
 <div class:list={['cw', cls]}>
   <div class="cw-topo">
     <span class="cw-avatar" aria-hidden="true"><img src="/identidade/logo.png" alt="" width="600" height="435" loading="lazy" decoding="async" /></span>
-    <span class="cw-quem"><b>Izzat Car Imports</b><small class="num">WhatsApp · (53) 99117-0950</small></span>
+    <span class="cw-quem"><b>Izzat Car Imports</b><small class="num"><span class="cw-canal">WhatsApp · </span>(53) 99117-0950</small></span>
   </div>
   <div class="cw-conversa">
-    <p class="cw-rotulo">A mensagem já vai pronta:</p>
-    <p class="cw-balao">{mensagem}</p>
+    <p class="cw-rotulo">O botão já manda esta mensagem:</p>
+    <p class="cw-balao">{balao}</p>
   </div>
   {qr && (
     <div class="cw-qr">
       <span class="cw-qr-placa"><img src="/icones/qr-whatsapp.svg" alt="QR code que abre a conversa da Izzat Car no WhatsApp" width="41" height="41" loading="lazy" decoding="async" /></span>
-      <span class="cw-qr-txt"><b>Está no computador?</b>Aponte a câmera do celular para abrir a conversa.</span>
+      <span class="cw-qr-txt"><b>Está no computador?</b>Aponte a câmera do celular: o QR abre a conversa com a gente no WhatsApp.</span>
     </div>
   )}
 </div>

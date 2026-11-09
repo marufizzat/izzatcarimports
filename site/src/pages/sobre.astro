@@ -2,8 +2,9 @@
 import Pagina from '../layouts/Pagina.astro';
 import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
-import Icone from '../components/Icone.astro';
+import IconeInst from '../components/inst/IconeInst.astro';
 import SeloCDV from '../components/SeloCDV.astro';
+import SeloReputacao from '../components/SeloReputacao.astro';
 import { SITE } from '../lib/dados';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -50,7 +51,7 @@ const historia = [
       <div class="inst-texto">
         <h2 class="titulo-secao inst-h2" id="h-legal">Legal e rastreável</h2>
         <p>A gente segue a Lei nº 12.977/2014, que regula o desmanche de veículos no Brasil. Por isso, cada carro tem a baixa legal e cada peça tem origem identificada.</p>
-        <p>Credenciado pelo Detran-RS, com o CDV nº 01060.</p>
+        <p>Credenciado pelo Detran-RS, com o CDV&nbsp;nº&nbsp;01060.</p>
       </div>
       <div class="sob-selo">
         <SeloCDV tamanho={168} />
@@ -66,14 +67,15 @@ const historia = [
         )}
         <div class="sob-premio-txt">
           <span class="sob-premio-selo" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5.5" /><path d="M8.6 13.4 7.4 21l4.6-2.4 4.6 2.4-1.2-7.6" /></svg></span>
-          <h2 class="titulo-secao inst-h2" id="h-destaque">Destaque em Aceguá</h2>
-          <p>O pátio ganhou o Destaque Aceguá 2025 no Melhores do Ano Aceguá, na categoria desmanche de veículos.</p>
+          <h2 class="titulo-secao inst-h2" id="h-destaque">Reconhecido na cidade</h2>
+          <p>Prêmio do Melhores do Ano Aceguá, na categoria desmanche de veículos.</p>
           <p class="sob-destaque display"><span>Destaque</span> Aceguá 2025</p>
         </div>
       </div>
     </section>
 
-    <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-onde">
+    {/* sem linha divisória aqui: o cartão do prêmio logo acima já separa (a linha ficava colada nele) */}
+    <section class="inst-sec inst-duas sob-onde" aria-labelledby="h-onde">
       <div class="inst-texto">
         <h2 class="titulo-secao inst-h2" id="h-onde">Onde a gente está</h2>
         <p>Aceguá-RS, na fronteira com o Uruguai. A gente atende pelo WhatsApp e pelo Instagram <b class="inst-quebra">@cdvizzatcarimports</b>.</p>
@@ -82,9 +84,12 @@ const historia = [
           <a class="botao botao-linha inst-botao" href="https://instagram.com/cdvizzatcarimports" target="_blank" rel="noopener">Instagram</a>
         </div>
       </div>
-      <div class="sob-pino" aria-hidden="true">
-        <span class="sob-pino-icone"><Icone nome="pino" /></span>
-        <p>Aceguá/RS</p>
+      {/* no lugar do cartão só com o alfinete: a loja no Mercado Livre com a reputação (prova, não enfeite) */}
+      <div class="inst-loja sob-loja">
+        <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
+        <p class="inst-loja-nome"><small>Também no Mercado Livre</small><b>IZZAT_CAR_IMPORTS</b></p>
+        <SeloReputacao variante="compacto" />
+        <a class="botao botao-linha inst-botao" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Ver a loja no Mercado Livre</a>
       </div>
     </section>
   </div>
@@ -93,7 +98,7 @@ const historia = [
     id="h-chamada"
     titulo="Quer ver uma peça do pátio?"
     texto="Manda o modelo do carro ou o código gravado da peça. A gente responde pelo WhatsApp."
-    mensagem="Olá! Vi o pátio no site e quero saber sobre uma peça."
+    mensagem="Olá! Vim pelo site, vi o pátio e quero saber sobre uma peça."
   />
 </Pagina>
 
@@ -109,20 +114,13 @@ const historia = [
   .sob-passo figcaption b { display: block; margin-bottom: 4px; font-stretch: 86%; font-weight: 800; font-size: clamp(20px, 2vw, 24px); line-height: 1.1; color: var(--ink); }
   .sob-num { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 17px;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 6px 14px -6px rgb(255 106 0 / .7); }
+  /* o selo no meio da coluna (antes encostado à esquerda, com ~420 px vazios ao lado) */
   .sob-selo { display: grid; place-items: center; }
-  @media (min-width: 900px) { .sob-selo { justify-items: start; } }
+  .sob-selo :global(.selo-cdv) { width: clamp(150px, 18vw, 210px); height: auto; filter: drop-shadow(0 18px 28px rgb(200 70 0 / .22)); }
   .sob-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-  .sob-pino {
-    display: grid; justify-items: start; gap: 14px; padding: clamp(24px, 4vw, 40px);
-    border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-1);
-  }
-  .sob-pino-icone {
-    display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px;
-    background: var(--accent); color: var(--on-accent);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 8px 16px -8px rgb(255 106 0 / .7);
-  }
-  .sob-pino-icone :global(svg) { width: 30px; height: 30px; }
-  .sob-pino p { margin: 0; font-size: 22px; font-weight: 700; font-stretch: 84%; color: var(--ink); }
+  .sob-loja { width: 100%; max-width: 460px; justify-self: center; }
+  @media (min-width: 900px) { .sob-loja { justify-self: end; } }
+  @media (max-width: 600px) { .sob-loja .botao { width: 100%; } }
   .sob-premio-sec { padding-block: clamp(8px, 2vw, 16px); }
   .sob-premio {
     position: relative; overflow: hidden; display: grid; gap: clamp(20px, 3vw, 36px); align-items: center;
@@ -150,7 +148,7 @@ const historia = [
   .sob-premio-selo svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .sob-premio-txt .inst-h2 { margin: 0; }
   .sob-premio-txt p:not(.sob-destaque) { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink-2); max-width: 52ch; }
-  .sob-destaque { margin: 8px 0 0; font-size: clamp(44px, 7.4vw, 96px); color: var(--ink); line-height: .92; }
+  .sob-destaque { margin: 8px 0 0; font-size: clamp(44px, 6.4vw, 84px); color: var(--ink); line-height: .92; }
   .sob-destaque span { display: block; font-size: .42em; font-weight: 700; color: var(--accent-text); letter-spacing: 0; text-transform: none; }
   @media (prefers-reduced-motion: no-preference) { .sob-premio-selo { transition: transform .4s ease; } }
 </style>

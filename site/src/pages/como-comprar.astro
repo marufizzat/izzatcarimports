@@ -1,8 +1,15 @@
 ---
+// Como comprar: os 4 passos, os dois jeitos de fechar (WhatsApp e Mercado Livre, este com a reputação da loja) e o
+// código gravado (com a etiqueta de exemplo e a busca de verdade). A mensagem pronta aparece num só desenho: o cartão
+// do WhatsApp, o mesmo da chamada final.
 import Pagina from '../layouts/Pagina.astro';
 import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
+import CartaoWhats from '../components/inst/CartaoWhats.astro';
+import BuscaCodigo from '../components/inst/BuscaCodigo.astro';
+import IconeInst from '../components/inst/IconeInst.astro';
 import Icone from '../components/Icone.astro';
+import SeloReputacao from '../components/SeloReputacao.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/como-comprar.html`;
@@ -21,7 +28,7 @@ const passos = [
   descricao="Em 4 passos: ache a peça, confirme o seu carro, feche a compra pelo Mercado Livre ou pelo WhatsApp e receba em casa com nota fiscal."
   canonical={canonical}
 >
-    <TopoArte trilha={[['Início', '/index.html'], ['Como comprar', canonicalPath]]}
+  <TopoArte trilha={[['Início', '/index.html'], ['Como comprar', canonicalPath]]}
     titulo="Como comprar"
     lead="Quatro passos, do pedido até a peça na sua casa. Se preferir, a gente fecha tudo pelo WhatsApp." />
 
@@ -47,54 +54,50 @@ const passos = [
           </a>
         </div>
       </div>
-      <div>
-        <p class="inst-rotulo">Mensagem pronta</p>
-        <div class="inst-balao">
-          <p>{msgSite}</p>
-        </div>
-      </div>
+      <CartaoWhats mensagem={msgSite} qr={false} class="cc-cartao" />
     </section>
 
-    <section class="inst-sec inst-sec--linha" id="mercado-livre" aria-labelledby="h-ml">
+    <section class="inst-sec inst-sec--linha inst-duas" id="mercado-livre" aria-labelledby="h-ml">
       <div class="inst-texto">
         <h2 class="titulo-secao inst-h2" id="h-ml">Comprar pelo Mercado Livre</h2>
         <p>As peças também estão na loja <b class="inst-quebra">IZZAT_CAR_IMPORTS</b> no Mercado Livre, com fotos, ficha técnica e frete no anúncio.</p>
         <p>A compra segue a proteção do próprio Mercado Livre.</p>
-        <div class="inst-acoes">
-          <a class="botao botao-linha inst-botao" href={ML} target="_blank" rel="noopener">Ver a loja no Mercado Livre</a>
-        </div>
+      </div>
+      <div class="inst-loja cc-loja">
+        <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
+        <p class="inst-loja-nome"><small>Loja no Mercado Livre</small><b>IZZAT_CAR_IMPORTS</b></p>
+        <SeloReputacao variante="compacto" />
+        <a class="botao botao-linha inst-botao" href={ML} target="_blank" rel="noopener">Ver a loja no Mercado Livre</a>
       </div>
     </section>
 
-    <section class="inst-sec inst-sec--linha" id="codigo" aria-labelledby="h-codigo">
-      <div class="inst-duas">
+    <section class="inst-sec inst-sec--linha" id="codigo" aria-labelledby="h-codigo-sec">
+      <div class="inst-duas cc-codigo">
         <div class="inst-texto">
-          <h2 class="titulo-secao inst-h2" id="h-codigo">O código gravado na peça</h2>
+          <h2 class="titulo-secao inst-h2" id="h-codigo-sec">O código gravado na peça</h2>
           <p>Muitas peças originais trazem um código gravado ou impresso. Com ele, a gente acha a peça certa para o seu carro, sem chute.</p>
-          <div class="inst-acoes">
-            <a class="botao botao-linha inst-botao" href="/catalogo.html">Buscar no catálogo</a>
-          </div>
+          <ol class="inst-numeros cc-numeros">
+            <li>
+              <div>
+                <b>Pegue a peça velha</b>
+                <p>Procure o código gravado ou impresso nela. São letras e números, às vezes numa etiqueta ou em relevo.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <b>Copie o código como está</b>
+                <p>Letras e números, na mesma ordem. Se estiver difícil de ler, tire uma foto de perto.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <b>Busque ou mande pelo WhatsApp</b>
+                <p>Pesquise o código no catálogo. Se não achar, manda a foto no WhatsApp e a gente confere.</p>
+              </div>
+            </li>
+          </ol>
         </div>
-        <ol class="inst-numeros">
-          <li>
-            <div>
-              <b>Pegue a peça velha</b>
-              <p>Procure o código gravado ou impresso nela. São letras e números, às vezes numa etiqueta ou em relevo.</p>
-            </div>
-          </li>
-          <li>
-            <div>
-              <b>Copie o código como está</b>
-              <p>Letras e números, na mesma ordem. Se estiver difícil de ler, tire uma foto de perto.</p>
-            </div>
-          </li>
-          <li>
-            <div>
-              <b>Busque ou mande pelo WhatsApp</b>
-              <p>Pesquise o código no catálogo. Se não achar, manda a foto no WhatsApp e a gente confere.</p>
-            </div>
-          </li>
-        </ol>
+        <BuscaCodigo id="h-codigo" titulo="Busque pelo código" texto="Digite o código da sua peça velha e veja as peças com o mesmo código." />
       </div>
     </section>
   </div>
@@ -103,7 +106,7 @@ const passos = [
     id="h-chamada"
     titulo="Não sabe qual peça é?"
     texto="Manda o modelo, o ano e uma foto da peça no WhatsApp. A gente olha e responde por lá."
-    mensagem="Olá! Não sei qual peça eu preciso. Segue o modelo e o ano do carro:"
+    mensagem="Olá! Vim pelo site e não sei qual peça eu preciso. Meu carro é: ____ (modelo e ano)"
   />
 </Pagina>
 
@@ -127,4 +130,11 @@ const passos = [
   @media (min-width: 1024px) {
     .passos { grid-template-columns: repeat(4, 1fr); gap: 20px; }
   }
+  .cc-cartao { width: 100%; max-width: 460px; justify-self: center; }
+  @media (min-width: 900px) { .cc-cartao { justify-self: end; } }
+  .cc-loja { width: 100%; max-width: 460px; justify-self: center; }
+  @media (min-width: 900px) { .cc-loja { justify-self: end; } }
+  @media (max-width: 600px) { .cc-loja .botao { width: 100%; } }
+  .cc-codigo { align-items: start; }
+  .cc-numeros { margin-top: 26px; }
 </style>

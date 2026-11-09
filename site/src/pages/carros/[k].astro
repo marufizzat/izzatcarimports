@@ -1,43 +1,144 @@
 ---
+// Página do carro. Ordem pensada para as peças chegarem cedo na tela:
+//  1. topo: a contagem real e os anos no lead, "Ver as N peças", "É o meu carro" e "Avise-me quando chegar peça";
+//  2. sistemas (só em carro com 20+ peças; sem os de menos de 3 peças e sem "Outros"), em cartões baixos com a
+//     arte de estúdio da família (topo-cat-<k>.webp, sem o nome desenhado);
+//  3. a grade, com título; o texto de apoio vai para o fim.
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
 import AtalhosVisuais from '../../components/AtalhosVisuais.astro';
 import TextoApoio from '../../components/TextoApoio.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
-import { pecas, resumo, foto, whatsUrl, logoInfo } from '../../lib/dados';
+import Icone from '../../components/Icone.astro';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS } from '../../lib/dados';
 import { textosCarro, tituloCarro } from '../../lib/textos';
 import { fotoVitrine } from '../../lib/vitrine';
+import { linkAviso } from '../../lib/aviso';
 export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
-const c = resumo().carros.find((x) => x.k === Astro.props.k)!;
+const r = resumo();
+const c = r.carros.find((x) => x.k === Astro.props.k)!;
 const lista = pecas().filter((p) => p.b === c.b && p.m === c.m).sort((a, b) => (b.id > a.id ? 1 : -1));
+const N = lista.length;
+const nome = `${c.b} ${c.m}`;
+const fmt = (n: number) => n.toLocaleString('pt-BR');
 const base = `/catalogo.html?marca=${encodeURIComponent(c.b)}&modelo=${encodeURIComponent(c.m)}`;
-const fams = Object.entries(lista.reduce<Record<string, number>>((o, p) => ((o[p.c] = (o[p.c] || 0) + 1), o), {}))
-  .sort((a, b) => b[1] - a[1]).map(([n, q]) => ({ n, c: q, h: `${base}&tipo=${encodeURIComponent(n)}`, foto: fotoVitrine(lista, (p) => p.c === n) }));
-const anos = c.anos ? `${c.anos[0]} a ${c.anos[1]}` : '';
-const marca = resumo().marcas.find((m) => m.n === c.b);
+const existe = (arq: string) => existsSync(join(process.cwd(), 'public', arq));
+
+// sistemas: arte da família quando existir (a foto de uma peça qualquer nem sempre representa o grupo)
+const SISTEMAS_A_PARTIR_DE = 20;
+const arteFamilia = (n: string) => {
+  const k = r.familias.find((f) => f.n === n)?.k;
+  const a = k ? `/arte/v2/topo-cat-${k}.webp` : '';
+  return a && existe(a) ? a : null;
+};
+const fams = N < SISTEMAS_A_PARTIR_DE ? [] : Object.entries(lista.reduce<Record<string, number>>((o, p) => ((o[p.c] = (o[p.c] || 0) + 1), o), {}))
+  .filter(([n, q]) => q >= 3 && n !== 'Outros')
+  .sort((a, b) => b[1] - a[1])
+  .map(([n, q]) => {
+    const arte = arteFamilia(n);
+    return { n, c: q, h: `${base}&tipo=${encodeURIComponent(n)}`, foto: arte ?? fotoVitrine(lista, (p) => p.c === n), arte: !!arte };
+  });
+
+const anos = c.anos ? (c.anos[0] === c.anos[1] ? `de ${c.anos[0]}` : `de ${c.anos[0]} a ${c.anos[1]}`) : '';
+const lead = `${fmt(N)} ${N === 1 ? 'peça original' : 'peças originais'} para ${nome}${anos ? ` ${anos}` : ''}, de carros com baixa legal no Detran-RS.`;
+// até 48 peças a grade desta página já mostra todas: o botão desce até ela; acima disso, o catálogo filtrado
+const verTodas = N > 48 ? base : '#pecas';
+const marca = r.marcas.find((m) => m.n === c.b);
 const logo = logoInfo(marca?.k ?? c.b.toLowerCase(), 64, 36);
 const texto = textosCarro(c, lista);
+// a contagem já está no lead: o 1º parágrafo do texto de apoio (que é a contagem) sai, para não repetir
+const apoio = texto.paragrafos.slice(1);
+const arteCarro = `/arte/v2/carro-${c.k}.webp`;
+// prévia do link (WhatsApp, Instagram): a arte de estúdio do carro; sem ela, a foto da 1ª peça
+const og = existe(arteCarro) ? arteCarro : foto(c.capas[0], 'F');
 ---
-<Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={foto(c.capas[0], 'F')} descricao={texto.meta}>
-  <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [`${c.b} ${c.m}`, `/carros/${c.k}.html`]]}
-    antes={c.b} titulo={c.m} logo={logo} arte={`/arte/v2/carro-${c.k}.webp`} encaixe="meio"
-    lead={`Confira o ano e o código gravado; na dúvida, a gente confere pelo WhatsApp.`}>
-    <AtalhosVisuais titulo="Peças por sistema" modo="tipo" itens={fams} />
+<Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta}>
+  <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
+    antes={c.b} titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} encaixe="meio" lead={lead}>
+    <Fragment slot="acoes">
+      <div class="carro-acoes">
+        <a class="botao botao-grafite" href={verTodas}>Ver as {fmt(N)} {N === 1 ? 'peça' : 'peças'}</a>
+        <button class="botao botao-linha carro-meu" type="button" data-este-carro data-b={c.b} data-m={c.m}>
+          <Icone nome="carro" class="ic-carro" /><Icone nome="check" class="ic-ok" /><span data-este-txt>É o meu carro</span>
+        </button>
+      </div>
+      <a class="botao botao-linha carro-aviso" href={linkAviso(WHATS, nome)} rel="noopener" data-aviso data-whats={WHATS} data-nome={nome} data-b={c.b} data-m={c.m}>
+        <Icone nome="whats" /><span>Avise-me quando chegar peça para o meu {nome}</span>
+      </a>
+    </Fragment>
+    {fams.length > 0 && (
+      <AtalhosVisuais titulo="Peças por sistema" modo="tipo" itens={fams} limite={9} limitePc={4} minimo={3} id="sistemas" mais={`Ver os ${fams.length} sistemas`} />
+    )}
   </TopoArte>
   <div class="moldura">
-    <section class="secao-lista">
-      <TextoApoio paragrafos={texto.paragrafos} />
-      <div class="grade-topo"><GradePecas lista={lista.slice(0, 48)} total={lista.length} linkTodas={base} /></div>
+    <section class="carro-pecas" id="pecas" aria-labelledby="h-pecas">
+      <div class="grade-cabeca">
+        <h2 class="titulo-secao" id="h-pecas">Peças do {nome}</h2>
+        <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{N > 1 ? ' · as mais novas primeiro' : ''}</p>
+      </div>
+      <GradePecas lista={lista.slice(0, 48)} total={N} linkTodas={base} />
     </section>
-    <section class="secao-lista">
-      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Tenho um ${c.b} ${c.m} ano ____ e quero confirmar se uma peça serve: ____`)}
+    {apoio.length > 0 && <div class="carro-apoio"><TextoApoio paragrafos={apoio} /></div>}
+    <section class="carro-banner">
+      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Vim pelo site. Tenho um ${nome} ano ____ e quero confirmar se uma peça serve: ____`)}
         texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
     </section>
   </div>
 </Pagina>
+<script>
+  import { lerMeuCarro, salvarMeuCarro, norm, EVENTO, type MeuCarro } from '../../lib/meuCarro';
+  import { linkAviso } from '../../lib/aviso';
+
+  // "É o meu carro": salva ESTE carro (sem ano; o ano a pessoa escolhe na caixa que abre) e abre a caixa do
+  // cabeçalho ("abrir-meu-carro"). Se já é o carro dela, só abre a caixa (trocar o ano ou tirar).
+  const botao = document.querySelector<HTMLButtonElement>('[data-este-carro]');
+  const aviso = document.querySelector<HTMLAnchorElement>('[data-aviso]');
+  const B = botao?.dataset.b || aviso?.dataset.b || '';
+  const M = botao?.dataset.m || aviso?.dataset.m || '';
+  const eh = (c: MeuCarro | null): c is MeuCarro => !!c && norm(c.b) === norm(B) && norm(c.m) === norm(M);
+
+  function pintar(c: MeuCarro | null) {
+    if (botao) {
+      const txt = botao.querySelector<HTMLElement>('[data-este-txt]');
+      const meu = eh(c);
+      botao.classList.toggle('ativo', meu);
+      if (txt) txt.textContent = meu ? (c.y ? `Seu ${M} ${c.y}` : `Seu ${M} · escolher o ano`) : 'É o meu carro';
+      botao.setAttribute('aria-label', meu ? `Este é o seu carro${c.y ? `, ano ${c.y}` : ''}. Trocar o ano ou tirar` : `Salvar o ${B} ${M} como o meu carro e escolher o ano`);
+    }
+    // o aviso leva o ano só quando o carro salvo é ESTE (nunca o ano de outro carro)
+    if (aviso) aviso.href = linkAviso(aviso.dataset.whats || '', aviso.dataset.nome || `${B} ${M}`, eh(c) ? c.y : null);
+  }
+  botao?.addEventListener('click', () => {
+    if (!eh(lerMeuCarro())) salvarMeuCarro({ b: B, m: M, y: null });
+    window.dispatchEvent(new CustomEvent('abrir-meu-carro'));
+  });
+  window.addEventListener(EVENTO, (e) => pintar((e as CustomEvent<MeuCarro | null>).detail));
+  pintar(lerMeuCarro());
+</script>
 <style>
-  .secao-lista { padding-bottom: 64px; }
-  .secao-lista:first-child { padding-top: 8px; }
-  .grade-topo { margin-top: 36px; }
+  .carro-acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+  .carro-meu :global(.ic-ok) { display: none; color: #1f9d55; }
+  .carro-meu.ativo :global(.ic-ok) { display: block; }
+  .carro-meu.ativo :global(.ic-carro) { display: none; }
+  .carro-meu.ativo { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, #1f9d55, transparent 45%), 0 1px 2px rgb(0 0 0 / .04); }
+  /* aviso: discreto (mais baixo, letra menor), pode quebrar a linha em vez de vazar a coluna */
+  .carro-aviso { --h: 44px; height: auto; min-height: var(--h); padding: 8px 16px; font-size: 14.5px; white-space: normal; text-align: left; line-height: 1.3; }
+  .carro-aviso :global(svg) { width: 18px; height: 18px; }
+  /* celular: os botões na largura toda, um embaixo do outro (antes, larguras soltas e desalinhadas) */
+  @media (max-width: 599px) {
+    .carro-acoes { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+    .carro-acoes .botao, .carro-aviso { width: 100%; }
+    .carro-meu, .carro-aviso { --h: 46px; }
+    .carro-aviso { justify-content: flex-start; }
+  }
+
+  .carro-pecas { padding-top: clamp(32px, 4.4vw, 52px); }
+  .grade-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; margin-bottom: clamp(18px, 2.4vw, 26px); }
+  .grade-cabeca h2 { margin: 0; }
+  .grade-cabeca p { margin: 0; font-size: 15px; color: var(--ink-2); }
+  .carro-apoio { padding-top: clamp(40px, 5vw, 64px); }
+  .carro-banner { padding-block: clamp(40px, 5vw, 64px) clamp(56px, 7vw, 88px); }
 </style>

@@ -21,7 +21,8 @@ const acessivel = rep ? `Reputação no Mercado Livre: ${rep.n} de 5${lider ? `,
     </span>
     <span class="rep-texto">
       {lider && <b>MercadoLíder {lider}</b>}
-      {vendas && <small>{vendas} vendas concluídas no Mercado Livre</small>}
+      {/* celular estreito: o texto curto, para a ficha não quebrar em 3 a 5 linhas */}
+      {vendas && <small><span class="rep-longo">{vendas} vendas concluídas no Mercado Livre</span><span class="rep-curto">{vendas} vendas no Mercado Livre</span></small>}
     </span>
   </div>
 )}
@@ -43,7 +44,7 @@ const acessivel = rep ? `Reputação no Mercado Livre: ${rep.n} de 5${lider ? `,
     </span>
     <span class="rep-texto">
       {lider && <b>MercadoLíder {lider}</b>}
-      {vendas && <small>{vendas} vendas concluídas no Mercado Livre</small>}
+      {vendas && <small><span class="rep-longo">{vendas} vendas concluídas no Mercado Livre</span><span class="rep-curto">{vendas} vendas no Mercado Livre</span></small>}
     </span>
   </li>
 )}
@@ -62,8 +63,11 @@ const acessivel = rep ? `Reputação no Mercado Livre: ${rep.n} de 5${lider ? `,
   .rep-texto b { font-stretch: 86%; font-weight: 800; font-size: clamp(15px, 1.25vw, 18.5px); line-height: 1.15; color: var(--ink); }
   .rep-texto small { font-size: clamp(12.5px, 1vw, 14.5px); color: var(--ink-2); line-height: 1.3; }
 
-  .rep-pilula { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 10px; border-radius: 999px;
+  /* ficha compacta: canto de 14 px (se o texto quebrar, a ponta não deforma como a pílula redonda) */
+  .rep-pilula { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 10px; border-radius: 14px;
     background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); max-width: 100%; }
+  .rep-curto { display: none; }
+  @media (max-width: 399px) { .rep-longo { display: none; } .rep-curto { display: inline; } }
   .rep-pilula .termo { height: 16px; gap: 3px; }
   .rep-pilula .termo i { width: 5px; height: calc(var(--h) * .6); border-radius: 2px; }
   .rep-pilula .rep-texto { gap: 0; }

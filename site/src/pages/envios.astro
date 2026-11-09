@@ -1,13 +1,14 @@
 ---
 // Envios: só o que o site já afirma (todo o Brasil, código de rastreio em todo envio, embalada com cuidado,
 // nota fiscal, frete no anúncio do Mercado Livre, frete cotado pelo CEP no WhatsApp, peças grandes caso a caso).
-// Prazo de postagem e transportadora ficam para o Maruf confirmar antes de entrar aqui.
+// Cada fato aparece UMA vez (o FAQ antigo só repetia os cartões).
+// FALTA O MARUF CONFIRMAR, antes de virar perguntas aqui: em quantos dias úteis a peça é postada, por qual
+// transportadora, como a peça vai embalada e o que fazer se ela chegar avariada.
 import Pagina from '../layouts/Pagina.astro';
 import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
 import IconeInst from '../components/inst/IconeInst.astro';
 import Icone from '../components/Icone.astro';
-import Acordeao from '../components/ui/Acordeao.astro';
 import { WHATS, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/envios.html`;
@@ -20,15 +21,8 @@ const jeitos = [
 const caminho = [
   { i: 'lupa', t: 'Conferida no pátio', s: 'A peça sai de carro com baixa legal e é conferida e fotografada antes de ir.' },
   { i: 'caixa', t: 'Embalada com cuidado', s: 'Cada peça é embalada com cuidado antes de sair do pátio.' },
-  { i: 'nota', t: 'Com nota fiscal', s: 'Toda venda sai com nota fiscal.' },
+  { i: 'nota', t: 'Com nota fiscal', s: 'Toda venda sai com nota fiscal, para você guardar.' },
   { i: 'rota', t: 'Código de rastreio', s: 'Todo envio vai com código de rastreio, para você acompanhar a entrega.' },
-];
-const perguntas = [
-  { pergunta: 'Vocês enviam para todo o Brasil?', resposta: 'Sim, para todo o Brasil, com código de rastreio.' },
-  { pergunta: 'Como eu sei o valor do frete?', resposta: 'No Mercado Livre, o frete aparece no anúncio, antes de fechar a compra. Pelo WhatsApp, a gente cota para o seu CEP e passa o valor antes do envio.' },
-  { pergunta: 'Consigo acompanhar a entrega?', resposta: 'Sim. Todo envio vai com código de rastreio.' },
-  { pergunta: 'E peças grandes, como motor e câmbio?', resposta: 'O envio de peças grandes é combinado pelo WhatsApp, caso a caso.' },
-  { pergunta: 'A peça vai com nota fiscal?', resposta: 'Sim. Toda venda sai com nota fiscal.' },
 ];
 ---
 <Pagina
@@ -76,14 +70,7 @@ const perguntas = [
           <li><span class="inst-disco inst-disco-g"><IconeInst nome={p.i} /></span><b>{p.t}</b><p>{p.s}</p></li>
         ))}
       </ol>
-    </section>
-
-    <section class="inst-sec inst-sec--linha inst-faq" aria-labelledby="h-faq">
-      <div>
-        <h2 class="titulo-secao inst-h2" id="h-faq">Perguntas sobre o envio</h2>
-        <p class="inst-faq-apoio">A garantia e as trocas estão em <a href="/garantia.html">Garantia e trocas</a>.</p>
-      </div>
-      <Acordeao itens={perguntas} />
+      <p class="env-garantia"><IconeInst nome="escudo" /><span>A garantia e as trocas estão em <a href="/garantia.html">Garantia e trocas</a>.</span></p>
     </section>
   </div>
 
@@ -91,8 +78,7 @@ const perguntas = [
     id="h-chamada"
     titulo="Peça grande ou mais de uma peça?"
     texto="A gente combina o envio pelo WhatsApp. Manda a peça e o CEP."
-    mensagem="Olá! Quero combinar o envio. A peça é: ____. Meu CEP: ____"
-    rotulo="Combinar pelo WhatsApp"
+    mensagem="Olá! Vim pelo site e quero combinar o envio. A peça é: ____. Meu CEP: ____"
   />
 </Pagina>
 
@@ -120,7 +106,7 @@ const perguntas = [
         return;
       }
       const p = peca.value.trim();
-      const texto = `Olá! Quero saber o frete para o CEP ${d.slice(0, 5)}-${d.slice(5)}.` + (p ? ` A peça é: ${p}` : ' A peça é: ____');
+      const texto = `Olá! Vim pelo site e quero saber o frete para o CEP ${d.slice(0, 5)}-${d.slice(5)}.` + (p ? ` A peça é: ${p}` : ' A peça é: ____');
       const url = `https://wa.me/${form.dataset.whats}?text=${encodeURIComponent(texto)}`;
       const a = Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener' });
       document.body.appendChild(a);
@@ -146,24 +132,18 @@ const perguntas = [
 
   /* CEP: cartão com o formulário curto */
   .env-cep { display: grid; gap: 14px; padding: clamp(22px, 3vw, 32px); border-radius: 26px; background: var(--surface); box-shadow: var(--shadow-2); }
-  .env-cep-titulo { margin: 0; font-stretch: 80%; font-weight: 820; font-size: clamp(26px, 2.6vw, 32px); line-height: 1.05; }
+  .env-cep-titulo { margin: 0; font-stretch: 80%; font-weight: 820; font-size: clamp(26px, 2.6vw, 32px); line-height: 1.05; text-wrap: balance; }
   .env-cep > p { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
-  .campo { display: grid; gap: 7px; min-width: 0; }
-  .campo label { font-size: 14.5px; font-weight: 620; color: var(--ink); }
-  .campo .opc { font-weight: 500; color: var(--ink-3); }
-  .campo input { width: 100%; height: 52px; padding: 0 16px; border: 0; outline: 0; border-radius: 12px; background: var(--surface); color: var(--ink);
-    font: inherit; font-size: 16px; font-weight: 500; box-shadow: inset 0 0 0 1.5px var(--line-2); transition: box-shadow .2s ease; }
+  /* campos: estilo comum no global.css (.campo); aqui só o jeito do CEP */
   .campo input[name="cep"] { font-variant-numeric: tabular-nums; letter-spacing: .04em; font-size: 18px; font-weight: 600; }
-  .campo input::placeholder { color: var(--ink-3); opacity: 1; font-weight: 500; }
-  .campo input:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 82%); }
-  .campo input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--accent-text); }
-  .erro { margin: 0; font-size: 14px; font-weight: 580; color: var(--accent-text); }
-  .erro[hidden] { display: none; }
   .env-cep-botao { width: 100%; margin-top: 4px; }
   .env-cep-status { margin: 0; font-size: 14.5px; color: var(--ink-2); }
   .env-cep-status:empty { display: none; }
   .env-cep-status a { color: var(--accent-text); font-weight: 650; text-decoration: underline; }
 
   .env-caminho { --colunas: 4; }
+  .env-garantia { display: flex; align-items: center; gap: 10px; margin: clamp(20px, 3vw, 28px) 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
+  .env-garantia :global(svg) { width: 22px; height: 22px; flex: none; color: var(--accent-text); }
+  .env-garantia a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; display: inline-block; padding-block: 8px; margin-block: -8px; }
   @media (min-width: 760px) and (max-width: 1059px) { .env-caminho { --colunas: 2; } .env-caminho > li:nth-child(2)::after { display: none; } }
 </style>
