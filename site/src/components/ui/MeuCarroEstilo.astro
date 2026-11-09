@@ -1,0 +1,106 @@
+---
+// Estilos do "Meu carro" (seletor, caixa do cabeçalho, selo nos cartões). Globais e todos com prefixo mc- / cab-carro / etiqueta-serve.
+---
+<style is:global>
+  /* ---- cartão da abertura e caixa do cabeçalho ---- */
+  .mc-cartao { display: grid; gap: 6px; padding: 18px 18px 20px; border-radius: 24px; background: var(--surface);
+    box-shadow: var(--shadow-2); color: var(--ink); }
+  .mc-titulo { margin: 0; font-stretch: 86%; font-weight: 820; font-size: clamp(20px, 1.7vw, 24px); line-height: 1.1; }
+  .mc-sub { margin: 0 0 6px; font-size: 14.5px; color: var(--ink-2); line-height: 1.4; }
+  .mc-raiz { display: grid; gap: 12px; min-height: 120px; }
+  .mc-aviso { margin: 0; padding: 14px; border-radius: 14px; background: var(--surface-2); color: var(--ink-2); font-size: 15px; }
+  .mc-pergunta { margin: 4px 0 0; font-weight: 700; font-size: 15.5px; color: var(--ink); }
+  .mc-opc { font-weight: 500; color: var(--ink-3); font-size: 13.5px; }
+
+  .mc-pilulas { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mc-pilula { min-height: 36px; padding: 0 12px; border: 0; border-radius: 99px; background: var(--surface-2); color: var(--ink-2);
+    font-size: 14px; font-weight: 650; box-shadow: inset 0 0 0 1px var(--line-2); }
+  .mc-pilula[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--accent); }
+
+  .mc-marcas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mc-marca { width: 100%; min-height: 84px; display: grid; justify-items: center; align-content: center; gap: 6px; padding: 8px 4px 9px;
+    border: 0; border-radius: 16px; background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
+    transition: box-shadow .2s, background-color .2s, transform .12s; }
+  .mc-marca:active { transform: scale(.98); }
+  .mc-logo { width: 100%; height: 38px; display: grid; place-items: center; border-radius: 10px; background: #fff; box-shadow: inset 0 0 0 1px #ececf0; }
+  .mc-logo img { max-width: 66px; max-height: 30px; width: auto; height: auto; object-fit: contain; }
+  .mc-logo b { font-size: 13px; color: #1d1d1f; font-weight: 800; }
+  .mc-marca-nome { max-width: 100%; font-size: 12.5px; font-weight: 650; line-height: 1.15; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-marca[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+  .mc-mais { justify-self: start; min-height: 40px; padding: 0 4px; border: 0; background: none; font-weight: 650; font-size: 14.5px; color: var(--accent-text); }
+
+  .mc-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .mc-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 0; border-radius: 12px;
+    background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); font-size: 15px; }
+  .mc-chip b { font-weight: 700; }
+  .mc-chip small { font-size: 12.5px; color: var(--ink-3); }
+  .mc-chip[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .mc-chip[aria-pressed="true"] small { color: var(--accent-text); }
+  .mc-chip-ano { min-width: 74px; justify-content: center; }
+
+  .mc-resultado { display: grid; gap: 12px; margin-top: 4px; padding: 16px; border-radius: 18px; background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 60%); }
+  .mc-frase { margin: 0; font-size: 17px; line-height: 1.35; color: var(--ink); }
+  .mc-frase b { font-weight: 800; }
+  .mc-frase .num { font-stretch: 84%; font-size: 26px; font-weight: 820; }
+  .mc-acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+  .mc-acoes .botao { --h: 48px; }
+  .mc-nota { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .mc-link { border: 0; background: none; padding: 0; font-weight: 650; color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; font-size: 13.5px; }
+
+  @media (min-width: 640px) { .mc-marcas { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  @media (max-width: 380px) { .mc-marcas { gap: 6px; } .mc-marca { min-height: 78px; } }
+
+  /* na abertura o cartão é o quarto bloco da coluna: largura igual ao texto */
+  .mc-hero-cartao { padding: 18px; }
+
+  /* ---- caixa do cabeçalho (dialogo) ---- */
+  .mc-dialogo { width: min(560px, calc(100vw - 24px)); max-width: none; max-height: 88dvh; margin: auto; padding: 0; border: 0; border-radius: 24px;
+    background: var(--bg); color: var(--ink); box-shadow: var(--shadow-2); overflow: hidden; }
+  .mc-dialogo::backdrop { background: rgb(10 10 12 / .45); backdrop-filter: blur(4px); }
+  .mc-dialogo[open] { display: flex; flex-direction: column; animation: mc-sobe .28s cubic-bezier(.2,.8,.2,1); }
+  @keyframes mc-sobe { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .mc-dlg-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 20px 4px; }
+  .mc-dlg-titulo { margin: 0; font-stretch: 84%; font-weight: 820; font-size: 26px; line-height: 1.05; }
+  .mc-dlg-sub { margin: 6px 0 0; font-size: 14.5px; color: var(--ink-2); line-height: 1.4; }
+  .mc-dlg-fechar { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line-2); }
+  .mc-dlg-fechar svg { width: 20px; height: 20px; }
+  .mc-dialogo .mc-raiz { padding: 12px 20px 22px; overflow-y: auto; min-height: 0; }
+  .mc-dialogo .mc-cartao { box-shadow: none; }
+  @media (max-width: 639px) {
+    .mc-dialogo { position: fixed; inset: auto 0 0 0; margin: 0; width: 100%; max-width: 100%; border-radius: 24px 24px 0 0; max-height: 90dvh; }
+  }
+  @media (prefers-reduced-motion: reduce) { .mc-dialogo[open] { animation: none; } }
+
+  /* ---- chip "Meu carro" no cabeçalho ---- */
+  .cab-carro { display: inline-flex; align-items: center; gap: 7px; min-width: 44px; height: 44px; max-width: 170px; padding: 0 12px; border: 0; border-radius: 12px;
+    background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 14.5px; font-weight: 650; white-space: nowrap; }
+  .cab-carro:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .cab-carro.com-carro { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent), transparent 35%); color: var(--ink); }
+  .cab-carro svg { width: 19px; height: 19px; flex: none; }
+  .cab-carro-txt { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .cab-carro-txt .cab-carro-marca { display: none; }
+  @media (min-width: 560px) { .cab-carro-txt .cab-carro-marca { display: inline; } }
+  @media (max-width: 559px) { .cab-carro { max-width: 128px; padding: 0 10px; font-size: 13.5px; } }
+  @media (min-width: 960px) { .cab-carro { height: 46px; max-width: 220px; } }
+
+  /* ---- selo "serve no carro dele" (provisorio: a outra equipe estiliza .etiqueta-serve) ---- */
+  .etiqueta-serve[hidden] { display: none !important; }
+  .etiqueta-serve { display: inline-flex; align-self: flex-start; max-width: 100%; padding: 4px 9px; border-radius: 99px; background: #137a3c; color: #fff;
+    font-size: 12px; font-weight: 700; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ---- catalogo: faixa "seu carro" ---- */
+  .cat-meu { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; margin-bottom: 14px; padding: 14px 16px;
+    border-radius: 18px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .cat-meu p { margin: 0; display: grid; gap: 2px; font-size: 13px; color: var(--ink-3); min-width: 0; }
+  .cat-meu b { font-size: 16.5px; color: var(--ink); font-weight: 750; overflow-wrap: anywhere; }
+  .cat-meu .botao { --h: 46px; font-size: 15px; }
+  .cat-meu-ativo { color: var(--ink); font-weight: 650; }
+
+  /* ---- categorias: aviso do carro ---- */
+  .cats-carro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 16px; font-size: 15px; color: var(--ink-2); }
+  .cats-carro b { color: var(--ink); }
+  .cats-carro button { border: 0; background: none; padding: 0; font-weight: 650; color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; font-size: 15px; }
+  .cats-carro[hidden] { display: none; }
+</style>
