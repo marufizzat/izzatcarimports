@@ -88,14 +88,27 @@ jobs:
         with:
           path: ~/.rembg
           key: rembg-modelos-v1
+      # filtro de etiqueta (texto na foto): se nao instalar, a capa segue sem o filtro
+      - name: Filtro de etiqueta de texto (rapidocr)
+        continue-on-error: true
+        run: pip install rapidocr-onnxruntime || echo "rapidocr indisponivel, capas sem filtro de etiqueta"
       - name: Gerar capas de estudio das pecas novas
         continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
         env:
           PYTHONIOENCODING: utf-8
           ESTUDIO_POR_RODADA: "150"
+          ESTUDIO_TEMPO_MAX: "1500"   # segundos: passou disso, para e deixa o resto pra proxima rodada
         run: |
           pip install "rembg[cpu]==2.0.*" scipy
           python -u capas_estudio.py
+      # marca "e" no busca.json (0 sem capa, 1 automatica, 2 maquiada estudio-pro) MESMO se a
+      # geracao acima falhou: sem este passo o site perdia a marca das capas ja prontas.
+      - name: Marcar capas de estudio (sempre)
+        if: always()
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -u capas_estudio.py --so-marcar
       - name: Guardar capas novas no ramo capas-estudio
         continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
         run: |

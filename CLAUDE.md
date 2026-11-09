@@ -16,11 +16,27 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 4. O workflow `.github/workflows/atualizar.yml` faz 1→2→3, confere os links e publica `site/dist` no GitHub Pages
    e, se existirem os segredos `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`, também no Worker `izzatcar-site`
    (`site/wrangler.jsonc`, servido sem redirecionar `.html`; `site/worker/index.js` só trata `/` e 404).
-5. `fotos_limpas.py` escolhe a capa de cada peça (foto só da peça); cache em `fotos_limpas.json`.
-   `capas_estudio.py` transforma essa capa em **foto de estúdio** (fundo removido + base clara com sombra)
-   em `site/public/estudio/<MLB>.webp`. As prontas ficam no ramo **`capas-estudio`** (o robô baixa, gera só as
-   das peças novas com rembg e devolve). No Mac: `ESTUDIO_MOTOR=vision` usa o recorte nativo (bem mais rápido).
+5. `fotos_limpas.py` escolhe a foto da peça (só a peça); cache em `fotos_limpas.json`.
+   `capas_estudio.py` faz a **capa de estúdio** em `site/public/estudio/<MLB>.webp` (jeito A: fundo removido,
+   balanço de branco guardado, realce global, sombra de contato, e troca de foto quando a peça encosta na borda).
+   - **Filtro de etiqueta**: rapidocr (OCR) mede o texto na peça; se a área do texto passa de 0,15 da peça
+     e a peça é papel claro, pula para a próxima foto. Sem rapidocr, segue sem o filtro.
+     Limite: `ESTUDIO_LIMITE_TEXTO`. Orçamento por rodada: `ESTUDIO_TEMPO_MAX` (s).
+   - `marcar()` grava `"e"` no `busca.json` (0 sem capa, 1 automática, 2 maquiada). O workflow roda
+     `capas_estudio.py --so-marcar` sempre, mesmo se a geração falhar.
+   - **Maquiadas (ChatGPT)**: `site/public/estudio-pro/<MLB>.webp` vai no master, tem prioridade sobre a automática.
+     Conferência: `ferramentas/capas_pro.py` (não mexer sem o dono).
+   - As automáticas prontas ficam no ramo **`capas-estudio`** (o robô baixa e gera só as peças novas com rembg).
+     Para trocar o ramo pelas capas do Mac: `ferramentas/semear_capas.sh` (ensaio por padrão; `--publicar` faz
+     force push — só com o dono mandando, e fora da hora da rodada).
+   No Mac: `ESTUDIO_MOTOR=vision` usa o recorte nativo (bem mais rápido).
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
+
+7. **Reputação do Mercado Livre**: `atualizar_catalogo.py` (`save_seller_reputation`) lê a rota pública
+   `/users/<seller>` **sem token** e grava `reputation.json` na raiz; falha ou resposta sem nível mantém o
+   arquivo anterior. `preparar_dados.py` leva `{nivel, n, lider, vendas}` para `resumo.json` (`reputacao`).
+   Selo: `site/src/components/SeloReputacao.astro` (variantes `faixa`, `compacto`, `rodape`). Sem o dado, não aparece.
+   Sem logo do Mercado Livre e sem percentual.
 
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.

@@ -52,6 +52,76 @@ def test_dados_gerados():
     assert not ruins, f"{len(ruins)} descricoes com promessa nao confirmada: {ruins[:5]}"
 
 
+def test_reputacao_do_robo():
+    import tempfile
+    from preparar_dados import ler_reputacao
+    with tempfile.TemporaryDirectory() as d:
+        arq = Path(d) / "reputation.json"
+        base = {"level_id": "5_green", "power_seller_status": "silver", "completed": 669}
+        arq.write_text(json.dumps(base), encoding="utf-8")
+        assert ler_reputacao(arq) == {"nivel": "verde", "n": 5, "lider": "prata", "vendas": 669}
+        arq.write_text(json.dumps({**base, "power_seller_status": ""}), encoding="utf-8")
+        assert "lider" not in ler_reputacao(arq)            # sem MercadoLider: some so a linha
+        arq.write_text(json.dumps({**base, "completed": 0}), encoding="utf-8")
+        assert "vendas" not in ler_reputacao(arq)           # zero vendas nao vira "0 vendas"
+        arq.write_text(json.dumps({**base, "level_id": "9_xx"}), encoding="utf-8")
+        assert ler_reputacao(arq) is None                   # nivel desconhecido: sem termometro
+        arq.write_text("nao e json", encoding="utf-8")
+        assert ler_reputacao(arq) is None
+    assert ler_reputacao(Path("/caminho/que/nao/existe.json")) is None
+
+
+def test_atualizar_reputacao_mantem_arquivo_anterior():
+    """Falha da API do ML nunca apaga nem embaralha o reputation.json anterior."""
+    import tempfile
+    try:
+        import atualizar_catalogo as ac
+    except ImportError:   # sem requests/dotenv nesta maquina: o robo (CI) tem
+        return
+    antes = {"level_id": "5_green", "completed": 669}
+    with tempfile.TemporaryDirectory() as d:
+        dest = Path(d)
+        (dest / "reputation.json").write_text(json.dumps(antes), encoding="utf-8")
+        orig_site, orig_get = ac.SITE_DIR, ac.requests.get
+        ac.SITE_DIR = dest
+        try:
+            class Falha:
+                status_code = 403
+                def json(self):
+                    return {}
+            ac.requests.get = lambda *a, **k: Falha()
+            ac.save_seller_reputation()
+            assert json.loads((dest / "reputation.json").read_text(encoding="utf-8")) == antes
+            def estoura(*a, **k):
+                raise OSError("rede caiu")
+            ac.requests.get = estoura
+            ac.save_seller_reputation()
+            assert json.loads((dest / "reputation.json").read_text(encoding="utf-8")) == antes
+            class Ok:
+                status_code = 200
+                def json(self):
+                    return {"nickname": "X", "seller_reputation": {"level_id": "4_light_green",
+                            "power_seller_status": "gold", "transactions": {"total": 900, "completed": 700,
+                            "canceled": 1, "ratings": {"positive": 0.9}}}}
+            ac.requests.get = lambda *a, **k: Ok()
+            ac.save_seller_reputation()
+            novo = json.loads((dest / "reputation.json").read_text(encoding="utf-8"))
+            assert novo["level_id"] == "4_light_green" and novo["completed"] == 700
+            assert not (dest / "reputation.json.tmp").exists()
+        finally:
+            ac.SITE_DIR, ac.requests.get = orig_site, orig_get
+
+
+def test_filtro_de_etiqueta_decisao():
+    """Etiqueta = muito texto NA peça E papel claro. Peca com etiqueta tecnica (escura) passa."""
+    from capas_estudio import decidir_etiqueta, LIMITE_TEXTO
+    assert LIMITE_TEXTO == 0.15
+    assert decidir_etiqueta(0.30, 0.80) is True          # papel de etiqueta com texto
+    assert decidir_etiqueta(0.30, 0.05) is False         # ECU/sensor com etiqueta: peca, nao papel
+    assert decidir_etiqueta(0.05, 0.90) is False         # pouco texto
+    assert decidir_etiqueta(None, 0.90) is False         # sem OCR: segue sem filtro
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

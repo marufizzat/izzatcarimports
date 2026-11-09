@@ -1,5 +1,6 @@
 ---
 import Icone from './Icone.astro';
+import SeloReputacao from './SeloReputacao.astro';
 import { whatsUrl, resumo, logoInfo } from '../lib/dados';
 const r = resumo();
 const marcas = r.marcas.slice(0, 8);
@@ -10,6 +11,7 @@ const marcas = r.marcas.slice(0, 8);
       ['cdv', 'Desmanche credenciado', 'Detran-RS · CDV nº 01060'], ['envio', 'Envio para todo o Brasil', 'Com código de rastreio']].map(([k, t, s]) => (
       <li><img src={`/arte/v2/selo-${k}.webp`} alt="" width="56" height="56" loading="lazy" decoding="async" /><span><b>{t}</b><small>{s}</small></span></li>
     ))}
+    <SeloReputacao variante="rodape" />
   </ul>
   <div class="moldura rodape-topo">
     <div class="rodape-marca">

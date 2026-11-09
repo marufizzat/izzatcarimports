@@ -1,4 +1,5 @@
 ---
+import SeloReputacao from '../SeloReputacao.astro';
 // Selos de confiança: 4 ícones-arte 3D (ChatGPT, mesmo estúdio) + texto vivo. Só fatos confirmados.
 const selos = [
   ['garantia', '90 dias de garantia', 'Em toda peça'],
@@ -15,6 +16,7 @@ interface Props { class?: string }
       <span><b>{t}</b><small>{s}</small></span>
     </li>
   ))}
+  <SeloReputacao variante="faixa" />
 </ul>
 <style>
   .selos-v2 { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }

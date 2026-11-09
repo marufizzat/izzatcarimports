@@ -14,6 +14,8 @@ export type Resumo = {
   carros: { k: string; b: string; m: string; c: number; anos: [number, number] | null;
             fams: [string, number][]; capas: string[] }[];
   chegou: string[]; preco: { min: number; max: number };
+  /** Reputacao do Mercado Livre (reputation.json). Ausente = nao mostrar o selo. */
+  reputacao?: { nivel: string; n: number; lider?: string; vendas?: number };
 };
 
 const DIR = join(process.cwd(), 'src', 'data');
