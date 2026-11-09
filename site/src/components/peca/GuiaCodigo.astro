@@ -1,0 +1,40 @@
+---
+// Mini-guia "Como achar o codigo na sua peca velha": 3 passos reais, com as artes da marca.
+const passos = [
+  { img: '/arte/v2/passo-1.webp', t: 'Ache o código gravado', d: 'Ele costuma estar estampado na carcaça ou numa etiqueta. Limpe a sujeira e leia com luz boa.' },
+  { img: '/arte/v2/passo-2.webp', t: 'Mande o código e o carro', d: 'Com o modelo e o ano do seu carro, a gente confere na peça e responde com foto.' },
+  { img: '/arte/v2/passo-3.webp', t: 'Feche a compra', d: 'No Mercado Livre ou direto pelo WhatsApp, com nota fiscal.' },
+];
+---
+<section class="secao guia-codigo" id="como-achar-codigo" aria-labelledby="guia-codigo-titulo">
+  <div class="moldura">
+    <h2 class="titulo-secao" id="guia-codigo-titulo">Como achar o código na sua peça velha</h2>
+    <ol class="guia-passos">
+      {passos.map((s, i) => (
+        <li>
+          <img src={s.img} alt="" width="400" height="400" loading="lazy" decoding="async" />
+          <div>
+            <span class="guia-n num">Passo {i + 1}</span>
+            <h3>{s.t}</h3>
+            <p>{s.d}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .guia-codigo { padding-top: 8px; }
+  .guia-passos { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 14px; }
+  .guia-passos li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .guia-passos img { width: 96px; height: 96px; border-radius: 14px; object-fit: cover; }
+  .guia-n { font-size: 12.5px; font-weight: 650; color: var(--ink-3); }
+  .guia-passos h3 { margin: 2px 0 4px; font-size: 17px; font-weight: 750; font-stretch: 88%; color: var(--ink); }
+  .guia-passos p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+  @media (min-width: 720px) {
+    .guia-passos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .guia-passos li { grid-template-columns: 1fr; align-items: start; gap: 14px; padding: 16px 16px 20px; }
+    .guia-passos img { width: 100%; height: auto; aspect-ratio: 1; }
+  }
+</style>
