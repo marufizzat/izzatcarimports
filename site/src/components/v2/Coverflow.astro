@@ -1,0 +1,198 @@
+---
+// "Chegou no pátio": no computador (com mouse, sem reduzir movimento) vira um carrossel 3D estilo coverflow;
+// no celular e com "reduzir movimento" continua o trilho de arrastar (.trilho, data-trilho).
+// Os cartões são o CartaoPeca de sempre. Só CSS 3D + um script pequeno; sem dependências.
+// Posição de cada cartão = data-o (distância até o cartão ativo). O servidor já põe a posição
+// inicial (ativo = 0), então o desktop aparece certo antes do script.
+import type { Peca } from '../../lib/dados';
+import CartaoPeca from '../CartaoPeca.astro';
+
+interface Props { pecas: Peca[]; id: string; rotulo: string }
+const { pecas, id, rotulo } = Astro.props;
+const n = pecas.length;
+const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
+---
+<div class="cf" data-cf role="region" aria-labelledby={id}>
+  <ul class="cf-lista trilho" data-trilho aria-label={rotulo}>
+    {pecas.map((p, i) => (
+      <li class="cf-item" data-o={posInicial(i)}>
+        <CartaoPeca p={p} eager={i < 3} />
+      </li>
+    ))}
+  </ul>
+  <div class="cf-controles">
+    <button type="button" class="cf-seta" data-cf-ant aria-label="Peça anterior" disabled>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+    </button>
+    <p class="cf-status num" aria-live="polite" data-cf-status>1 de {n}</p>
+    <button type="button" class="cf-seta" data-cf-prox aria-label="Próxima peça" disabled={n < 2}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  // Só o modo 3D (desktop com mouse e sem "reduzir movimento") usa setas, arrastar e roda do mouse.
+  const modo = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
+
+  document.querySelectorAll<HTMLElement>('[data-cf]').forEach((raiz) => {
+    const lista = raiz.querySelector<HTMLUListElement>('.cf-lista');
+    const ant = raiz.querySelector<HTMLButtonElement>('[data-cf-ant]');
+    const prox = raiz.querySelector<HTMLButtonElement>('[data-cf-prox]');
+    const status = raiz.querySelector<HTMLElement>('[data-cf-status]');
+    if (!lista || !ant || !prox || !status) return;
+    const itens = Array.from(lista.children) as HTMLLIElement[];
+    const total = itens.length;
+    let ativo = 0;
+    let arrastou = false; // um arrastar não pode virar clique (abrir a peça)
+    let x0 = 0;
+    let emArraste = false;
+    let ultimaRoda = 0;
+
+    const pinta = () => {
+      itens.forEach((li, i) => {
+        const o = i - ativo;
+        li.dataset.o = Math.abs(o) <= 2 ? String(o) : 'x';
+      });
+      ant.disabled = ativo === 0;
+      prox.disabled = ativo >= total - 1;
+      status.textContent = `${ativo + 1} de ${total}`;
+    };
+
+    const vai = (i: number) => {
+      const novo = Math.min(total - 1, Math.max(0, i));
+      if (novo === ativo && modo.matches) return;
+      ativo = novo;
+      pinta();
+      if (!modo.matches) {
+        // trilho (celular): centraliza o cartão sem mexer na página
+        const li = itens[ativo];
+        const reduz = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        lista.scrollTo({ left: li.offsetLeft - (lista.clientWidth - li.offsetWidth) / 2, behavior: reduz ? 'auto' : 'smooth' });
+      }
+    };
+
+    const foco = (i: number) => {
+      vai(i);
+      itens[ativo].querySelector<HTMLAnchorElement>('a')?.focus({ preventScroll: true });
+    };
+
+    ant.addEventListener('click', () => foco(ativo - 1));
+    prox.addEventListener('click', () => foco(ativo + 1));
+
+    // teclado: ← → (Início/Fim) andam pelos cartões; quem tem o foco acompanha
+    raiz.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if (k !== 'ArrowLeft' && k !== 'ArrowRight' && k !== 'Home' && k !== 'End') return;
+      e.preventDefault();
+      foco(k === 'ArrowLeft' ? ativo - 1 : k === 'ArrowRight' ? ativo + 1 : k === 'Home' ? 0 : total - 1);
+    });
+
+    // tab para um cartão de lado: ele vira o central
+    raiz.addEventListener('focusin', (e) => {
+      if (!modo.matches) return;
+      const li = (e.target as Element).closest('.cf-item') as HTMLLIElement | null;
+      if (!li) return;
+      const i = itens.indexOf(li);
+      if (i >= 0 && i !== ativo) vai(i);
+    });
+
+    // clique num cartão de lado: centraliza em vez de abrir a peça
+    lista.addEventListener('click', (e) => {
+      if (arrastou) { e.preventDefault(); e.stopPropagation(); arrastou = false; return; }
+      if (!modo.matches) return;
+      const li = (e.target as Element).closest('.cf-item') as HTMLLIElement | null;
+      const i = li ? itens.indexOf(li) : -1;
+      if (i >= 0 && i !== ativo) { e.preventDefault(); vai(i); }
+    });
+
+    // arrastar com o mouse (sem arrastar o link/imagem nativo)
+    lista.addEventListener('dragstart', (e) => e.preventDefault());
+    // mousedown sem default: o navegador não puxa a imagem/link (senão cancela o arrastar)
+    lista.addEventListener('mousedown', (e) => { if (modo.matches && e.button === 0) e.preventDefault(); });
+    lista.addEventListener('pointerdown', (e) => {
+      if (!modo.matches || e.pointerType !== 'mouse' || e.button !== 0) return;
+      x0 = e.clientX; emArraste = true; arrastou = false;
+      lista.classList.add('arrastando');
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (emArraste && Math.abs(e.clientX - x0) > 6) arrastou = true;
+    });
+    const solta = (e: PointerEvent) => {
+      if (!emArraste) return;
+      emArraste = false;
+      lista.classList.remove('arrastando');
+      const dx = e.clientX - x0;
+      if (Math.abs(dx) > 50) foco(ativo + (dx < 0 ? 1 : -1));
+      if (arrastou) setTimeout(() => { arrastou = false; }, 300);
+    };
+    window.addEventListener('pointerup', solta);
+    window.addEventListener('pointercancel', () => { emArraste = false; lista.classList.remove('arrastando'); });
+
+    // roda do mouse / trackpad na horizontal
+    raiz.addEventListener('wheel', (e) => {
+      if (!modo.matches || Math.abs(e.deltaX) < 30 || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
+      const agora = performance.now();
+      if (agora - ultimaRoda < 600) return;
+      ultimaRoda = agora;
+      vai(ativo + (e.deltaX > 0 ? 1 : -1));
+    }, { passive: true });
+
+    pinta();
+  });
+</script>
+
+<style>
+  .cf-lista { position: relative; }
+  .cf-item { position: relative; }
+  .cf-controles { display: none; }
+
+  /* ---- Modo coverflow (desktop com mouse, sem reduzir movimento) ---- */
+  @media (min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .cf-lista {
+      --cw: clamp(230px, 21vw, 288px);
+      display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; grid-auto-columns: auto;
+      overflow: visible; scroll-snap-type: none; padding: 26px 0 30px; gap: 0;
+      perspective: 1400px; perspective-origin: 50% 35%;
+      user-select: none; -webkit-user-select: none; cursor: grab;
+    }
+    .cf-lista.arrastando { cursor: grabbing; }
+    .cf-lista img, .cf-lista a { -webkit-user-drag: none; user-drag: none; }
+    .cf-item {
+      grid-row: 1; grid-column: 1; justify-self: center; width: var(--cw);
+      transition: transform .75s cubic-bezier(.2,.75,.2,1), opacity .55s ease;
+      backface-visibility: hidden;
+    }
+    /* véu: os cartões de lado ficam um pouco apagados */
+    .cf-item::after {
+      content: ""; position: absolute; inset: 8px; border-radius: 18px; pointer-events: none;
+      background: var(--bg); opacity: 0; transition: opacity .55s ease;
+    }
+    .cf-item[data-o="0"] { transform: translate3d(0, 0, 0) scale(1.05); z-index: 5; }
+    .cf-item[data-o="-1"] { transform: translate3d(calc(var(--cw) * -.74), 0, -110px) rotateY(40deg) scale(.88); z-index: 4; }
+    .cf-item[data-o="1"] { transform: translate3d(calc(var(--cw) * .74), 0, -110px) rotateY(-40deg) scale(.88); z-index: 4; }
+    .cf-item[data-o="-2"] { transform: translate3d(calc(var(--cw) * -1.28), 0, -240px) rotateY(56deg) scale(.74); z-index: 3; }
+    .cf-item[data-o="2"] { transform: translate3d(calc(var(--cw) * 1.28), 0, -240px) rotateY(-56deg) scale(.74); z-index: 3; }
+    .cf-item[data-o="x"] { transform: translate3d(0, 0, -420px) scale(.6); opacity: 0; visibility: hidden; z-index: 0; }
+    .cf-item[data-o="-1"]::after, .cf-item[data-o="1"]::after { opacity: .18; }
+    .cf-item[data-o="-2"]::after, .cf-item[data-o="2"]::after { opacity: .34; }
+    .cf-item[data-o="0"] .etiqueta { box-shadow: var(--shadow-2); }
+
+    .cf-controles { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 6px; }
+    .cf-status { min-width: 9ch; margin: 0; text-align: center; font-size: 15px; font-weight: 650; color: var(--ink-2); }
+    .cf-seta {
+      width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer;
+      background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2), 0 6px 14px -10px rgb(0 0 0 / .35);
+      transition: box-shadow .2s, transform .2s, opacity .2s;
+    }
+    .cf-seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .cf-seta:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 10px 20px -10px rgb(0 0 0 / .4); }
+    .cf-seta:active:not(:disabled) { transform: translateY(1px); }
+    .cf-seta:disabled { opacity: .35; cursor: default; }
+    .cf-seta:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cf-item, .cf-item::after { transition: none; }
+  }
+</style>

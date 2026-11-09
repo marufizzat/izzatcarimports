@@ -6,7 +6,7 @@ import GradeCategorias from '../components/v2/GradeCategorias.astro';
 import NuvemMarcas from '../components/v2/NuvemMarcas.astro';
 import CarrosPatio from '../components/v2/CarrosPatio.astro';
 import BannerV2 from '../components/v2/BannerV2.astro';
-import CartaoPeca from '../components/CartaoPeca.astro';
+import Coverflow from '../components/v2/Coverflow.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
 import { pecaPorId, resumo, whatsUrl, temEstudio, SITE } from '../lib/dados';
@@ -73,15 +73,9 @@ const ld = {
           <h2 id="t-chegou" class="titulo-secao">Chegou no pátio</h2>
           <p class="lead">Os anúncios mais novos, direto do desmonte.</p>
         </div>
-        <div class="cabeca-acoes">
-          <span class="setas" aria-hidden="false">
-            <button type="button" class="seta" data-rolar="-1" aria-label="Peças anteriores"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg></button>
-            <button type="button" class="seta" data-rolar="1" aria-label="Próximas peças"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
-          </span>
-          <a class="botao botao-linha" href="/catalogo.html?ordem=novos">Ver todas as novidades</a>
-        </div>
+        <a class="botao botao-linha" href="/catalogo.html?ordem=novos">Ver todas as novidades</a>
       </div>
-      <div class="trilho" data-trilho>{chegou.map((p, i) => <CartaoPeca p={p} eager={i < 2} />)}</div>
+      <Coverflow id="t-chegou" rotulo="Anúncios novos do pátio" pecas={chegou} />
     </div>
   </section>
 
@@ -169,17 +163,6 @@ const ld = {
   </section>
 </Pagina>
 
-<script>
-  document.querySelectorAll<HTMLElement>('section').forEach((sec) => {
-    const t = sec.querySelector<HTMLElement>('[data-trilho]');
-    const bs = sec.querySelectorAll<HTMLButtonElement>('[data-rolar]');
-    if (!t || !bs.length) return;
-    const atualiza = () => { bs[0].disabled = t.scrollLeft < 8; bs[1].disabled = t.scrollLeft + t.clientWidth > t.scrollWidth - 8; };
-    bs.forEach((b) => b.addEventListener('click', () => t.scrollBy({ left: Number(b.dataset.rolar) * t.clientWidth * 0.8, behavior: 'smooth' })));
-    t.addEventListener('scroll', atualiza, { passive: true }); atualiza();
-  });
-</script>
-
 <style>
   .cabeca-secao { display: grid; gap: 8px; margin-bottom: 28px; max-width: 62ch; }
   .cabeca-secao.linha { max-width: none; grid-template-columns: 1fr; align-items: end; gap: 16px; }
@@ -199,15 +182,6 @@ const ld = {
   .passos img { display: block; width: 100%; height: auto; border-radius: 22px; box-shadow: var(--shadow-1); background: #efeeeb; }
   @media (min-width: 900px) { .passos { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; gap: 18px; } }
 
-  .cabeca-acoes { display: flex; align-items: center; gap: 12px; }
-  .setas { display: none; gap: 8px; }
-  @media (min-width: 900px) and (hover: hover) { .setas { display: inline-flex; } }
-  .seta { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer; background: var(--surface);
-    color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); transition: box-shadow .2s, transform .2s; }
-  .seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .seta:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 6px 14px -8px rgb(0 0 0 / .3); }
-  .seta:disabled { opacity: .35; cursor: default; box-shadow: inset 0 0 0 1px var(--line); }
-  .seta:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   .faq { display: grid; gap: 8px; }
   @media (min-width: 1024px) { .faq { grid-template-columns: .85fr 1.15fr; gap: 56px; align-items: start; } }
