@@ -20,7 +20,7 @@ const passos = [
 ];
 const perguntas = [
   { pergunta: 'Quanto tempo de garantia a peça tem?', resposta: '90 dias, em toda peça que a gente vende.' },
-  { pergunta: 'Comprei pelo Mercado Livre. Tenho garantia?', resposta: 'Tem. E quem compra pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.' },
+  { pergunta: 'E quem compra pelo Mercado Livre?', resposta: 'Quem comprou pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.' },
   { pergunta: 'Como eu aciono a garantia?', resposta: 'Chame no WhatsApp dentro do prazo, com o número do pedido, o que aconteceu e fotos da peça mostrando o problema. Se tiver, mande também a etiqueta ou o código gravado.' },
   { pergunta: 'É troca ou devolução?', resposta: 'A gente avalia o caso e resolve com troca ou devolução.' },
   { pergunta: 'A compra tem nota fiscal?', resposta: 'Sim. Toda compra sai com nota fiscal, para você guardar.' },
@@ -42,7 +42,7 @@ const perguntas = [
       <div class="gar-cert-prazo">
         <p class="gar-cert-num display" aria-hidden="true">90<span>dias</span></p>
         <h2 class="gar-cert-titulo" id="h-prazo">de garantia em toda peça</h2>
-        <p class="gar-cert-sub">Vale para toda peça que a gente vende, pelo WhatsApp ou pelo Mercado Livre.</p>
+        <p class="gar-cert-sub">A garantia vale para toda peça que a gente vende.</p>
       </div>
       <ul class="gar-cert-fatos">
         <li><span class="inst-disco"><IconeInst nome="nota" /></span><span><b>Nota fiscal em toda venda</b>Toda compra sai com nota fiscal, para você guardar.</span></li>
@@ -95,10 +95,10 @@ const perguntas = [
       <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
       <div class="gar-ml-texto">
         <h2 class="gar-ml-titulo" id="h-ml">Comprou pelo Mercado Livre?</h2>
-        <p>Os 90 dias de garantia valem do mesmo jeito. E quem compra pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.</p>
+        <p>Quem comprou pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.</p>
       </div>
       <div class="gar-ml-lado">
-        <span class="gar-ml-selo"><SeloReputacao variante="compacto" /></span>
+        <div class="gar-ml-selo"><SeloReputacao variante="compacto" /></div>
         <a class="botao botao-linha" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Ver a loja no Mercado Livre</a>
       </div>
     </section>
@@ -143,8 +143,9 @@ const perguntas = [
   @media (min-width: 900px) { .gar-cabeca { grid-template-columns: 1fr auto; align-items: end; gap: 40px; } }
 
   /* código gravado: etiqueta de exemplo + busca de verdade */
-  .gar-evitar { align-items: start; }
-  .gar-codigo { display: grid; gap: 10px; justify-items: start; padding: clamp(22px, 3vw, 32px); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .gar-evitar { align-items: start; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 900px) { .gar-evitar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .gar-codigo { min-width: 0; display: grid; gap: 10px; justify-items: start; padding: clamp(22px, 3vw, 32px); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); }
   .gar-codigo-etiqueta { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px 9px 30px; border-radius: 8px 14px 14px 8px;
     background: var(--accent-soft); color: var(--ink); font-size: 14px; font-weight: 650; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent), transparent 55%); }
   .gar-codigo-etiqueta .oem { font-size: 15px; font-weight: 600; }
@@ -153,19 +154,19 @@ const perguntas = [
   .gar-codigo p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
   .gar-codigo-campo { width: 100%; height: 58px; margin-top: 8px; padding-left: 16px; border-radius: 14px; }
   .gar-codigo-campo :global(svg) { width: 20px; height: 20px; color: var(--ink-3); flex: none; }
-  .gar-codigo-campo input { font-family: var(--font-mono); font-size: 16px; letter-spacing: .02em; }
+  .gar-codigo-campo input { width: 100%; min-width: 0; font-family: var(--font-mono); font-size: 16px; letter-spacing: .02em; }
   .gar-codigo-campo input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
   .gar-codigo-campo .botao { --h: 44px; padding: 0 18px; }
 
   /* Mercado Livre: cartão baixo, texto no meio e a loja do lado */
-  .gar-ml { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 20px; align-items: center; margin-block: clamp(8px, 2vw, 16px);
+  .gar-ml { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 20px; align-items: start; margin-block: clamp(8px, 2vw, 16px);
     padding: clamp(20px, 3vw, 32px); border-radius: 26px; background: var(--surface); box-shadow: var(--shadow-1); }
   .gar-ml-titulo { margin: 0 0 6px; font-stretch: 80%; font-weight: 820; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.05; }
   .gar-ml-texto p { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
   .gar-ml-lado { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
   .gar-ml-selo:empty { display: none; }
   @media (min-width: 960px) {
-    .gar-ml { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .gar-ml { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
     .gar-ml-lado { grid-column: auto; flex-direction: column; align-items: flex-end; }
   }
 </style>
