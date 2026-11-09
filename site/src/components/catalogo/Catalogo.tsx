@@ -93,7 +93,7 @@ const Xis = () => (
 export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModelo }: {
   it: Item; eager?: boolean; alta?: boolean; novo?: boolean; meuModelo?: string | null;
 }) {
-  const { carro, anos } = linhaCarro(it.b, it.m, it.y);
+  const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
   const [reais, cent] = precoPartes(it.p);
   const cod = codigoPeca(it.o);
   // foto que não carregou: a capa de estúdio dá lugar à foto do ML; se essa também falhar, fica a placa clara
@@ -109,7 +109,7 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
   }, []);
   return (
     <div className={CLASSE_CARTAO}>
-      <a className="etiqueta" href={`/peca/${it.h}.html`} {...dadosCarro(it.b, it.m, it.y)}>
+      <a className="etiqueta" href={`/peca/${it.h}.html`} {...dadosCarro(it.b, it.m, it.y, it.ms, it.ys)}>
         <div className="etiqueta-foto">
           <img ref={img} src={estudio ? capaItem(it) : foto(it.i, 'O')} srcSet={estudio ? undefined : `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`}
                sizes={estudio ? undefined : '(min-width:1280px) 240px, (min-width:768px) 28vw, 46vw'}

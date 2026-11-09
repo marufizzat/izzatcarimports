@@ -7,7 +7,8 @@ describe('código gravado: só o que parece código de verdade', () => {
       expect(codigoValido(c), c).toBe(true);
   });
   it('recusa palavras, números curtos, anos e lista de anos', () => {
-    for (const c of ['Par', 'Fiat', 'Não', 'C390', '60629', '2007', '1998-1999-2000-2001', 'TIPTRONIC-GOLF', '', null, undefined])
+    for (const c of ['Par', 'Fiat', 'Não', 'C390', '60629', '2007', '1998-1999-2000-2001', 'TIPTRONIC-GOLF', '', null, undefined,
+      '101010101', '777777', '1212121'])   // enchimento (auditoria 2, L8)
       expect(codigoValido(c as string), String(c)).toBe(false);
   });
   it('codigoDaPeca pega o 1º código, em maiúsculas, ou nada', () => {

@@ -3,13 +3,14 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { Busca, normal, palavras, termos, type Item } from '../src/lib/busca';
+import { serveNoModelo, anosNoModelo, modelosDa } from '../src/lib/meuCarro';
 
 const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8'));
 const b = new Busca(ix);
 
 // carro com mais peças no estoque (hoje, Volvo XC60)
 const porCarro = new Map<string, Item[]>();
-for (const it of b.itens) if (it.b && it.m) porCarro.set(`${it.b}|${it.m}`, [...(porCarro.get(`${it.b}|${it.m}`) || []), it]);
+for (const it of b.itens) for (const m of modelosDa(it)) if (it.b) porCarro.set(`${it.b}|${m}`, [...(porCarro.get(`${it.b}|${m}`) || []), it]);
 const carrosOrdem = [...porCarro.entries()].sort((a, c) => c[1].length - a[1].length);
 const temCarro = (marca: string, modelo: string) => porCarro.has(`${marca}|${modelo}`);
 const junto = (s: string) => palavras(s).join('');
@@ -46,7 +47,24 @@ describe('busca do catalogo', () => {
     const ano = alvo.y![0];
     const r = b.procurar({ marca: alvo.b, modelo: alvo.m, ano });
     expect(r.length).toBeGreaterThan(0);
-    expect(r.every((x) => x.b === alvo.b && x.m === alvo.m && x.y && x.y[0] <= ano && x.y[1] >= ano)).toBe(true);
+    // a peça de 2+ carros entra pelo ms, com a faixa de anos daquele carro
+    expect(r.every((x) => {
+      const y = anosNoModelo(x, alvo.m);
+      return x.b === alvo.b && serveNoModelo(x, alvo.m) && !!y && y[0] <= ano && y[1] >= ano;
+    })).toBe(true);
+  });
+
+  it('peça de 2 carros ("Volvo S60 Xc60") aparece no filtro de cada um e conta nos dois modelos', (ctx) => {
+    const alvo = b.itens.find((i) => i.ms && i.ms.length > 1);
+    if (!alvo) return ctx.skip();
+    for (const m of alvo.ms!) {
+      expect(b.procurar({ marca: alvo.b, modelo: m }).some((x) => x.id === alvo.id), m).toBe(true);
+    }
+    const modelos = new Map(b.facetas({ marca: alvo.b }).modelos);
+    const sozinhos = (m: string) => b.itens.filter((x) => x.b === alvo.b && (x.ms ?? [x.m]).includes(m)).length;
+    for (const m of alvo.ms!) expect(modelos.get(m), m).toBe(sozinhos(m));
+    // nunca dois do mesmo carro na lista
+    expect(new Set(alvo.ms).size).toBe(alvo.ms!.length);
   });
 
   it('ano solto na busca vira filtro', (ctx) => {
@@ -70,13 +88,14 @@ describe('relevancia: o modelo exato vem primeiro', () => {
     if (!temCarro('Volvo', 'XC60')) return ctx.skip();
     const cat = b.procurar({ q: 'xc60' });
     const sug = b.sugestoes('xc60', 6);
-    expect(cat[0].b).toBe('Volvo'); expect(cat[0].m).toBe('XC60');
-    expect(sug.itens.every((x) => x.b === 'Volvo' && x.m === 'XC60')).toBe(true);
+    expect(cat[0].b).toBe('Volvo'); expect(serveNoModelo(cat[0], 'XC60')).toBe(true);
+    expect(sug.itens.every((x) => x.b === 'Volvo' && serveNoModelo(x, 'XC60'))).toBe(true);
     // termo com número nunca é aproximado: toda peça achada tem "xc60" de verdade (carro, título ou código)
     expect(cat.every((x) => textoPeca(x).includes('xc60'))).toBe(true);
-    // as do carro abrem a lista inteira, sem nenhuma de outro modelo no meio
-    const nXc = cat.findIndex((x) => x.m !== 'XC60');
-    expect(cat.slice(nXc === -1 ? cat.length : nXc).every((x) => x.m !== 'XC60')).toBe(true);
+    // as do carro (também as de 2 carros, "S60 XC60") abrem a lista, sem nenhuma de outro modelo no meio
+    const nXc = cat.findIndex((x) => !serveNoModelo(x, 'XC60'));
+    expect(cat.slice(nXc === -1 ? cat.length : nXc).every((x) => !serveNoModelo(x, 'XC60'))).toBe(true);
+    expect(nXc === -1 ? cat.length : nXc).toBe(porCarro.get('Volvo|XC60')!.length);
   });
 
   it('"xc 60", "XC-60" e "xc60" dão a mesma lista', (ctx) => {
@@ -91,7 +110,7 @@ describe('relevancia: o modelo exato vem primeiro', () => {
     if (!chave) return ctx.skip();
     const [marca, modelo] = chave.split('|');
     const r = b.procurar({ q: modelo });
-    expect(r.slice(0, Math.min(20, lista.length)).every((x) => x.b === marca && x.m === modelo)).toBe(true);
+    expect(r.slice(0, Math.min(20, lista.length)).every((x) => x.b === marca && serveNoModelo(x, modelo))).toBe(true);
     const s = b.sugestoes(modelo, 6);
     expect(s.atalhos[0]?.tipo).toBe('carro');
     expect(s.atalhos[0]?.n).toBe(lista.length);
@@ -104,24 +123,24 @@ describe('relevancia: o modelo exato vem primeiro', () => {
     if (!temCarro('Jeep', 'Compass')) return ctx.skip();
     const r = b.procurar({ q: 'compass' });
     const n = porCarro.get('Jeep|Compass')!.length;
-    expect(r.slice(0, n).every((x) => x.b === 'Jeep' && x.m === 'Compass')).toBe(true);
+    expect(r.slice(0, n).every((x) => x.b === 'Jeep' && serveNoModelo(x, 'Compass'))).toBe(true);
     expect(b.sugestoes('compass').atalhos[0]?.rot).toBe('Jeep Compass');
   });
 
   it('"farol compass" sem farol do Compass: aproximado, com as do Jeep Compass primeiro (catálogo e sugestões iguais)', (ctx) => {
     if (!temCarro('Jeep', 'Compass')) return ctx.skip();
     const r = b.procurar({ q: 'farol compass' });
-    const exatas = r.filter((x) => x.m === 'Compass' && /farol/.test(normal(x.t)));
+    const exatas = r.filter((x) => serveNoModelo(x, 'Compass') && /farol/.test(normal(x.t)));
     if (exatas.length) return ctx.skip(); // chegou farol do Compass: o caso não vale hoje
     expect(b.aproximado).toBe(true);
     const n = porCarro.get('Jeep|Compass')!.length;
     expect(b.nDoCarro).toBe(n);
-    expect(r.slice(0, n).every((x) => x.m === 'Compass')).toBe(true);
+    expect(r.slice(0, n).every((x) => serveNoModelo(x, 'Compass'))).toBe(true);
     const s = b.sugestoes('farol compass');
     expect(s.aproximado).toBe(true);
     expect(s.total).toBe(r.length);
     expect(s.itens.length).toBeGreaterThan(0);
-    expect(s.itens[0].m).toBe('Compass');
+    expect(serveNoModelo(s.itens[0], 'Compass')).toBe(true);
   });
 
   it('o nome da peça que começa pela palavra buscada vem antes ("farol": Farol… antes de Interruptor farol)', (ctx) => {

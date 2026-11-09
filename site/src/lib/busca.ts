@@ -9,16 +9,20 @@
 //   3. o carro digitado vem primeiro ("xc60": as do Volvo XC60; "farol compass": as do Jeep Compass);
 //   4. a peça cujo nome começa pela palavra buscada sobe ("farol": "Farol esquerdo" antes de "Interruptor farol").
 import MiniSearch, { type Query, type SearchResult } from 'minisearch';
+import { serveNoModelo, anosNoModelo, modelosDa } from './meuCarro';
 
 export type Indice = {
   v: number; updated: string; marcas: string[]; familias: string[]; tipos: string[];
   id: string[]; t: string[]; n: string[]; p: number[]; i: string[]; h: string[]; f: string;
   b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[]; s: number[]; o: string[];
   e?: string; // capa de estúdio por peça: '0' nenhuma, '1' automática, '2' maquiada (estudio-pro)
+  // peça que serve em 2+ carros: {índice: ["S60", "XC60"]} e, quando a faixa muda, {índice: [[2018, 2024], ...]}
+  ms?: Record<string, string[]>; ys?: Record<string, ([number, number] | null)[]>;
 };
 export type Item = {
   k: number; id: string; t: string; n: string; p: number; i: string; h: string; f: boolean;
   b: string; m: string; y: [number, number] | null; c: string; s: string; o: string; e: string;
+  ms?: string[]; ys?: ([number, number] | null)[];
 };
 export type Filtros = {
   q?: string; marca?: string; modelo?: string; ano?: number; tipo?: string;
@@ -84,8 +88,16 @@ export function separarAno(q: string): { texto: string; ano?: number } {
   return { texto: q.replace(m[0], ' ').replace(/\s+/g, ' ').trim(), ano: Number(m[1]) };
 }
 
-/** A peça é do carro? (mesma marca e modelo dos dados). */
-const doCarro = (it: Item, c: Carro) => it.b === c.b && it.m === c.m;
+/** A peça é do carro? (mesma marca; o modelo é o dela ou um dos carros da peça de 2+ carros, "Volvo S60 Xc60"). */
+const doCarro = (it: Item, c: Carro) => it.b === c.b && serveNoModelo(it, c.m);
+const dentro = (ano: number, y: [number, number] | null) => (y ? ano >= y[0] && ano <= y[1] : false);
+
+/** Contagem por modelo (a peça de 2+ carros conta em cada um), da maior para a menor. */
+function contarModelos(itens: Item[]): [string, number][] {
+  const m = new Map<string, number>();
+  for (const it of itens) for (const k of it.ms ?? [it.m]) if (k) m.set(k, (m.get(k) || 0) + 1);
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
 
 type Entendido = {
   /** carros digitados (modelo exato, com a marca quando ela também foi digitada) */
@@ -132,7 +144,7 @@ export class Busca {
   constructor(ix: Indice) {
     this.itens = ix.id.map((id, k) => ({
       k, id, t: ix.t[k], n: ix.n[k], p: ix.p[k], i: ix.i[k], h: ix.h[k], f: ix.f[k] === '1', e: ix.e?.[k] || '0',
-      b: ix.marcas[ix.b[k]] ?? '', m: ix.m[k], y: ix.y[k] || null,
+      b: ix.marcas[ix.b[k]] ?? '', m: ix.m[k], y: ix.y[k] || null, ms: ix.ms?.[k], ys: ix.ys?.[k],
       c: ix.familias[ix.c[k]] ?? '', s: ix.tipos[ix.s[k]] ?? '', o: ix.o[k],
     }));
   }
@@ -142,7 +154,7 @@ export class Busca {
       idField: 'k',
       fields: ['n', 't', 'carro', 's', 'o'],
       extractField: (doc, campo) =>
-        campo === 'carro' ? `${doc.b} ${doc.m}` : (doc as any)[campo] ?? '',
+        campo === 'carro' ? `${doc.b} ${(doc.ms ?? [doc.m]).join(' ')}` : (doc as any)[campo] ?? '',
       tokenize: (s) => termos(s),
       processTerm: (t) => (t.length ? t : null),
       searchOptions: { boost: { n: 3, carro: 2, o: 2.5, s: 1, t: 1 } },
@@ -184,14 +196,15 @@ export class Busca {
         const kb = compacto(it.b);
         const mb = marcas.get(kb) ?? { b: it.b, n: 0 };
         mb.n++; marcas.set(kb, mb);
-        if (it.m) {
-          const kc = `${it.b}|${it.m}`;
+        for (const m of modelosDa(it)) {
+          const kc = `${it.b}|${m}`;
           let c = porCarro.get(kc);
-          if (!c) { c = { b: it.b, m: it.m, n: 0 }; porCarro.set(kc, c); }
+          if (!c) { c = { b: it.b, m, n: 0 }; porCarro.set(kc, c); }
           c.n++;
-          if (it.y) {
+          const y = anosNoModelo(it, m);
+          if (y) {
             const a = this._anosCarro.get(kc);
-            this._anosCarro.set(kc, a ? [Math.min(a[0], it.y[0]), Math.max(a[1], it.y[1])] : [it.y[0], it.y[1]]);
+            this._anosCarro.set(kc, a ? [Math.min(a[0], y[0]), Math.max(a[1], y[1])] : [y[0], y[1]]);
           }
         }
       }
@@ -327,8 +340,8 @@ export class Busca {
     const faixa = FAIXAS.find((x) => x[0] === f.preco);
     const itens = r.base.filter((it) =>
       (!f.marca || it.b === f.marca) &&
-      (!f.modelo || it.m === f.modelo) &&
-      (!ano || (it.y ? ano >= it.y[0] && ano <= it.y[1] : false)) &&
+      (!f.modelo || serveNoModelo(it, f.modelo)) &&
+      (!ano || dentro(ano, f.modelo ? anosNoModelo(it, f.modelo) : it.y)) &&
       (!f.tipo || it.c === f.tipo) &&
       (!faixa || (it.p >= faixa[2] && it.p < faixa[3])) &&
       (!f.frete || it.f));
@@ -363,11 +376,14 @@ export class Busca {
     // anos: só os que têm peça (uma peça de 2018–2024 conta em cada um desses anos), do mais novo para o mais velho
     const porAno = new Map<number, number>();
     const semAno = this.filtrar({ ...f, ano: undefined, q: f.q ? separarAno(f.q).texto : f.q, ordem: 'rel' }).itens;
-    for (const it of semAno) if (it.y) for (let a = it.y[0]; a <= it.y[1]; a++) porAno.set(a, (porAno.get(a) || 0) + 1);
+    for (const it of semAno) {
+      const y = f.modelo ? anosNoModelo(it, f.modelo) : it.y;
+      if (y) for (let a = y[0]; a <= y[1]; a++) porAno.set(a, (porAno.get(a) || 0) + 1);
+    }
     const semPreco = this.filtrar({ ...f, preco: undefined, ordem: 'rel' }).itens;
     return {
       marcas: conta('marca', (i) => i.b),
-      modelos: f.marca ? conta('modelo', (i) => i.m) : [],
+      modelos: f.marca ? contarModelos(this.filtrar({ ...f, modelo: undefined, ordem: 'rel' }).itens) : [],
       tipos: conta('tipo', (i) => i.c),
       anos: [...porAno.entries()].sort((a, b) => b[0] - a[0]),
       precos: FAIXAS.map(([k, rot, a, b]) => [k, rot, semPreco.filter((i) => i.p >= a && i.p < b).length] as const),
@@ -377,7 +393,7 @@ export class Busca {
   /** Quantas peças do carro (no ano, se houver) — a mesma conta do catálogo filtrado por marca, modelo e ano. */
   contaCarro(c: Carro, ano?: number): number {
     let n = 0;
-    for (const it of this.itens) if (doCarro(it, c) && (!ano || (it.y && ano >= it.y[0] && ano <= it.y[1]))) n++;
+    for (const it of this.itens) if (doCarro(it, c) && (!ano || dentro(ano, anosNoModelo(it, c.m)))) n++;
     return n;
   }
 
@@ -388,7 +404,7 @@ export class Busca {
     const { texto, ano } = separarAno(q.trim());
     // só o ano ("2019"): as peças desse ano, como no catálogo
     const r: PorTexto = texto ? this.porTexto(texto) : { base: this.porNovos(), aproximado: false, carros: [] };
-    const lista = ano ? r.base.filter((it) => it.y && ano >= it.y[0] && ano <= it.y[1]) : r.base;
+    const lista = ano ? r.base.filter((it) => dentro(ano, it.y)) : r.base;
     return { itens: lista.slice(0, n), total: lista.length, aproximado: r.aproximado, atalhos: this.atalhos(texto, ano), carros: r.carros };
   }
 
@@ -408,7 +424,7 @@ export class Busca {
     }
     if (!out.length && ent.marcas.length) {
       const b = ent.marcas[0];
-      const x = this.itens.reduce((s, it) => s + (it.b === b && (!ano || (it.y && ano >= it.y[0] && ano <= it.y[1])) ? 1 : 0), 0);
+      const x = this.itens.reduce((s, it) => s + (it.b === b && (!ano || dentro(ano, it.y)) ? 1 : 0), 0);
       const u = new URLSearchParams({ marca: b });
       if (ano) u.set('ano', String(ano));
       if (x) out.push({ tipo: 'marca', rot: `Peças ${b}`, sub: `Todos os modelos · ${pecas(x)}`, n: x, href: `/catalogo.html?${u}` });
@@ -434,9 +450,9 @@ export function capaItem(it: Item, tam = 'O') {
   return foto(it.i, tam);
 }
 
-/** "Volvo XC60 · 2018–2024" */
-export function carroAnos(it: Pick<Item, 'b' | 'm' | 'y'>) {
-  const carro = [it.b, it.m].filter(Boolean).join(' ');
+/** "Volvo XC60 · 2018–2024" (peça de 2+ carros: "Volvo S60 / XC60 · 2018–2024", como no cartão) */
+export function carroAnos(it: Pick<Item, 'b' | 'm' | 'y' | 'ms'>) {
+  const carro = [it.b, it.ms && it.ms.length > 1 ? it.ms.join(' / ') : it.m].filter(Boolean).join(' ');
   const anos = it.y ? (it.y[0] === it.y[1] ? String(it.y[0]) : `${it.y[0]}–${it.y[1]}`) : '';
   return [carro, anos].filter(Boolean).join(' · ');
 }

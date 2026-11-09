@@ -11,6 +11,14 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - `site/src/data/pecas.json` e `resumo.json` (usados para montar as páginas);
    - `site/public/dados/busca.json` (o índice que a busca do navegador usa).
    Aqui ficam a leitura de **marca, modelo e ano** pelo título e o **nome limpo** da peça.
+   - **Tipo da peça** (`s`, os cartões "Por tipo" da categoria): a árvore do ML vira o nome da loja em `TIPO_LOJA`
+     (sinônimos num nome só; grupo do ML que mistura de tudo vira "Outros", sem cartão). Família/tipo errados do ML
+     são corrigidos pelo nome da peça em `REGRAS_NOME` (chave de roda, módulo do câmbio, motor de vidro...).
+   - **Peça de 2+ carros** (`ms`, e `ys` quando a faixa de anos muda de um carro para outro): "Volvo S60 Xc60" aparece
+     na página, no filtro, na contagem e no Meu carro dos dois (`site/src/lib/meuCarro.ts`: `modelosDa`,
+     `serveNoModelo`, `anosNoModelo`). A URL da peça não muda.
+   - **Descrição**: só as seções sobre a peça; "chat do anúncio" vira WhatsApp; sai o dado repetido e a medida-padrão
+     do modelo de anúncio (`DIM_PADRAO_MIN`).
    Testes: `python testes/test_dados.py`.
 3. `site/` é um projeto **Astro**: `npm --prefix site run build` gera `site/dist/`.
 4. O workflow `.github/workflows/atualizar.yml` faz 1→2→3, confere os links e publica `site/dist` no GitHub Pages
@@ -87,8 +95,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Sem ilha do Astro na página da peça: a busca do cabeçalho monta o React no 1º contato com o campo e a galeria em tela
   cheia monta quando o navegador folga (`PecaTopo.astro`). "Pedir no WhatsApp" do cartão e os estados do "Serve no seu
   carro" são montados pelo script. "Do mesmo carro" mostra 6 cartões.
-- Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`): sem vidro desfocado, sem 3D no coverflow, sem o
-  "respirar" da abertura e sem animação de altura nas perguntas.
+- Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`: até 2 núcleos, até 4 GB no Chrome ou economia de
+  dados; o Safari informa sempre 4 ou 8 núcleos, então iPhone não entra): sem vidro desfocado, sem 3D no coverflow,
+  sem o "respirar" da abertura e sem animação de altura nas perguntas.
 - Busca: o índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
   O catálogo pinta os cartões aos poucos (12 por quadro).
 
