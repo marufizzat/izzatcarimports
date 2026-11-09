@@ -7,25 +7,31 @@ interface Props { selos?: boolean }
 const { selos = true } = Astro.props;
 const r = resumo();
 const marcas = r.marcas.slice(0, 8);
+// Páginas que já mostram a reputação do Mercado Livre no conteúdo: o rodapé não repete o selo logo depois.
+const COM_REPUTACAO = new Set(['/garantia', '/contato', '/como-comprar', '/sobre']);
+const caminho = Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
+const reputacao = !!r.reputacao && !COM_REPUTACAO.has(caminho);
 ---
 <footer class:list={['rodape faixa-escura', { 'rodape-sem-selos': !selos }]}>
-  {selos && <ul class="moldura rodape-selos" aria-label="Garantias">
+  {selos && <ul class:list={['moldura rodape-selos', { 'com-rep': reputacao }]} aria-label="Garantias">
     {[['garantia', '90 dias de garantia', 'Em toda peça'], ['nota-fiscal', 'Nota fiscal', 'Em toda venda'],
-      ['cdv', 'Desmanche credenciado', 'Detran-RS · CDV nº 01060'], ['envio', 'Envio para todo o Brasil', 'Com código de rastreio']].map(([k, t, s]) => (
+      ['cdv', 'Desmanche credenciado', 'Detran-RS\u00a0· CDV\u00a0nº\u00a001060'], ['envio', 'Envio para todo o Brasil', 'Com código de rastreio']].map(([k, t, s]) => (
       <li><img src={`/arte/v2/selo-${k}.webp`} alt="" width="56" height="56" loading="lazy" decoding="async" /><span><b>{t}</b><small>{s}</small></span></li>
     ))}
-    <SeloReputacao variante="rodape" />
+    {reputacao && <SeloReputacao variante="rodape" />}
   </ul>}
   <div class="moldura rodape-topo">
     <div class="rodape-marca">
       <img src="/identidade/logo-dark.png" alt="Izzat Car Imports" width="99" height="72" loading="lazy" />
-      <p>Desmanche credenciado pelo Detran-RS, CDV nº 01060. Peças originais de carros com baixa legal, com nota fiscal e 90 dias de garantia em toda peça.</p>
-      <a class="botao botao-laranja" href={whatsUrl('Olá! Estou procurando uma peça.')}><Icone nome="whats" />(53) 99117-0950</a>
+      <p>Desmanche credenciado pelo Detran-RS, CDV&nbsp;nº&nbsp;01060. Peças originais de carros com baixa legal, com nota fiscal e 90 dias de garantia em toda peça.</p>
+      <a class="botao botao-laranja" href={whatsUrl('Olá! Vim pelo site e estou procurando uma peça.')} rel="noopener"><Icone nome="whats" />Chamar no WhatsApp</a>
+      <span class="rodape-fone num">WhatsApp (53) 99117-0950</span>
     </div>
-    <nav aria-label="Peças"><b>Peças</b>
+    <nav class="rodape-pecas" aria-label="Peças"><b>Peças</b>
       <a href="/catalogo.html">Catálogo completo</a>
       <a href="/carros.html">Peças por carro</a>
-      {marcas.map((m) => { const l = logoInfo(m.k, 20, 15); return <a class="rodape-marca-link" href={`/marca/${m.k}.html`}><span class="rodape-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>{m.n}</a>; })}
+      {marcas.map((m) => { const l = logoInfo(m.k, 20, 15); return <a class="rodape-marca-link" href={`/marca/${m.k}.html`}><span class="rodape-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} loading="lazy" />}</span>{m.n}</a>; })}
+      <a class="rodape-todas" href="/index.html#t-marcas">Todas as marcas<span aria-hidden="true"> →</span></a>
     </nav>
     <nav aria-label="Comprar"><b>Comprar</b>
       <a href="/como-comprar.html">Como comprar</a>
@@ -36,8 +42,8 @@ const marcas = r.marcas.slice(0, 8);
     <nav aria-label="A loja"><b>A loja</b>
       <a href="/sobre.html">O pátio</a>
       <a href="/contato.html">Contato</a>
-      <a href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" rel="noopener">Loja no Mercado Livre</a>
-      <a href="https://instagram.com/cdvizzatcarimports" rel="noopener">Instagram @cdvizzatcarimports</a>
+      <a href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Loja no Mercado Livre</a>
+      <a href="https://instagram.com/cdvizzatcarimports" target="_blank" rel="noopener">Instagram @cdvizzatcarimports</a>
     </nav>
   </div>
   <div class="moldura rodape-base">
@@ -50,31 +56,59 @@ const marcas = r.marcas.slice(0, 8);
 
   .rodape.faixa-escura { padding-block: 0 28px; margin-top: 0; }
   /* Fluidez: o rodapé só é desenhado quando chega perto da tela ("auto" guarda o tamanho já desenhado) */
-  .rodape.faixa-escura { content-visibility: auto; contain-intrinsic-size: auto 760px; }
+  .rodape.faixa-escura { content-visibility: auto; contain-intrinsic-size: auto 1200px; }
+  @media (min-width: 600px) { .rodape.faixa-escura { contain-intrinsic-size: auto 900px; } }
+  @media (min-width: 900px) { .rodape.faixa-escura { contain-intrinsic-size: auto 720px; } }
   .rodape.rodape-sem-selos { padding-top: 48px; }
   .rodape .rodape-selos { list-style: none; margin: 0 auto 48px; padding: 28px 0; display: grid; gap: 16px 24px; grid-template-columns: repeat(2, minmax(0, 1fr));
     border-bottom: 1px solid var(--line); }
   @media (min-width: 1000px) { .rodape .rodape-selos { grid-template-columns: repeat(4, minmax(0, 1fr)); padding-block: 32px; } }
-  .rodape .rodape-selos > li:not(.rep-cartao) { display: flex; align-items: center; gap: 10px; }
+  /* PC largo: a reputação vira o 5º selo (antes era uma faixa de 1240 px com o texto num canto) */
+  @media (min-width: 1180px) {
+    .rodape .rodape-selos.com-rep { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    /* no rodapé, a reputação fica com a cara dos outros selos (sem caixa) e com o texto curto */
+    .rodape .rodape-selos.com-rep > .rep-cartao { grid-column: auto; padding: 0; gap: 12px; background: none; box-shadow: none; border-radius: 0; }
+    .rodape .rodape-selos.com-rep .rep-texto b { font-size: 15.5px; }
+    .rodape .rodape-selos.com-rep .rep-texto small { font-size: 13px; color: var(--ink-3); }
+    .rodape .rodape-selos.com-rep .rep-longo { display: none; }
+    .rodape .rodape-selos.com-rep .rep-curto { display: inline; }
+  }
+  .rodape .rodape-selos > li:not(.rep-cartao) { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .rodape .rodape-selos img { width: 48px; height: 48px; flex: none; object-fit: contain; }
   @media (min-width: 1000px) { .rodape .rodape-selos img { width: 56px; height: 56px; } }
-  .rodape .rodape-selos > li:not(.rep-cartao) b { display: block; font-stretch: 86%; font-weight: 800; font-size: 15.5px; line-height: 1.15; color: var(--ink); }
-  .rodape .rodape-selos > li:not(.rep-cartao) small { display: block; font-size: 13px; color: var(--ink-3); }
-  .rodape .rodape-marca-link { display: inline-flex; align-items: center; gap: 10px; }
+  .rodape .rodape-selos > li:not(.rep-cartao) b { display: block; font-stretch: 86%; font-weight: 800; font-size: 15.5px; line-height: 1.15; color: var(--ink); text-wrap: balance; }
+  .rodape .rodape-selos > li:not(.rep-cartao) small { display: block; font-size: 13px; color: var(--ink-3); text-wrap: balance; }
+
+  .rodape .rodape-topo { display: grid; gap: 32px 24px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rodape .rodape-marca, .rodape .rodape-pecas { grid-column: 1 / -1; }
+  /* tablet: a marca em cima e as três listas lado a lado (antes, uma coluna só com 2/3 da largura vazios) */
+  @media (min-width: 600px) {
+    .rodape .rodape-topo { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .rodape .rodape-pecas { grid-column: auto; }
+  }
+  @media (min-width: 900px) { .rodape .rodape-topo { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; } .rodape .rodape-marca { grid-column: auto; } }
+  .rodape .rodape-marca { display: grid; gap: 16px; justify-items: start; align-content: start; }
+  .rodape .rodape-marca img { height: 72px; width: auto; }
+  .rodape .rodape-marca p { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 42ch; text-wrap: pretty; }
+  .rodape .rodape-fone { margin-top: -4px; font-size: 15px; font-weight: 650; color: var(--ink-2); white-space: nowrap; }
+
+  /* listas: toda linha com a mesma altura (marca com logo e texto puro alinham entre colunas); no toque, 44 px */
+  .rodape nav { display: grid; gap: 2px; align-content: start; min-width: 0; }
+  .rodape nav b { font-stretch: 86%; font-weight: 800; font-size: 17px; margin-bottom: 6px; }
+  .rodape nav a { display: flex; align-items: center; justify-self: start; min-height: 44px; color: var(--ink-2); font-size: 15px; line-height: 1.3; }
+  .rodape nav a:hover { color: var(--ink); }
+  @media (min-width: 900px) and (pointer: fine) { .rodape nav a { min-height: 36px; } }
+  /* marcas: duas colunas no celular (a lista não vira uma tela inteira); o resto da lista ocupa a linha toda */
+  .rodape .rodape-pecas { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+  .rodape .rodape-pecas > :not(.rodape-marca-link) { grid-column: 1 / -1; }
+  @media (min-width: 600px) { .rodape .rodape-pecas { grid-template-columns: minmax(0, 1fr); } }
+  .rodape .rodape-marca-link { gap: 10px; }
+  .rodape .rodape-todas { font-weight: 650; color: var(--ink); }
   /* logo com as cores da marca num disco claro (no rodapé escuro também) */
   .rodape .rodape-logo { width: 28px; height: 28px; border-radius: 50%; background: #f3f2ef; display: grid; place-items: center; flex: none;
     box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); transition: transform .2s ease; }
   .rodape .rodape-logo img { display: block; }
   .rodape .rodape-marca-link:hover .rodape-logo { transform: scale(1.08); }
-  .rodape .rodape-topo { display: grid; gap: 36px; grid-template-columns: 1fr; }
-  @media (min-width: 900px) { .rodape .rodape-topo { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; } }
-  .rodape .rodape-marca { display: grid; gap: 16px; justify-items: start; align-content: start; }
-  .rodape .rodape-marca img { height: 72px; width: auto; }
-  .rodape .rodape-marca p { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 42ch; }
-  .rodape nav { display: grid; gap: 10px; align-content: start; }
-  .rodape nav b { font-stretch: 86%; font-weight: 800; font-size: 17px; margin-bottom: 4px; }
-  .rodape nav a { color: var(--ink-2); font-size: 15px; padding: 2px 0; }
-  .rodape nav a:hover { color: var(--ink); }
   .rodape .rodape-base { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; margin-top: 48px; padding-top: 20px;
                  border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
 </style>

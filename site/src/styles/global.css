@@ -41,6 +41,12 @@
   --display-wdth: 78%;
   --display-wght: 820;
   --display-case: none;
+  /* anel do teclado: o MESMO em todo o site (laranja escuro, 4,7:1 no fundo claro; o laranja puro dá 2,6:1) */
+  --foco: var(--accent-text);
+  --foco-halo: color-mix(in oklab, var(--accent), transparent 72%);
+  /* páginas irmãs (topos com arte, institucionais, contato, procuro, 404): o mesmo H1 e o mesmo respiro de cartão */
+  --h1-pagina: clamp(42px, 5.6vw, 80px);
+  --pad-cartao: clamp(22px, 4vw, 56px);
   color-scheme: light;
 }
 
@@ -57,6 +63,7 @@
   --line: #2a2b30;
   --line-2: #36373d;
   --accent-text: #ff8a3d;
+  --foco: var(--accent-text);       /* o anel do teclado acompanha a faixa escura (laranja claro, 7,7:1) */
   background: var(--bg);
   color: var(--ink);
 }
@@ -75,7 +82,7 @@
   }
   body { min-height: 100dvh; line-height: 1.5; }
   ::selection { background: var(--accent); color: var(--on-accent); }
-  :focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; border-radius: 6px; box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent), transparent 70%); }
+  :focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; border-radius: 6px; box-shadow: 0 0 0 6px var(--foco-halo); }
   img, video { display: block; max-width: 100%; }
   a { color: inherit; text-decoration: none; }
   button { font: inherit; color: inherit; cursor: pointer; }
@@ -264,7 +271,7 @@
   box-shadow: inset 0 0 0 1.5px var(--line-2), var(--shadow-1);
   transition: box-shadow .2s ease;
 }
-.busca:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 82%), var(--shadow-1); }
+.busca:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px var(--foco-halo), var(--shadow-1); }
 .busca svg { width: 22px; height: 22px; color: var(--ink-3); flex: none; }
 .busca input {
   flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent;
@@ -272,6 +279,27 @@
 }
 .busca input::placeholder { color: var(--ink-3); }
 .busca .botao { --h: 48px; }
+/* o "×" azul do navegador sai de TODO campo de busca (404, /carros, garantia...), não só do catálogo */
+.busca input::-webkit-search-cancel-button,
+.busca input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
+
+/* Campo de formulário com rótulo em cima (envios, procuro peça): borda, foco e erro iguais em todo o site.
+   Campo com erro E com o cursor: a borda de erro continua e ganha o halo, para a pessoa ver onde está digitando. */
+.campo { display: grid; gap: 7px; align-content: start; min-width: 0; }
+.campo label { font-size: 14.5px; font-weight: 620; color: var(--ink); }
+.campo .opc { font-weight: 500; color: var(--ink-3); }
+.campo input {
+  width: 100%; height: 52px; padding: 0 16px; border: 0; outline: 0; border-radius: 12px;
+  background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; font-weight: 500;
+  box-shadow: inset 0 0 0 1.5px var(--line-2); transition: box-shadow .2s ease;
+}
+.campo input::placeholder { color: var(--ink-3); opacity: 1; font-weight: 500; }
+@media (hover: hover) { .campo input:hover:not(:focus) { box-shadow: inset 0 0 0 1.5px var(--ink-3); } }
+.campo input:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px var(--foco-halo); }
+.campo input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--accent-text); }
+.campo input[aria-invalid="true"]:focus { box-shadow: inset 0 0 0 2px var(--accent-text), 0 0 0 5px var(--foco-halo); }
+.campo .erro { margin: 0; font-size: 14px; line-height: 1.4; font-weight: 580; color: var(--accent-text); }
+.campo .erro[hidden] { display: none; }
 
 .seletor {
   position: relative; display: block;
@@ -303,6 +331,10 @@
 .trilho > * { scroll-snap-align: start; }
 @media (min-width: 1024px) { .trilho { grid-auto-columns: calc((100% - 4 * 16px) / 5); } }
 
+/* Anel do teclado dentro de áreas que rolam: o overflow cortava o anel de fora (sobrava um traço).
+   Ali o anel vai para DENTRO do item; nas outras partes do site ele continua de fora. */
+:is(.cat-lateral, .vit-abas, .galeria-miniaturas, .trilho) :focus-visible { outline-offset: -3px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; scroll-behavior: auto !important; }
 }
@@ -313,11 +345,12 @@
 /* o anel de foco fica na caixa (.busca:focus-within); o campo de dentro nao ganha outro contorno */
 .busca input:focus, .busca input:focus-visible { outline: none; box-shadow: none; }
 
-/* Painéis de estúdio (arte clara): SEMPRE com as cores do tema claro, mesmo no modo escuro do celular. */
+/* Painéis de estúdio (arte clara): SEMPRE com as cores claras, também quando ficam dentro de uma faixa escura
+   (.faixa-escura: rodapé e "Por dentro do pátio"). O site é sempre claro; esta classe só protege essas ilhas. */
 .tema-estudio {
   --bg: #f5f5f7; --bg-2: #ececf0; --surface: #ffffff; --surface-2: #f7f7f9;
   --ink: #1d1d1f; --ink-2: #5b5b61; --ink-3: #65656b; --line: #e2e2e7; --line-2: #d1d1d6;
-  --accent-text: #c2410c; --accent-soft: #fff1e6; --plate: #ffffff;
+  --accent-text: #c2410c; --accent-soft: #fff1e6; --plate: #ffffff; --foco: #c2410c;
   --shadow-1: 0 1px 2px rgb(16 16 20 / .05), 0 6px 18px -6px rgb(16 16 20 / .10);
   --shadow-2: 0 2px 6px rgb(16 16 20 / .06), 0 24px 48px -16px rgb(16 16 20 / .22);
   color: var(--ink); color-scheme: light;

@@ -2,6 +2,8 @@
 // Topo das paginas internas: trilha + H1 + apoio, com a ARTE DE ESTUDIO na metade direita
 // (o lado esquerdo da arte fica vazio para o texto). Sem arte: a marca (logo real) num disco de
 // estudio. Sem nada: so o texto. Emite o BreadcrumbList (as paginas nao repetem).
+// slot "acoes": botões logo abaixo do lead, DENTRO da caixa (página do carro: "Ver as N peças", "É o meu carro").
+// slot padrão: o que vem logo depois da caixa (atalhos da categoria).
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { SITE } from '../lib/dados';
@@ -9,16 +11,19 @@ interface Logo { src: string; w: number; h: number; png: boolean }
 interface Props { trilha: [string, string][]; antes?: string; titulo: string; lead?: string; arte?: string; arteW?: number; arteH?: number; logo?: Logo | null; encaixe?: 'cobre' | 'contem' | 'meio'; }
 const { trilha, antes, titulo, lead, arte, arteW = 1536, arteH = 640, logo, encaixe = 'cobre' } = Astro.props;
 const temArte = !!arte && existsSync(join(process.cwd(), 'public', arte));
+const temAcoes = Astro.slots.has('acoes');
+// slot "lado": o que fica à direita do texto quando não há arte (/carros: três carros de verdade do pátio)
+const temLado = !temArte && !logo && Astro.slots.has('lado');
 const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
 ---
 <script type="application/ld+json" set:html={JSON.stringify(ld)} />
-<section class:list={['topo-arte-wrap', { 'com-arte': temArte, 'contem': temArte && encaixe === 'contem', 'meio': temArte && encaixe === 'meio', 'com-disco': !temArte && !!logo }]}>
+<section class:list={['topo-arte-wrap', { 'com-arte': temArte, 'contem': temArte && encaixe === 'contem', 'meio': temArte && encaixe === 'meio', 'com-disco': !temArte && !!logo, 'com-lado': temLado }]}>
   <div class="moldura">
     <nav class="trilha" aria-label="Você está em">
       {trilha.slice(0, -1).map(([n, h]) => <><a href={h}>{n}</a><span aria-hidden="true">/</span></>)}
       <span aria-current="page">{trilha[trilha.length - 1][0]}</span>
     </nav>
-    <div class:list={["topo-caixa", { "tema-estudio": temArte }]}>
+    <div class="topo-caixa">
       <div class="topo-texto">
         {temArte && logo && (
           <p class="topo-marca"><img src={logo.src} alt="" width={logo.w} height={logo.h} class:list={[{ svg: !logo.png }]} />{antes}</p>
@@ -26,11 +31,13 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
         {!(temArte && logo) && antes && <p class="topo-antes">{antes}</p>}
         <h1 class="display">{titulo}</h1>
         {lead && <p class="lead">{lead}</p>}
+        {temAcoes && <div class="topo-acoes"><slot name="acoes" /></div>}
       </div>
       {temArte && <div class="topo-arte"><img src={arte} alt="" width={arteW} height={arteH} fetchpriority="high" decoding="async" /></div>}
       {!temArte && logo && (
         <div class="topo-disco" aria-hidden="true"><img src={logo.src} alt="" width={logo.w} height={logo.h} class:list={[{ svg: !logo.png }]} /></div>
       )}
+      {temLado && <div class="topo-lado"><slot name="lado" /></div>}
     </div>
     <div class="topo-extra"><slot /></div>
   </div>
@@ -40,11 +47,13 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   .trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 13.5px; color: var(--ink-3); margin-bottom: 14px; }
   .trilha a { color: var(--ink-2); padding-block: 6px; } .trilha a:hover { color: var(--ink); text-decoration: underline; }
   .topo-caixa { display: grid; gap: 22px; align-items: center; }
-  .topo-texto { position: relative; z-index: 2; display: grid; gap: 12px; min-width: 0; }
-  .topo-texto h1 { margin: 0; font-size: clamp(42px, 5.8vw, 80px); }
+  .topo-texto { position: relative; z-index: 2; display: grid; gap: 12px; min-width: 0; justify-items: start; }
+  .topo-texto h1 { margin: 0; font-size: var(--h1-pagina); }
   .topo-texto .lead { margin: 0; max-width: 48ch; }
+  /* ações em pilha: cada linha é um elemento do slot (uma fileira de botões, depois um link discreto...) */
+  .topo-acoes { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 8px; max-width: 100%; }
   .topo-antes { margin: 0; font-weight: 650; font-size: 15px; color: var(--accent-text); }
-  .topo-marca { display: flex; align-items: center; gap: 12px; margin: 0; font-weight: 700; font-size: 16px; color: var(--ink); }
+  .topo-marca { display: flex; align-items: center; gap: 12px; margin: 0; font-weight: 700; font-size: 16px; color: var(--ink); white-space: nowrap; }
   .topo-marca img { flex: none; width: auto; max-width: 64px; height: 36px; object-fit: contain; }
   .topo-marca img.svg, .topo-disco img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
   .topo-disco { display: grid; place-items: center; width: clamp(190px, 24vw, 280px); aspect-ratio: 1; justify-self: center; border-radius: 50%;
@@ -59,37 +68,72 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   .com-arte .topo-arte img { width: 100%; height: 100%; object-fit: cover; object-position: 100% 50%; }
   .com-arte .topo-arte::after { content: ""; position: absolute; inset: 0;
     background: linear-gradient(90deg, #f4f3f0 0%, #f4f3f0 40%, rgb(244 243 240 / .6) 46%, rgb(244 243 240 / 0) 56%); }
-  .com-arte .topo-texto { padding: clamp(28px, 4vw, 56px); max-width: 44%; }
-  .com-arte .topo-texto h1 { font-size: clamp(42px, 5.4vw, 76px); }
+  .com-arte .topo-texto { padding: var(--pad-cartao); max-width: 44%; }
 
-  /* arte quadrada ou 3:2 (carro, categoria): inteira, na metade direita, sem cortar */
+  /* arte quadrada ou 3:2 (categoria): inteira, na metade direita, sem cortar. A borda da arte some no fundo
+     da caixa (máscara em degradê): sem a emenda reta entre o fundo da arte e o da caixa. */
   .com-arte.contem .topo-arte { left: 50%; right: 0; }
-  .com-arte.contem .topo-arte img { object-fit: contain; object-position: 50% 50%; padding: 4% 6%; }
+  .com-arte.contem .topo-arte img { object-fit: contain; object-position: 50% 50%; padding: 4% 6%;
+    -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 66%, transparent 100%);
+    mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 66%, transparent 100%); }
   .com-arte.contem .topo-arte::after { display: none; }
-  .com-arte.contem .topo-caixa { min-height: clamp(360px, 36vw, 480px); }
+  .com-arte.contem .topo-caixa { min-height: clamp(320px, 28vw, 400px); }
   .com-arte.contem .topo-texto { max-width: 50%; }
-  /* carro (fundo de estudio igual ao da caixa): a foto preenche a metade direita, sem moldura */
-  .com-arte.meio .topo-arte { left: 50%; right: 0; }
-  .com-arte.meio .topo-arte img { object-fit: cover; object-position: 80% 60%; }
+  /* carro: a foto preenche a metade direita; a borda esquerda dela se desfaz no fundo da caixa */
+  .com-arte.meio .topo-arte { left: 48%; right: 0; }
+  .com-arte.meio .topo-arte img { object-fit: cover; object-position: 80% 60%;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16%); mask-image: linear-gradient(90deg, transparent 0, #000 16%); }
   .com-arte.meio .topo-arte::after { display: none; }
-  .com-arte.meio .topo-caixa { min-height: clamp(360px, 36vw, 480px); }
-  .com-arte.meio .topo-texto { max-width: 50%; }
+  .com-arte.meio .topo-caixa { min-height: clamp(340px, 32vw, 440px); }
+  .com-arte.meio .topo-texto { max-width: 52%; }
 
   /* com disco: a marca fica ao lado do texto */
   @media (min-width: 900px) { .com-disco .topo-caixa { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; } }
-
-  /* celular: o texto em cima, a arte embaixo (nunca sobre o carro/peça) */
+  /* celular e tablet (carro ainda sem arte, página da marca): o disco pequeno ao lado do título, não um disco de
+     190 px embaixo dos botões empurrando as peças para baixo */
   @media (max-width: 899px) {
-    .com-arte .topo-caixa { display: flex; flex-direction: column; min-height: 0; border-radius: 26px; }
+    .com-disco .topo-caixa { grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 12px; align-items: center; }
+    .com-disco .topo-texto { display: contents; }
+    .com-disco .topo-texto > * { grid-column: 1 / -1; }
+    .com-disco .topo-texto > :is(.topo-antes, h1) { grid-column: 1; }
+    .com-disco .topo-disco { grid-column: 2; grid-row: 1 / span 2; width: clamp(72px, 20vw, 120px); align-self: center; }
+    .com-disco .topo-caixa:not(:has(.topo-antes)) .topo-disco { grid-row: 1; }
+  }
+  /* com lado: o texto à esquerda e o lado à direita (no celular o lado some: o topo fica curto) */
+  .topo-lado { display: none; }
+  @media (min-width: 900px) {
+    .com-lado .topo-caixa { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+    .topo-lado { display: block; min-width: 0; }
+  }
+
+  /* celular e tablet: o texto em cima, a arte embaixo (nunca sobre o carro/peça). O bloco do texto ocupa a
+     largura toda (antes ficava centralizado e o H1 recuava até 225 px da borda entre 600 e 899 px), e o topo
+     da arte se desfaz no fundo da caixa, sem linha reta no meio do cartão. */
+  @media (max-width: 899px) {
+    .com-arte .topo-caixa { display: flex; flex-direction: column; align-items: stretch; min-height: 0; border-radius: 26px; }
     .com-arte .topo-texto { max-width: none; padding: 24px 22px 14px; }
     .com-arte .topo-arte { position: relative; inset: auto; }
     .com-arte .topo-arte::after { display: none; }
-    .com-arte .topo-arte img { height: auto; aspect-ratio: 16 / 10; object-position: 100% 50%; }
-    .com-arte.contem .topo-arte { position: relative; inset: auto; left: auto; }
-    .com-arte.contem .topo-arte img { aspect-ratio: auto; padding: 0; }
-    .com-arte.contem .topo-texto { max-width: none; }
-    .com-arte.meio .topo-arte { position: relative; inset: auto; left: auto; }
-    .com-arte.meio .topo-arte img { aspect-ratio: 3 / 2; height: auto; }
-    .com-arte.meio .topo-texto { max-width: none; }
+    .com-arte .topo-arte img { height: auto; aspect-ratio: 16 / 10; object-position: 100% 50%;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%); mask-image: linear-gradient(180deg, transparent 0, #000 22%); }
+    /* carro e categoria: topo CURTO no celular. A arte fica à direita da marca e do título (não embaixo do texto,
+       ocupando meia tela); o lead e os botões vêm logo abaixo, na largura toda. Assim as peças chegam cedo na tela. */
+    /* a coluna do título nunca fica menor que a palavra mais longa ("Arrefecimento"): quem encolhe é a arte */
+    :is(.com-arte.meio, .com-arte.contem) .topo-caixa { display: grid; grid-template-columns: minmax(min-content, 1fr) minmax(0, 46%); column-gap: 6px;
+      row-gap: 10px; align-items: center; min-height: 0; padding: 18px 0 18px 22px; }
+    :is(.com-arte.meio, .com-arte.contem) .topo-texto { display: contents; }
+    :is(.com-arte.meio, .com-arte.contem) .topo-marca { grid-column: 1; grid-row: 1; align-self: end; }
+    :is(.com-arte.meio, .com-arte.contem) .topo-texto h1 { grid-column: 1; grid-row: 2; align-self: start; font-size: clamp(30px, 8.4vw, 64px); hyphens: manual; }
+    .com-arte.contem .topo-texto h1 { grid-row: 1 / span 2; align-self: center; }
+    :is(.com-arte.meio, .com-arte.contem) .topo-arte { grid-column: 2; grid-row: 1 / span 2; position: relative; inset: auto; left: auto; align-self: center; }
+    :is(.com-arte.meio, .com-arte.contem) .topo-texto .lead, :is(.com-arte.meio, .com-arte.contem) .topo-acoes { grid-column: 1 / -1; padding-right: 22px; }
+    .com-arte.meio .topo-acoes { margin-top: 4px; }
+    .com-arte.meio .topo-arte img { aspect-ratio: 3 / 2; height: auto; object-position: 60% 60%;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24%), linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%);
+      -webkit-mask-composite: source-in;
+      mask-image: linear-gradient(90deg, transparent 0, #000 24%), linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%);
+      mask-composite: intersect; }
+    /* categoria: a peça inteira (nunca esticada), com a máscara redonda do PC */
+    .com-arte.contem .topo-arte img { aspect-ratio: auto; width: 100%; height: auto; max-height: 240px; object-fit: contain; padding: 0 8px 0 0; }
   }
 </style>

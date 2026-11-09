@@ -1,21 +1,9 @@
-/* Paginas institucionais (direcao A · Oficina clara). So tokens do global.css. */
-
-.inst-topo { padding-block: clamp(28px, 5vw, 64px) clamp(8px, 2vw, 16px); }
-
-.inst-trilha {
-  display: flex; flex-wrap: wrap; align-items: center; margin: 0 0 clamp(16px, 2.6vw, 28px);
-  padding: 0; list-style: none; font-size: 14px; color: var(--ink-3);
-}
-.inst-trilha li { display: inline-flex; align-items: center; }
-.inst-trilha li + li::before { content: "/"; margin: 0 10px; color: var(--line-2); }
-.inst-trilha a { color: var(--ink-2); padding-block: 8px; }
-.inst-trilha a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-.inst-trilha span { color: var(--ink-2); padding-block: 8px; }
-
-.inst-h1 { font-size: clamp(40px, 8.6vw, 104px); margin: 0; }
-.inst-lead { margin: clamp(16px, 2vw, 24px) 0 0; max-width: 46ch; }
+/* Paginas institucionais (direcao A · Oficina clara). So tokens do global.css
+   (--h1-pagina e --pad-cartao: o mesmo H1 e o mesmo respiro de cartão nas páginas irmãs). */
 
 .inst-sec { padding-block: clamp(48px, 7vw, 96px); }
+/* chamada do fim: a seção de cima já tem o respiro de baixo (somados, davam ~190 px de buraco no PC) */
+.inst-sec-fim { padding-top: clamp(16px, 2.4vw, 32px); }
 .inst-sec--linha { border-top: 1px solid var(--line); }
 .inst-h2 { margin: 0 0 clamp(16px, 2.2vw, 26px); }
 
@@ -49,38 +37,14 @@
 .inst-numeros b { display: block; color: var(--ink); font-size: 18px; font-weight: 650; line-height: 1.3; padding-top: 9px; }
 .inst-numeros p { margin: 4px 0 0; color: var(--ink-2); font-size: 16px; line-height: 1.5; }
 
-/* balao da mensagem pronta */
-.inst-balao {
-  position: relative; max-width: 40ch; padding: 20px 22px; border-radius: 22px 22px 22px 6px;
-  background: var(--surface); box-shadow: var(--shadow-1); color: var(--ink);
-}
-.inst-balao p { margin: 0; font-size: 17px; line-height: 1.5; color: var(--ink); }
-.inst-rotulo { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--ink-3); }
-
-/* arte (cartao com imagem) — mantem a moldura mesmo sem o arquivo */
-.inst-arte { margin: 0; border-radius: 22px; overflow: hidden; background: var(--surface-2); box-shadow: var(--shadow-1); }
-.inst-arte img { width: 100%; height: 100%; object-fit: cover; }
-
-/* janela de video real (16:9, 9:16, 4:5) */
-.inst-janela { margin: 0; border-radius: 28px; overflow: hidden; background: var(--bg-2); box-shadow: var(--shadow-2); }
-.inst-janela video { width: 100%; height: 100%; object-fit: cover; }
-.inst-janela--16x9 { aspect-ratio: 16 / 9; }
-
 /* chamada final em bloco */
 .inst-chamada-caixa {
-  display: grid; gap: 14px; justify-items: start; padding: clamp(28px, 4.5vw, 56px);
+  display: grid; gap: 14px; justify-items: start; padding: var(--pad-cartao);
   border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-1);
 }
 .inst-chamada-caixa .titulo-secao { margin: 0; }
 .inst-chamada-caixa p { margin: 0; max-width: 46ch; color: var(--ink-2); font-size: 17px; line-height: 1.55; }
-.inst-fone { font-stretch: 90%; font-weight: 700; font-size: 16px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-
-/* selo e numero grande */
-.inst-grande { margin: 0; font-size: clamp(88px, 20vw, 230px); line-height: .86; }
-
-@media (prefers-reduced-motion: reduce) {
-  .inst-janela video { animation: none; }
-}
+.inst-fone { font-stretch: 90%; font-weight: 700; font-size: 16px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 @media (max-width: 600px) { .inst-acoes .botao { width: 100%; } }
 
@@ -89,10 +53,12 @@
 .inst-chamada-texto { display: grid; gap: 16px; justify-items: start; }
 .inst-chamada-arte img { width: 100%; max-width: 520px; height: auto; background: #efeeeb; border-radius: 20px; box-shadow: var(--shadow-1); margin-inline: auto; display: block; }
 @media (min-width: 900px) { .inst-chamada-com-arte { grid-template-columns: 1.2fr .8fr; } }
-/* video do galpao: corta a borda de baixo (mao de quem filmou) */
-.inst-janela video, .patio-videos video { object-position: 50% 32%; }
-.inst-janela--16x9 { aspect-ratio: 16 / 8; }
-@media (max-width: 700px) { .inst-janela--16x9 { aspect-ratio: 4 / 3; } }
+/* celular: o botão da chamada na largura toda, numa linha só (antes ficava "Chamar no / WhatsApp") */
+@media (max-width: 600px) { .inst-chamada-texto .inst-botao { width: 100%; } }
+@media (max-width: 360px) {
+  .inst-chamada-caixa { padding: 22px 18px; }
+  .inst-botao { font-size: 15px; padding-inline: 14px; gap: 8px; }
+}
 
 /* cartão "conversa no WhatsApp" (CartaoWhats.astro): quem atende, a mensagem pronta e o QR no PC */
 .cw { display: grid; min-width: 0; border-radius: 26px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-2); }
@@ -102,7 +68,9 @@
 .cw-avatar img { width: 82%; height: auto; }
 .cw-quem { display: grid; gap: 1px; min-width: 0; }
 .cw-quem b { font-size: 16px; font-weight: 700; line-height: 1.2; color: var(--ink); }
-.cw-quem small { font-size: 13px; color: var(--ink-2); }
+/* o número nunca parte no hífen; em tela bem estreita sai o "WhatsApp ·" (o ícone e o título já dizem) */
+.cw-quem small { font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+@media (max-width: 379px) { .cw-canal { display: none; } }
 .cw-conversa { display: grid; gap: 10px; padding: 20px 18px 24px; background: var(--surface-2); }
 .cw-rotulo { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink-3); }
 .cw-balao { justify-self: end; margin: 0; max-width: 34ch; padding: 10px 14px; border-radius: 16px 16px 4px 16px;
@@ -123,7 +91,8 @@
 .inst-chamada-caixa:has(.inst-chamada-cw) { background: linear-gradient(135deg, var(--surface) 35%, color-mix(in oklab, var(--accent-soft), var(--surface) 25%) 100%); }
 .inst-chamada-cw { width: 100%; max-width: 440px; justify-self: center; }
 @media (min-width: 900px) { .inst-chamada-cw { justify-self: end; } }
-a.inst-fone { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
+/* o número embaixo do botão: alvo de toque de verdade (antes 24 px de altura) */
+a.inst-fone { display: inline-block; padding-block: 10px; margin-block: -6px; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
 a.inst-fone:hover { color: var(--ink); text-decoration-color: currentColor; }
 
 /* disco laranja com o ícone em grafite (regra: laranja sempre com grafite) */
@@ -140,7 +109,7 @@ a.inst-fone:hover { color: var(--ink); text-decoration-color: currentColor; }
 .inst-trilho { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .inst-trilho > li { position: relative; display: grid; gap: 10px; align-content: start; padding: 22px 22px 24px; border-radius: 22px;
   background: var(--surface); box-shadow: var(--shadow-1); }
-.inst-trilho > li > b { margin-top: 6px; font-stretch: 86%; font-weight: 800; font-size: 20px; line-height: 1.15; color: var(--ink); }
+.inst-trilho > li > b { margin-top: 6px; font-stretch: 86%; font-weight: 800; font-size: 20px; line-height: 1.15; color: var(--ink); text-wrap: balance; }
 .inst-trilho > li > p { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
 @media (max-width: 759px) {
   /* celular: ícone à esquerda, texto à direita (passos baixos, sem rolar demais) */
@@ -149,11 +118,11 @@ a.inst-fone:hover { color: var(--ink); text-decoration-color: currentColor; }
   .inst-trilho > li > b { margin-top: 2px; font-size: 18px; }
 }
 @media (min-width: 760px) { .inst-trilho { grid-template-columns: repeat(var(--colunas, 3), minmax(0, 1fr)); gap: 16px; } }
-/* perguntas no fim da página: título à esquerda, respostas à direita (PC) */
-.inst-faq { display: grid; gap: clamp(12px, 2vw, 20px); }
-.inst-faq .inst-h2 { margin: 0; }
-.inst-faq-apoio { margin: 10px 0 0; max-width: 36ch; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
-.inst-faq-apoio a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
-@media (min-width: 960px) {
-  .inst-faq { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); column-gap: clamp(40px, 5vw, 72px); align-items: start; }
-}
+
+/* cartão da loja no Mercado Livre (como comprar, sobre): ícone, nome, reputação e o botão */
+.inst-loja { display: grid; gap: 14px; justify-items: start; align-content: start; padding: var(--pad-cartao); border-radius: 26px;
+  background: var(--surface); box-shadow: var(--shadow-1); }
+.inst-loja-nome { display: grid; gap: 2px; margin: 0; }
+.inst-loja-nome small { font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
+.inst-loja-nome b { font-stretch: 86%; font-weight: 800; font-size: clamp(20px, 2vw, 24px); line-height: 1.15; color: var(--ink); overflow-wrap: anywhere; }
+.inst-loja .botao { margin-top: 4px; }

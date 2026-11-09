@@ -1,23 +1,40 @@
 ---
+// /carros.html: todos os carros do pátio. Topo CURTO (sem a arte genérica: no PC, três carros de verdade do pátio,
+// os mesmos arquivos dos primeiros cartões), busca e marcas logo em cima, a lista e, no fim, a saída
+// "Não achou o seu carro?". O filtro diz quantos carros sobraram e procura palavra por palavra ("golf mk7" acha o
+// Golf; "vw", "gm" e "mercedes" também valem).
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import CarrosPatio from '../../components/v2/CarrosPatio.astro';
-import { resumo, logoInfo } from '../../lib/dados';
+import BannerV2 from '../../components/v2/BannerV2.astro';
+import Icone from '../../components/Icone.astro';
+import { resumo, logoInfo, whatsUrl, WHATS } from '../../lib/dados';
 const r = resumo();
 const marcas = [...new Set(r.carros.map((c) => c.b))];
 const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
+const n = r.carros.length;
+const leadLista = `${n} carros, do que tem mais peças para o que tem menos.`;
+// três carros de verdade para o topo do PC (os maiores do pátio que têm arte)
+const vitrine = r.carros.filter((c) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${c.k}.webp`))).slice(0, 3);
 ---
 <Pagina titulo="Peças por carro | Izzat Car Imports"
-        descricao={`Escolha o seu carro e veja as peças originais que saíram dele: ${r.carros.slice(0, 8).map((c) => `${c.b} ${c.m}`).join(', ')} e mais ${r.carros.length - 8} modelos.`}>
+        descricao={`Escolha o seu carro e veja as peças originais que saíram dele: ${r.carros.slice(0, 8).map((c) => `${c.b} ${c.m}`).join(', ')} e mais ${n - 8} modelos.`}>
   <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html']]} titulo="Peças por carro"
-    lead="Cada carro aqui passou pelo nosso pátio. Escolha o seu e veja as peças originais que saíram dele."
-    arte="/arte/v2/topo-carros.webp" />
+    lead={`Cada um dos ${n} carros aqui passou pelo nosso pátio. Escolha o seu e veja as peças originais que saíram dele.`}>
+    <div slot="lado" class="carros-vitrine" aria-hidden="true">
+      {vitrine.map((c, i) => (
+        <img class={`cv cv-${i + 1}`} src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" />
+      ))}
+    </div>
+  </TopoArte>
 
   <div class="moldura">
-    <div class="filtro-carros" role="search">
-      <label class="busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" placeholder="Digite o modelo, por exemplo Compass" aria-label="Filtrar carros" data-filtro-carros /></label>
-      <div class="marcas-filtro" data-marcas>
+    <div class="filtro-carros" role="search" aria-label="Filtrar carros">
+      <label class="busca"><Icone nome="busca" />
+        <input type="search" placeholder="Modelo (ex.: Compass)" aria-label="Filtrar pelo modelo do carro" enterkeyhint="search" autocomplete="off" data-filtro-carros /></label>
+      <div class="marcas-filtro" data-marcas role="group" aria-label="Filtrar pela marca">
         <button type="button" aria-pressed="true" data-marca="">Todas</button>
         {marcas.map((m) => { const l = logoInfo(kMarca(m), 26, 18); return (
           <button type="button" aria-pressed="false" data-marca={m}>
@@ -27,34 +44,71 @@ const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCas
     </div>
 
     <section class="bloco-carros" aria-labelledby="h-carros">
-      <div class="cabeca"><h2 class="titulo-secao" id="h-carros">Todos os carros do pátio</h2><p class="lead">{r.carros.length} carros, do que tem mais peças para o que tem menos. Toque no seu.</p></div>
+      <div class="cabeca">
+        <h2 class="titulo-secao" id="h-carros">Todos os carros do pátio</h2>
+        <p class="lead" data-contagem data-padrao={leadLista} aria-live="polite">{leadLista}</p>
+      </div>
       <CarrosPatio todos />
+      <div class="nenhum" data-nenhum hidden>
+        <p class="nenhum-titulo" data-nenhum-txt>Nenhum carro com esse nome por aqui.</p>
+        <p>Nem toda peça está anunciada. Manda o modelo e o ano: a gente procura no pátio e responde pelo WhatsApp.</p>
+        <div class="nenhum-acoes">
+          <a class="botao botao-laranja" href={whatsUrl('Olá! Vim pelo site. Procuro peça para o meu carro: ____')} rel="noopener" data-nenhum-whats data-whats={WHATS}><Icone nome="whats" />Chamar no WhatsApp</a>
+          <a class="botao botao-linha" href="/procuro-peca.html">Pedir para procurar</a>
+        </div>
+      </div>
     </section>
-    <p class="nenhum" data-nenhum hidden>Nenhum carro com esse nome por aqui. <a href="/procuro-peca.html">Peça para a gente procurar no pátio</a>.</p>
+
+    <section class="carros-fim" aria-label="Não achou o seu carro?">
+      <BannerV2 nome="banner-nao-achou" href={whatsUrl('Olá! Vim pelo site e não achei o meu carro. Ele é: ____ (modelo e ano)')}
+        texto="Não achou o seu carro? Nem toda peça está anunciada. Manda o modelo e o ano que a gente procura no pátio e responde pelo WhatsApp. Chamar no WhatsApp" />
+      <p class="carros-fim-link">Prefere escrever com calma? <a href="/procuro-peca.html">Conte o carro e a peça no formulário</a>.</p>
+    </section>
   </div>
 </Pagina>
 <script>
+  // Filtro da lista: marca (fichas) + texto. O texto é comparado PALAVRA POR PALAVRA com "marca + modelo":
+  // toda palavra que existe em algum carro precisa estar no carro; palavra que não existe em nenhum ("mk7") é
+  // ignorada. Apelidos: vw, gm, chevy, mb, mercedes, benz.
   const inp = document.querySelector<HTMLInputElement>('[data-filtro-carros]');
   const botoes = [...document.querySelectorAll<HTMLButtonElement>('[data-marca]')];
   const nenhum = document.querySelector<HTMLElement>('[data-nenhum]');
-  // cartoes com arte (CarrosPatio) e linhas da lista: o modelo e a marca vem do texto do cartao
+  const nenhumTxt = document.querySelector<HTMLElement>('[data-nenhum-txt]');
+  const nenhumWhats = document.querySelector<HTMLAnchorElement>('[data-nenhum-whats]');
+  const contagem = document.querySelector<HTMLElement>('[data-contagem]');
   const itens = [...document.querySelectorAll<HTMLElement>('.carros-v2 > li')];
   const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const dadosDe = (el: HTMLElement) => {
+  const APELIDOS: Record<string, string> = { vw: 'volkswagen', gm: 'chevrolet', chevy: 'chevrolet', mb: 'mercedesbenz', mercedes: 'mercedesbenz', benz: 'mercedesbenz' };
+  const carros = itens.map((el) => {
     const nome = (el.querySelector('b')?.textContent || '').trim();
-    const marca = el.dataset.b || botoes.map((b) => b.dataset.marca || '').find((m) => m && nome.startsWith(m + ' ')) || '';
-    return { nome, marca };
-  };
+    const marca = el.dataset.b || '';
+    return { el, nome, marca, chave: norm(`${marca} ${nome}`) };
+  });
   let marcaAtiva = '';
+  const plural = (q: number) => (q === 1 ? 'carro' : 'carros');
+
   const aplicar = () => {
-    const q = norm(inp?.value || '');
-    let n = 0;
-    itens.forEach((el) => {
-      const { nome, marca } = dadosDe(el);
-      const ok = (!marcaAtiva || marca === marcaAtiva) && (!q || norm(nome).includes(q));
-      el.hidden = !ok; if (ok) n++;
-    });
-    if (nenhum) nenhum.hidden = n > 0;
+    const texto = (inp?.value || '').trim();
+    const palavras = texto.split(/\s+/).map((w) => APELIDOS[norm(w)] ?? norm(w)).filter(Boolean);
+    // só valem as palavras que existem em algum carro
+    const validas = palavras.filter((w) => carros.some((c) => c.chave.includes(w)));
+    let q = 0;
+    for (const c of carros) {
+      const ok = (!marcaAtiva || c.marca === marcaAtiva) && (!texto || (validas.length > 0 && validas.every((w) => c.chave.includes(w))));
+      c.el.hidden = !ok;
+      if (ok) q++;
+    }
+    if (nenhum) nenhum.hidden = q > 0;
+    if (contagem) {
+      const de = marcaAtiva ? ` ${marcaAtiva}` : '';
+      const com = texto ? ` com “${texto}”` : '';
+      contagem.textContent = !marcaAtiva && !texto ? (contagem.dataset.padrao || '') : q ? `${q} ${plural(q)}${de}${com}.` : `Nenhum carro${de}${com}.`;
+    }
+    if (!q && nenhumTxt) nenhumTxt.textContent = texto ? `Nenhum carro com “${texto}” por aqui.` : 'Nenhum carro com esse nome por aqui.';
+    if (!q && nenhumWhats) {
+      const carro = [marcaAtiva, texto].filter(Boolean).join(' ') || '____';
+      nenhumWhats.href = `https://wa.me/${nenhumWhats.dataset.whats}?text=${encodeURIComponent(`Olá! Vim pelo site. Procuro peça para o meu carro: ${carro}`)}`;
+    }
   };
   inp?.addEventListener('input', aplicar);
   botoes.forEach((b) => b.addEventListener('click', () => {
@@ -62,20 +116,43 @@ const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCas
   }));
 </script>
 <style>
-  .filtro-carros { display: grid; gap: 14px; margin-bottom: 8px; }
+  /* três carros do pátio, um à frente do outro (só no PC) */
+  .carros-vitrine { position: relative; aspect-ratio: 16 / 7; max-width: 620px; margin-left: auto; }
+  .carros-vitrine .cv { position: absolute; width: 58%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 22px; background: #efeeeb;
+    box-shadow: var(--shadow-2); }
+  .carros-vitrine .cv-1 { left: 21%; top: 6%; z-index: 3; }
+  .carros-vitrine .cv-2 { left: 0; top: 22%; z-index: 2; width: 46%; opacity: .97; }
+  .carros-vitrine .cv-3 { right: 0; top: 22%; z-index: 1; width: 46%; opacity: .97; }
+
+  .filtro-carros { display: grid; gap: 14px; margin-top: 8px; }
   .filtro-carros .busca { max-width: 640px; }
-  .marcas-filtro { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
-  @media (min-width: 900px) { .marcas-filtro { flex-wrap: wrap; } }
-  .marcas-filtro button { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px 0 6px; border: 0; border-radius: 12px;
+  /* folga de 8 px em volta (o anel do teclado não é cortado) e, no celular, as marcas se desfazem na borda direita */
+  .marcas-filtro { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: -8px; padding: 8px 40px 8px 8px; overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); }
+  .marcas-filtro::-webkit-scrollbar { display: none; }
+  @media (min-width: 900px) { .marcas-filtro { flex-wrap: wrap; padding-right: 8px; -webkit-mask-image: none; mask-image: none; } }
+  .marcas-filtro button { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px 0 6px; border: 0; border-radius: 12px;
     background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 650; font-size: 14.5px; color: var(--ink); cursor: pointer; transition: box-shadow .2s; }
   .marcas-filtro button:first-child { padding-left: 14px; }
-  .marcas-filtro button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
-  .chip-logo { width: 32px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: #f3f2ef; }
+  @media (hover: hover) { .marcas-filtro button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); } }
+  .chip-logo { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #f3f2ef; }
   .chip-logo:empty { display: none; }
   .chip-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
-  .marcas-filtro button[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
-  .bloco-carros { padding-top: clamp(40px, 6vw, 72px); }
+  .marcas-filtro button[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: none; }
+  .bloco-carros { padding-top: clamp(32px, 5vw, 56px); }
   .cabeca { display: grid; gap: 8px; margin-bottom: 24px; }
   .cabeca .lead { margin: 0; }
-  .nenhum { padding-bottom: 72px; color: var(--ink-2); } .nenhum a { color: var(--accent-text); font-weight: 600; text-decoration: underline; }
+
+  /* nenhum carro: caixa com saída (WhatsApp ou formulário), nunca uma linha solta */
+  .nenhum { display: grid; gap: 12px; justify-items: start; padding: var(--pad-cartao); border-radius: 26px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .nenhum[hidden] { display: none; }
+  .nenhum p { margin: 0; max-width: 56ch; color: var(--ink-2); font-size: 16px; line-height: 1.55; }
+  .nenhum .nenhum-titulo { font-stretch: 84%; font-weight: 800; font-size: clamp(22px, 2.4vw, 28px); line-height: 1.15; color: var(--ink); overflow-wrap: anywhere; }
+  .nenhum-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  @media (max-width: 600px) { .nenhum-acoes .botao { width: 100%; } }
+
+  /* fim da lista: respiro antes do rodapé e a saída para quem não achou o carro */
+  .carros-fim { padding-block: clamp(48px, 6vw, 80px) clamp(56px, 7vw, 96px); }
+  .carros-fim-link { margin: 16px 0 0; text-align: center; font-size: 15.5px; color: var(--ink-2); }
+  .carros-fim-link a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; display: inline-block; padding-block: 8px; }
 </style>
