@@ -27,6 +27,11 @@ const anosTxt = (a: [number, number]) => (a[0] === a[1] ? `${a[0]}` : `${a[0]}â€
       </span>
     </a></li>); })}
 </ul>
+<script>
+  import { focoNoTrilho } from '../../lib/trilhoFoco';
+  // trilho do celular (home): o carro com o foco do teclado fica inteiro na tela (o snap puxava de volta)
+  focoNoTrilho('.carros-v2:not(.todos)');
+</script>
 <style>
   .carros-v2 { list-style: none; margin: 0; padding: 4px 2px 14px; display: grid; gap: 12px; grid-auto-flow: column; grid-auto-columns: 80%;
     overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }

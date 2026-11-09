@@ -13,12 +13,14 @@ const { titulo, modo, itens: todos, limite = 10, limitePc, minimo = 1, mais, id 
 // Tipo sem foto não vira cartão vazio.
 const itens = modo === 'tipo' ? todos.filter((i) => !!i.foto) : todos;
 // de cara: os maiores (até `limite`) com pelo menos `minimo` peças; o resto só no "Ver todas"
+// "Ver todas" com 1 escondido só troca 1 ficha por outra: nesse caso mostra tudo
 const fortes = itens.filter((i) => i.c >= minimo);
-const deCara = new Set(fortes.slice(0, limite));
-const deCaraPc = new Set(fortes.slice(0, Math.min(limitePc ?? limite, limite)));
-// "Ver todas" com 1 escondido só troca 1 ficha por outra: mostra tudo
-const escondidos = itens.length - deCara.size;
-const tudo = escondidos <= 1 && itens.length - deCaraPc.size <= 1;
+const comTudo = (s: Set<Item>) => (itens.length - s.size <= 1 ? new Set(itens) : s);
+const deCara = comTudo(new Set(fortes.slice(0, limite)));
+const deCaraPc = comTudo(new Set(fortes.slice(0, Math.min(limitePc ?? limite, limite))));
+// o botão só aparece onde ele mostra alguma coisa: se no celular já está tudo à vista, ele fica só no PC
+const escondeCelular = deCara.size < itens.length;
+const tudo = !escondeCelular && deCaraPc.size === itens.length;
 const n = itens.length;
 const rotuloMais = mais ?? (modo === 'marca' ? `Ver as ${n} marcas` : `Ver os ${n} tipos`);
 const idLista = `${id ?? `av-${modo}`}-lista`;
@@ -44,7 +46,7 @@ const qtd = (c: number) => `${c.toLocaleString('pt-BR')} ${c === 1 ? 'peça' : '
         </li>
       ))}
       {!tudo && (
-        <li class="av-mais-li">
+        <li class:list={['av-mais-li', { 'av-mais-so-pc': !escondeCelular }]}>
           <button class:list={['av-mais', `av-mais-${modo}`]} type="button" aria-expanded="false" aria-controls={idLista} data-av-mais data-menos="Ver menos">
             <span data-av-rotulo>{rotuloMais}</span>
           </button>
@@ -54,6 +56,9 @@ const qtd = (c: number) => `${c.toLocaleString('pt-BR')} ${c === 1 ? 'peça' : '
   </nav>
 )}
 <script>
+  import { focoNoTrilho } from '../lib/trilhoFoco';
+  // no celular a lista é um trilho com snap: o item com o foco do teclado nunca fica meio fora da tela
+  focoNoTrilho('.av-lista');
   // "Ver todas": mostra o resto da lista no mesmo lugar (o foco fica no botão, que vira "Ver menos")
   document.querySelectorAll<HTMLButtonElement>('[data-av-mais]').forEach((b) => {
     const nav = b.closest<HTMLElement>('[data-av]');
@@ -78,6 +83,7 @@ const qtd = (c: number) => `${c.toLocaleString('pt-BR')} ${c === 1 ? 'peça' : '
   .av-lista li { flex: none; display: flex; scroll-snap-align: start; }
   .av:not([data-aberto]) .av-lista > li.av-extra { display: none; }
   @media (min-width: 900px) { .av:not([data-aberto]) .av-lista > li.av-extra-pc { display: none; } }
+  @media (max-width: 899px) { .av-lista > li.av-mais-so-pc { display: none; } }
   @media (min-width: 900px) { .av-lista { overflow: visible; flex-wrap: wrap; } }
 
   /* marca: ficha com logo */
