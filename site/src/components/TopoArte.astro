@@ -18,7 +18,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       {trilha.slice(0, -1).map(([n, h]) => <><a href={h}>{n}</a><span aria-hidden="true">/</span></>)}
       <span aria-current="page">{trilha[trilha.length - 1][0]}</span>
     </nav>
-    <div class="topo-caixa">
+    <div class:list={["topo-caixa", { "tema-estudio": temArte }]}>
       <div class="topo-texto">
         {temArte && logo && (
           <p class="topo-marca"><img src={logo.src} alt="" width={logo.w} height={logo.h} class:list={[{ svg: !logo.png }]} />{antes}</p>

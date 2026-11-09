@@ -5,7 +5,7 @@ import SeletorCarro from '../SeletorCarro.astro';
 interface Props { arte: string; arteCelular?: string; tom?: 'claro' | 'escuro'; }
 const { arte, arteCelular, tom = 'claro' } = Astro.props;
 ---
-<section class:list={['abv2', `abv2-${tom}`]}>
+<section class:list={['abv2', 'tema-estudio', `abv2-${tom}`]}>
   <picture class="abv2-arte" aria-hidden="true">
     <source media="(max-width: 767px)" srcset={arteCelular ?? arte} />
     <img src={arte} alt="" width="1536" height="1024" fetchpriority="high" decoding="async" />

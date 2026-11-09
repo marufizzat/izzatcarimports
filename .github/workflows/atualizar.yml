@@ -72,6 +72,7 @@ jobs:
       # ---- Capas de estudio (peca com fundo limpo). Ficam no ramo "capas-estudio";
       # aqui so as das pecas NOVAS sao geradas (rembg) e o ramo e atualizado.
       - name: Buscar capas de estudio ja prontas
+        continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
         run: |
           git fetch --depth=1 origin capas-estudio:capas-estudio 2>/dev/null || true
           mkdir -p site/public/estudio
@@ -88,6 +89,7 @@ jobs:
           path: ~/.rembg
           key: rembg-modelos-v1
       - name: Gerar capas de estudio das pecas novas
+        continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
         env:
           PYTHONIOENCODING: utf-8
           ESTUDIO_POR_RODADA: "150"
@@ -95,6 +97,7 @@ jobs:
           pip install "rembg[cpu]==2.0.*" scipy
           python -u capas_estudio.py
       - name: Guardar capas novas no ramo capas-estudio
+        continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
         run: |
           cd site/public/estudio
           git init -q && git checkout -q -b capas-estudio
