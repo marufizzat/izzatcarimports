@@ -338,7 +338,7 @@
   "foto": "817793-MLB110172629517_042026"
  },
  "MLB6596117480": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Chave limpador com traseiro",
   "carro": "Chevrolet Astra",
   "foto": "624023-MLB109380859316_042026"
@@ -357,13 +357,13 @@
   "foto": "991172-MLB109480806742_042026"
  },
  "MLB6613062638": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Módulo conforto palio",
   "carro": "Fiat Idea",
   "foto": "770710-MLB110393184415_042026"
  },
  "MLB6620551628": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Atuador ventilação",
   "carro": "Volvo XC60",
   "foto": "815191-MLB109562703370_042026"
@@ -389,7 +389,7 @@
   "foto": "968349-MLB110575520419_042026"
  },
  "MLB4615916055": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Bico injetor m270 a200 cgi",
   "carro": "Mercedes-Benz GLA200",
   "foto": "701904-MLB110571732675_042026"
@@ -401,7 +401,7 @@
   "foto": "740701-MLB110595298923_042026"
  },
  "MLB6654435760": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Evaporador ar condicionado",
   "carro": "Volvo XC60",
   "foto": "873941-MLB109849863194_042026"
@@ -419,19 +419,19 @@
   "foto": "687636-MLB110899159097_042026"
  },
  "MLB4632366349": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Luz cortesia forro porta",
   "carro": "Audi Q3",
   "foto": "628718-MLB109955439068_042026"
  },
  "MLB6673626042": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Motor vidro elétrico diant esq",
   "carro": "Ford New Fiesta",
   "foto": "655160-MLB110015339704_042026"
  },
  "MLB4638210101": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Coletor admissão",
   "carro": "Peugeot 2008",
   "foto": "905874-MLB110957959161_042026"
@@ -444,7 +444,7 @@
   "foto": "823954-MLB110138454080_042026"
  },
  "MLB4643786249": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Sensor estacionamento dianteiro",
   "carro": "Volvo S60",
   "foto": "840026-MLB111053144319_042026"
@@ -462,19 +462,19 @@
   "foto": "733763-MLB110140288322_042026"
  },
  "MLB6703494992": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar central painel completo",
   "carro": "Volkswagen Golf MK4",
   "foto": "622070-MLB111118444469_052026"
  },
  "MLB6706584418": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta interna esq cromada cromada lado esquerdo (motorista)",
   "carro": "Hyundai HB20",
   "foto": "855323-MLB112996157932_072026"
  },
  "MLB6769276338": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Retrovisor elétrico esquerdo",
   "carro": "Volvo XC60",
   "foto": "722127-MLB118807649094_102026"
@@ -507,164 +507,208 @@
   "foto": "832671-MLB111453675550_052026"
  },
  "MLB6831139292": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo BSI uch",
-  "carro": "Renault Clio"
+  "carro": "Renault Clio",
+  "motivo": "etiqueta impressa: código impresso (8201068825, 160813)",
+  "foto": "606179-MLB118930603629_102026"
  },
  "MLB4705046155": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo BSI uch",
-  "carro": "Renault Scenic"
+  "carro": "Renault Scenic",
+  "motivo": "etiqueta impressa: código impresso (102004, 311200810, 11010706)",
+  "foto": "687558-MLB112119369637_052026"
  },
  "MLB4704706893": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão alerta esc tração",
-  "carro": "Fiat Strada"
+  "carro": "Fiat Strada",
+  "foto": "632975-MLB112506738271_052026"
  },
  "MLB4704696365": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão vidro elétrico passageiro",
-  "carro": "Volvo S60"
+  "carro": "Volvo S60",
+  "foto": "921020-MLB112507058833_052026"
  },
  "MLB4713114381": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Chave seta limpador",
-  "carro": "Volkswagen Golf"
+  "carro": "Volkswagen Golf",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "796366-MLB112379225613_052026"
  },
  "MLB6864988196": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Motor vidro elétrico tras esq",
-  "carro": "Hyundai HB20"
+  "carro": "Hyundai HB20",
+  "foto": "706017-MLB111453284702_052026"
  },
  "MLB4723082563": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão alerta desembacador",
-  "carro": "Fiat Palio Weekend"
+  "carro": "Fiat Palio Weekend",
+  "foto": "648721-MLB111453431844_052026"
  },
  "MLB6880442972": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Pedal acelerador",
-  "carro": "Citroën C4 Pallas"
+  "carro": "Citroën C4 Pallas",
+  "foto": "964015-MLB112573895339_062026"
  },
  "MLB4741274891": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Suporte coxim câmbio",
-  "carro": "Renault Clio"
+  "carro": "Renault Clio",
+  "foto": "837956-MLB112819496429_062026"
  },
  "MLB6966834730": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Retrovisor elétrico diant esquerdo",
-  "carro": "Audi A4"
+  "carro": "Audi A4",
+  "foto": "920113-MLB112995901510_072026"
  },
  "MLB4779224813": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor vidro elétrico diant dir",
-  "carro": "Citroën C4"
+  "carro": "Citroën C4",
+  "motivo": "etiqueta impressa: código impresso (9647441880)",
+  "foto": "694982-MLB114210682827_072026"
  },
  "MLB7001631608": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor vidro elétrico diant dir",
-  "carro": "Peugeot 208"
+  "carro": "Peugeot 208",
+  "motivo": "etiqueta impressa: código impresso (006B40694)",
+  "foto": "816184-MLB114212318411_072026"
  },
  "MLB4797307153": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Lanterna traseira direita",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "640462-MLB116765913940_092026"
  },
  "MLB4797277525": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor vidro elétrico tras dir",
-  "carro": "Honda Civic"
+  "carro": "Honda Civic",
+  "motivo": "etiqueta impressa: código impresso (2FBT0R300)",
+  "foto": "999338-MLB120795484583_112026"
  },
  "MLB7005606062": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor vidro elétrico traseiro esq",
-  "carro": "Chevrolet Spin"
+  "carro": "Chevrolet Spin",
+  "motivo": "etiqueta impressa: código impresso (0130823845)",
+  "foto": "737211-MLB114212844897_072026"
  },
  "MLB7005605654": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Coluna direção mecânica",
-  "carro": "Fiat Palio"
+  "carro": "Fiat Palio",
+  "motivo": "etiqueta impressa: código impresso (494016714)",
+  "foto": "662117-MLB114212785441_072026"
  },
  "MLB7005570054": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Coluna direção",
-  "carro": "Renault Duster"
+  "carro": "Renault Duster",
+  "foto": "828436-MLB112996285416_072026"
  },
  "MLB7013607382": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Fechadura elétrica diant esq",
-  "carro": "Citroën C4"
+  "carro": "Citroën C4",
+  "foto": "958013-MLB114212587363_072026"
  },
  "MLB4807092427": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Difusor ar esquerdo painel",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "921331-MLB114211220441_072026"
  },
  "MLB7039273368": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Suporte maçaneta externa",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "674817-MLB112624680004_062026"
  },
  "MLB4815443403": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Sensor pedal freio",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "826117-MLB115192641554_082026"
  },
  "MLB7045412214": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Tampa cobertura motor",
-  "carro": "Peugeot 307"
+  "carro": "Peugeot 307",
+  "foto": "706783-MLB112996845086_072026"
  },
  "MLB7045360474": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo radar ponto cego tras",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "759246-MLB114213327551_072026"
  },
  "MLB4819124639": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Corpo borboleta tbi",
-  "carro": "Volvo S60"
+  "carro": "Volvo S60",
+  "motivo": "etiqueta impressa: código impresso (3129375)",
+  "foto": "943870-MLB112995859152_072026"
  },
  "MLB7069744006": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Mangueira água arrefecimento",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "motivo": "etiqueta impressa: código impresso (43928B163)",
+  "foto": "707521-MLB112996967570_072026"
  },
  "MLB7068317198": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Mangueira arrefecimento",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "foto": "925002-MLB112996935880_072026"
  },
  "MLB4831314507": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Mangueira saida intercooler",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "foto": "950567-MLB112995281530_072026"
  },
  "MLB4856583049": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Defletor proteção escapamento",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "879252-MLB112994283794_072026"
  },
  "MLB4856185359": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Braço suspensão tras",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "698686-MLB112995808100_072026"
  },
  "MLB4855902039": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Válvula solenoide pressão turbina",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "etiqueta impressa: código impresso (31480559, 19T101)",
+  "foto": "616459-MLB112995460468_072026"
  },
  "MLB7158673034": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Alavanca manopla câmbio",
-  "carro": "Chevrolet Tracker"
+  "carro": "Chevrolet Tracker",
+  "foto": "798558-MLB114489215829_072026"
  },
  "MLB4903771379": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Coletor admissão",
-  "carro": "Volkswagen T-Cross"
+  "carro": "Volkswagen T-Cross",
+  "foto": "867704-MLB113406813606_072026"
  },
  "MLB4954167375": {
   "status": "fila",
