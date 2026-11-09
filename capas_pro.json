@@ -128,19 +128,19 @@
   "motivo": "etiqueta e conector mudaram"
  },
  "MLB7124139250": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Biela motor",
   "carro": "Chevrolet Captiva",
   "foto": "903529-MLB113062887062_072026"
  },
  "MLB4779038537": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Lanterna esquerda tampa traseira",
   "carro": "Volvo XC60",
   "foto": "812050-MLB116591971885_082026"
  },
  "MLB7045957128": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta interna esq",
   "carro": "Renault Sandero",
   "foto": "896013-MLB117145670423_092026"
@@ -152,31 +152,32 @@
   "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6505928216": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Imobilizador ignição",
   "carro": "Chevrolet Celta",
-  "foto": "998110-MLB114212395001_072026"
+  "foto": "998110-MLB114212395001_072026",
+  "motivo": "etiqueta reescrita"
  },
  "MLB4583130961": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Porta copos retrátil painel",
   "carro": "Volkswagen Golf",
   "foto": "779242-MLB110019052827_042026"
  },
  "MLB6613274402": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Módulo conforto",
   "carro": "Fiat Palio",
   "foto": "724976-MLB109524287812_042026"
  },
  "MLB4632120589": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Sensor detonação impacto SRS",
   "carro": "Volvo S60",
   "foto": "806065-MLB110855234005_042026"
  },
  "MLB4648094821": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa cobertura motor",
   "carro": "Volvo XC60",
   "foto": "889307-MLB110199695514_052026"
@@ -224,28 +225,31 @@
   "foto": "957174-MLB116323814050_092026"
  },
  "MLB4518801785": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Bomba d'água drive-e",
   "carro": "Volvo XC60",
   "foto": "941099-MLB108429329181_032026"
  },
  "MLB6442479880": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Resfriador trocador calor óleo câmbio",
   "carro": "Volvo XC60",
-  "foto": "717892-MLB108551268177_032026"
+  "foto": "717892-MLB108551268177_032026",
+  "motivo": "ChatGPT girou a peça (perspectiva diferente)"
  },
  "MLB6482375222": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Painel de instrumentos",
   "carro": "Ford Fusion",
-  "foto": "805742-MLB108246587214_032026"
+  "foto": "805742-MLB108246587214_032026",
+  "motivo": "ponteiro e escala do painel refeitos"
  },
  "MLB4543738375": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Caixa filtro de ar motor",
   "carro": "Volvo XC60",
-  "foto": "769315-MLB109046131499_032026"
+  "foto": "769315-MLB109046131499_032026",
+  "motivo": "peça interna mudou"
  },
  "MLB6488189626": {
   "status": "pulada",
@@ -255,7 +259,7 @@
   "foto": "871330-MLB111030027660_052026"
  },
  "MLB6500966920": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Circuito lanterna tras esquerda esquerdo/motorista",
   "carro": "Renault Sandero",
   "foto": "946665-MLB92862015642_092025"
@@ -268,13 +272,14 @@
   "foto": "640421-MLB92695592261_092025"
  },
  "MLB4553070469": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Módulo câmbio automático tcm",
   "carro": "Volvo XC60",
-  "foto": "653851-MLB110730294314_052026"
+  "foto": "653851-MLB110730294314_052026",
+  "motivo": "etiqueta reescrita"
  },
  "MLB6502221962": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Sonda lambda aquecida",
   "carro": "Volvo XC60",
   "foto": "958252-MLB108500715444_032026"
@@ -294,25 +299,27 @@
   "foto": "847539-MLB109987863425_042026"
  },
  "MLB6564911558": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão milha desembacador menu",
   "carro": "Fiat Grand Siena",
   "foto": "720706-MLB113969043597_062026"
  },
  "MLB6564888284": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chave interruptor luz farol",
   "carro": "Chevrolet Astra",
-  "foto": "708381-MLB110017792157_042026"
+  "foto": "708381-MLB110017792157_042026",
+  "motivo": "etiqueta lateral alterada"
  },
  "MLB4582603979": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Alca seguranca teto sportline",
   "carro": "Volkswagen Golf",
-  "foto": "854720-MLB93897391313_102025"
+  "foto": "854720-MLB93897391313_102025",
+  "motivo": "peça cortada na foto original"
  },
  "MLB6577236272": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura cromada maçaneta porta",
   "carro": "Jaguar E-Pace",
   "foto": "783689-MLB109241398156_042026"
@@ -325,7 +332,7 @@
   "foto": "651582-MLB109275152328_042026"
  },
  "MLB4592314673": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Válvula PCV",
   "carro": "Volvo XC60",
   "foto": "817793-MLB110172629517_042026"
