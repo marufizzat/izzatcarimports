@@ -87,8 +87,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Sem ilha do Astro na página da peça: a busca do cabeçalho monta o React no 1º contato com o campo e a galeria em tela
   cheia monta quando o navegador folga (`PecaTopo.astro`). "Pedir no WhatsApp" do cartão e os estados do "Serve no seu
   carro" são montados pelo script. "Do mesmo carro" mostra 6 cartões.
-- Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`): sem vidro desfocado, sem 3D no coverflow, sem o
-  "respirar" da abertura e sem animação de altura nas perguntas.
+- Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`: até 2 núcleos, até 4 GB no Chrome ou economia de
+  dados; o Safari informa sempre 4 ou 8 núcleos, então iPhone não entra): sem vidro desfocado, sem 3D no coverflow,
+  sem o "respirar" da abertura e sem animação de altura nas perguntas.
 - Busca: o índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
   O catálogo pinta os cartões aos poucos (12 por quadro).
 
