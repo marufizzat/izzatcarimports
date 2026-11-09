@@ -89,6 +89,16 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 
   /* com disco: a marca fica ao lado do texto */
   @media (min-width: 900px) { .com-disco .topo-caixa { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; } }
+  /* celular e tablet (carro ainda sem arte, página da marca): o disco pequeno ao lado do título, não um disco de
+     190 px embaixo dos botões empurrando as peças para baixo */
+  @media (max-width: 899px) {
+    .com-disco .topo-caixa { grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 12px; align-items: center; }
+    .com-disco .topo-texto { display: contents; }
+    .com-disco .topo-texto > * { grid-column: 1 / -1; }
+    .com-disco .topo-texto > :is(.topo-antes, h1) { grid-column: 1; }
+    .com-disco .topo-disco { grid-column: 2; grid-row: 1 / span 2; width: clamp(72px, 20vw, 120px); align-self: center; }
+    .com-disco .topo-caixa:not(:has(.topo-antes)) .topo-disco { grid-row: 1; }
+  }
   /* com lado: o texto à esquerda e o lado à direita (no celular o lado some: o topo fica curto) */
   .topo-lado { display: none; }
   @media (min-width: 900px) {
