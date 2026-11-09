@@ -26,6 +26,8 @@ export type Item = {
 };
 export type Filtros = {
   q?: string; marca?: string; modelo?: string; ano?: number; tipo?: string;
+  /** subtipo (campo s: "Lanternas Traseiras"), o mesmo dos cartões "Por tipo" da página da categoria */
+  sub?: string;
   preco?: string; frete?: boolean; ordem?: 'rel' | 'asc' | 'desc' | 'novos';
 };
 export type Carro = { b: string; m: string };
@@ -33,7 +35,7 @@ export type Carro = { b: string; m: string };
 export type Atalho = { tipo: 'carro' | 'marca' | 'sistema'; rot: string; sub: string; n: number; href: string };
 export type Sugestoes = { itens: Item[]; total: number; aproximado: boolean; atalhos: Atalho[]; carros: Carro[] };
 export type Facetas = {
-  marcas: [string, number][]; modelos: [string, number][]; tipos: [string, number][];
+  marcas: [string, number][]; modelos: [string, number][]; tipos: [string, number][]; subs: [string, number][];
   anos: [number, number][]; precos: (readonly [string, string, number])[];
 };
 
@@ -343,6 +345,7 @@ export class Busca {
       (!f.modelo || serveNoModelo(it, f.modelo)) &&
       (!ano || dentro(ano, f.modelo ? anosNoModelo(it, f.modelo) : it.y)) &&
       (!f.tipo || it.c === f.tipo) &&
+      (!f.sub || it.s === f.sub) &&
       (!faixa || (it.p >= faixa[2] && it.p < faixa[3])) &&
       (!f.frete || it.f));
     return { itens, aproximado: r.aproximado, carros: r.carros, comTexto: !!texto };
@@ -385,6 +388,8 @@ export class Busca {
       marcas: conta('marca', (i) => i.b),
       modelos: f.marca ? contarModelos(this.filtrar({ ...f, modelo: undefined, ordem: 'rel' }).itens) : [],
       tipos: conta('tipo', (i) => i.c),
+      // tipos de peça dentro do sistema escolhido (como os modelos dentro da marca)
+      subs: f.tipo ? conta('sub', (i) => i.s) : [],
       anos: [...porAno.entries()].sort((a, b) => b[0] - a[0]),
       precos: FAIXAS.map(([k, rot, a, b]) => [k, rot, semPreco.filter((i) => i.p >= a && i.p < b).length] as const),
     };

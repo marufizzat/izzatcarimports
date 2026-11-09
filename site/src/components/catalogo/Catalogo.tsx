@@ -1,6 +1,6 @@
 // Catalogo (ilha React): busca instantanea + filtros + grade de cartões (vitrine).
 // Estado na URL com os MESMOS parametros do site antigo:
-//   q, marca, modelo, ano, tipo, preco, frete, ordem
+//   q, marca, modelo, ano, tipo, preco, frete, ordem (+ sub: o subtipo dos cartões "Por tipo" da categoria)
 // O cartão (Etiqueta) é o MESMO desenho de CartaoPeca.astro; as regras ficam em ./etiqueta.ts.
 //
 // Fluidez (4G e celular fraco):
@@ -44,7 +44,7 @@ function lerUrl(): Filtros {
   const o = u.get('ordem'); const ordem = (['asc', 'desc', 'novos'].includes(o || '') ? o : undefined) as Filtros['ordem'];
   return {
     q: u.get('q') || '', marca: u.get('marca') || undefined, modelo: u.get('modelo') || undefined,
-    ano, tipo: u.get('tipo') || undefined, preco: u.get('preco') || undefined,
+    ano, tipo: u.get('tipo') || undefined, sub: u.get('sub') || undefined, preco: u.get('preco') || undefined,
     frete: u.get('frete') === '1' || u.get('frete') === 'true', ordem,
   };
 }
@@ -55,6 +55,7 @@ function escreverUrl(f: Filtros) {
   if (f.modelo) u.set('modelo', f.modelo);
   if (f.ano) u.set('ano', String(f.ano));
   if (f.tipo) u.set('tipo', f.tipo);
+  if (f.sub) u.set('sub', f.sub);
   if (f.preco) u.set('preco', f.preco);
   if (f.frete) u.set('frete', '1');
   if (f.ordem && f.ordem !== 'rel') u.set('ordem', f.ordem);
@@ -63,7 +64,7 @@ function escreverUrl(f: Filtros) {
 }
 /** A lista da 1ª tela (feita no build) vale: sem busca nem filtro, na ordem padrão. */
 const ehPadrao = (f: Filtros) =>
-  !(f.q || '').trim() && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.preco && !f.frete &&
+  !(f.q || '').trim() && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.sub && !f.preco && !f.frete &&
   (!f.ordem || f.ordem === 'rel' || f.ordem === 'novos');
 
 /** Título da página com os filtros ("Peças para Volvo XC60 2020"). A busca de texto fica na linha do total
@@ -71,10 +72,10 @@ const ehPadrao = (f: Filtros) =>
 export function tituloCatalogo(f: Filtros): string | null {
   const carro = [f.marca, f.modelo].filter(Boolean).join(' ');
   const t = f.tipo;
-  const base = t ? (t === 'Outros' ? 'Outras peças' : /^peças/i.test(t) ? t : `Peças de ${t.toLowerCase()}`) : 'Peças';
+  const base = f.sub ? f.sub : t ? (t === 'Outros' ? 'Outras peças' : /^peças/i.test(t) ? t : `Peças de ${t.toLowerCase()}`) : 'Peças';
   if (carro) return `${base} para ${carro}${f.ano ? ` ${f.ano}` : ''}`;
   if (f.ano) return `${base} para carro ano ${f.ano}`;
-  return t ? base : null;
+  return t || f.sub ? base : null;
 }
 
 // ícones longos pelo sprite /icones.svg (src/lib/icones.ts): o mesmo desenho do cartão do build
@@ -187,13 +188,14 @@ function Opcoes({ itens, ativo, aoEscolher, limite = 8, logos, mais }: {
 }
 
 /** Os filtros (lateral no PC e gaveta no celular). Memorizado: só redesenha quando as contagens ou a escolha mudam. */
-const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo, preco, logos, mudar }: {
-  fa: Facetas; marca?: string; modelo?: string; ano?: number; tipo?: string; preco?: string;
+const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo, sub, preco, logos, mudar }: {
+  fa: Facetas; marca?: string; modelo?: string; ano?: number; tipo?: string; sub?: string; preco?: string;
   logos: Record<string, Logo>; mudar: (p: Partial<Filtros>) => void;
 }) {
   const marcas = fa.marcas.map(([v, c]) => ({ v, rot: v, c }));
   const modelos = fa.modelos.map(([v, c]) => ({ v, rot: v, c }));
   const tipos = fa.tipos.map(([v, c]) => ({ v, rot: v, c }));
+  const subs = (fa.subs ?? []).map(([v, c]) => ({ v, rot: v, c }));
   const precos = fa.precos.filter(([, , c]) => c > 0).map(([v, rot, c]) => ({ v, rot, c }));
   const precoRot = FAIXAS.find((x) => x[0] === preco)?.[1];
   const anos = ano && !fa.anos.some(([a]) => a === ano) ? [...fa.anos, [ano, 0] as [number, number]].sort((a, b) => b[0] - a[0]) : fa.anos;
@@ -230,7 +232,12 @@ const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo
       )}
       {tipos.length > 0 && (
         <Grupo titulo="Sistema do carro" escolhido={tipo}>
-          <Opcoes itens={tipos} ativo={tipo} limite={8} mais="Ver todos os sistemas" aoEscolher={(v) => mudar({ tipo: v })} />
+          <Opcoes itens={tipos} ativo={tipo} limite={8} mais="Ver todos os sistemas" aoEscolher={(v) => mudar({ tipo: v, sub: undefined })} />
+        </Grupo>
+      )}
+      {tipo && subs.length > 0 && (
+        <Grupo titulo="Tipo de peça" escolhido={sub}>
+          <Opcoes itens={subs} ativo={sub} limite={8} mais="Ver todos os tipos" aoEscolher={(v) => mudar({ sub: v })} />
         </Grupo>
       )}
     </div>
@@ -408,14 +415,15 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   if (f.marca) ativos.push({ k: 'marca', rot: f.marca, logo: logos[f.marca], tirar: () => mudaFiltro({ marca: undefined, modelo: undefined }) });
   if (f.modelo) ativos.push({ k: 'modelo', rot: f.modelo, tirar: () => mudaFiltro({ modelo: undefined }) });
   if (f.ano) ativos.push({ k: 'ano', rot: `Ano ${f.ano}`, tirar: () => mudaFiltro({ ano: undefined }) });
-  if (f.tipo) ativos.push({ k: 'tipo', rot: f.tipo, tirar: () => mudaFiltro({ tipo: undefined }) });
+  if (f.tipo) ativos.push({ k: 'tipo', rot: f.tipo, tirar: () => mudaFiltro({ tipo: undefined, sub: undefined }) });
+  if (f.sub) ativos.push({ k: 'sub', rot: f.sub, tirar: () => mudaFiltro({ sub: undefined }) });
   if (f.preco) ativos.push({ k: 'preco', rot: FAIXAS.find((x) => x[0] === f.preco)?.[1] || f.preco, tirar: () => mudaFiltro({ preco: undefined }) });
   const nFiltros = ativos.length;
   const limpar = () => { setF({ ordem: f.ordem }); voltaAoTopo(); };
   const limparFiltros = () => { setF({ q: f.q, ordem: f.ordem }); };
 
   const filtros = facetas
-    ? <PainelFiltros fa={facetas} marca={f.marca} modelo={f.modelo} ano={f.ano} tipo={f.tipo} preco={f.preco} logos={logos} mudar={mudaFiltro} />
+    ? <PainelFiltros fa={facetas} marca={f.marca} modelo={f.modelo} ano={f.ano} tipo={f.tipo} sub={f.sub} preco={f.preco} logos={logos} mudar={mudaFiltro} />
     : null;
 
   const carregando = !busca && !erro;
@@ -466,7 +474,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   }, [f.q]);
   const ano = f.ano || anoQ;
   const carroFiltro = f.marca ? [f.marca, f.modelo].filter(Boolean).join(' ') : carroDaBusca ? `${carroDaBusca.b} ${carroDaBusca.m}` : '';
-  const oQue = (f.marca ? qSemAno : semCarro(qSemAno, carroDaBusca)) || (f.tipo ? `peça de ${f.tipo.toLowerCase()}` : 'peça');
+  const oQue = (f.marca ? qSemAno : semCarro(qSemAno, carroDaBusca)) || (f.sub ? f.sub.toLowerCase() : f.tipo ? `peça de ${f.tipo.toLowerCase()}` : 'peça');
   const paraCarro = carroFiltro ? `para ${carroFiltro}${ano ? ` ${ano}` : ''}` : ano ? `para carro ano ${ano}` : '';
   const procuro = [oQue, paraCarro].filter(Boolean).join(' ');
   // "Avise-me quando chegar": com carro no filtro, na busca ou salvo no Meu carro (só fatos, sem prazo)
@@ -615,7 +623,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
       <Gaveta aberta={gaveta} aoFechar={() => setGaveta(false)} titulo="Filtros"
         rodape={
           <div className="cat-gaveta-rodape">
-            <button type="button" className="botao botao-linha" onClick={limparFiltros} disabled={!nFiltros}>Limpar</button>
+            <button type="button" className="botao botao-linha" onClick={limparFiltros} disabled={!nFiltros && !f.frete}>Limpar</button>
             <button type="button" className="botao botao-laranja" onClick={() => setGaveta(false)}>
               {total ? `Ver ${n2(total)} ${pecas(total)}` : 'Fechar'}
             </button>

@@ -194,6 +194,11 @@
 .etiqueta-dados { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; padding: 12px 14px 14px; }
 .etiqueta-carro { font-size: 12.5px; font-weight: 650; font-stretch: 94%; line-height: 1.3; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .etiqueta-anos { font-weight: 500; color: var(--ink-3); }
+/* cartão largo: peça de 2+ carros ("Volkswagen Virtus / Polo / Up") vai para a 2ª linha e o ano nunca é cortado */
+@container etiqueta (min-width: 215px) {
+  .etiqueta-carro { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .etiqueta-anos { white-space: nowrap; }
+}
 /* cartão estreito (celular): carro numa linha e os anos na outra, para o ano nunca ser cortado;
    carro de nome longo ("Land Rover Discovery") em até 2 linhas e o nome da peça em até 3 */
 @container etiqueta (max-width: 214px) {

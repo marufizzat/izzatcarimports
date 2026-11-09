@@ -223,6 +223,26 @@ describe('facetas', () => {
   });
 });
 
+describe('subtipo (sub=): o atalho "Por tipo" da categoria abre o mesmo número', () => {
+  it('tipo + sub conta o mesmo que o cartão da página da categoria (campo s), e a faceta mostra os subtipos', (ctx) => {
+    const familia = b.itens.find((i) => i.c && i.s)?.c;
+    if (!familia) return ctx.skip();
+    const daFamilia = b.itens.filter((i) => i.c === familia);
+    const subs = new Map<string, number>();
+    for (const it of daFamilia) if (it.s) subs.set(it.s, (subs.get(it.s) || 0) + 1);
+    for (const [sub, n] of subs) expect(b.procurar({ tipo: familia, sub }).length, sub).toBe(n);
+    expect(new Map(b.facetas({ tipo: familia }).subs)).toEqual(subs);
+    // sem o sistema, não há lista de subtipos
+    expect(b.facetas({}).subs).toEqual([]);
+  });
+
+  it('o exemplo da auditoria: Iluminação + Lanternas Traseiras', (ctx) => {
+    const n = b.itens.filter((i) => i.c === 'Iluminação' && i.s === 'Lanternas Traseiras').length;
+    if (!n) return ctx.skip();
+    expect(b.procurar({ tipo: 'Iluminação', sub: 'Lanternas Traseiras' }).length).toBe(n);
+  });
+});
+
 describe('termos do índice', () => {
   it('forma junta de "xc 60", "XC-60" e "Para-choque"', () => {
     expect(termos('Volvo Xc 60')).toContain('xc60');
