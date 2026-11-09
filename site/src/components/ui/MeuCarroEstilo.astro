@@ -142,6 +142,7 @@
   .mc-dialogo { width: min(600px, calc(100vw - 24px)); max-width: none; max-height: 88dvh; margin: auto; padding: 0; border: 0; border-radius: 24px;
     background: var(--bg); color: var(--ink); box-shadow: var(--shadow-2); overflow: hidden; }
   .mc-dialogo::backdrop { background: rgb(10 10 12 / .45); backdrop-filter: blur(4px); }
+  html.leve .mc-dialogo::backdrop { backdrop-filter: none; }
   .mc-dialogo[open] { display: flex; flex-direction: column; animation: mc-sobe .28s cubic-bezier(.2,.8,.2,1); }
   @keyframes mc-sobe { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
   .mc-dlg-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 20px 6px; }

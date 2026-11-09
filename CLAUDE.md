@@ -72,6 +72,21 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   "mais barato que", "100% garantido", depoimento inventado.
 - Ainda **a confirmar** antes de aparecer no site: endereço, horário, 12x, retirada no local, "lacre".
 
+## Peso e fluidez (o Pages aceita até 1 GB; cada byte da página de peça vale 5 mil vezes)
+- Página de peça ≈ 38 KB de HTML (era 87 KB). Antes de pôr algo em todo cartão ou em toda peça, pense nisso.
+- Ícones: desenhos em `site/src/lib/icones.ts`; os longos (WhatsApp, escudo, carro…) vêm do sprite `/icones.svg`
+  com `<use>` (`Icone.astro`). Nunca colar o `<path>` do WhatsApp direto na página.
+- CSS e scripts de componente saem em arquivo com cache (`astro.config.mjs`); `site/integracoes/escopo-curto.mjs`
+  encurta o atributo de escopo do Astro no fim do build. Componentes da peça, cabeçalho e rodapé usam `<style is:global>`
+  com as classes presas à raiz do componente (`.detalhes …`, `.rodape …`, `.cab …`).
+- Sem ilha do Astro na página da peça: a busca do cabeçalho monta o React no 1º contato com o campo e a galeria em tela
+  cheia monta quando o navegador folga (`PecaTopo.astro`). "Pedir no WhatsApp" do cartão e os estados do "Serve no seu
+  carro" são montados pelo script. "Do mesmo carro" mostra 6 cartões.
+- Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`): sem vidro desfocado, sem 3D no coverflow, sem o
+  "respirar" da abertura e sem animação de altura nas perguntas.
+- Busca: o índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
+  O catálogo pinta os cartões aos poucos (12 por quadro).
+
 ## Rodar no computador
 ```
 python preparar_dados.py

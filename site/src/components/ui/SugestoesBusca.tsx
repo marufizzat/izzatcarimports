@@ -6,16 +6,20 @@ import {
   type FocusEvent as FE, type FormEvent as FormE, type KeyboardEvent as KE,
 } from 'react';
 import { Busca, capaItem, type Item } from '../../lib/busca';
+import './sugestoes.css';
 
 type Props = {
   placeholder?: string;
   tamanho?: 'grande' | 'normal';
   autoFoco?: boolean;
+  /** texto que já estava no campo (a busca do cabeçalho monta a ilha quando a pessoa chega no campo) */
+  inicial?: string;
 };
 
 const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-// um unico download do indice, compartilhado por todas as caixas da pagina
+// um unico download do indice, compartilhado por todas as caixas da pagina.
+// O índice de texto é montado aos poucos (sem travar a digitação); enquanto isso aparece "Carregando as peças…".
 let carregamento: Promise<Busca> | null = null;
 function carregarBusca(): Promise<Busca> {
   carregamento ??= fetch('/dados/busca.json')
@@ -23,7 +27,11 @@ function carregarBusca(): Promise<Busca> {
       if (!r.ok) throw new Error(String(r.status));
       return r.json();
     })
-    .then((j) => new Busca(j))
+    .then(async (j) => {
+      const b = new Busca(j);
+      await b.prepararIndice();
+      return b;
+    })
     .catch((e) => {
       carregamento = null; // permite tentar de novo no proximo foco
       throw e;
@@ -38,11 +46,11 @@ const IconeLupa = () => (
   </svg>
 );
 
-export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou código', tamanho = 'normal', autoFoco = false }: Props) {
+export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou código', tamanho = 'normal', autoFoco = false, inicial = '' }: Props) {
   const uid = useId();
   const listaId = `${uid}-lista`;
-  const [q, setQ] = useState('');
-  const [termo, setTermo] = useState('');
+  const [q, setQ] = useState(inicial);
+  const [termo, setTermo] = useState(inicial);
   const [busca, setBusca] = useState<Busca | null>(null);
   const [estado, setEstado] = useState<'parado' | 'carregando' | 'erro' | 'pronto'>('parado');
   const [foco, setFoco] = useState(false);
@@ -79,6 +87,14 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       })
       .catch(() => setEstado('erro'));
   };
+
+  // montada já com o foco (busca do cabeçalho, que monta quando a pessoa chega no campo): baixa o índice na hora
+  useEffect(() => {
+    if (autoFoco) {
+      setFoco(true);
+      carregar();
+    }
+  }, []);
 
   const irPeca = (h: string) => {
     window.location.href = `/peca/${h}.html`;
@@ -123,7 +139,6 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
 
   return (
     <div className="sb-raiz" ref={raiz} onBlur={onBlur}>
-      <style>{CSS_SUGESTOES}</style>
       <form
         ref={form}
         role="search"
@@ -239,38 +254,3 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     </div>
   );
 }
-
-// estilos do campo (classes .busca, .botao e .botao-laranja vem do global.css)
-export const CSS_SUGESTOES = `
-.sb-raiz{position:relative;width:100%;min-width:0}
-.sb-busca{width:100%;min-width:0}
-.sb-busca:not(.sb-grande){height:56px;border-radius:14px;padding-left:16px}
-.sb-busca .sb-lupa{display:grid;place-items:center;flex:none;color:var(--ink-3)}
-.sb-busca .sb-lupa svg{width:22px;height:22px}
-.sb-busca input{min-width:0;flex:1}
-.sb-busca input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
-.sb-limpar{flex:none;width:44px;height:44px;border:0;border-radius:12px;padding:0;display:grid;place-items:center;background:transparent;color:var(--ink-3);cursor:pointer}
-.sb-limpar:hover{background:var(--surface-2);color:var(--ink)}
-.sb-limpar svg{width:18px;height:18px}
-.sb-busca .sb-btn svg{width:20px;height:20px;color:var(--on-accent)}
-@media (max-width:479px){.sb-btn{padding:0 14px}.sb-btn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}
-.sb-lista{position:absolute;z-index:40;left:0;right:0;top:calc(100% + 8px);max-height:min(70vh,460px);overflow-y:auto;overscroll-behavior:contain;
-  padding:6px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-2);animation:sb-entrar .18s ease both}
-.sb-lista ul{list-style:none;margin:0;padding:0}
-.sb-status{display:flex;align-items:center;gap:10px;margin:0;padding:12px;font-size:14.5px;color:var(--ink-2);line-height:1.4}
-.sb-giro{flex:none;width:16px;height:16px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--accent);animation:sb-girar .8s linear infinite}
-.sb-op{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:72px;padding:8px 12px 8px 8px;border-radius:14px;cursor:pointer;user-select:none}
-.sb-op.on{background:var(--accent-soft)}
-.sb-foto{width:56px;height:56px;border-radius:12px;background:var(--plate);display:grid;place-items:center;overflow:hidden}
-.sb-foto img{width:100%;height:100%;object-fit:contain;padding:4px}
-.sb-txt{min-width:0;display:grid;gap:2px}
-.sb-txt b{font-size:15px;font-weight:580;line-height:1.25;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.sb-txt small{font-size:13px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sb-preco{font-stretch:84%;font-weight:800;font-size:17px;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
-.sb-ver{grid-template-columns:minmax(0,1fr) auto;min-height:52px;margin-top:4px;border-radius:12px;color:var(--accent-text);font-weight:650;font-size:14.5px}
-.sb-ver svg{width:20px;height:20px}
-.sb-ver span{min-width:0}
-@keyframes sb-entrar{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-@keyframes sb-girar{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.sb-lista,.sb-giro{animation:none!important}}
-`;

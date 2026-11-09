@@ -58,28 +58,30 @@ const descTexto = `${p.t}. Peça original retirada de carro com baixa legal, con
   });
 </script>
 
-<style>
-  .detalhes { padding-top: 24px; }
-  .abas { display: none; gap: 6px; padding: 5px; margin-bottom: 18px; border-radius: 14px; background: var(--bg-2); }
-  .abas button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 15px; font-weight: 650; color: var(--ink-2); cursor: pointer; }
-  .abas button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
-  .detalhes-grade { display: grid; gap: 40px; }
-  .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: 24px; }
-  .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
-  .ficha th, .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
-  .ficha tr:last-child th, .ficha tr:last-child td { border-bottom: 0; }
-  .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
-  .ficha td { overflow-wrap: anywhere; }
-  .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
-  .descricao :global(h3) { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
-  .descricao :global(p) { margin: 0 0 10px; }
+<style is:global>
+  /* Globais de propósito (sem o atributo de escopo em cada linha da ficha): tudo preso a .detalhes. */
+
+  .secao.detalhes { padding-top: 24px; }
+  .detalhes .abas { display: none; gap: 6px; padding: 5px; margin-bottom: 18px; border-radius: 14px; background: var(--bg-2); }
+  .detalhes .abas button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 15px; font-weight: 650; color: var(--ink-2); cursor: pointer; }
+  .detalhes .abas button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+  .detalhes .detalhes-grade { display: grid; gap: 40px; }
+  .detalhes .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: 24px; }
+  .detalhes .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
+  .detalhes .ficha th, .detalhes .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .detalhes .ficha tr:last-child th, .detalhes .ficha tr:last-child td { border-bottom: 0; }
+  .detalhes .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
+  .detalhes .ficha td { overflow-wrap: anywhere; }
+  .detalhes .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
+  .detalhes .descricao h3 { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
+  .detalhes .descricao p { margin: 0 0 10px; }
   @media (max-width: 959px) {
-    .abas { display: flex; }
-    .detalhes-grade { gap: 0; }
-    .subtitulo { display: none; }
+    .detalhes .abas { display: flex; }
+    .detalhes .detalhes-grade { gap: 0; }
+    .detalhes .subtitulo { display: none; }
   }
   @media (min-width: 960px) {
-    .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; }
-    .painel[hidden] { display: block !important; }
+    .detalhes .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; }
+    .detalhes .painel[hidden] { display: block !important; }
   }
 </style>

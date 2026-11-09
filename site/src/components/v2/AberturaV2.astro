@@ -143,6 +143,8 @@ const atalhos = populares(4);
       .abv2-arte img { animation: abv-respira linear both; animation-timeline: scroll(root block); animation-range: 0px 70vh; }
     }
   }
+  /* aparelho fraco: arte parada (como no "reduzir movimento") */
+  :global(html.leve) .abv2-arte img { animation: none; }
   @keyframes abv-respira {
     from { transform: translate3d(0, -14px, 0) scale(1.08); }
     to { transform: translate3d(0, 12px, 0) scale(1.08); }
