@@ -325,6 +325,134 @@ def test_enquadramento_v2_regra():
     assert r["torta"][1] < (L - r["torta"][3]) // 2        # centro de massa à direita puxa a peça para a esquerda
 
 
+def test_subtipo_com_a_mae():
+    """Problema 4: subtipo solto ("De Vidros", "Elétrico", "Com Tela") vira nome inteiro, no estilo do ML."""
+    from preparar_dados import subtipo
+    raiz = ["Acessórios para Veículos", "Peças de Carros e Caminhonetes"]
+    casos = [
+        (["Peças de Interior", "Interruptores", "De Vidros"], "", "Interruptores de Vidros"),
+        (["Peças de Interior", "Interruptores", "De Luzes"], "", "Interruptores de Luzes"),
+        (["Fechaduras e Chaves", "para Porta-malas e Portões"], "", "Fechaduras para Porta-malas e Portões"),
+        (["Janelas e Vedações", "Sistemas de Elevação", "Elétrico"], "MLB191714", "Máquinas e Motores de Vidro Elétrico"),
+        (["Peças de Interior", "Pedais", "Outros"], "", "Pedais"),
+        (["Iluminação", "Outros"], "", "Outros"),            # "Outros" logo abaixo da familia continua
+        (["Iluminação", "Faróis Traseiros"], "", "Faróis Traseiros"),
+    ]
+    for path, cid, esperado in casos:
+        assert subtipo({"nome": path[-1], "path": raiz + path}, cid) == esperado, (path, subtipo({"nome": path[-1], "path": raiz + path}, cid))
+    estereo = {"nome": "Com Tela", "path": ["Acessórios para Veículos", "Som Automotivo", "Reprodutores", "Estéreos", "Com Tela"]}
+    assert subtipo(estereo) == "Estéreos com Tela"
+    assert subtipo(None) == ""
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        import re
+        soltos = {x["s"] for x in json.loads(pecas.read_text(encoding="utf-8"))
+                  if re.match(r"^(de|do|da|dos|das|com|sem|para)\s", x["s"], re.I) or x["s"] in ("Elétrico", "Manual", "Hidráulico")}
+        assert not soltos, soltos
+
+
+def test_caixa_alta_vira_frase():
+    """Problema 5: descricao em MAIUSCULAS vira frase normal. Codigo, sigla, marca e carro ficam;
+    nada e inventado nem tirado (so sai a repeticao colada "VOLKSWAGEN VOLKSWAGEN")."""
+    from preparar_dados import caixa_normal, acentuar_texto
+
+    def f(t):
+        return acentuar_texto(caixa_normal(t))
+    casos = [
+        ("PEDAL ACELERADOR ELETRÔNICO HONDA FIT 1.5 - ORIGINAL DE FABRICA - OEM HondaFit",
+         "Pedal acelerador eletrônico Honda Fit 1.5 - original de fábrica - OEM HondaFit"),
+        ("MÓDULO ALCANCE FAROL VOLKSWAGEN VOLKSWAGEN GOLF 1.4 TSI - ORIGINAL DE FABRICA - OEM 5Q0907357",
+         "Módulo alcance farol Volkswagen Golf 1.4 TSI - original de fábrica - OEM 5Q0907357"),
+        ("FECHADURA INFERIOR VW JETTA/PASSAT/GOL/SAVEIRO/VOYAGE - ORIGINAL DE FABRICA - OEM 5U0823509H",
+         "Fechadura inferior VW Jetta/Passat/Gol/Saveiro/Voyage - original de fábrica - OEM 5U0823509H"),
+        ("BICO INJETOR M270 1.6 MERCEDES-BENZ C180 C200 (MOTOR M270/M274 1.6 CGI) - ORIGINAL - OEM A2780700687",
+         "Bico injetor M270 1.6 Mercedes-Benz C180 C200 (motor M270/M274 1.6 CGI) - original - OEM A2780700687"),
+        ("TAMPA LATERAL PAINEL DIREITO FORD FIESTA HATCH SEDAN SE SEL TITANIUM ST - ORIGINAL",
+         "Tampa lateral painel direito Ford Fiesta hatch sedan SE SEL Titanium ST - original"),
+        ("RADIADOR DE AR QUENTE (HEATER CORE) DA CALEFAÇÃO - PEUGEOT 208, 2008 E CITROEN C4 LOUNGE 2013/2017",
+         "Radiador de ar quente (heater core) da calefação - Peugeot 208, 2008 e Citroën C4 Lounge 2013/2017"),
+        ("DIFUSOR AR LATERAL VOLKSWAGEN VW GOL - ORIGINAL DE FABRICA - OEM 5u0819703",
+         "Difusor ar lateral Volkswagen Gol - original de fábrica - OEM 5u0819703"),
+        # frase normal com o carro em caixa alta: so o trecho muda
+        ("Peça original RENAULT SANDERO DUSTER (2008 até 2022). Código OEM 8200733848. Procedencia legal.",
+         "Peça original Renault Sandero Duster (2008 até 2022). Código OEM 8200733848. Procedência legal."),
+        # enfase de uma palavra so fica; lista de carros com codigo fica
+        ("IMPORTANTE: Este e o lado DIREITO. O lado esquerdo e J9C3-16801-AB.",
+         "IMPORTANTE: Este e o lado DIREITO. O lado esquerdo e J9C3-16801-AB."),
+        ("Volvo XC60 XC90 S60 S90 V60 V90 2016 2017 2018", "Volvo XC60 XC90 S60 S90 V60 V90 2016 2017 2018"),
+    ]
+    for antes, depois in casos:
+        assert f(antes) == depois, (antes, f(antes))
+    # codigo nunca ganha acento ("...JA6" nao vira "...JÁ6")
+    assert acentuar_texto("Código OEM: F1EP7K004FD3JA6") == "Código OEM: F1EP7K004FD3JA6"
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():                      # no gerado: nenhum paragrafo/item longo todo em maiusculas
+        import html
+        import re
+        altas = []
+        for x in json.loads(pecas.read_text(encoding="utf-8")):
+            for m in re.finditer(r"<(p|li)>(.*?)</\1>", x["desc"]):
+                t = re.sub(r"\S*\d\S*", "", html.unescape(m.group(2)))      # codigo nao conta
+                letras = [c for c in t if c.isalpha()]
+                if len(letras) > 20 and sum(c.isupper() for c in letras) > 0.7 * len(letras):
+                    altas.append((x["id"], t[:60]))
+        assert not altas, altas[:5]
+
+
+def test_descricao_em_lista_sem_lixo():
+    """Problema 6: as linhas da lista do anuncio grudavam numa frase so ("+ Peca: X + Cor: Preto");
+    "0 cm" e "Conforme aplicacao" nao sao dado; o pedaco de frase que sobrava da linha cortada sai."""
+    from preparar_dados import descricao
+    texto = ("IDENTIFICACAO DA PECA\n====\n+ Peca: Pedal Acelerador\n+ Cor predominante: Preto\n"
+             "+ Largura da peca: 0 cm\n+ Posicao: Conforme aplicacao\n\n"
+             "APLICACAO E COMPATIBILIDADE\n====\nPara garantir a compatibilidade exata, recomendamos:\n"
+             "1) Conferir o codigo OEM;\n2) Comparar com fotos reais do anuncio;\n"
+             "Compatibilidade verificada com base em catalogo Honda oficial e cruzamento OEM\n"
+             "em multiplas fontes (banco interno, fabricantes).\n\n"
+             "VEICULOS COMPATIVEIS\n====\n- Volvo XC60 - 2018, 2019, 2020, 2021\n- Volvo XC60 T8 - 2018, 2020\n")
+    h = descricao(texto)
+    assert "<ul><li>Peça: Pedal Acelerador</li><li>Cor predominante: Preto</li></ul>" in h, h
+    assert "0 cm" not in h and "Conforme" not in h
+    assert "<ol><li>Conferir o código OEM;</li><li>Comparar com fotos reais do anúncio;</li></ol>" in h, h
+    assert "multiplas" not in h and "múltiplas" not in h            # resto da linha com promessa
+    assert "<li>Volvo XC60 - 2018 a 2021</li>" in h                 # anos seguidos viram faixa
+    assert "<li>Volvo XC60 T8 - 2018, 2020</li>" in h               # com buraco, ficam como estao
+
+
+def test_ficha_limpa():
+    """Problema 7: ficha sem o carro repetido, sem "Original-123", sem vazio e com a lista legivel
+    (um carro por linha com as versoes; nada do anuncio some)."""
+    from preparar_dados import ficha, modelos_ficha, _separar_modelos
+    p = {"title": "Biela Motor Gm Captiva 3.6 V6 08/17 12608432", "oem": "12608432", "part_number": "12608432",
+         "attrs": {"MODEL": "Captiva / Captiva Sport / Captiva LTZ / Captiva LT / Captiva 3.6 V6 / Omega / "
+                            "Omega Fittipaldi / Camaro / Camaro SS",
+                   "COLOR": "Metalico", "MATERIAL": "PLASTICO COM COMPONENTES ELETRÔNICOS", "ORIGIN": "Brasil",
+                   "MANUFACTURER": "GM", "POSITION": "COLUNA DIREÇÃO"}}
+    linhas = dict(ficha(p, "Chevrolet", "Captiva", [2008, 2017]))
+    assert linhas["Modelos e versões"] == "Captiva: Sport, LTZ, LT, 3.6 V6\nOmega: Fittipaldi\nCamaro: SS"
+    assert linhas["Cor"] == "Metálico"
+    assert linhas["Material"] == "Plástico com componentes eletrônicos"
+    assert linhas["Posição"] == "Coluna direção"
+    assert linhas["Origem"] == "Brasil"
+    assert not any(k.startswith("Fabricante") for k in linhas)          # GM = a marca do carro
+    # so repete o carro do topo: sai
+    assert modelos_ficha("Xc60", "Volvo", "XC60", [2018, 2024]) is None
+    assert modelos_ficha("XC60 18/24", "Volvo", "XC60", [2018, 2024]) is None
+    assert modelos_ficha("Volkswagen Golf 1.4 TSI", "Volkswagen", "Golf", [2014, 2021]) == ["Modelo do veículo", "Golf 1.4 TSI"]
+    # barra: so separa nomes; ano, numero e versao curta ficam ("XC60 18/24" virava "XC60 18 · 24")
+    assert _separar_modelos("XC60 2.0 T5/T6/T8") == ["XC60 2.0 T5/T6/T8"]
+    assert _separar_modelos("Strada/Bravo/Linea") == ["Strada", "Bravo", "Linea"]
+    assert _separar_modelos("Peugeot 206/207") == ["Peugeot 206/207"]
+    v = "C4 / C4 Cactus / C4 Cactus Feel / C4 Cactus Shine / C4 Lounge / C4 Lounge Origine / C4 1.6 16V THP"
+    assert modelos_ficha(v, "Citroën", "C4 Cactus", [2018, 2024]) == \
+        ["Modelos e versões", "C4 Cactus: Feel, Shine\nC4: 1.6 16V THP\nC4 Lounge: Origine"]
+    # vazio e lixo: a linha some
+    p2 = {"title": "x", "attrs": {"COLOR": "-1", "ORIGIN": "Original-31346697", "MANUFACTURER": "VOLVO S60",
+                                  "MODEL": "N/A"}}
+    assert ficha(p2, "Volvo", "S60", None) == []
+    assert ficha({"title": "x", "attrs": {"MANUFACTURER": "Bosch"}}, "Volvo", "S60") == [["Fabricante da peça", "Bosch"]]
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):
