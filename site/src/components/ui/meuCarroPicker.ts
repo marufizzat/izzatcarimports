@@ -65,7 +65,8 @@ const inicial = (): Estado => ({
   etapa: 'marca', marca: null, modelo: null, ano: null, todas: false, todosModelos: false, anoSemPeca: null, carroSemPeca: null, naPeca: false,
 });
 
-// nomes longos sem espaço podem quebrar em 2 linhas no disco estreito (hífen só se precisar); o nome inteiro fica no aria-label
+// Nome da marca: de cara, uma linha (os longos, "Volkswagen", um pouco menores): a grade da abertura nunca muda de altura
+// quando a fonte chega. Em "Ver todas" (depois do toque), até 2 linhas, com hífen só se precisar; o nome inteiro fica no aria-label.
 const QUEBRA: Record<string, string> = { Volkswagen: 'Volks&shy;wagen', Chevrolet: 'Chevro&shy;let', Mitsubishi: 'Mitsu&shy;bishi' };
 const nomeMarca = (n: string) => QUEBRA[n] ?? esc(n);
 const whats = (txt: string) => esc(linkWhats(txt));
@@ -110,7 +111,7 @@ function htmlMarcas(g: Garagem, e: Estado): string {
   const tiles = lista
     .map((m) => `
       <li><button type="button" class="mc-marca" data-acao="marca" data-n="${esc(m.n)}" data-chave="marca:${esc(m.n)}"${m.n === foco ? ' data-foco' : ''} aria-pressed="${e.marca?.n === m.n}" aria-label="${esc(m.n)}, ${pecasTxt(m.c)}" title="${esc(m.n)}">
-        ${disco(m)}${nomeNoDisco(m) ? '' : `<span class="mc-marca-nome" aria-hidden="true">${nomeMarca(m.n)}</span>`}</button></li>`)
+        ${disco(m)}${nomeNoDisco(m) ? '' : `<span class="mc-marca-nome${m.n.length >= 9 ? ' mc-longo' : ''}" aria-hidden="true">${nomeMarca(m.n)}</span>`}</button></li>`)
     .join('');
   const aviso = e.carroSemPeca
     ? `<p class="mc-aviso-linha">Sem peças do <b>${esc(e.carroSemPeca)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Olá! Procuro peça para ${e.carroSemPeca}. Tem no pátio?`)}">peça no WhatsApp</a>.</p>`

@@ -59,10 +59,13 @@
   /* o logo cabe numa caixa de até 46x34 (largo fica largo, redondo fica redondo) e encolhe junto com o disco */
   .mc-raiz .mc-disco img { display: block; width: auto; height: auto; max-width: min(46px, 78%); max-height: min(34px, 58%); }
   .mc-raiz .mc-disco-nome { padding: 0 5px; font-stretch: 78%; font-weight: 820; font-size: 12.5px; line-height: 1; letter-spacing: -.005em; text-align: center; color: #1d1d1f; }
-  /* nome inteiro, em até 2 linhas (nada de "Volkswa…"); quebra só onde o nome deixa (espaço, hífen, &shy;) */
+  /* nome inteiro numa linha (os longos menores: "Volkswagen" cabe até no celular de 320 px); de cara a grade nunca muda de
+     altura quando a fonte chega (sem pulo). Aberta ("Ver todas", depois do toque), até 2 linhas: "Mercedes-/Benz". */
   .mc-raiz .mc-marca-nome { max-width: 100%; min-height: var(--rotulo); font-size: 13px; font-weight: 620; font-stretch: 92%; line-height: var(--rotulo);
-    color: var(--ink-2); text-align: center; hyphens: manual; overflow-wrap: normal;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+    color: var(--ink-2); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-raiz .mc-marca-nome.mc-longo { font-size: 12px; letter-spacing: -.01em; }
+  .mc-raiz .mc-marcas[data-todas] .mc-marca-nome { white-space: normal; hyphens: manual; overflow-wrap: normal; text-overflow: clip;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
   @media (hover: hover) {
     .mc-raiz .mc-marca:hover .mc-disco { transform: translateY(-2px); background: #fff; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .05), 0 10px 20px -10px rgb(20 20 25 / .45); }
     .mc-raiz .mc-marca:hover .mc-marca-nome { color: var(--ink); }
