@@ -1,87 +1,169 @@
 ---
+// Envios: só o que o site já afirma (todo o Brasil, código de rastreio em todo envio, embalada com cuidado,
+// nota fiscal, frete no anúncio do Mercado Livre, frete cotado pelo CEP no WhatsApp, peças grandes caso a caso).
+// Prazo de postagem e transportadora ficam para o Maruf confirmar antes de entrar aqui.
 import Pagina from '../layouts/Pagina.astro';
 import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
+import IconeInst from '../components/inst/IconeInst.astro';
 import Icone from '../components/Icone.astro';
-import { whatsUrl, SITE } from '../lib/dados';
+import Acordeao from '../components/ui/Acordeao.astro';
+import { WHATS, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/envios.html`;
 const canonicalPath = '/envios.html';
+const jeitos = [
+  { i: 'loja', t: 'Comprou pelo Mercado Livre', s: 'O frete aparece no anúncio, antes de você fechar a compra.' },
+  { i: 'conversa', t: 'Comprou pelo WhatsApp', s: 'A gente cota o frete para o seu CEP e passa o valor antes do envio.' },
+  { i: 'caminhao', t: 'Peças grandes', s: 'Motor, câmbio e outras peças grandes têm o envio combinado pelo WhatsApp, caso a caso.' },
+];
+const caminho = [
+  { i: 'lupa', t: 'Conferida no pátio', s: 'A peça sai de carro com baixa legal e é conferida e fotografada antes de ir.' },
+  { i: 'caixa', t: 'Embalada com cuidado', s: 'Cada peça é embalada com cuidado antes de sair do pátio.' },
+  { i: 'nota', t: 'Com nota fiscal', s: 'Toda venda sai com nota fiscal.' },
+  { i: 'rota', t: 'Código de rastreio', s: 'Todo envio vai com código de rastreio, para você acompanhar a entrega.' },
+];
+const perguntas = [
+  { pergunta: 'Vocês enviam para todo o Brasil?', resposta: 'Sim, para todo o Brasil, com código de rastreio.' },
+  { pergunta: 'Como eu sei o valor do frete?', resposta: 'No Mercado Livre, o frete aparece no anúncio, antes de fechar a compra. Pelo WhatsApp, a gente cota para o seu CEP e passa o valor antes do envio.' },
+  { pergunta: 'Consigo acompanhar a entrega?', resposta: 'Sim. Todo envio vai com código de rastreio.' },
+  { pergunta: 'E peças grandes, como motor e câmbio?', resposta: 'O envio de peças grandes é combinado pelo WhatsApp, caso a caso.' },
+  { pergunta: 'A peça vai com nota fiscal?', resposta: 'Sim. Toda venda sai com nota fiscal.' },
+];
 ---
 <Pagina
   titulo="Envios para todo o Brasil | Izzat Car Imports"
   descricao="Enviamos peças para todo o Brasil com código de rastreio. O frete aparece no anúncio do Mercado Livre, e pelo WhatsApp a gente cota para o seu CEP."
   canonical={canonical}
 >
-    <TopoArte trilha={[['Início', '/index.html'], ['Envios', canonicalPath]]}
+  <TopoArte trilha={[['Início', '/index.html'], ['Envios', canonicalPath]]}
     titulo="Envios para todo o Brasil"
     lead="A peça sai embalada com cuidado, com nota fiscal e código de rastreio para você acompanhar."
     arte="/arte/v2/topo-envios.webp" />
 
   <div class="moldura">
-    <section class="inst-sec" aria-labelledby="h-frete">
-      <h2 class="titulo-secao inst-h2" id="h-frete">Como o frete funciona</h2>
-      <ul class="env-linhas">
-        <li>
-          <span class="env-icone"><Icone nome="carro" /></span>
-          <div>
-            <b>Pelo Mercado Livre</b>
-            <p>O frete aparece no anúncio, antes de você fechar a compra.</p>
-          </div>
-        </li>
-        <li>
-          <span class="env-icone"><Icone nome="whats" /></span>
-          <div>
-            <b>Pelo WhatsApp</b>
-            <p>A gente cota o frete para o seu CEP e passa o valor antes do envio.</p>
-          </div>
-        </li>
-        <li>
-          <span class="env-icone"><Icone nome="sacola" /></span>
-          <div>
-            <b>Peças grandes</b>
-            <p>Motor, câmbio e outras peças grandes têm o envio combinado pelo WhatsApp, caso a caso.</p>
-          </div>
-        </li>
-      </ul>
+    <section class="env-topo" aria-labelledby="h-frete">
+      <div class="env-jeitos">
+        <h2 class="titulo-secao inst-h2" id="h-frete">Como o frete funciona</h2>
+        <ul class="env-lista">
+          {jeitos.map((j) => (
+            <li><span class="inst-disco inst-disco-g"><IconeInst nome={j.i} /></span><span><b>{j.t}</b>{j.s}</span></li>
+          ))}
+        </ul>
+      </div>
+
+      <form class="env-cep" id="form-cep" novalidate data-whats={WHATS} aria-labelledby="h-cep">
+        <h2 class="env-cep-titulo" id="h-cep">Quanto fica o frete para você?</h2>
+        <p>Digite o CEP. O WhatsApp abre com a mensagem pronta e a gente responde com o valor.</p>
+        <div class="campo">
+          <label for="f-cep">Seu CEP</label>
+          <input id="f-cep" name="cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" required aria-describedby="e-cep" />
+          <p class="erro" id="e-cep" hidden>Confira o CEP: são 8 números.</p>
+        </div>
+        <div class="campo">
+          <label for="f-peca">Qual peça? <span class="opc">(opcional)</span></label>
+          <input id="f-peca" name="peca" type="text" autocomplete="off" placeholder="Ex.: farol do Cruze 2014" />
+        </div>
+        <button class="botao botao-laranja env-cep-botao" type="submit"><Icone nome="whats" />Cotar o frete no WhatsApp</button>
+        <p class="env-cep-status" role="status" aria-live="polite" id="env-cep-status"></p>
+      </form>
     </section>
 
-    <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-cuidado">
-      <div class="inst-texto">
-        <h2 class="titulo-secao inst-h2" id="h-cuidado">Embalada com cuidado</h2>
-        <p>Cada peça é embalada com cuidado antes de sair do pátio.</p>
-        <p>Todo envio vai com código de rastreio, para você acompanhar a entrega.</p>
+    <section class="inst-sec" aria-labelledby="h-caminho">
+      <h2 class="titulo-secao inst-h2" id="h-caminho">Do pátio até você</h2>
+      <ol class="inst-trilho env-caminho">
+        {caminho.map((p) => (
+          <li><span class="inst-disco inst-disco-g"><IconeInst nome={p.i} /></span><b>{p.t}</b><p>{p.s}</p></li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="inst-sec inst-sec--linha inst-faq" aria-labelledby="h-faq">
+      <div>
+        <h2 class="titulo-secao inst-h2" id="h-faq">Perguntas sobre o envio</h2>
+        <p class="inst-faq-apoio">A garantia e as trocas estão em <a href="/garantia.html">Garantia e trocas</a>.</p>
       </div>
-      <ul class="inst-lista">
-        <li><Icone nome="check" /><span><b>Código de rastreio</b> em todo envio.</span></li>
-        <li><Icone nome="check" /><span><b>Nota fiscal</b> em toda venda.</span></li>
-        <li><Icone nome="check" /><span><b>Envio para todo o Brasil.</b></span></li>
-      </ul>
+      <Acordeao itens={perguntas} />
     </section>
   </div>
 
   <Chamada
     id="h-chamada"
-    titulo="Quer saber o frete para o seu CEP?"
-    texto="Manda o CEP e a peça no WhatsApp. A gente cota e responde por lá."
-    mensagem="Olá! Quero saber o frete para o meu CEP. Segue a peça e o CEP:"
-    rotulo="Cotar pelo WhatsApp"
+    titulo="Peça grande ou mais de uma peça?"
+    texto="A gente combina o envio pelo WhatsApp. Manda a peça e o CEP."
+    mensagem="Olá! Quero combinar o envio. A peça é: ____. Meu CEP: ____"
+    rotulo="Combinar pelo WhatsApp"
   />
 </Pagina>
 
+<script>
+  // CEP → WhatsApp com a mensagem pronta (link de verdade: preserva o gesto e o rastreio conta o Contact)
+  const form = document.getElementById('form-cep') as HTMLFormElement | null;
+  if (form) {
+    const cep = form.elements.namedItem('cep') as HTMLInputElement;
+    const peca = form.elements.namedItem('peca') as HTMLInputElement;
+    const erro = document.getElementById('e-cep');
+    const status = document.getElementById('env-cep-status');
+    const digitos = () => cep.value.replace(/\D/g, '');
+    cep.addEventListener('input', () => {
+      const d = digitos().slice(0, 8);
+      cep.value = d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+      if (erro && !erro.hidden && d.length === 8) { erro.hidden = true; cep.setAttribute('aria-invalid', 'false'); }
+    });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const d = digitos();
+      if (d.length !== 8) {
+        if (erro) erro.hidden = false;
+        cep.setAttribute('aria-invalid', 'true');
+        cep.focus();
+        return;
+      }
+      const p = peca.value.trim();
+      const texto = `Olá! Quero saber o frete para o CEP ${d.slice(0, 5)}-${d.slice(5)}.` + (p ? ` A peça é: ${p}` : ' A peça é: ____');
+      const url = `https://wa.me/${form.dataset.whats}?text=${encodeURIComponent(texto)}`;
+      const a = Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener' });
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      if (status) {
+        status.textContent = 'Abrimos o WhatsApp com o seu CEP. Se não abriu, ';
+        status.appendChild(Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener', textContent: 'toque aqui' }));
+        status.appendChild(document.createTextNode('.'));
+      }
+    });
+  }
+</script>
+
 <style>
-  .env-linhas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
-  .env-linhas li {
-    display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 18px; align-items: center;
-    padding-block: 22px; border-top: 1px solid var(--line);
-  }
-  .env-linhas li:last-child { border-bottom: 1px solid var(--line); }
-  .env-icone {
-    display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px;
-    background: var(--accent); color: var(--on-accent);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 8px 16px -8px rgb(255 106 0 / .7);
-  }
-  .env-icone :global(svg) { width: 26px; height: 26px; }
-  .env-linhas b { display: block; font-size: 19px; font-weight: 650; color: var(--ink); line-height: 1.3; }
-  .env-linhas p { margin: 4px 0 0; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
+  .env-topo { display: grid; gap: clamp(28px, 4vw, 56px); padding-block: clamp(36px, 5vw, 64px) clamp(12px, 2vw, 24px); }
+  @media (min-width: 960px) { .env-topo { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); align-items: start; } }
+  .env-lista { list-style: none; margin: 0; padding: 0; display: grid; }
+  .env-lista li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; padding-block: 20px; border-top: 1px solid var(--line);
+    font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
+  .env-lista li:last-child { border-bottom: 1px solid var(--line); }
+  .env-lista b { display: block; font-size: 19px; font-weight: 650; line-height: 1.3; color: var(--ink); }
+
+  /* CEP: cartão com o formulário curto */
+  .env-cep { display: grid; gap: 14px; padding: clamp(22px, 3vw, 32px); border-radius: 26px; background: var(--surface); box-shadow: var(--shadow-2); }
+  .env-cep-titulo { margin: 0; font-stretch: 80%; font-weight: 820; font-size: clamp(26px, 2.6vw, 32px); line-height: 1.05; }
+  .env-cep > p { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+  .campo { display: grid; gap: 7px; min-width: 0; }
+  .campo label { font-size: 14.5px; font-weight: 620; color: var(--ink); }
+  .campo .opc { font-weight: 500; color: var(--ink-3); }
+  .campo input { width: 100%; height: 52px; padding: 0 16px; border: 0; outline: 0; border-radius: 12px; background: var(--surface); color: var(--ink);
+    font: inherit; font-size: 16px; font-weight: 500; box-shadow: inset 0 0 0 1.5px var(--line-2); transition: box-shadow .2s ease; }
+  .campo input[name="cep"] { font-variant-numeric: tabular-nums; letter-spacing: .04em; font-size: 18px; font-weight: 600; }
+  .campo input::placeholder { color: var(--ink-3); opacity: 1; font-weight: 500; }
+  .campo input:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 82%); }
+  .campo input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--accent-text); }
+  .erro { margin: 0; font-size: 14px; font-weight: 580; color: var(--accent-text); }
+  .erro[hidden] { display: none; }
+  .env-cep-botao { width: 100%; margin-top: 4px; }
+  .env-cep-status { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+  .env-cep-status:empty { display: none; }
+  .env-cep-status a { color: var(--accent-text); font-weight: 650; text-decoration: underline; }
+
+  .env-caminho { --colunas: 4; }
+  @media (min-width: 760px) and (max-width: 1059px) { .env-caminho { --colunas: 2; } .env-caminho > li:nth-child(2)::after { display: none; } }
 </style>

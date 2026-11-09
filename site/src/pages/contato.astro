@@ -1,82 +1,149 @@
 ---
+// Contato: o WhatsApp em primeiro lugar e funcionando (número clicável, botão copiar, QR no PC e a mensagem
+// que vai pronta). Depois, o que mandar na mensagem e os outros canais. Só fatos já publicados no site:
+// endereço e horário seguem fora até o Maruf confirmar.
 import Pagina from '../layouts/Pagina.astro';
-import TopoArte from '../components/TopoArte.astro';
 import Icone from '../components/Icone.astro';
+import IconeInst from '../components/inst/IconeInst.astro';
+import CartaoWhats from '../components/inst/CartaoWhats.astro';
+import SeloReputacao from '../components/SeloReputacao.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/contato.html`;
 const canonicalPath = '/contato.html';
 const msg = 'Olá! Estou procurando uma peça.';
+const url = whatsUrl(msg);
+const trilha: [string, string][] = [['Início', '/index.html'], ['Contato', canonicalPath]];
+const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
+const mandar = [
+  { i: 'carro', t: 'O carro', s: 'Marca, modelo e ano.' },
+  { i: 'etiqueta', t: 'A peça', s: 'Do jeito que você fala: farol, retrovisor, módulo...' },
+  { i: 'lupa', t: 'O código gravado', s: 'Se tiver. É o jeito mais certo de achar.' },
+  { i: 'camera', t: 'Uma foto', s: 'Da peça velha, se tiver. Ajuda muito.' },
+];
 ---
 <Pagina
   titulo="Contato | Izzat Car Imports, Aceguá-RS"
   descricao="Fale com a Izzat Car Imports pelo WhatsApp (53) 99117-0950, pelo Instagram ou pelo Mercado Livre. Desmanche credenciado em Aceguá-RS."
   canonical={canonical}
 >
-    <TopoArte trilha={[['Início', '/index.html'], ['Contato', canonicalPath]]}
-    titulo="Fale com a gente"
-    lead="O jeito mais rápido é o WhatsApp. Manda a peça ou o carro que a gente responde."
-    arte="/arte/v2/topo-contato.webp" />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
 
-  <div class="moldura">
-    <section class="con-principal" aria-labelledby="h-whats">
+  <div class="moldura con-pagina">
+    <nav class="con-trilha" aria-label="Você está em">
+      <a href="/index.html">Início</a><span aria-hidden="true">/</span><span aria-current="page">Contato</span>
+    </nav>
+
+    <section class="con-topo" aria-labelledby="h-contato">
       <div class="con-texto">
-        <h2 class="titulo-secao inst-h2" id="h-whats">WhatsApp</h2>
-        <p>Mande a peça, o carro ou o código gravado. A mensagem já abre pronta.</p>
-        <a class="botao botao-laranja inst-botao con-botao" href={whatsUrl(msg)} rel="noopener">
-          <Icone nome="whats" />Chamar no WhatsApp
-        </a>
+        <h1 class="display con-h1" id="h-contato">Fale com a gente</h1>
+        <p class="lead con-lead">O jeito mais rápido é o WhatsApp. Manda a peça, o carro ou o código gravado que a gente responde por lá.</p>
+        <a class="con-numero num" href={url} rel="noopener" aria-label="Abrir o WhatsApp (53) 99117-0950">(53) 99117-0950</a>
+        <div class="con-acoes">
+          <a class="botao botao-laranja con-botao" href={url} rel="noopener"><Icone nome="whats" />Chamar no WhatsApp</a>
+          <button class="botao botao-linha con-copiar" type="button" data-copiar="(53) 99117-0950">
+            <IconeInst nome="copiar" /><span data-copiar-txt>Copiar o número</span>
+          </button>
+        </div>
+        <p class="con-cdv"><IconeInst nome="escudo" />Desmanche credenciado pelo Detran-RS, CDV nº 01060</p>
       </div>
-      <p class="con-numero num">(53) 99117-0950</p>
+      <CartaoWhats mensagem={msg} class="con-cartao" />
     </section>
 
-    <div class="con-grade">
-      <section class="con-bloco" aria-labelledby="h-insta">
-        <h2 class="con-titulo" id="h-insta">Instagram</h2>
-        <p>Acompanhe o pátio e fale com a gente por lá.</p>
-        <a class="con-link" href="https://instagram.com/cdvizzatcarimports" target="_blank" rel="noopener">@cdvizzatcarimports</a>
-      </section>
+    <section class="con-sec" aria-labelledby="h-mandar">
+      <h2 class="titulo-secao con-h2" id="h-mandar">O que mandar na mensagem</h2>
+      <ul class="con-mandar">
+        {mandar.map((m) => (
+          <li><span class="inst-disco"><IconeInst nome={m.i} /></span><span><b>{m.t}</b>{m.s}</span></li>
+        ))}
+      </ul>
+    </section>
 
-      <section class="con-bloco" aria-labelledby="h-ml">
-        <h2 class="con-titulo" id="h-ml">Mercado Livre</h2>
-        <p>As peças anunciadas, com frete no anúncio e a proteção de compra do Mercado Livre.</p>
-        <a class="con-link" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Loja IZZAT_CAR_IMPORTS</a>
-      </section>
-
-      <section class="con-bloco" aria-labelledby="h-onde">
-        <h2 class="con-titulo" id="h-onde">Onde a gente está</h2>
-        <p class="con-cidade"><Icone nome="pino" />Aceguá/RS</p>
-        <p>O endereço completo e o horário a gente passa pelo WhatsApp.</p>
-      </section>
-
-      <section class="con-bloco" aria-labelledby="h-procuro">
-        <h2 class="con-titulo" id="h-procuro">Não achou a peça?</h2>
-        <p>Conte o carro e a peça que você procura. A gente procura no pátio.</p>
-        <a class="con-link" href="/procuro-peca.html">Abrir o formulário</a>
-      </section>
-    </div>
+    <section class="con-sec" aria-labelledby="h-canais">
+      <h2 class="titulo-secao con-h2" id="h-canais">Outros jeitos de falar com a gente</h2>
+      <div class="con-grade">
+        <a class="con-canal" href="https://instagram.com/cdvizzatcarimports" target="_blank" rel="noopener">
+          <span class="inst-disco inst-disco-g"><IconeInst nome="instagram" /></span>
+          <span class="con-canal-txt"><b>Instagram</b><span>Acompanhe o pátio e fale com a gente por lá.</span><em>@cdvizzatcarimports</em></span>
+        </a>
+        <div class="con-canal">
+          <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
+          <div class="con-canal-txt"><b>Mercado Livre</b><span>As peças anunciadas, com frete no anúncio e a proteção de compra do Mercado Livre.</span>
+            <a class="con-link" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Loja IZZAT_CAR_IMPORTS</a>
+            <div class="con-selo"><SeloReputacao variante="compacto" /></div>
+          </div>
+        </div>
+        <div class="con-canal">
+          <span class="inst-disco inst-disco-g"><IconeInst nome="pino" /></span>
+          <span class="con-canal-txt"><b>Onde a gente está</b><span>Aceguá-RS, na fronteira com o Uruguai. Atendimento pelo WhatsApp.</span>
+            <a class="con-link" href="/sobre.html">Conheça o pátio</a>
+          </span>
+        </div>
+        <a class="con-canal" href="/procuro-peca.html">
+          <span class="inst-disco inst-disco-g"><IconeInst nome="lupa" /></span>
+          <span class="con-canal-txt"><b>Não achou a peça?</b><span>Conte o carro e a peça que você procura. A gente procura no pátio.</span><em>Abrir o formulário</em></span>
+        </a>
+      </div>
+    </section>
   </div>
 </Pagina>
 
+<script>
+  // botão "Copiar o número" (sem a área de transferência, o botão some)
+  document.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((b) => {
+    if (!navigator.clipboard) { b.hidden = true; return; }
+    const txt = b.querySelector<HTMLElement>('[data-copiar-txt]');
+    b.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(b.dataset.copiar || '');
+        if (txt) txt.textContent = 'Número copiado';
+        setTimeout(() => { if (txt) txt.textContent = 'Copiar o número'; }, 2200);
+      } catch { /* sem permissão: segue o número na tela */ }
+    });
+  });
+</script>
+
 <style>
-  .con-principal {
-    display: grid; gap: 28px; align-items: end; padding: clamp(28px, 4.5vw, 56px);
-    border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-1);
-    margin-bottom: clamp(40px, 6vw, 72px);
-  }
-  .con-texto { display: grid; gap: 14px; justify-items: start; }
-  .con-texto p { margin: 0; font-size: 17px; line-height: 1.55; color: var(--ink-2); max-width: 44ch; }
-  .con-texto .inst-h2 { margin: 0; }
-  .con-botao { margin-top: 6px; }
-  .con-numero { margin: 0; font-stretch: 80%; font-weight: 800; font-size: clamp(40px, 7vw, 76px); line-height: .95; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-  @media (min-width: 900px) { .con-principal { grid-template-columns: 1fr auto; } }
-  .con-grade { display: grid; gap: 0; padding-bottom: clamp(48px, 7vw, 96px); }
-  @media (min-width: 768px) { .con-grade { grid-template-columns: 1fr 1fr; column-gap: 48px; } }
-  .con-bloco { display: grid; gap: 10px; align-content: start; padding-block: 28px; border-top: 1px solid var(--line); }
-  .con-titulo { margin: 0; font-stretch: 78%; font-weight: 820; font-size: clamp(26px, 3vw, 34px); line-height: 1; color: var(--ink); }
-  .con-bloco p { margin: 0; font-size: 16.5px; line-height: 1.55; color: var(--ink-2); max-width: 46ch; }
-  .con-link { justify-self: start; color: var(--accent-text); font-weight: 650; font-size: 17px; padding-block: 6px; text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
+  .con-pagina { padding-block: 14px clamp(56px, 8vw, 112px); }
+  .con-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: clamp(14px, 2vw, 22px); font-size: 13.5px; color: var(--ink-3); }
+  .con-trilha a { color: var(--ink-2); padding-block: 6px; }
+  .con-trilha a:hover { color: var(--ink); text-decoration: underline; }
+
+  .con-topo { display: grid; gap: clamp(28px, 4vw, 64px); align-items: center; padding: clamp(24px, 4vw, 56px); border-radius: 32px;
+    background: linear-gradient(135deg, var(--surface) 40%, color-mix(in oklab, var(--accent-soft), var(--surface) 20%) 100%); box-shadow: var(--shadow-1); }
+  @media (min-width: 960px) { .con-topo { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); } }
+  .con-texto { display: grid; gap: 14px; justify-items: start; min-width: 0; }
+  .con-h1 { margin: 0; font-size: clamp(44px, 6vw, 84px); }
+  .con-lead { margin: 0; max-width: 42ch; }
+  .con-numero { margin-top: 8px; font-stretch: 78%; font-weight: 820; font-size: clamp(40px, 5.6vw, 68px); line-height: 1; letter-spacing: -.01em; color: var(--ink);
+    text-decoration: underline; text-decoration-thickness: 3px; text-decoration-color: color-mix(in oklab, var(--accent), transparent 40%); text-underline-offset: 8px; }
+  .con-numero:hover { text-decoration-color: var(--accent); }
+  .con-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+  .con-copiar :global(svg) { width: 19px; height: 19px; }
+  .con-cdv { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; font-size: 14.5px; color: var(--ink-2); }
+  .con-cdv :global(svg) { width: 18px; height: 18px; flex: none; color: var(--accent-text); }
+  .con-cartao { width: 100%; max-width: 460px; justify-self: center; }
+  @media (min-width: 960px) { .con-cartao { justify-self: end; } }
+  @media (max-width: 600px) { .con-acoes .botao { width: 100%; } }
+
+  .con-sec { padding-top: clamp(48px, 7vw, 88px); }
+  .con-h2 { margin: 0 0 clamp(18px, 2.4vw, 28px); }
+  .con-mandar { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .con-mandar { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1060px) { .con-mandar { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
+  .con-mandar li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; padding: 18px; border-radius: 20px;
+    background: var(--surface); box-shadow: var(--shadow-1); font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+  .con-mandar b { display: block; font-size: 17px; font-weight: 700; color: var(--ink); }
+
+  .con-grade { display: grid; gap: 14px; }
+  @media (min-width: 760px) { .con-grade { grid-template-columns: 1fr 1fr; gap: 16px; } }
+  .con-canal { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: start; padding: 22px; border-radius: 22px;
+    background: var(--surface); box-shadow: var(--shadow-1); color: var(--ink); transition: transform .25s ease, box-shadow .25s ease; }
+  a.con-canal:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+  .con-canal-txt { display: grid; gap: 6px; justify-items: start; min-width: 0; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+  .con-canal-txt b { font-stretch: 86%; font-weight: 800; font-size: 22px; line-height: 1.1; color: var(--ink); }
+  .con-canal-txt em, .con-link { font-style: normal; font-weight: 650; color: var(--accent-text); text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
   .con-link:hover { color: var(--ink); }
-  .con-cidade { display: flex; align-items: center; gap: 10px; font-size: 20px !important; font-weight: 700; color: var(--ink) !important; font-stretch: 86%; }
-  .con-cidade :global(svg) { width: 24px; height: 24px; color: var(--accent-text); flex: none; }
+  .con-selo { margin-top: 6px; }
+  .con-selo:empty { display: none; }
 </style>

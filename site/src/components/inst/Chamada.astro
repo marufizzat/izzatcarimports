@@ -1,22 +1,25 @@
 ---
-// Chamada final para o WhatsApp (mensagem pronta), em bloco de fim de pagina.
+// Chamada final para o WhatsApp (mensagem pronta), em bloco de fim de página: texto e botão de um lado;
+// do outro, o cartão da conversa com a MESMA mensagem que o botão manda (e o QR no PC). Sem foto de pessoa:
+// cada página mostra a sua mensagem. `arte` (opcional) troca o cartão por uma arte própria da página.
 import './inst.css';
 import Icone from '../Icone.astro';
+import CartaoWhats from './CartaoWhats.astro';
 import { whatsUrl } from '../../lib/dados';
 interface Props { titulo: string; texto: string; mensagem?: string; rotulo?: string; id?: string; arte?: string; arteAlt?: string; }
-const { titulo, texto, mensagem = 'Olá! Estou procurando uma peça.', rotulo = 'Chamar no WhatsApp', id,
-        arte = '/arte/v2/atendimento.webp', arteAlt = '' } = Astro.props;
+const { titulo, texto, mensagem = 'Olá! Estou procurando uma peça.', rotulo = 'Chamar no WhatsApp', id, arte, arteAlt = '' } = Astro.props;
+const url = whatsUrl(mensagem);
 ---
 <div class="moldura inst-sec">
   <section class="inst-chamada-caixa inst-chamada-com-arte" aria-labelledby={id}>
     <div class="inst-chamada-texto">
       <h2 class="titulo-secao" id={id}>{titulo}</h2>
       <p>{texto}</p>
-      <a class="botao botao-laranja inst-botao" href={whatsUrl(mensagem)} rel="noopener">
-        <Icone nome="whats" />{rotulo}
-      </a>
-      <span class="inst-fone">(53) 99117-0950</span>
+      <a class="botao botao-laranja inst-botao" href={url} rel="noopener"><Icone nome="whats" />{rotulo}</a>
+      <a class="inst-fone" href={url} rel="noopener">(53) 99117-0950</a>
     </div>
-    <div class="inst-chamada-arte"><img src={arte} alt={arteAlt} width="1024" height="537" loading="lazy" decoding="async" /></div>
+    {arte
+      ? <div class="inst-chamada-arte"><img src={arte} alt={arteAlt} width="1024" height="537" loading="lazy" decoding="async" /></div>
+      : <CartaoWhats mensagem={mensagem} class="inst-chamada-cw" />}
   </section>
 </div>

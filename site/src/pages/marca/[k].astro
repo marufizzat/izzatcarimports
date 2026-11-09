@@ -2,43 +2,31 @@
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
-import CarrosArte from '../../components/CarrosArte.astro';
-import AtalhosVisuais from '../../components/AtalhosVisuais.astro';
+import ModelosMarca from '../../components/marca/ModelosMarca.astro';
 import TextoApoio from '../../components/TextoApoio.astro';
 import { pecas, resumo, logoInfo } from '../../lib/dados';
 import { textosMarca, tituloMarca } from '../../lib/textos';
-import { fotoVitrine } from '../../lib/vitrine';
 export function getStaticPaths() { return resumo().marcas.map((m) => ({ params: { k: m.k }, props: { k: m.k } })); }
 const r = resumo();
 const m = r.marcas.find((x) => x.k === Astro.props.k)!;
 const lista = pecas().filter((p) => p.b === m.n).sort((a, b) => (b.id > a.id ? 1 : -1));
 const carros = r.carros.filter((c) => c.b === m.n);
-const comPagina = new Set(carros.map((c) => c.m));
-// Modelos sem pagina propria: cartao com a foto de estudio de uma peca do modelo
-const outros = m.m.filter((x) => !comPagina.has(x.n)).map((x) => ({
-  n: x.n, c: x.c, h: `/catalogo.html?marca=${encodeURIComponent(m.n)}&modelo=${encodeURIComponent(x.n)}`,
-  foto: fotoVitrine(lista, (p) => p.m === x.n),
-}));
 const logo = logoInfo(m.k, 160, 90);
 const texto = textosMarca(m, lista);
+const qtd = (n: number, um: string, varios: string) => `${n.toLocaleString('pt-BR')} ${n === 1 ? um : varios}`;
+const lead = m.m.length > 0
+  ? `${qtd(m.c, 'peça original', 'peças originais')} de ${qtd(m.m.length, 'modelo', 'modelos')}. Escolha o seu carro ou veja as mais novas.`
+  : `${qtd(m.c, 'peça original', 'peças originais')} de ${m.n}. Veja as mais novas abaixo.`;
 ---
 <Pagina titulo={tituloMarca(m.n)} descricao={texto.meta}>
   <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [m.n, `/marca/${m.k}.html`]]}
-    titulo={`Peças ${m.n}`} logo={logo}
-    lead="Escolha o seu carro ou veja as mais novas abaixo.">
-    <AtalhosVisuais titulo="Outros modelos" modo="tipo" itens={outros} />
-  </TopoArte>
+    titulo={`Peças ${m.n}`} logo={logo} lead={lead} />
 
   <div class="moldura">
+    <ModelosMarca marca={m} carros={carros} logo={logo} />
     <section class="secao-lista">
       <TextoApoio paragrafos={texto.paragrafos} />
     </section>
-    {carros.length > 0 && (
-      <section class="secao-lista">
-        <h2 class="titulo-secao">Carros {m.n} do pátio</h2>
-        <div class="carros-marca"><CarrosArte carros={carros} marca={m.k} /></div>
-      </section>
-    )}
     <section class="secao-lista">
       <h2 class="titulo-secao">As mais novas {m.n}</h2>
       <div class="mais-novas"><GradePecas lista={lista.slice(0, 24)} total={lista.length} linkTodas={`/catalogo.html?marca=${encodeURIComponent(m.n)}`} /></div>
@@ -49,6 +37,5 @@ const texto = textosMarca(m, lista);
   .secao-lista { padding-top: clamp(40px, 6vw, 64px); padding-bottom: 24px; }
   .secao-lista:last-child { padding-bottom: 72px; }
   .titulo-secao { margin: 0 0 22px; }
-  .carros-marca { margin-top: 4px; }
   .mais-novas { margin-top: 4px; }
 </style>

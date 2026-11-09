@@ -1,17 +1,71 @@
 ---
-// Banner v2: arte com o texto DESENHADO (estúdio limpo, Maruf). Versão em pé no celular. Texto no alt.
-interface Props { nome: string; texto: string; href: string; class?: string }
-const { nome, texto, href, class: cls } = Astro.props;
+// Chamada para o WhatsApp em dois formatos.
+//  - "faixa" (padrão): faixa baixa com texto VIVO, botão de verdade e o ícone do assunto (sem foto de pessoa).
+//    O texto sai de `texto`: 1ª frase = título, última (sem ponto) = botão, o meio = apoio. titulo/apoio/rotulo
+//    trocam cada parte. Na página de um carro (/carros/<k>.html) o título já fala do carro: "Tem um Volvo XC60?".
+//  - "arte": a arte de estúdio com o texto DESENHADO (versão em pé no celular; o texto vai no alt).
+//    Arte com pessoa: usar UMA vez no site (hoje, só "banner-nao-achou" na home).
+import Icone from '../Icone.astro';
+import { resumo } from '../../lib/dados';
+interface Props { nome: string; texto: string; href: string; class?: string; formato?: 'faixa' | 'arte'; titulo?: string; apoio?: string; rotulo?: string; }
+const { nome, texto, href, class: cls, formato = 'faixa' } = Astro.props;
+
+// ícone 3D de cada assunto (public/icones, os mesmos dos destaques)
+const ICONE: Record<string, string> = { 'banner-serve': 'serve', 'banner-nao-achou': 'patio', 'banner-oficinas': 'oficina' };
+const frases = texto.split(/(?<=[?.!])\s+/).map((f) => f.trim()).filter(Boolean);
+const temRotulo = frases.length > 1 && !/[?.!:]$/.test(frases[frases.length - 1]);
+let titulo = Astro.props.titulo ?? frases[0] ?? '';
+let apoio = Astro.props.apoio ?? frases.slice(1, temRotulo ? -1 : undefined).join(' ');
+const rotulo = Astro.props.rotulo ?? (temRotulo ? frases[frases.length - 1] : 'Chamar no WhatsApp');
+
+// pergunta do cliente ("Serve no meu carro?") vira a nossa ("Serve no seu carro?")
+titulo = titulo.replace(/\bno meu carro\b/i, 'no seu carro');
+// página do carro: a pergunta já leva o carro
+const naPaginaDoCarro = /^\/carros\/([^/]+)\.html$/.exec(Astro.url.pathname)?.[1];
+const carro = naPaginaDoCarro && nome === 'banner-serve' && !Astro.props.titulo ? resumo().carros.find((c) => c.k === naPaginaDoCarro) : null;
+if (carro) {
+  titulo = `Tem um ${carro.b} ${carro.m}?`;
+  apoio = Astro.props.apoio ?? 'Manda o ano e a peça que você procura. A gente confere no pátio e te responde com foto.';
+}
+const icone = ICONE[nome] ?? 'conversa';
 ---
-<a class:list={['banner-v2', cls]} href={href} aria-label={texto}>
-  <picture>
-    <source media="(max-width: 700px)" srcset={`/arte/v2/${nome}-celular.webp`} width="1024" height="1536" />
-    <img src={`/arte/v2/${nome}.webp`} alt={texto} width="1536" height="1024" loading="lazy" decoding="async" />
-  </picture>
-</a>
+{formato === 'arte' ? (
+  <a class:list={['banner-v2', cls]} href={href} aria-label={texto}>
+    <picture>
+      <source media="(max-width: 700px)" srcset={`/arte/v2/${nome}-celular.webp`} width="1024" height="1536" />
+      <img src={`/arte/v2/${nome}.webp`} alt={texto} width="1536" height="1024" loading="lazy" decoding="async" />
+    </picture>
+  </a>
+) : (
+  <aside class:list={['faixa-whats', cls]} aria-label={titulo}>
+    <img class="fw-icone" src={`/icones/${icone}-192.webp`} alt="" width="192" height="192" loading="lazy" decoding="async" />
+    <div class="fw-texto">
+      <p class="fw-titulo">{titulo}</p>
+      {apoio && <p class="fw-apoio">{apoio}</p>}
+    </div>
+    <a class="botao botao-laranja fw-botao" href={href} rel="noopener"><Icone nome="whats" />{rotulo}</a>
+  </aside>
+)}
 <style>
   .banner-v2 { display: block; border-radius: 26px; overflow: hidden; background: #efeeeb; box-shadow: var(--shadow-2); transition: transform .35s cubic-bezier(.2,.7,.2,1); }
   .banner-v2 img { display: block; width: 100%; height: auto; }
   @media (hover: hover) { .banner-v2:hover { transform: translateY(-3px); } }
   .banner-v2:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+
+  /* faixa: cartão baixo, fio laranja na borda esquerda e um brilho quente no canto */
+  .faixa-whats { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center; gap: 16px 26px; padding: 22px 28px 22px 30px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .faixa-whats::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: linear-gradient(180deg, var(--accent), var(--accent-press)); }
+  .faixa-whats::after { content: ""; position: absolute; z-index: -1; right: -70px; top: -110px; width: 300px; height: 300px; border-radius: 50%;
+    background: radial-gradient(closest-side, var(--accent-soft), transparent); }
+  .fw-icone { width: 68px; height: 68px; filter: drop-shadow(0 10px 16px rgb(200 70 0 / .22)); }
+  .fw-texto { display: grid; gap: 6px; min-width: 0; }
+  .fw-titulo { margin: 0; font-stretch: 80%; font-weight: 820; font-size: clamp(24px, 2.5vw, 32px); line-height: 1.02; letter-spacing: -.01em; color: var(--ink); text-wrap: balance; }
+  .fw-apoio { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+  .fw-botao { --h: 54px; padding: 0 24px; }
+  @media (max-width: 760px) {
+    .faixa-whats { grid-template-columns: auto minmax(0, 1fr); padding: 20px 20px 20px 24px; gap: 14px 16px; }
+    .fw-icone { width: 52px; height: 52px; align-self: start; }
+    .fw-botao { grid-column: 1 / -1; width: 100%; white-space: normal; height: auto; min-height: 52px; }
+  }
 </style>

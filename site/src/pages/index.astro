@@ -6,6 +6,8 @@ import GradeCategorias from '../components/v2/GradeCategorias.astro';
 import NuvemMarcas from '../components/v2/NuvemMarcas.astro';
 import CarrosPatio from '../components/v2/CarrosPatio.astro';
 import BannerV2 from '../components/v2/BannerV2.astro';
+import VitrineDestaques from '../components/v2/VitrineDestaques.astro';
+import OficinasV2 from '../components/v2/OficinasV2.astro';
 import Coverflow from '../components/v2/Coverflow.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
@@ -14,7 +16,6 @@ import { pecaPorId, resumo, marcasVisiveis, whatsUrl, temEstudio, SITE } from '.
 const r = resumo();
 const chegou = r.chegou.map(pecaPorId).filter((p): p is NonNullable<typeof p> => !!p && temEstudio(p.id)).slice(0, 14);
 const msgServe = 'Olá! Quero saber se uma peça serve no meu carro. Meu carro é: ____ (modelo) ____ (ano). A peça é: ____';
-const msgOficina = 'Olá! Sou de oficina/revenda e quero mandar uma lista de peças. Carro e ano: ____. Peças: ____';
 const msgProcura = 'Olá! Não achei a peça no site. Meu carro é ____ (modelo e ano) e procuro: ____';
 
 const perguntas = [
@@ -53,6 +54,18 @@ const ld = {
     <div class="moldura"><SelosV2 /></div>
   </section>
 
+  <section class="secao vitrine-secao" aria-labelledby="t-destaques">
+    <div class="moldura">
+      <div class="cabeca-secao">
+        <h2 id="t-destaques" class="titulo-secao">Destaques do pátio</h2>
+        <p class="lead">Peças originais com preço, nota fiscal e 90 dias de garantia. Toque na peça para ver as fotos e o código gravado.</p>
+      </div>
+      <VitrineDestaques />
+      <BannerV2 class="vitrine-serve" nome="banner-serve" href={whatsUrl(msgServe)}
+        texto="Serve no meu carro? Manda o modelo e o ano. A gente confere e te responde com foto. Chamar no WhatsApp" />
+    </div>
+  </section>
+
   <section class="secao" aria-labelledby="t-cat">
     <div class="moldura">
       <div class="cabeca-secao linha">
@@ -79,13 +92,6 @@ const ld = {
     </div>
   </section>
 
-  <section class="secao secao-banner">
-    <div class="moldura">
-      <BannerV2 nome="banner-serve" href={whatsUrl(msgServe)}
-        texto="Serve no meu carro? Manda o modelo e o ano. A gente confere e te responde com foto. Chamar no WhatsApp" />
-    </div>
-  </section>
-
   <section class="secao" aria-labelledby="t-marcas">
     <div class="moldura">
       <div class="cabeca-secao">
@@ -98,7 +104,7 @@ const ld = {
 
   <section class="secao secao-banner">
     <div class="moldura">
-      <BannerV2 nome="banner-nao-achou" href={whatsUrl(msgProcura)}
+      <BannerV2 formato="arte" nome="banner-nao-achou" href={whatsUrl(msgProcura)}
         texto="Não achou a peça? A gente procura no pátio. Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp. Chamar no WhatsApp" />
     </div>
   </section>
@@ -137,10 +143,9 @@ const ld = {
   </section>
 
 
-  <section class="secao faixa secao-banner">
+  <section class="secao secao-oficinas">
     <div class="moldura">
-      <BannerV2 nome="banner-oficinas" href={whatsUrl(msgOficina)}
-        texto="Oficinas e revendas: separamos as peças pra sua oficina. Manda a lista com carro e ano: a gente confere e responde com foto e código. Falar com a gente" />
+      <OficinasV2 />
     </div>
   </section>
 
@@ -150,7 +155,7 @@ const ld = {
         <h2 id="t-faq" class="titulo-secao">Perguntas que a gente mais recebe</h2>
         <p class="lead">Respostas curtas, do jeito que a gente responde no balcão.</p>
         <aside class="faq-ajuda">
-          <img src="/arte/v2/atendimento.webp" alt="" width="1024" height="537" loading="lazy" decoding="async" />
+          <img class="faq-ajuda-icone" src="/icones/conversa-96.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />
           <div class="faq-ajuda-txt">
             <b>Ficou outra dúvida?</b>
             <span>Manda no WhatsApp. Quem responde é a equipe do pátio.</span>
@@ -174,6 +179,9 @@ const ld = {
   .selos-faixa { position: relative; z-index: 1; margin-top: -28px; }
   @media (max-width: 767px) { .selos-faixa { margin-top: 0; padding-top: 4px; } }
   .secao-banner { padding-block: clamp(28px, 4vw, 56px); }
+  .secao-oficinas { padding-block: clamp(28px, 4vw, 64px); }
+  .vitrine-secao { padding-top: clamp(48px, 6vw, 88px); }
+  .vitrine-secao :global(.vitrine-serve) { margin-top: clamp(36px, 4.4vw, 56px); }
 
   .passos { list-style: none; margin: 0; padding: 4px 4px 12px; display: grid; grid-auto-flow: column; grid-auto-columns: 78%; gap: 14px;
             overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
@@ -185,9 +193,10 @@ const ld = {
 
   .faq { display: grid; gap: 8px; }
   @media (min-width: 1024px) { .faq { grid-template-columns: .85fr 1.15fr; gap: 56px; align-items: start; } }
-  .faq-ajuda { margin-top: 18px; border-radius: 24px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1); }
-  .faq-ajuda img { display: block; width: 100%; height: auto; background: #efeeeb; }
-  .faq-ajuda-txt { display: grid; gap: 6px; padding: 18px 20px 20px; }
+  .faq-ajuda { margin-top: 18px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: start;
+               padding: 20px 22px 22px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .faq-ajuda-icone { width: 52px; height: 52px; filter: drop-shadow(0 8px 14px rgb(200 70 0 / .22)); }
+  .faq-ajuda-txt { display: grid; gap: 6px; }
   .faq-ajuda b { font-stretch: 86%; font-weight: 800; font-size: 20px; }
   .faq-ajuda span { font-size: 15px; color: var(--ink-2); }
   .faq-ajuda .botao { margin-top: 10px; justify-self: start; }
