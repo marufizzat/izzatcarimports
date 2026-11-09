@@ -7,7 +7,7 @@ import GaleriaTelaCheia from '../../components/ui/GaleriaTelaCheia';
 import AbasDetalhes from '../../components/peca/AbasDetalhes.astro';
 import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
-import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio } from '../../lib/dados';
+import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
@@ -46,8 +46,12 @@ const mesmaFamiliaAqui = doCarro.length > 0 && nivel(doCarro[0]) < 2;
 const url = `${SITE}/peca/${p.slug}.html`;
 const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
 const serve = nomeCarro + (p.y ? `, ${p.y[0]} a ${p.y[1]}` : '');
-const codigo = (p.oem || '').split(/[\s,;/|]+/)[0];
-const titulo = `${p.n}${nomeCarro ? ` ${nomeCarro}` : ''}${p.y ? ` ${p.y[0]}–${p.y[1]}` : ''}${codigo ? ` ${codigo.toUpperCase()}` : ` ${p.id}`} | Izzat Car`;
+// so com marca e modelo dizemos "Serve em"; peca so com a marca fica "Carro" (sem prometer o modelo)
+const serveRotulo = p.m ? 'Serve em' : 'Carro';
+const unica = p.q === 1;
+// código só quando parece código de verdade (5+ com letra e número, ou 6+ dígitos), em maiúsculas
+const codigo = codigoDaPeca(p.oem);
+const titulo = `${p.n}${nomeCarro ? ` ${nomeCarro}` : ''}${p.y ? ` ${p.y[0]}–${p.y[1]}` : ''}${codigo ? ` ${codigo}` : ` ${p.id}`} | Izzat Car`;
 const descricao = `${p.t}. Peça original de carro com baixa legal no Detran-RS. R$ ${brl(p.p)}, nota fiscal e 90 dias de garantia. CDV nº 01060.`;
 const msg = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\nServe e ainda tem?`;
 const trilha: [string, string][] = [['Início', '/index.html'], ['Catálogo', '/catalogo.html']];
@@ -59,19 +63,20 @@ const ld = {
   '@context': 'https://schema.org',
   '@graph': [
     { '@type': 'Product', name: p.t, image: [...(capaEstudio(p.id) ? [SITE + capaEstudio(p.id)] : []), ...p.fotos.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
-      mpn: (p.oem || '').split(/\s+/)[0] || p.id,
+      mpn: codigo || p.id,
       description: `${p.t}. Peça original com procedência legal, nota fiscal e 90 dias de garantia. Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
       brand: { '@type': 'Brand', name: p.b || 'Original' },
       category: p.s || p.c,
       offers: { '@type': 'Offer', url, price: p.p.toFixed(2), priceCurrency: 'BRL', availability: 'https://schema.org/InStock',
+                itemCondition: 'https://schema.org/UsedCondition',
                 seller: { '@type': 'Organization', name: 'Izzat Car Imports' } } },
     { '@type': 'BreadcrumbList', itemListElement: [...trilha, [p.n, `/peca/${p.slug}.html`]].map(([n, h], i) => ({
         '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) },
   ],
 };
 ---
-<Pagina titulo={titulo} descricao={descricao} ogImagem={foto(p.fotos[0], 'F') || undefined}
-        produto={{ id: p.id, name: p.t, price: p.p, category: p.c }}>
+<Pagina titulo={titulo} descricao={descricao} ogImagem={capaEstudio(p.id) ? `${SITE}${capaEstudio(p.id)}` : foto(p.fotos[0], 'F') || undefined}
+        produto={{ id: p.id, name: p.t, price: p.p, category: p.c }} rodapeSelos={false}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   <link slot="head" rel="preload" as="image" href={capaEstudio(p.id) ?? foto(p.fotos[0], 'F')} fetchpriority="high" />
 
@@ -85,11 +90,14 @@ const ld = {
   </div>
 
   <div class="barra-compra" data-barra-compra aria-hidden="true">
-    <div class="barra-preco num"><small>R$</small> {brl(p.p)}</div>
+    <div class="barra-info">
+      <div class="barra-preco num"><small>R$</small> {brl(p.p)}</div>
+      {unica && <span class="barra-unica"><i aria-hidden="true"></i>Peça única</span>}
+    </div>
     <a class="botao botao-laranja" href={whatsUrl(msg)} data-whats data-cabeca={`Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n`} data-sem={nomeCarro ? `Meu carro é ${nomeCarro} ano ____. ` : ''} data-cauda="Serve e ainda tem?" tabindex="-1"><Icone nome="whats" />Pedir pelo WhatsApp</a>
   </div>
 
-  <AbasDetalhes p={p} serve={serve} />
+  <AbasDetalhes p={p} serve={serve} serveRotulo={serveRotulo} />
 
   {codigo && <GuiaCodigo cod={codigo} titulo={p.t} url={url} />}
 
@@ -109,15 +117,19 @@ const ld = {
 </Pagina>
 
 <script>
+  // Barra fixa do celular: aparece só quando o botão principal (WhatsApp) está fora da tela,
+  // para nunca haver dois botões iguais à vista (e, em celular baixinho, o pedido nunca some).
+  // "Fora" = menos de 60% dele à vista, descontando o cabeçalho fixo (ele cobre o topo da tela).
   const barra = document.querySelector<HTMLElement>('[data-barra-compra]');
-  const alvo = document.querySelector('[data-compra-botoes]');
+  const alvo = document.querySelector('[data-compra-botoes] [data-whats]') ?? document.querySelector('[data-compra-botoes]');
   if (barra && alvo && 'IntersectionObserver' in window) {
+    const topo = Math.round(document.querySelector('header.cab')?.getBoundingClientRect().height ?? 0);
     new IntersectionObserver(([e]) => {
-      const mostrar = !e.isIntersecting && e.boundingClientRect.top < 0;
+      const mostrar = e.intersectionRatio < 0.6;
       barra.classList.toggle('visivel', mostrar);
       barra.setAttribute('aria-hidden', String(!mostrar));
       barra.querySelector('a')?.setAttribute('tabindex', mostrar ? '0' : '-1');
-    }).observe(alvo);
+    }, { rootMargin: `-${topo}px 0px 0px 0px`, threshold: [0, 0.6, 1] }).observe(alvo);
   }
 </script>
 
@@ -127,16 +139,26 @@ const ld = {
   .trilha a:hover { color: var(--ink); text-decoration: underline; }
   .trilha [aria-current] { color: var(--ink-3); max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topo { padding-bottom: 32px; }
+  /* celular: trilha numa linha só (desliza de lado), para a foto e a compra subirem */
+  @media (max-width: 959px) {
+    .trilha { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; scrollbar-width: none; padding-block: 12px 12px;
+              -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+    .trilha::-webkit-scrollbar { display: none; }
+    .trilha > * { flex: none; }
+  }
 
   .barra-compra { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 40;
-                  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 18px;
+                  display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 9px 9px 16px;
                   border-radius: 18px; background: color-mix(in oklab, var(--surface), transparent 6%); backdrop-filter: blur(16px);
                   box-shadow: var(--shadow-2), inset 0 0 0 1px var(--line);
                   transform: translateY(140%); transition: transform .35s cubic-bezier(.2,.8,.2,1); }
   .barra-compra.visivel { transform: none; }
-  .barra-preco { font-stretch: 80%; font-weight: 850; font-size: 24px; }
-  .barra-preco small { font-size: 14px; color: var(--ink-2); }
-  .barra-compra .botao { --h: 48px; font-size: 15px; padding: 0 16px; }
+  .barra-info { display: grid; gap: 2px; min-width: 0; }
+  .barra-preco { font-stretch: 80%; font-weight: 850; font-size: 23px; line-height: 1.05; white-space: nowrap; }
+  .barra-preco small { font-size: 13.5px; color: var(--ink-2); }
+  .barra-unica { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; line-height: 1.2; color: var(--accent-text); white-space: nowrap; }
+  .barra-unica i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+  .barra-compra .botao { --h: 48px; flex: none; height: var(--h); padding: 0 16px; font-size: 15px; white-space: nowrap; }
   @media (min-width: 960px) { .barra-compra { display: none; } }
   @media (max-width: 959px) { :global(body:has(.barra-compra)) { padding-bottom: 84px; } }
   @media (prefers-reduced-motion: reduce) { .barra-compra { transition: none; } }

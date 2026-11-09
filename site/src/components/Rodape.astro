@@ -2,17 +2,20 @@
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
 import { whatsUrl, resumo, logoInfo } from '../lib/dados';
+// selos={false}: a pagina da peca ja mostra as garantias e a reputacao junto da compra (sem repetir no fim).
+interface Props { selos?: boolean }
+const { selos = true } = Astro.props;
 const r = resumo();
 const marcas = r.marcas.slice(0, 8);
 ---
-<footer class="rodape faixa-escura">
-  <ul class="moldura rodape-selos" aria-label="Garantias">
+<footer class:list={['rodape faixa-escura', { 'rodape-sem-selos': !selos }]}>
+  {selos && <ul class="moldura rodape-selos" aria-label="Garantias">
     {[['garantia', '90 dias de garantia', 'Em toda peça'], ['nota-fiscal', 'Nota fiscal', 'Em toda venda'],
       ['cdv', 'Desmanche credenciado', 'Detran-RS · CDV nº 01060'], ['envio', 'Envio para todo o Brasil', 'Com código de rastreio']].map(([k, t, s]) => (
       <li><img src={`/arte/v2/selo-${k}.webp`} alt="" width="56" height="56" loading="lazy" decoding="async" /><span><b>{t}</b><small>{s}</small></span></li>
     ))}
     <SeloReputacao variante="rodape" />
-  </ul>
+  </ul>}
   <div class="moldura rodape-topo">
     <div class="rodape-marca">
       <img src="/identidade/logo-dark.png" alt="Izzat Car Imports" width="99" height="72" loading="lazy" />
@@ -44,6 +47,7 @@ const marcas = r.marcas.slice(0, 8);
 </footer>
 <style>
   .rodape { padding-block: 0 28px; margin-top: 0; }
+  .rodape-sem-selos { padding-top: 48px; }
   .rodape-selos { list-style: none; margin: 0 auto 48px; padding: 28px 0; display: grid; gap: 16px 24px; grid-template-columns: repeat(2, minmax(0, 1fr));
     border-bottom: 1px solid var(--line); }
   @media (min-width: 1000px) { .rodape-selos { grid-template-columns: repeat(4, minmax(0, 1fr)); padding-block: 32px; } }

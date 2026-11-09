@@ -44,7 +44,8 @@ const CSS = `
 .gt-palco.amplo{cursor:grab}
 .gt-palco.amplo:active{cursor:grabbing}
 .gt-trilho{display:flex;height:100%;width:100%;transition:transform .34s cubic-bezier(.2,.8,.2,1);will-change:transform}
-.gt-slide{flex:0 0 100%;height:100%;display:grid;place-items:center;min-width:0}
+/* flex, nao grid: no grid a altura 100% da foto nao resolvia, a foto ficava do tamanho da largura (1440x1440 no PC) e cortava */
+.gt-slide{flex:0 0 100%;height:100%;display:flex;align-items:center;justify-content:center;min-width:0}
 .gt-foto{width:100%;height:100%;object-fit:contain;padding:5%;-webkit-user-drag:none;pointer-events:none;transform-origin:center center;
   transition:transform .26s cubic-bezier(.2,.8,.2,1)}
 .gt-dica{display:none;position:absolute;left:50%;top:12px;z-index:2;transform:translateX(-50%);padding:6px 12px;border-radius:999px;

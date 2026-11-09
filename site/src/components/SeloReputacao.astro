@@ -4,7 +4,7 @@
 // gravado pelo robo). Sem o dado, nao renderiza nada. Sem logo do Mercado Livre e sem percentual.
 import { resumo } from '../lib/dados';
 
-interface Props { variante?: 'faixa' | 'compacto' | 'rodape' }
+interface Props { variante?: 'faixa' | 'compacto' | 'rodape' | 'linha' }
 const variante = Astro.props.variante ?? 'faixa';
 const rep = resumo().reputacao;
 // barra 1 (vermelho) -> barra 5 (verde)
@@ -25,7 +25,18 @@ const acessivel = rep ? `Reputação no Mercado Livre: ${rep.n} de 5${lider ? `,
     </span>
   </div>
 )}
-{rep && variante !== 'compacto' && (
+{rep && variante === 'linha' && (
+  <div class="rep-linha">
+    <span class="termo" role="img" aria-label={acessivel}>
+      {barras.map((i) => <i class:list={[i <= rep.n && 'acesa']} style={`--c:${CORES[i - 1]};--h:${6 + i * 4}px`} />)}
+    </span>
+    <span class="rep-texto">
+      {lider && <b>MercadoLíder {lider}</b>}
+      {vendas && <small>{vendas} vendas concluídas no Mercado Livre</small>}
+    </span>
+  </div>
+)}
+{rep && variante !== 'compacto' && variante !== 'linha' && (
   <li class={`rep-cartao rep-${variante}`}>
     <span class="termo" role="img" aria-label={acessivel}>
       {barras.map((i) => <i class:list={[i <= rep.n && 'acesa']} style={`--c:${CORES[i - 1]};--h:${6 + i * 4}px`} />)}
@@ -58,4 +69,12 @@ const acessivel = rep ? `Reputação no Mercado Livre: ${rep.n} de 5${lider ? `,
   .rep-pilula .rep-texto { gap: 0; }
   .rep-pilula .rep-texto b { font-size: 13px; }
   .rep-pilula .rep-texto small { font-size: 12px; }
+
+  /* linha: dentro de um cartão (página da peça), sem fundo próprio */
+  .rep-linha { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .rep-linha .termo { height: 22px; gap: 3px; }
+  .rep-linha .termo i { width: 7px; height: calc(var(--h) * .82); border-radius: 2.5px; }
+  .rep-linha .rep-texto { gap: 1px; }
+  .rep-linha .rep-texto b { font-size: 15px; }
+  .rep-linha .rep-texto small { font-size: 13px; }
 </style>
