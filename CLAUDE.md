@@ -30,6 +30,13 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      Para trocar o ramo pelas capas do Mac: `ferramentas/semear_capas.sh` (ensaio por padrão; `--publicar` faz
      force push — só com o dono mandando, e fora da hora da rodada).
    No Mac: `ESTUDIO_MOTOR=vision` usa o recorte nativo (bem mais rápido).
+   - **Versão 2** (`ESTUDIO_VERSAO=2`; o padrão segue 1 até o dono aprovar). Saída em 1000 px, enquadramento por regra:
+     peso visual igual pelo casco convexo, piso comum a 0,79, centro de massa, hastes finas na diagonal.
+     Leva o logo original (`ESTUDIO_LOGO=a` selo no canto, recomendado | `b` relevo | `c` assinatura | `0` sem logo).
+     Separa sozinha a foto montagem e pula a foto com o carrinho do anúncio colado. As suspeitas vão para
+     `_revisar.json`; a folha sai com `ferramentas/folha_revisar.py <pasta>`. Para o Google Shopping, a cópia sem logo
+     sai com `ESTUDIO_SAIDA_LIMPA` (o feed não aceita logo sobreposto). Maquiadas na v2: `ferramentas/marca_pro.py`
+     (grava noutra pasta e nunca sobrescreve `estudio-pro`). Ao ligar a v2, pôr `ESTUDIO_VERSAO`/`ESTUDIO_LOGO` também no `atualizar.yml`.
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
 
 7. **Reputação do Mercado Livre**: `atualizar_catalogo.py` (`save_seller_reputation`) lê a rota pública
