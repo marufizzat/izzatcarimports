@@ -22,7 +22,7 @@ const marcas = r.marcas.slice(0, 8);
     <nav aria-label="Peças"><b>Peças</b>
       <a href="/catalogo.html">Catálogo completo</a>
       <a href="/carros.html">Peças por carro</a>
-      {marcas.map((m) => { const l = logoInfo(m.k, 22, 16); return <a class="rodape-marca-link" href={`/marca/${m.k}.html`}><span class="rodape-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>{m.n}</a>; })}
+      {marcas.map((m) => { const l = logoInfo(m.k, 20, 15); return <a class="rodape-marca-link" href={`/marca/${m.k}.html`}><span class="rodape-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>{m.n}</a>; })}
     </nav>
     <nav aria-label="Comprar"><b>Comprar</b>
       <a href="/como-comprar.html">Como comprar</a>
@@ -53,10 +53,11 @@ const marcas = r.marcas.slice(0, 8);
   .rodape-selos b { display: block; font-stretch: 86%; font-weight: 800; font-size: 15.5px; line-height: 1.15; color: var(--ink); }
   .rodape-selos small { display: block; font-size: 13px; color: var(--ink-3); }
   .rodape-marca-link { display: inline-flex; align-items: center; gap: 10px; }
-  .rodape-logo { width: 22px; height: 18px; display: grid; place-items: center; flex: none; }
-  .rodape-logo img.svg { filter: brightness(0) invert(.78); }
-  .rodape-logo img.png { filter: invert(.78); }
-  .rodape-marca-link:hover .rodape-logo img.svg { filter: brightness(0) invert(1); }
+  /* logo com as cores da marca num disco claro (no rodapé escuro também) */
+  .rodape-logo { width: 28px; height: 28px; border-radius: 50%; background: #f3f2ef; display: grid; place-items: center; flex: none;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); transition: transform .2s ease; }
+  .rodape-logo img { display: block; }
+  .rodape-marca-link:hover .rodape-logo { transform: scale(1.08); }
   .rodape-topo { display: grid; gap: 36px; grid-template-columns: 1fr; }
   @media (min-width: 900px) { .rodape-topo { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; } }
   .rodape-marca { display: grid; gap: 16px; justify-items: start; align-content: start; }
