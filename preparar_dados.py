@@ -214,6 +214,7 @@ MODELO_APELIDO = {
     ("Chevrolet", "onixplus"): "Onix",                               # Onix Plus = Onix sedã
     ("Citroën", "aircross"): "C3 Aircross",
     ("Volkswagen", "tcroos"): "T-Cross",
+    ("Hyundai", "hb20x"): "HB20", ("Hyundai", "hb20s"): "HB20",     # versoes do HB20 (aventureiro e seda)
 }
 
 
@@ -251,7 +252,7 @@ SIGLAS = {"abs", "bcm", "bsi", "led", "cd", "dvd", "gps", "usb", "ecu", "tcu", "
           "pcv", "tpms", "srs", "esp", "4x4", "cvt", "tsi", "tdi", "lcd", "mp3", "dsg",
           "abs/esp", "maf", "map", "ac", "a/c", "obd", "drl", "suv",
           "tbi", "bsm", "pdc", "uch", "tcm", "vcm", "epb", "ibs", "sos", "vvt", "dme", "eps",
-          "apim", "iaw", "esc"}
+          "apim", "iaw", "esc", "cgi"}
 PALAVRAS_FORA = re.compile(
     r"^(or|ori|orig|origi|origin|origina|original|originais|genuin[oa]|"
     r"preto|preta|cinza|prata|prateado|branco|branca|vermelho|vermelha|azul|bege|"
@@ -374,10 +375,61 @@ def _chave_titulo(linha):
 _ITEM = re.compile(r"^(?:[+\-•*–—]|(\d{1,2})[).])\s+(?=\S)")
 # Linha "Rotulo: valor" ("Material: aco", "Codigo OEM: 32136006"): 2+ seguidas viram lista.
 _ROTULO = re.compile(r"^[A-Za-zÀ-ÿ][^:]{0,38}:\s+\S")
-# Item sem valor de verdade: "Largura da peca: 0 cm", "Posicao: Conforme aplicacao".
-_ITEM_VAZIO = re.compile(r":\s*(?:0+(?:[.,]0+)?\s*(?:cm|mm|m|g|kg)?|conforme aplica[cç][aã]o|n/?a|-+)\s*\.?$",
-                         re.I)
+# Item sem valor de verdade: "Largura da peca: 0 cm", "Posicao: Conforme aplicacao", "Codigo OEM: SEM CODIGO",
+# "Anos:" (rotulo sem nada).
+_ITEM_VAZIO = re.compile(r":\s*(?:0+(?:[.,]0+)?\s*(?:cm|mm|m|g|kg)?|conforme aplica[cç][aã]o|n/?a|-+|"
+                         r"sem c[oó]digo|n[aã]o informad[oa]|)\s*\.?$", re.I)
 _ANOS_SEGUIDOS = re.compile(r"\b(?:19|20)\d{2}(?:(?:\s*[,\-]\s*|\s+)(?:19|20)\d{2}){2,}\b")
+# 1a linha do modelo de anuncio: o titulo de novo ("MACANETA INTERNA ESQ ... - ORIGINAL DE FABRICA - OEM X").
+_MANCHETE = re.compile(r"\s[-–]\s+original de f[aá]brica\s+[-–]\s+oem\b", re.I)
+# Medidas do modelo de anuncio: o vendedor deixa o padrao (25 x 18 x 15 cm, 1500 g) em pecas de todo
+# tamanho. Medida repetida em muitas pecas diferentes nao e da peca: a linha sai (_DIM_PADRAO, no main).
+_DIM_LINHA = re.compile(r"^\W*(comprimento|largura|altura) da pe[cç]a:\s*([\d.,]+)\s*cm\b", re.I)
+_PESO_LINHA = re.compile(r"^\W*peso aproximado", re.I)
+_DIM_PADRAO = set()          # {("25", "18", "15")}: preenchido no main() com dimensoes_padrao()
+DIM_PADRAO_MIN = 20          # a mesma medida em 20+ anuncios = padrao do modelo, nao medida da peca
+
+
+def _dimensoes(texto):
+    """('25', '18', '15') das linhas "Comprimento/Largura/Altura da peca: N cm", ou None."""
+    achou = {}
+    for linha in (texto or "").splitlines():
+        m = _DIM_LINHA.match(linha.strip())
+        if m:
+            achou.setdefault(gi.strip_accents(m.group(1)).lower(), m.group(2))
+    if len(achou) < 3:
+        return None
+    return achou["comprimento"], achou["largura"], achou["altura"]
+
+
+def dimensoes_padrao(textos):
+    """Medidas que se repetem em DIM_PADRAO_MIN+ descricoes: o padrao do modelo de anuncio."""
+    cont = Counter(d for d in map(_dimensoes, textos) if d)
+    return {d for d, n in cont.items() if n >= DIM_PADRAO_MIN}
+
+
+# Frase que sai: sem dado ("Codigo OEM sem codigo", "Posicao de instalacao: Conforme aplicacao") ou vazia
+# ("X: peca original responsavel pela funcao correspondente no veiculo").
+_FRASE_FORA = re.compile(r"\bsem c[oó]digo\b|respons[aá]vel pela fun[cç][aã]o correspondente|"
+                         r"^posi[cç][aã]o de instala[cç][aã]o:\s*conforme aplica[cç][aã]o", re.I)
+# Trocas no texto que fica. O site nao tem "chat do anuncio": quem tira duvida e o WhatsApp.
+_TROCAS = [
+    (re.compile(r",?\s*sem g[ií]ria\b", re.I), ""),
+    (re.compile(r"\benvie mensagem pelo chat do an[uú]ncio\s*[-–—]\s*identificamos na hora", re.I),
+     "chame a gente no WhatsApp"),
+    (re.compile(r"\b(?:pelo|no) chat do (?:an[uú]ncio|mercado livre)\b", re.I), "pelo WhatsApp"),
+    (re.compile(r"\b(pelo|no) chat\b", re.I), r"\1 WhatsApp"),
+    (re.compile(r"\bC[oó]digo OEM \(Original Equipment Manufacturer\)"), "Código OEM"),
+    (re.compile(r"(?<=[a-zà-ÿ,] )Ou(?= [a-zà-ÿ])"), "ou"),
+]
+
+
+def _limpar_frases(t):
+    """Troca o "chat do anuncio" pelo WhatsApp, tira "sem giria" e as frases sem dado."""
+    for rx, novo in _TROCAS:
+        t = rx.sub(novo, t)
+    frases = re.split(r"(?<=[.!?;])\s+(?=[A-ZÀ-Ý0-9])", t.strip())
+    return " ".join(f for f in frases if not _FRASE_FORA.search(f)).strip()
 
 
 def _anos_em_faixa(t):
@@ -391,10 +443,9 @@ def _anos_em_faixa(t):
 
 
 def _blocos_texto(linhas):
-    """Linhas de uma secao -> blocos HTML: frase vira <p>, lista vira <ul>/<ol> (antes as
+    """Linhas de uma secao -> blocos [tag, [textos]]: frase vira "p", lista vira "ul"/"ol" (antes as
     linhas da lista grudavam numa frase so: "+ Peça: X + Cor: Preto + ..."). Linha com
     promessa sai, e a continuacao dela (linha seguinte comecando em minuscula) tambem."""
-    from html import escape
     vivas, cortou = [], False
     for linha in linhas:
         if PROMESSA.search(linha):
@@ -417,46 +468,96 @@ def _blocos_texto(linhas):
         if it[0] == "rot":
             viz = [itens[j][0] for j in (i - 1, i + 1) if 0 <= j < len(itens)]
             it[0] = "li" if any(v in ("rot", "li") for v in viz) else "p"
+    def texto(t):
+        t = acentuar_texto(t)
+        t = re.sub(r"\b((?:19|20)\d{2}) at[ée] \1\b", r"\1", t)
+        return _limpar_frases(_anos_em_faixa(t))
+
     grupos = []
     for tipo, t in itens:
         if tipo != "p" and _ITEM_VAZIO.search(t):
+            continue
+        t = texto(t)
+        if not t or (tipo != "p" and _ITEM_VAZIO.search(t)):
             continue
         tag = {"p": "p", "ol": "ol"}.get(tipo, "ul")
         if grupos and grupos[-1][0] == tag:
             grupos[-1][1].append(t)
         else:
             grupos.append([tag, [t]])
+    return [[tag, [" ".join(ts)]] if tag == "p" else [tag, ts] for tag, ts in grupos]
 
-    def texto(t):
-        t = acentuar_texto(t)
-        t = re.sub(r"\b((?:19|20)\d{2}) at[ée] \1\b", r"\1", t)
-        return escape(_anos_em_faixa(t))
 
-    html = []
-    for tag, ts in grupos:
+_PALAVRA_VAZIA = set("""a o as os e de do da dos das em no na nos nas ao aos um uma com sem se nao ou nem por
+para que ele ela sao e foi ser""".split())
+
+
+def _palavras_conteudo(t):
+    """Palavras comuns da frase (sem carro, codigo, ano e nome proprio: esses repetem sem ser repeticao)."""
+    return {gi.strip_accents(w) for w in re.findall(r"(?<![\wÀ-ÿ])[a-zà-ÿ][a-zà-ÿ]{2,}", t)} - _PALAVRA_VAZIA
+
+
+def _chave_item(t):
+    """'Cor predominante: Preto' -> ('cor', 'preto'); 'Codigo de fabrica / Part Number: 123' -> ('codigo', '123')."""
+    k = gi.strip_accents(t).lower()
+    if ":" in k:
+        rot, _, val = k.partition(":")
+        raiz = (re.findall(r"[a-z]+", rot) or [""])[0]
+        return raiz, re.sub(r"[^a-z0-9]+", "", val)
+    return "", re.sub(r"[^a-z0-9]+", "", k)
+
+
+def _sem_repetidos(blocos):
+    """O modelo de anuncio repete o mesmo dado em 2 secoes ("Material: Plastico" na identificacao e
+    nas especificacoes; o paragrafo da condicao da peca duas vezes). Fica so a 1a vez."""
+    vistos_itens, paragrafos, saida = [], [], []
+    for tag, ts in blocos:
+        if tag == "h3":
+            saida.append([tag, ts])
+            continue
         if tag == "p":
-            html.append("<p>" + texto(" ".join(ts)) + "</p>")
-        else:
-            html.append(f"<{tag}>" + "".join("<li>" + texto(t) + "</li>" for t in ts) + f"</{tag}>")
-    return html
+            ws = _palavras_conteudo(ts[0])
+            if len(ws) >= 6 and any(len(ws & o) >= 0.6 * min(len(ws), len(o)) for o in paragrafos if len(o) >= 6):
+                continue
+            paragrafos.append(ws)
+            saida.append([tag, ts])
+            continue
+        novos = []
+        for t in ts:
+            raiz, val = _chave_item(t)
+            # mesmo rotulo e o mesmo valor (ou um valor que so encurta o de antes: "Em excelente estado")
+            if val and any(r == raiz and (v == val or (raiz and v.startswith(val))) for r, v in vistos_itens):
+                continue
+            vistos_itens.append((raiz, val))
+            novos.append(t)
+        if novos:
+            saida.append([tag, novos])
+    return saida
 
 
-def descricao(texto):
+def descricao(texto, nome=""):
     """Descricao do ML em HTML limpo: so secoes sobre a peca, titulos com acento,
-    sem promessas nao confirmadas, sem CAIXA ALTA e com as listas em lista."""
+    sem promessas nao confirmadas, sem CAIXA ALTA, com as listas em lista, sem o
+    dado repetido e sem a medida-padrao do modelo de anuncio.
+    nome = o nome limpo da peca: o item "Peça: Maçaneta Interna Esq" vira "Peça: Maçaneta interna esquerda"."""
     from html import escape
     blocos, par = [], []
     manter = True          # texto antes do 1o titulo: so se nao tiver promessa
+    linhas = (texto or "").splitlines()
+    if _dimensoes(texto) in _DIM_PADRAO:            # medida do modelo, nao da peca
+        linhas = [x for x in linhas if not (_DIM_LINHA.match(x.strip()) or _PESO_LINHA.match(x.strip()))]
 
     def fechar():
         if par and manter:
             blocos.extend(_blocos_texto(par))
         par.clear()
 
-    for linha in (texto or "").splitlines():
+    for linha in linhas:
         linha = linha.strip()
         if not linha or re.fullmatch(r"[=\-_* ]{4,}", linha):
             fechar()
+            continue
+        if _MANCHETE.search(linha):                 # o titulo do anuncio de novo
             continue
         letras = [c for c in linha if c.isalpha()]
         nucleo = re.sub(r"^[=\-_*#\s]+|[=\-_*#\s]+$", "", linha)      # "===== VEICULOS ... =====" e titulo
@@ -469,17 +570,29 @@ def descricao(texto):
                 t = acentuar(chave)
                 t = t[:1].upper() + t[1:]
                 t = re.sub(r"\s*\(leia com aten[cç][aã]o\)", "", t, flags=re.I)
-                blocos.append("<h3>" + escape(t) + "</h3>")
+                blocos.append(["h3", [t]])
         else:
             par.append(linha)
     fechar()
+    blocos = _sem_repetidos(blocos)
+    if nome:   # "Peça: Maçaneta Interna Esq" (o titulo abreviado de novo) -> o nome limpo, se for a mesma peca
+        primeira = _sem(nome.split()[0]) if nome.split() else ""
+        for tag, ts in blocos:
+            if tag in ("ul", "ol"):
+                for i, t in enumerate(ts):
+                    m = re.match(r"Peça:\s*(\S+)", t)
+                    if m and _sem(m.group(1)) == primeira:
+                        ts[i] = "Peça: " + nome
     # titulo sem paragrafo embaixo some
-    limpo = []
-    for i, bl in enumerate(blocos):
-        if bl.startswith("<h3>") and (i + 1 == len(blocos) or blocos[i + 1].startswith("<h3>")):
+    html = []
+    for i, (tag, ts) in enumerate(blocos):
+        if tag == "h3" and (i + 1 == len(blocos) or blocos[i + 1][0] == "h3"):
             continue
-        limpo.append(bl)
-    return "\n".join(limpo)
+        if tag in ("h3", "p"):
+            html.append(f"<{tag}>" + escape(ts[0]) + f"</{tag}>")
+        else:
+            html.append(f"<{tag}>" + "".join("<li>" + escape(t) + "</li>" for t in ts) + f"</{tag}>")
+    return "\n".join(html)
 
 
 # --------------------------------------------------------------------------
@@ -769,9 +882,10 @@ def expandir_nome(palavras_cruas, tirar_carro=True):
     return limpo
 
 
-def nome_limpo(titulo, marca, modelo):
+def nome_limpo(titulo, marca, modelo, outros=()):
     """'Lanterna Esquerda Tampa Traseira Volvo Xc 60 18/24 A045591'
-    -> 'Lanterna esquerda tampa traseira'. Carro, ano e codigo aparecem a parte."""
+    -> 'Lanterna esquerda tampa traseira'. Carro, ano e codigo aparecem a parte.
+    outros = os outros carros em que a peca serve ("ms"): saem do nome como o modelo."""
     t = CODIGO_SEPARADO.sub(lambda m: m.group(1) + m.group(2), titulo)   # "Xc 60" -> "Xc60"
     t = gi.ANOS_RE.sub(" ", t)
     t = re.sub(r"\b(19|20)\d{2}\s*(a|até|ate|/|-)\s*(19|20)\d{2}\b", " ", t, flags=re.I)
@@ -780,9 +894,10 @@ def nome_limpo(titulo, marca, modelo):
     t = re.sub(r"\b(19|20)\d{2}\b", " ", t)
     for m in list(_ALIAS_RE.finditer(gi.strip_accents(t).lower()))[::-1]:
         t = t[:m.start()] + " " + t[m.end():]
-    chaves_modelo = {gi.chave_modelo(w) for w in (modelo or "").split()}
-    if modelo:
-        chaves_modelo.add(gi.chave_modelo(modelo))
+    chaves_modelo = set()
+    for mod in [modelo, *outros]:
+        if mod:
+            chaves_modelo |= {gi.chave_modelo(w) for w in mod.split()} | {gi.chave_modelo(mod)}
     saida = []
     for w in t.split():
         k = gi.chave_modelo(w)
@@ -805,16 +920,87 @@ def nome_limpo(titulo, marca, modelo):
         saida.append(w)
     # por extenso, com acento e concordancia; sem o "carro" que sobrar no fim
     # ("Sirene Alarme Jetta Golf Passat", "Motor Vidro Eletrico Voyage Saveiro G5 G6")
+    palavras_nome = _sem_trecho_repetido(_sem_lado_repetido(expandir_nome(saida, tirar_carro=bool(modelo))))
     frase = []
-    for i, w in enumerate(expandir_nome(saida, tirar_carro=bool(modelo))):
+    for i, w in enumerate(palavras_nome):
+        nucleo = w.strip("()")
         if w in SIGLAS:
             frase.append(w.upper())
+        elif CODIGO_NO_NOME.fullmatch(nucleo):             # codigo de motor/chassi: "m270" -> "M270"
+            frase.append(w.replace(nucleo, nucleo.upper()))
         elif i == 0:
             frase.append(w[:1].upper() + w[1:])
+        elif not modelo and _carro_no_nome(nucleo):        # sem modelo no cartao, o carro do nome e a pista
+            frase.append(w.replace(nucleo, _NOMES_PROPRIOS[gi.chave_modelo(nucleo)]))
         else:
             frase.append(w)
-    nome = " ".join(frase).strip(" -/")
+    nome = _brake_light(" ".join(frase).strip(" -/"))
     return nome if len(nome) >= 4 or nome.lower() in SIGLAS else titulo
+
+
+# Codigo de motor, chassi ou versao escrito no nome ("m270", "w246", "p250", "yd25", "g6da"): em MAIUSCULA.
+CODIGO_NO_NOME = re.compile(r"[a-z]{1,3}\d{1,4}[a-z]{0,2}")
+# Palavras do lado: "esquerdo/motorista", "(motorista)", "passageiro" repetem o lado que o nome ja diz.
+_LADO_DE = {"esquerdo": "e", "esquerda": "e", "motorista": "e", "direito": "d", "direita": "d", "passageiro": "d"}
+
+
+def _lado(w):
+    """'e'/'d' quando a palavra so diz o lado ("esquerda", "direito/passageiro", "(motorista)"), senao None."""
+    partes = [x for x in _sem(w).strip("()").split("/") if x]
+    lados = {_LADO_DE.get(x) for x in partes}
+    return lados.pop() if partes and len(lados) == 1 and None not in lados else None
+
+
+def _sem_lado_repetido(ws):
+    """'Lanterna traseira esquerda esquerdo/motorista' -> 'Lanterna traseira esquerda';
+    'Maçaneta interna esquerda cromada lado esquerdo (motorista)' -> 'Maçaneta interna esquerda cromada'.
+    O lado so sai quando repete o que o nome ja disse (lado diferente fica: e outra informacao)."""
+    saida, ja, onde = [], None, -1        # ja = lado dito; onde = posicao (em saida) de quem disse
+    for i, w in enumerate(ws):
+        lado = _lado(w)
+        if lado and ja == lado:
+            explicito = _sem(w).strip("()") in ("esquerdo", "esquerda", "direito", "direita")
+            if explicito and _sem(saida[onde]).strip("()") in ("motorista", "passageiro"):
+                saida[onde] = w                          # "Quebra-sol motorista esquerdo" -> "Quebra-sol esquerdo"
+            elif saida and _sem(saida[-1]) == "lado":
+                saida.pop()                              # "lado esquerdo" repetido sai inteiro
+            continue
+        if _sem(w) == "lado" and ja and i + 1 < len(ws) and _lado(ws[i + 1]) == ja:
+            continue
+        if lado and not ja:
+            ja, onde = lado, len(saida)
+        saida.append(w)
+    return saida
+
+
+def _sem_trecho_repetido(ws):
+    """'Moldura painel instrumentos moldura painel instrumentos' -> 'Moldura painel instrumentos'."""
+    ws = list(ws)
+    for n in range(len(ws) // 2, 1, -1):
+        i = 0
+        while i + 2 * n <= len(ws):
+            if [_sem(x) for x in ws[i:i + n]] == [_sem(x) for x in ws[i + n:i + 2 * n]]:
+                del ws[i + n:i + 2 * n]
+            else:
+                i += 1
+    return ws
+
+
+def _carro_no_nome(w):
+    """Nome de carro ou marca (a grafia conhecida), nunca palavra de peca ("polo" do polo da bateria
+    so vira "Polo" quando e o unico jeito de saber o carro: peca sem modelo no cartao)."""
+    k = gi.chave_modelo(w)
+    return (len(k) >= 3 and k in _NOMES_PROPRIOS and not _palavra_comum(k)
+            and k not in {"new", "grand", "gran", "classe", "serie", "range", "land"})
+
+
+def _brake_light(nome):
+    """'Break light luz freio' -> 'Brake light (luz de freio)'; 'Break light fuz freio' idem;
+    'Luz de freio break light' -> 'Luz de freio (brake light)'."""
+    nome = re.sub(r"\b([Bb])reak(?=[\s-]light)", r"\1rake", nome)
+    nome = re.sub(r"\bfuz(?= (de )?freio\b)", "luz", nome)
+    nome = re.sub(r"^(Brake light) luz (?:de )?freio\b", r"\1 (luz de freio)", nome)
+    return re.sub(r"^(Luz de freio) brake light\b", r"\1 (brake light)", nome)
 
 
 # --------------------------------------------------------------------------
@@ -1054,6 +1240,424 @@ def subtipo(cat, cid=""):
 
 
 # --------------------------------------------------------------------------
+# Tipo de peca com o NOME DA LOJA. O subtipo() acima ainda e a arvore do ML: nome de
+# catalogo ("Interruptores de Piscas-alertas", "Faróis Traseiros" para lanternas,
+# "Faróis de três Stop"), erro ("Suportes de Bateris"), grafia antiga ("Pára-Lamas",
+# "Solenóides") e o mesmo tipo com 2 nomes ("Catalisador" e "Catalisadores", "Quebra Sol"
+# e "Quebra Sóis"). Aqui vira o nome que o cliente procura, e os sinonimos viram UM so.
+# Lista auditavel: nome do ML (depois do subtipo) -> nome da loja. "Outros" = grupo do ML
+# que mistura de tudo (a pagina nao mostra cartao "Outros"; a peca continua na familia).
+# --------------------------------------------------------------------------
+TIPO_LOJA = {
+    # Peças de Interior
+    "Interruptores de Vidros": "Botões do Vidro Elétrico",
+    "Interruptores de Luzes": "Chaves de Seta e Luz",
+    "Interruptores de Para-brisas": "Chaves do Limpador",
+    "Interruptores de Piscas-alertas": "Botões do Pisca-alerta",
+    "Interruptores de Espelhos Laterais": "Botões do Retrovisor",
+    "Interruptores de Desembaçadores": "Botões do Desembaçador",
+    "Interruptores do volante": "Botões do Volante",
+    "Interruptores de Travas Centrais": "Outros Botões",
+    "Interruptores de Botão": "Outros Botões",
+    "Botões de Bloqueio Central": "Botões da Trava Elétrica",
+    "Botões Pulsadores": "Botões de Partida",
+    "Interruptores de Tetos Solares": "Botões do Teto Solar",
+    "Velocímetros e Conta-giros": "Painéis de Instrumentos",
+    "Medidores de Painel": "Painéis de Instrumentos",
+    "Cobre Painéis": "Acabamentos do Painel",
+    "Revestimentos do Painel": "Acabamentos do Painel",
+    "Painéis de Painel": "Acabamentos do Painel",
+    "Tampas de Painel": "Acabamentos do Painel",
+    "Painel e Instrumental": "Acabamentos do Painel",
+    "Revestimentos de console": "Acabamentos do Painel",
+    "Kits Interiores": "Acabamentos do Painel",
+    "Painéis Completos": "Outros",                       # o ML junta ali de moldura a amortecedor
+    "Colunas e Copos": "Acabamentos de Coluna",
+    "Pilares": "Acabamentos de Coluna",
+    "Painéis para Portas": "Forros",
+    "Maçanetas Interiores de Porta": "Maçanetas Internas",
+    "Puxadores de Porta": "Puxadores das Portas",
+    "Espelhos Retrovisores Internos": "Retrovisores Internos",
+    "Portaluvas Completos": "Porta-luvas",
+    "Tampas de Porta Luva": "Porta-luvas",
+    "Dobradiças de Porta-luva": "Porta-luvas",
+    "Trincos": "Porta-luvas",
+    "Tampas das Caixas de Fusíveis": "Tampas da Caixa de Fusíveis",
+    "Alavanca Freio de Mão": "Alavancas do Freio de Mão",
+    "Alavancas de Câmbio": "Alavancas e Manoplas de Câmbio",
+    "Manopla de Câmbio": "Alavancas e Manoplas de Câmbio",
+    "Coifas de Câmbio": "Alavancas e Manoplas de Câmbio",
+    "Acabamentos de Alavancas": "Alavancas e Manoplas de Câmbio",
+    "Quebra Sóis": "Quebra-sóis", "Quebra Sol": "Quebra-sóis",
+    "Isqueiros": "Tomadas USB e Acendedores", "Carregadores de Porta USB": "Tomadas USB e Acendedores",
+    "Bancos": "Peças de Banco", "Buchas para Trilhos": "Peças de Banco",
+    "Apoio de Cabeças": "Encostos de Cabeça",
+    "Miolos de Volante": "Volantes", "Travas de Volantes": "Volantes",
+    "Armazenamentos Central": "Consoles", "Suportes de Consolas": "Consoles",
+    "Bases de Console Central": "Consoles", "Suportes para Óculos de Sol": "Consoles",
+    "Abertura Tanque de Combustível": "Cabos e Alavancas de Abertura",
+    "Abertura Porta Malas": "Cabos e Alavancas de Abertura",
+    "Abertura Capô": "Cabos e Alavancas de Abertura",
+    "Maçanetas de Capô": "Cabos e Alavancas de Abertura",
+    "Alavancas e Manoplas": "Alças e Puxadores", "Alças": "Alças e Puxadores",
+    "Displays Multifuncionais": "Displays e Telas", "Câmera Veicular": "Câmeras",
+    "Tampões": "Tampões do Porta-malas",
+    "Descansos de Pé": "Pedais",
+    "Capas para Alto-falante": "Grades de Alto-falante",
+    "Protetores de Tapetes": "Tapetes e Protetores",
+    "Aquecedores": "Outros",
+    # Carroceria
+    "Maçanetas para Portas": "Maçanetas das Portas",
+    "Espelhos Retrovisores Laterais": "Retrovisores Externos",
+    "Espelhos Retrovisores e Lentes": "Retrovisores Externos",
+    "Capas para Espelhos Laterais": "Capas e Molduras do Retrovisor",
+    "Painéis de Soleira": "Soleiras",
+    "Dobradiças da Porta": "Dobradiças e Limitadores de Porta",
+    "Suportes para Portas": "Dobradiças e Limitadores de Porta",
+    "Suportes de Para-choques": "Guias e Suportes do Para-choque",
+    "Suportes de Para-lamas": "Suportes da Carroceria",
+    "Dobradiças de Capô": "Dobradiças do Capô",
+    "Grades de Para-choques": "Grades do Para-choque",
+    "Painéis Frontais": "Outros",                        # acabamento interno, painel lateral, tweeter...
+    "Dobradiças da Porta Mala": "Dobradiças da Tampa Traseira",
+    "Frisos para Portas": "Frisos das Portas",
+    "Frisos para Janelas": "Guias e Frisos dos Vidros",
+    "Frisos para Faróis": "Frisos dos Faróis",
+    "Tampas de Combustível": "Portinholas e Tampas do Tanque",
+    "Bóias de Combustível": "Boias de Combustível",
+    "Painéis laterais": "Outros", "Painéis Laterais": "Molduras Laterais",
+    "Lateral de carroceria": "Molduras Laterais",
+    "Almas de Para-choques": "Almas do Para-choque",
+    "Suportes de Estepe": "Suportes do Estepe",
+    "Malas e Tampas Traseiras": "Acabamentos da Tampa Traseira",
+    "Tampas de Malas": "Acabamentos da Tampa Traseira",
+    "Tampas de Porta Mala": "Acabamentos da Tampa Traseira",
+    "Tampas Traseiras de Caçamba": "Acabamentos da Tampa Traseira",
+    "Fechaduras de Portão Traseiro": "Acabamentos da Tampa Traseira",
+    "Motor Teto Solar": "Motores do Teto Solar",
+    "Alargadores de Para-lamas": "Molduras do Para-lama",
+    "Alargadores de Pára-Lamas": "Molduras do Para-lama",
+    "Quadros de Faróis Dianteiros": "Suportes do Farol",
+    "Pára-Lamas": "Para-lamas",
+    "Pára-choques Traseiros": "Para-choques", "Pára-choques Dianteiros": "Para-choques",
+    "Alerons Aerodinâmicos": "Aerofólios",
+    "Portas e Painéis": "Outros",
+    "Fechaduras de Porta-malas": "Fechaduras do Porta-malas",
+    "Fechaduras de Capô": "Fechaduras do Capô",
+    "Parabarros": "Para-barros", "Revestimentos Internos": "Para-barros",
+    "Grampos": "Grampos e Presilhas",
+    "Suportes Elevação do Capô": "Amortecedores da Tampa e do Capô",
+    "Painéis dos Para-brisas": "Grades do Para-brisa",
+    "Inserções para Para-choques": "Molduras do Para-choque",
+    # Climatização
+    "Motor de Calefação": "Atuadores e Motores do Ar", "Calefação": "Atuadores e Motores do Ar",
+    "Suportes de Ar Condicionado": "Suportes do Compressor",
+    "Interruptores de Ar Condicionado": "Resistências e Relés do Ar",
+    "Resistências de Motor": "Resistências e Relés do Ar",
+    "Painel Evaporador": "Evaporadores",
+    "Válvula de Expansão": "Válvulas de Expansão",
+    "Grades de Ventilação": "Difusores de Ar", "Difusores de Ar Condicionado": "Difusores de Ar",
+    "Radiador de Calefação": "Radiadores do Ar Quente",
+    "Botões de Climatização": "Comandos de Ar Condicionado",
+    "Válvula de Calefação": "Válvulas da Calefação",
+    # Arrefecimento
+    "Interruptores de Eletroventilador": "Relés da Ventoinha",
+    "Eletroventiladores Completos": "Eletroventiladores",
+    # Escapamentos
+    "Catalisador": "Catalisadores",
+    # Fechaduras e Chaves
+    "Fechaduras de Portas": "Fechaduras das Portas",
+    "Fechaduras para Porta-malas e Portões": "Fechaduras do Porta-malas",
+    "Fechaduras de Portão e Porta-malas": "Fechaduras do Porta-malas",
+    "Fechadura de Capôs": "Fechaduras do Capô",
+    "Cilindro de Ignição": "Cilindros e Comutadores de Ignição",
+    "Comutadores de Ignição": "Cilindros e Comutadores de Ignição",
+    "Interruptores de Energia": "Chaves do Carro",
+    # Filtros
+    "Caixa do Filtro de Ar": "Caixas do Filtro de Ar",
+    "Filtros de Óleo": "Suportes do Filtro de Óleo",
+    # Freios
+    "Servo Freio": "Hidrovácuos",
+    "Módulos de Controle do ABS": "Módulos ABS",
+    "Bomba Depressor": "Bombas de Vácuo",
+    "Cilindro de Freio": "Cilindros Mestres",
+    "Sensor ABS": "Sensores ABS",
+    "Pinças": "Pinças de Freio",
+    "Reservatório do Líquido": "Reservatórios de Fluido",
+    "Flexíveis": "Mangueiras e Flexíveis do Freio",
+    "Mangueiras e Linhas": "Mangueiras e Flexíveis do Freio",
+    "Tubos": "Mangueiras e Flexíveis do Freio",
+    "Sensores de Freio": "Sensores do Freio", "Sensores e Comutadores": "Sensores do Freio",
+    "Relés da Unidade de Controle": "Relés",
+    # Ignição
+    "Suportes de Alternador": "Suportes do Alternador",
+    "Bobina de Ignição": "Bobinas de Ignição",
+    "Módulo de Ignição": "Módulos de Ignição e Imobilizador",
+    "Motor de Arranque": "Motores de Arranque",
+    "Suportes de Bateris": "Caixas e Suportes da Bateria",
+    "Caixas de Bateria": "Caixas e Suportes da Bateria",
+    "Tampas de Bateria": "Caixas e Suportes da Bateria",
+    "Interruptores de Freio de Mão": "Outros Botões",
+    "Avanços a Vácuo": "Mangueiras e Linhas do Motor",
+    "Interruptores de Vácuo": "Sensores de Vácuo",
+    # Iluminação
+    "Faróis Traseiros": "Lanternas Traseiras", "Lanternas": "Lanternas Traseiras",
+    "Faróis Dianteiros": "Faróis",
+    "Refletores Olho de Gato": "Refletores",
+    "Faróis de três Stop": "Brake Light",
+    "Luzes de Teto": "Luzes Internas",
+    "Lanternas de Placas": "Luzes de Placa",
+    "Lâmpadas": "Reatores e Lâmpadas",
+    # Injeção
+    "Corpo de Borboleta": "Corpos de Borboleta", "Kits de Engrenagens Borboleta": "Corpos de Borboleta",
+    "Módulo de Injeção": "Módulos de Injeção",
+    "Válvulas Canister": "Válvulas e Filtros Canister", "Vapor de Gasolina": "Válvulas e Filtros Canister",
+    "Flauta do Bico Injetor": "Flautas de Combustível",
+    "Sensor MAP": "Sensores MAP", "Sensor MAF": "Sensores MAF",
+    "Sensor de Posição": "Sensores de Posição", "Sensor de Detonação": "Sensores de Detonação",
+    "Sensor de Velocidade": "Sensores de Velocidade", "Sensor de Rotação": "Sensores de Rotação",
+    "Sensores": "Outros Sensores",
+    "Sonda Lambda": "Sondas Lambda",
+    "Injetores": "Bicos Injetores",
+    "Canos de Injetores": "Canos dos Injetores",
+    "Regulador de Pressão": "Reguladores de Pressão",
+    "Válvula EGR": "Válvulas EGR",
+    # Janelas e Vedações
+    "Borracha": "Guias e Canaletas do Vidro",
+    "Molduras de Janela": "Molduras das Janelas",
+    "Vidros Traseiros": "Máquinas e Motores de Vidro Elétrico",   # as 2 do ML sao motores de vidro
+    "Máquinas de Vidro": "Peças da Máquina de Vidro",              # "Sistemas de Elevação > Outros": suporte
+    # Motor
+    "Coxins de Motor": "Coxins do Motor", "Suportes de Montagem de Motor": "Coxins do Motor",
+    "Mangueira Radiador": "Mangueiras de Arrefecimento",          # o mesmo que "Mangueiras de Arrefecimento"
+    "Mangueira Intercooler": "Mangueiras do Turbo e Intercooler",
+    "Mangueiras de Turbo": "Mangueiras do Turbo e Intercooler",
+    "Tampas Protetoras de Motor": "Capas e Protetores do Motor",
+    "Protetores Laterais de Motor": "Capas e Protetores do Motor",
+    "Protetor de Cárter": "Capas e Protetores do Motor",
+    "Outras Bombas": "Bombas de Combustível",
+    "Bombas Injetoras": "Bombas de Alta Pressão",
+    "Tampas do Motor": "Tampas de Válvulas",
+    "Tampa de Óleo": "Tampas de Óleo", "Tampa de Enchimento de Óleo": "Tampas de Óleo",
+    "Mangueiras": "Mangueiras e Linhas do Motor", "Linhas do Motor": "Mangueiras e Linhas do Motor",
+    "Mangueira, Linha e Tubulações": "Mangueiras e Linhas do Motor",
+    "Mangueiras de Combustível": "Mangueiras e Linhas do Motor",
+    "Mangueiras do Resfriador": "Mangueiras e Linhas do Motor",
+    "Polias para Bombas de Água": "Bombas de Água", "Flanges para Bombas de Água": "Bombas de Água",
+    "Carcaças de Bombas de Água": "Bombas de Água", "Peças para Bombas": "Bombas de Água",
+    "Tensores Poly V": "Tensores de Correia", "Polias de Tensores": "Tensores de Correia",
+    "Tensor do Distribuidor": "Tensores de Corrente",
+    "Válvulas Solenóides": "Válvulas Solenoides",
+    "Reservatório": "Reservatórios de Água", "Radiadores": "Reservatórios de Água",
+    "Tampa do Radiador": "Reservatórios de Água",
+    "Cárters Completos": "Cárteres",
+    "Motor completo": "Motores",
+    "Parafusos do Cilindro": "Parafusos do Cabeçote",
+    "Sensor de Temperatura": "Sensores de Temperatura", "Sensor de Temperatura de Ar": "Sensores de Temperatura",
+    "Sensor de Óleo": "Sensores de Pressão do Óleo",
+    "Coletor de Escapamento": "Coletores de Escapamento",
+    "Tampas de Correntes": "Tampas da Distribuição",
+    "Corrente de Distribuição": "Peças da Distribuição", "Distribuição": "Peças da Distribuição",
+    "Engrenagem Árvore de Comando": "Peças da Distribuição",
+    "Montagens do Radiador": "Suportes do Radiador",
+    "Carcaças de Termostato": "Válvulas Termostáticas", "Elementos do Termostato": "Válvulas Termostáticas",
+    "Virabrequim": "Virabrequins", "Polia de Virabrequim": "Virabrequins",
+    "Kits de Pistões": "Pistões", "Bloco Completo": "Blocos do Motor",
+    "Árvores Comandos de Válvulas": "Comandos de Válvulas",
+    "Radiadores de Água": "Radiadores", "Radiadores Intercooler": "Intercoolers",
+    "Carcaças de Ventilador": "Motores de Ventilador",
+    "Cabo Acelerador": "Cabos do Acelerador", "Cabo Afogador": "Outros", "Outros Componentes": "Outros",
+    # Peças de Exterior
+    "Motor Limpador Para-brisas": "Motores do Limpador", "Elos e Transmissões": "Motores do Limpador",
+    "Amortecedores a Gás": "Amortecedores da Tampa e do Capô",
+    "Borrachas": "Borrachas de Vedação",
+    "Braços de Limpa Para-brisas": "Braços do Limpador", "Braços Limpavidros Traseiros": "Braços do Limpador",
+    "Molduras e Acabamentos": "Molduras Externas",
+    "Reservatório de Para-brisas": "Reservatórios do Lavador",
+    "Bombas de Lavagem": "Bombas do Lavador",
+    "Limpadores e Lavadores": "Sensores de Chuva",
+    "Antenas de Conectividade": "Antenas",
+    "Espelhos Padrão": "Retrovisores Externos",
+    "Molduras de Retrovisores": "Capas e Molduras do Retrovisor",
+    "Forros de Capô": "Isolamentos do Capô",
+    "Suportes para Placas": "Suportes da Placa",
+    "Ganchos para Reboque": "Ganchos de Reboque",
+    "Molduras de Para-choques": "Molduras do Para-choque",
+    "Estribos e Soleiras": "Soleiras",
+    # Segurança
+    "Air Bags": "Airbags, Módulos e Sensores", "Módulo Air Bag": "Airbags, Módulos e Sensores",
+    "Alarmes para Automotores": "Alarmes e Sirenes", "Sirenes": "Alarmes e Sirenes",
+    "Kits de Alarme": "Alarmes e Sirenes", "Sirenes de Alarme": "Alarmes e Sirenes",
+    "Controles de Alarme": "Módulos Eletrônicos",           # o unico do ML e um modulo de controle do farol
+    "Kit de Segurança para Carros": "Macacos e Chaves de Roda",
+    "Trincos para Portas e Janelas": "Outros",
+    # Sistema Elétrico
+    "Módulos de Fusíveis": "Caixas de Fusíveis", "Modulos de Fusiveis": "Caixas de Fusíveis",
+    "Porta-Fusíveis": "Caixas de Fusíveis",
+    "Módulos Controle das Portas": "Módulos de Conforto (BCM)",
+    "Instalações Elétricas": "Chicotes Elétricos", "Arneses de Fiação": "Chicotes Elétricos",
+    "Chicote da Carroceria": "Chicotes Elétricos", "Extensão de Chicote": "Chicotes Elétricos",
+    "Kits de Chicotes de Fiação": "Outros",               # amplificador e radio no ML
+    "Unidades de Controle": "Módulos Eletrônicos", "Módulos Central Temporização": "Módulos Eletrônicos",
+    "Módulo de Controle do PCM": "Módulos Eletrônicos", "Módulos de Injetores": "Módulos Eletrônicos",
+    "Controladores Motor AC": "Módulos Eletrônicos",
+    "Módulos Controle Transmissão": "Módulos Eletrônicos", "Módulos Controle da Caixa": "Módulos Eletrônicos",
+    "Inversores de Potência": "Conversores e Módulos de Bateria",
+    "Conversores de Tensão": "Conversores e Módulos de Bateria",
+    "Módulo Potência de Bateria": "Conversores e Módulos de Bateria",
+    "Cabos Negativo de Baterias": "Cabos e Terminais de Bateria",
+    "Cabo Positivo de Bateria": "Cabos e Terminais de Bateria",
+    "Sensores de Nível": "Outros Sensores",
+    # Som e Multimídia
+    "Estéreos com Tela": "Centrais Multimídia", "Telas Multimídia": "Centrais Multimídia",
+    "Estéreos sem Tela": "Rádios",
+    "Grades para Caixas de Som": "Grades de Alto-falante",
+    "Molduras para Estéreos": "Molduras da Multimídia",
+    "Módulos Amplificadores": "Amplificadores",
+    "Alto-Falantes": "Alto-falantes",
+    "Gavetas de Fixação": "Suportes da Multimídia",
+    # Suspensão e Direção
+    "Braços Oscilantes": "Braços da Suspensão", "Braços De Suspensão": "Braços da Suspensão",
+    "Ligações Laterais": "Braços da Suspensão",
+    "Bandejas de Suspensão": "Bandejas da Suspensão",
+    "Rodas de Carros e Caminhonetes": "Rodas",
+    "Suportes de Bombas": "Bombas de Direção e Suportes", "Bombas Eletrohidráulicas": "Bombas de Direção e Suportes",
+    "Bomba Hidráulica": "Bombas de Direção e Suportes",
+    "Cruzeta Coluna de Direção": "Colunas de Direção",
+    "Semi Eixo": "Semieixos",
+    "Feixes de Mola": "Molas", "Suportes de Molas": "Molas",
+    "Coxim Amortecedor": "Coxins do Amortecedor",
+    "Bieletas": "Bieletas e Barras Estabilizadoras", "Barras Estabilizadoras": "Bieletas e Barras Estabilizadoras",
+    "Sensores de Altura": "Suspensão a Ar e Nivelamento", "Peças Nivelamento Automático": "Suspensão a Ar e Nivelamento",
+    "Suspensão a Ar": "Suspensão a Ar e Nivelamento",
+    "Mangueira Direção Hidráulica": "Mangueiras da Direção",
+    "Pinças de Freios": "Outros",
+    "Quadros de Suspensão": "Quadros da Suspensão",
+    "Terminal Ponteira de Direção": "Terminais de Direção",
+    "Caixa de Direção": "Caixas de Direção", "Cubo de Roda": "Cubos de Roda",
+    "Interruptores de Direção": "Sensores da Direção",
+    # Transmissão
+    "Coxim do Câmbio": "Coxins do Câmbio",
+    "Seletora do Trambulador": "Trambuladores e Seletores", "Seletoras": "Trambuladores e Seletores",
+    "Cabo Seletor de Marcha": "Trambuladores e Seletores",
+    "Caixa de Câmbio": "Câmbios e Peças Internas", "Câmbios": "Câmbios e Peças Internas",
+    "Engrenagem de Marcha": "Câmbios e Peças Internas",
+    "Módulo de Troca de Marchas": "Módulos do Câmbio e da Tração",
+    "Módulo Controle Transmissão": "Módulos do Câmbio e da Tração",
+    "Semi Eixos": "Semieixos e Suportes", "Rolamentos": "Semieixos e Suportes",
+    "Suportes da Transmissão": "Semieixos e Suportes",
+    "Caixa de Transferência": "Caixas de Transferência",
+    "Chicotes de Fios": "Outros", "Cardan": "Cardans",
+}
+# Palavra que fica minuscula no meio do nome do tipo ("Botões do Vidro Elétrico").
+_TIPO_MINUSC = {"de", "do", "da", "dos", "das", "e", "com", "sem", "para", "em", "no", "na", "nos", "nas", "ou", "a", "o"}
+
+
+def _titulo_tipo(s):
+    """'Painéis laterais' -> 'Painéis Laterais'; 'Braços De Suspensão' -> 'Braços de Suspensão'.
+    Sigla fica (ABS, MAP); o resto da palavra nao muda ("Alto-falantes")."""
+    out = []
+    for i, w in enumerate(s.split()):
+        if i and w.lower() in _TIPO_MINUSC:
+            out.append(w.lower())
+        elif len(w) > 1 and w.isupper():
+            out.append(w)
+        else:
+            out.append(w[:1].upper() + w[1:])
+    return " ".join(out)
+
+
+# O mesmo nome do ML com sentido diferente conforme a familia ("Bolsas de Ar": airbag no interior,
+# bolsa da suspensao a ar na suspensao).
+TIPO_LOJA_FAMILIA = {
+    ("Suspensão e Direção", "Bolsas de Ar"): "Suspensão a Ar e Nivelamento",
+    ("Peças de Interior", "Bolsas de Ar"): "Airbags, Módulos e Sensores",
+    ("Peças de Interior", "Terminais de Cabos"): "Cabos e Terminais de Bateria",
+}
+# Tipo que o ML espalha em 2 familias: fica numa so (a do mesmo tipo com mais pecas).
+TIPO_FAMILIA = {
+    "Airbags, Módulos e Sensores": "Segurança", "Cintos de Segurança": "Segurança",
+    "Alarmes e Sirenes": "Segurança", "Dobradiças do Capô": "Carroceria", "Sensores do Freio": "Freios",
+    "Sensores de Estacionamento": "Sistema Elétrico", "Câmeras de Ré": "Sistema Elétrico",
+    "Cabos e Terminais de Bateria": "Sistema Elétrico",
+}
+
+
+def tipo_loja(s, familia=""):
+    """Nome do tipo (do subtipo() do ML) -> nome da loja, com os sinonimos juntos."""
+    if not s:
+        return s
+    return TIPO_LOJA_FAMILIA.get((familia, s)) or TIPO_LOJA.get(s) or _titulo_tipo(s)
+
+
+# Peca na familia (ou no tipo) errada: o vendedor escolheu a categoria do ML errada
+# ("Chave roda" em Fechaduras, "Módulo câmbio" em Ignição, "Motor vidro" em Motor, "Botão
+# vidro" em Ignição). O NOME da peca manda mais que a categoria. Lista curta e auditavel:
+# (regex no nome sem acento, familias de onde tira (None = todas), familia nova, tipo novo).
+# Familia nova None = fica na mesma. A 1a regra que casa vale.
+REGRAS_NOME = [
+    # macaco e chave de roda: o kit do carro, junto do "Kit macaco chave roda triângulo" que o ML ja poe em Segurança
+    (r"^(kit macaco|chave (de )?roda|isopor estepe|macaco)\b", None, "Segurança", "Macacos e Chaves de Roda"),
+    (r"^(motor|maquina) (de )?vidro\b(?!.*\bmanual)", {"Motor"}, "Janelas e Vedações",
+     "Máquinas e Motores de Vidro Elétrico"),
+    (r"^modulo (do )?(cambio|tracao)\b", None, "Transmissão", "Módulos do Câmbio e da Tração"),
+    (r"\bconversor (de )?torque\b", None, "Transmissão", "Câmbios e Peças Internas"),
+    (r"^botao (do )?freio (de )?(mao|estacionamento)\b", {"Ignição"}, "Freios", "Botões do Freio de Mão"),
+    (r"^sensor (do )?hidrovacuo\b", {"Ignição", "Injeção"}, "Freios", "Sensores do Freio"),
+    (r"\b(hidrovacuo|vacuo (do )?freio)\b", {"Ignição"}, "Freios", "Mangueiras e Flexíveis do Freio"),
+    (r"^mangueira\b", {"Ignição"}, "Motor", "Mangueiras e Linhas do Motor"),
+    (r"^(botao|botoes|botoneira|comando|interruptor)( interruptor)? (do )?vidro", {"Ignição"},
+     "Peças de Interior", "Botões do Vidro Elétrico"),
+    (r"^botao (start|partida|ignicao)|\bstart stop\b", {"Ignição", "Peças de Interior"}, "Ignição", "Botões de Partida"),
+    (r"^botao\b", {"Ignição"}, "Peças de Interior", "Outros Botões"),
+    (r"^modulo (de )?injecao\b", {"Sistema Elétrico"}, "Injeção", "Módulos de Injeção"),
+    (r"^modulo (conforto|bcm|bsi)\b", {"Sistema Elétrico", "Ignição", "Injeção"}, "Sistema Elétrico",
+     "Módulos de Conforto (BCM)"),
+    (r"^painel (de )?instrumentos?\b", {"Peças de Interior"}, None, "Painéis de Instrumentos"),
+    (r"^luz\b", {"Peças de Interior"}, None, "Luzes Internas"),
+]
+_REGRAS_NOME = [(re.compile(rx), origem, fam, tipo) for rx, origem, fam, tipo in REGRAS_NOME]
+# Grupo do ML que mistura de tudo ("Painéis Completos" -> "Outros"): o que o nome diz com certeza
+# ganha o tipo certo; o resto fica "Outros" (sem cartao proprio na pagina da categoria).
+OUTROS_POR_NOME = {
+    "Peças de Interior": [(r"^(moldura|acabamento|tampa|capa)\b.*\bpainel\b", "Acabamentos do Painel"),
+                          (r"^(moldura|acabamento)\b.*\bcoluna\b", "Acabamentos de Coluna")],
+}
+_OUTROS_POR_NOME = {f: [(re.compile(rx), t) for rx, t in rs] for f, rs in OUTROS_POR_NOME.items()}
+# Os botoes que o ML mistura num grupo so ("Botões de Bloqueio Central" com botao de ESP, de
+# alarme, de banco): ai o nome tambem escolhe o tipo, dentro de Peças de Interior.
+TIPOS_BOTAO = {"Botões da Trava Elétrica", "Outros Botões", "Botões do Teto Solar", "Botões de Partida"}
+BOTAO_POR_NOME = [
+    (r"\bvidro", "Botões do Vidro Elétrico"), (r"\bpisca|\balerta\b", "Botões do Pisca-alerta"),
+    (r"\b(retrovisor|espelho)", "Botões do Retrovisor"), (r"\bdesembacador", "Botões do Desembaçador"),
+    (r"\btrava\b(?!.*\bbanco\b)", "Botões da Trava Elétrica"), (r"\bteto solar\b", "Botões do Teto Solar"),
+    (r"\b(start|partida)\b", "Botões de Partida"),
+]
+_BOTAO_POR_NOME = [(re.compile(rx), tipo) for rx, tipo in BOTAO_POR_NOME]
+
+
+def classificar(nome, familia, tipo):
+    """(familia, tipo) da peca: o da categoria do ML, corrigido pelo NOME quando o vendedor
+    escolheu a categoria errada (REGRAS_NOME) ou quando o grupo do ML mistura botoes."""
+    k = gi.strip_accents(nome or "").lower()
+    for rx, origem, fam_nova, tipo_novo in _REGRAS_NOME:
+        if (origem is None or familia in origem) and rx.search(k):
+            return fam_nova or familia, tipo_novo
+    if tipo in TIPO_FAMILIA:
+        return TIPO_FAMILIA[tipo], tipo
+    if familia == "Peças de Interior" and tipo in TIPOS_BOTAO:
+        for rx, tipo_novo in _BOTAO_POR_NOME:
+            if rx.search(k):
+                return familia, tipo_novo
+        return familia, "Outros Botões" if tipo == "Botões da Trava Elétrica" else tipo
+    if tipo == "Outros":
+        for rx, tipo_novo in _OUTROS_POR_NOME.get(familia, []):
+            if rx.search(k):
+                return familia, tipo_novo
+    return familia, tipo
+
+
+# --------------------------------------------------------------------------
 # Foto do ML: guardamos so a chave ("957636-MLB110353255009_042026"); o site
 # monta o tamanho certo (-V 320px no card, -O 500px, -F cheia na ficha).
 # --------------------------------------------------------------------------
@@ -1081,7 +1685,7 @@ _COD_MEDIDA = re.compile(r"^\dx\d{3,4}$|^\d{1,4}(?:mm|cm|cv|hp|w|cc|kg|pol)$"
                          r"|^t?(?:1[3-9]|2\d|3[0-3])5[2-9][05][rd](?:1[3-9]|2[0-2])$")
 # nome de carro: xDrive30e, GLA200, CLA250
 _COD_CARRO = re.compile(r"^(?:[xs]?drive\d+[a-z]?|(?:gla|cla|glc|gle|gls|glk|ml|slk|clk|sl|cl|[abces])\d{3}[a-z]?)$")
-_COD_ENCHIMENTO = re.compile(r"^(\d{1,3})\1+$")                        # "010101", "123123", "777777"
+_COD_ENCHIMENTO = re.compile(r"^(\d{1,3})\1+\d?$")                  # "010101", "123123", "777777", "101010101"
 
 
 def _cod_chave(t):
@@ -1696,6 +2300,64 @@ def ler_reputacao(caminho=None):
     return rep
 
 
+# --------------------------------------------------------------------------
+# Peca que serve em mais de um carro. O titulo do ML lista os carros em sequencia
+# ("Conversor Tensao Volvo S60 Xc60 T8", "Modulo Conforto Fiat Palio Siena Strada"):
+# antes so o 1o contava, e o dono do XC60 nao via a peca na pagina do carro dele.
+# --------------------------------------------------------------------------
+def modelos_do_titulo(marca, ws, principal, validos):
+    """[principal, outros carros da MESMA marca escritos no trecho do carro do titulo].
+    ws = palavras() do titulo; validos = {(marca, chave): nome} dos modelos de 2+ pecas.
+    Nome composto vale inteiro ("C4 Cactus", "New Fiesta" nao viram "C4"/"Fiesta" de novo);
+    versao, motor e geracao ("T8", "G6", "E60") nao sao outro carro."""
+    lista = [principal] if principal else []
+    i = 0
+    while i < len(ws):
+        achou = None
+        for n in (2, 1):
+            if i + n > len(ws):
+                continue
+            nome = modelo_canonico(marca, " ".join(ws[i:i + n]))
+            alvo = validos.get((marca, gi.chave_modelo(nome))) if nome else None
+            if alvo:
+                achou = (alvo, n)
+                break
+        if achou:
+            if achou[0] not in lista:
+                lista.append(achou[0])
+            i += achou[1]
+        else:
+            i += 1
+    return lista
+
+
+def anos_por_modelo(ms, marca, a0, a1):
+    """(carros, anos de cada um) da peca de 2+ carros. A faixa do titulo vale para todos, cortada no
+    periodo de venda de cada carro ("Fit Wr-v 15/21": WR-V so a partir de 2017). Carro cuja faixa fica
+    toda fora do periodo dele sai (leitura impossivel). anos = None quando todos ficam com a mesma faixa."""
+    if len(ms) < 2 or not a0:
+        return ms, None
+    carros, anos = [ms[0]], [[a0, a1]]
+    for mod in ms[1:]:
+        r0, r1 = limitar_anos(a0, a1, marca, mod)
+        if r0:
+            carros.append(mod)
+            anos.append([r0, r1])
+    return carros, (anos if any(a != [a0, a1] for a in anos) and len(carros) > 1 else None)
+
+
+def modelos_de(x):
+    """Carros em que a peca serve: o "ms" (2+ carros) ou so o "m"."""
+    return x.get("ms") or ([x["m"]] if x.get("m") else [])
+
+
+def anos_no_modelo(x, mod):
+    """Faixa de anos da peca no carro "mod" (a do "ys" quando a peca serve em 2+ carros)."""
+    if x.get("ys") and mod in x.get("ms", []):
+        return x["ys"][x["ms"].index(mod)]
+    return x["y"]
+
+
 def main():
     t0 = time.time()
     print("=" * 52)
@@ -1801,8 +2463,12 @@ def main():
     display = {k: v.most_common(1)[0][0] for k, v in grafias.items()}
     # grafia dos carros do estoque (2+ pecas) para a descricao e a ficha ("GOLF" -> "Golf")
     _aprender_nomes([display[k] for k, v in grafias.items() if sum(v.values()) >= 2], modelos=True)
+    # carros que valem como modelo: os de 2+ pecas (leitura de uma peca so e quase sempre errada)
+    validos = {k: display[k] for k, v in grafias.items() if sum(v.values()) >= 2}
 
     # 3) Uma entrada por peca.
+    _DIM_PADRAO.clear()
+    _DIM_PADRAO.update(dimensoes_padrao(p.get("desc") for p in prods))
     pecas = []
     for p, (mc, ws) in zip(prods, cru):
         nome = modelo_canonico(mc, resolver(mc, ws))
@@ -1813,16 +2479,20 @@ def main():
         if mod and (gi.chave_modelo(mod) == gi.chave_modelo(mc)
                     or gi.chave_modelo(mod) in {gi.chave_modelo(a) for a in MARCAS.get(mc, [])}):
             mod = ""
+        # Peca que serve em mais de um carro ("Volvo S60 Xc60"): todos os carros da marca, o principal primeiro
+        ms_titulo = modelos_do_titulo(mc, ws, mod, validos) if mod else []
         a0, a1 = anos_do_titulo(p["title"], mc, mod, p.get("part_number"))
+        ms, ys = anos_por_modelo(ms_titulo, mc, a0, a1)
         cat = cats.get(p.get("category_id"))
-        fam = gi.familia(cat)
-        tipo = subtipo(cat, p.get("category_id") or "")
+        n = nome_limpo(p["title"], mc, mod, ms_titulo)
+        fam0 = gi.familia(cat)
+        fam, tipo = classificar(n, fam0, tipo_loja(subtipo(cat, p.get("category_id") or ""), fam0))
         fotos = list(dict.fromkeys(p.get("pics") or ([p["img"]] if p.get("img") else [])))[:12]
         pecas.append({
             "id": p["id"],
             "slug": slugify(p["title"]) + "-" + p["id"],
             "t": p["title"],
-            "n": nome_limpo(p["title"], mc, mod),
+            "n": n,
             "p": round(float(p["price"]), 2),
             "fotos": [chave_foto(u) for u in fotos],
             "ml": p.get("url", ""),
@@ -1835,8 +2505,12 @@ def main():
             "oem": " ".join(codigos_peca(p)),
             "o": codigos_busca(p),
             "ficha": ficha(p, mc, mod, [a0, a1] if a0 else None),
-            "desc": descricao(p.get("desc")),
+            "desc": descricao(p.get("desc"), n),
         })
+        if len(ms) > 1:   # so quando serve em 2+ carros (o 1o e sempre o "m")
+            pecas[-1]["ms"] = ms
+            if ys:        # anos de cada carro, so quando algum difere do "y" (o periodo de venda corta)
+                pecas[-1]["ys"] = ys
         q = estoque(p)
         if q:   # sem o dado do ML, a pagina nao diz nada sobre estoque
             pecas[-1]["q"] = q
@@ -1856,13 +2530,14 @@ def main():
     fam_cnt = Counter(x["c"] for x in pecas)
 
     # 5) Marcas e modelos, carros (paginas /carros/), vitrines.
+    #    A peca que serve em 2+ carros ("ms") conta em cada um deles (pagina do carro, Meu carro e filtro).
     por_marca = defaultdict(list)
     por_carro = defaultdict(list)
     for x in pecas:
         if x["b"]:
             por_marca[x["b"]].append(x)
-            if x["m"]:
-                por_carro[(x["b"], x["m"])].append(x)
+            for mod in modelos_de(x):
+                por_carro[(x["b"], mod)].append(x)
 
     MIN_CARRO = 8
     carros = []
@@ -1877,7 +2552,7 @@ def main():
             if len(cands) >= 10:
                 break
         boas = fotos_limpas.limpas(cands)[:4]
-        anos_l = [y for x in lst if x["y"] for y in x["y"]]
+        anos_l = [y for x in lst if anos_no_modelo(x, mod) for y in anos_no_modelo(x, mod)]
         fams = Counter(x["c"] for x in lst)
         carros.append({
             "k": chave_url(f"{mc} {mod}"),
@@ -1891,7 +2566,7 @@ def main():
 
     marcas = []
     for mc, lst in sorted(por_marca.items(), key=lambda kv: -len(kv[1])):
-        mods = Counter(x["m"] for x in lst if x["m"])
+        mods = Counter(mod for x in lst for mod in modelos_de(x))
         marcas.append({
             "n": mc, "k": chave_url(mc), "c": len(lst),
             "m": [{"n": n, "k": chave_url(n), "c": c}
@@ -1964,6 +2639,10 @@ def main():
         "c": [idx_fam.get(x["c"], -1) for x in pecas],
         "s": [idx_tipo.get(x["s"], -1) for x in pecas],
         "o": [x["o"] for x in pecas],
+        # peca que serve em 2+ carros: {indice: [carros]} (so essas; o 1o e o "m") e, quando a faixa
+        # muda de um carro para outro, {indice: [[ano0, ano1] de cada carro]}
+        "ms": {str(i): x["ms"] for i, x in enumerate(pecas) if x.get("ms")},
+        "ys": {str(i): x["ys"] for i, x in enumerate(pecas) if x.get("ys")},
     }
 
     SAIDA_DADOS.mkdir(parents=True, exist_ok=True)
@@ -1978,7 +2657,8 @@ def main():
     sem_marca = sum(1 for x in pecas if not x["b"])
     sem_modelo = sum(1 for x in pecas if not x["m"])
     kb = (SAIDA_PUBLICA / "busca.json").stat().st_size / 1024
-    print(f"pecas: {len(pecas)} | sem marca: {sem_marca} | sem modelo: {sem_modelo}")
+    print(f"pecas: {len(pecas)} | sem marca: {sem_marca} | sem modelo: {sem_modelo} | "
+          f"em 2+ carros: {sum(1 for x in pecas if x.get('ms'))}")
     print(f"marcas: {len(marcas)} | familias: {len(familias)} | paginas de carro: {len(carros)}")
     print(f"busca.json: {kb:.0f} KB (sem gzip) | {time.time() - t0:.1f}s")
 

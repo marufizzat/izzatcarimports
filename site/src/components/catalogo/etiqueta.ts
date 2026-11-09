@@ -1,5 +1,6 @@
 // Regras do cartão da peça, as MESMAS no build (CartaoPeca.astro) e no navegador (Catalogo.tsx).
 // Sem node:fs: este arquivo roda nos dois lados.
+import { atributosModelos } from '../../lib/meuCarro';
 
 /** INTERRUPTOR DA VITRINE (um só, vale para o site inteiro):
  *  true  = B "vitrine clara": o cartão da peça é sempre claro (tema de estúdio), também no modo escuro;
@@ -23,9 +24,9 @@ export function precoPartes(v: number): [string, string] {
   return [r, c];
 }
 
-/** Carro e anos da peça: { carro: "Volvo XC60", anos: "2018–2024" }. */
-export function linhaCarro(b?: string | null, m?: string | null, y?: [number, number] | null) {
-  const carro = [b, m].filter(Boolean).join(' ');
+/** Carro e anos da peça: { carro: "Volvo XC60", anos: "2018–2024" }. Peça de 2+ carros (ms): "Volvo S60 / XC60". */
+export function linhaCarro(b?: string | null, m?: string | null, y?: [number, number] | null, ms?: string[] | null) {
+  const carro = [b, ms && ms.length > 1 ? ms.join(' / ') : m].filter(Boolean).join(' ');
   const anos = y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}–${y[1]}`) : '';
   return { carro, anos };
 }
@@ -54,14 +55,17 @@ export function idsMaisNovos(ids: string[], n = QTD_CHEGOU): Set<string> {
   return new Set(ord.slice(-n));
 }
 
-/** Atributos que a equipe "Meu carro" lê no cartão (data-a0/data-a1 no script do build, data-y no catálogo). */
-export function dadosCarro(b?: string | null, m?: string | null, y?: [number, number] | null) {
+/** Atributos que a equipe "Meu carro" lê no cartão (data-a0/data-a1 no script do build, data-y no catálogo).
+ *  Peça de 2+ carros: data-ms="S60|XC60" e, quando a faixa muda de um carro para outro, data-ys. */
+export function dadosCarro(b?: string | null, m?: string | null, y?: [number, number] | null,
+                           ms?: string[] | null, ys?: ([number, number] | null)[] | null) {
   return {
     'data-b': b || undefined,
     'data-m': m || undefined,
     'data-a0': y ? y[0] : undefined,
     'data-a1': y ? y[1] : undefined,
     'data-y': y ? `${y[0]}-${y[1]}` : undefined,
+    ...atributosModelos(ms, ys),
   };
 }
 

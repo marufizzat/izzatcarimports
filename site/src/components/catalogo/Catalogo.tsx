@@ -55,13 +55,13 @@ const Xis = () => (
 
 /** Cartão da peça (vitrine) — mesmo markup de CartaoPeca.astro. */
 export function Etiqueta({ it, eager, novo, meuModelo }: { it: Item; eager?: boolean; novo?: boolean; meuModelo?: string | null }) {
-  const { carro, anos } = linhaCarro(it.b, it.m, it.y);
+  const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
   const [reais, cent] = precoPartes(it.p);
   const cod = codigoPeca(it.o);
   const estudio = it.e !== '0';
   return (
     <div className={CLASSE_CARTAO}>
-      <a className="etiqueta" href={`/peca/${it.h}.html`} {...dadosCarro(it.b, it.m, it.y)}>
+      <a className="etiqueta" href={`/peca/${it.h}.html`} {...dadosCarro(it.b, it.m, it.y, it.ms, it.ys)}>
         <div className="etiqueta-foto">
           <img src={capaItem(it)} srcSet={estudio ? undefined : `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`}
                sizes={estudio ? undefined : '(min-width:1280px) 240px, (min-width:768px) 28vw, 46vw'}

@@ -3,8 +3,9 @@ import { readFileSync } from 'node:fs';
 import type { Peca, Resumo } from './dados';
 import {
   juntar, minuscula, contar, faixaAnos, escolha, textosCategoria, textosCarro, textosMarca,
-  tituloCategoria, tituloCarro, tituloMarca, PROIBIDOS,
+  tituloCategoria, tituloCarro, tituloMarca, PROIBIDOS, raiz, tiposFrase,
 } from './textos';
+import { serveNoModelo } from './meuCarro';
 
 const peca = (o: Partial<Peca>): Peca => ({
   id: 'MLB1', slug: 's', t: 't', n: 'n', p: 100, fotos: [], ml: '', f: false, b: 'Volvo', m: 'XC60',
@@ -70,6 +71,25 @@ describe('textos: categoria, carro e marca (fixtures)', () => {
     expect(textosCategoria({ n: 'Motor', k: 'motor' }, []).paragrafos).toEqual([]);
     expect(textosCarro({ k: 'x', b: 'A', m: 'B', c: 0, anos: null, fams: [] }, []).paragrafos).toEqual([]);
   });
+  it('tipos na frase: sem repetir singular e plural, no maximo 2, sem "Outros"', () => {
+    expect(raiz('Catalisador')).toBe(raiz('Catalisadores'));
+    expect(raiz('Mangueira Radiador')).not.toBe(raiz('Mangueiras de Arrefecimento'));
+    expect(tiposFrase(['Catalisadores', 'Catalisador', 'Catalisadores', 'Tubos Flexíveis', 'Outros', 'Outros', 'Outros'], 3))
+      .toEqual(['catalisadores', 'tubos flexíveis']);
+    expect(tiposFrase(['Outros Botões', 'Outros Botões', 'Botões do Vidro Elétrico'])).toEqual(['botões do vidro elétrico']);
+    expect(tiposFrase(['A', 'B', 'C', 'C', 'B', 'B'])).toEqual(['b', 'c']);
+  });
+  it('marca sem modelo lido (Mini): nunca "para 0 modelos"', () => {
+    const t = textosMarca({ n: 'Mini', c: 34, m: [] }, [peca({ b: 'Mini', m: '', c: 'Motor' })]);
+    expect([...t.paragrafos, t.meta].join(' ')).not.toMatch(/(^|[^\d])0 modelos?/);
+    expect(t.paragrafos[0]).toBe('Temos 34 peças originais de Mini no estoque.');
+  });
+  it('categoria nao repete a instrucao do topo ("Escolha a marca do seu carro")', () => {
+    for (const k of ['motor', 'iluminacao', 'freios', 'injecao', 'pecas-de-interior']) {
+      const t = textosCategoria({ n: 'Motor', k }, [peca({}), peca({ id: 'MLB2', b: 'Fiat', m: 'Toro' })]);
+      expect(t.paragrafos.join(' ')).not.toMatch(/Escolha a marca/);
+    }
+  });
   it('titulos saem no formato', () => {
     expect(tituloCategoria('Motor')).toBe('Motor: peças originais | Izzat Car Imports');
     expect(tituloCarro('Volvo', 'XC60', [2014, 2026])).toBe('Peças Volvo XC60 2014 a 2026 originais | Izzat Car Imports');
@@ -87,7 +107,8 @@ describe('textos: todas as paginas de lista do estoque real', () => {
     paginas.push({ tipo: 'categoria', titulo: tituloCategoria(f.n), t, primeiro: t.paragrafos[0] ?? '' });
   }
   for (const c of r.carros) {
-    const t = textosCarro(c, pecas.filter((p) => p.b === c.b && p.m === c.m));
+    // a mesma lista da pagina do carro: a peca de 2+ carros (ms) entra em cada um
+    const t = textosCarro(c, pecas.filter((p) => p.b === c.b && serveNoModelo(p, c.m)));
     paginas.push({ tipo: 'carro', titulo: tituloCarro(c.b, c.m, c.anos), t, primeiro: t.paragrafos[0] ?? '' });
   }
   for (const m of r.marcas) {
@@ -114,6 +135,17 @@ describe('textos: todas as paginas de lista do estoque real', () => {
   it('paragrafos unicos entre as paginas', () => {
     const todos = paginas.flatMap((p) => p.t.paragrafos);
     expect(new Set(todos).size).toBe(todos.length);
+  });
+  it('nenhuma frase lista o mesmo tipo duas vezes (singular e plural) nem "peças de peças"', () => {
+    for (const p of paginas) {
+      for (const f of p.t.paragrafos) {
+        expect(f, p.titulo).not.toMatch(/peças de peças|(^|[^\d])0 modelos|Escolha a marca do seu carro no atalho/);
+        const lista = f.match(/(?:são|é de|comuns são|aqui:) (.+)\.$/)?.[1];
+        if (!lista) continue;
+        const itens = lista.split(/, | e (?=[a-zà-ÿ])/).map((x) => raiz(x.replace(/,.*$/, '')));
+        expect(new Set(itens).size, `${p.titulo}: ${f}`).toBe(itens.length);
+      }
+    }
   });
   it('nenhum termo proibido nos textos', () => {
     const todos = paginas.flatMap((p) => [p.titulo, p.t.meta, ...p.t.paragrafos]).join('\n').toLowerCase();

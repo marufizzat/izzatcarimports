@@ -2,16 +2,20 @@
 // Acha por nome da peca, carro ou CODIGO gravado; entende "xc60" = "xc 60" = "XC-60",
 // tolera erro de digitacao e combina com os filtros (marca, modelo, ano, tipo, preco).
 import MiniSearch from 'minisearch';
+import { serveNoModelo, anosNoModelo } from './meuCarro';
 
 export type Indice = {
   v: number; updated: string; marcas: string[]; familias: string[]; tipos: string[];
   id: string[]; t: string[]; n: string[]; p: number[]; i: string[]; h: string[]; f: string;
   b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[]; s: number[]; o: string[];
   e?: string; // capa de estúdio por peça: '0' nenhuma, '1' automática, '2' maquiada (estudio-pro)
+  // peça que serve em 2+ carros: {índice: ["S60", "XC60"]} e, quando a faixa muda, {índice: [[2018, 2024], ...]}
+  ms?: Record<string, string[]>; ys?: Record<string, ([number, number] | null)[]>;
 };
 export type Item = {
   k: number; id: string; t: string; n: string; p: number; i: string; h: string; f: boolean;
   b: string; m: string; y: [number, number] | null; c: string; s: string; o: string; e: string;
+  ms?: string[]; ys?: ([number, number] | null)[];
 };
 export type Filtros = {
   q?: string; marca?: string; modelo?: string; ano?: number; tipo?: string;
@@ -42,6 +46,15 @@ function termos(texto: string): string[] {
   return [...ws, ...extra];
 }
 
+const dentro = (ano: number, y: [number, number] | null) => (y ? ano >= y[0] && ano <= y[1] : false);
+
+/** Contagem por modelo (a peça de 2+ carros conta em cada um), da maior para a menor. */
+function contarModelos(itens: Item[]): [string, number][] {
+  const m = new Map<string, number>();
+  for (const it of itens) for (const k of it.ms ?? [it.m]) if (k) m.set(k, (m.get(k) || 0) + 1);
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+
 export class Busca {
   itens: Item[];
   /** true quando nenhuma peca tinha TODAS as palavras e a lista mostra as mais proximas */
@@ -50,14 +63,14 @@ export class Busca {
   constructor(ix: Indice) {
     this.itens = ix.id.map((id, k) => ({
       k, id, t: ix.t[k], n: ix.n[k], p: ix.p[k], i: ix.i[k], h: ix.h[k], f: ix.f[k] === '1', e: ix.e?.[k] || '0',
-      b: ix.marcas[ix.b[k]] ?? '', m: ix.m[k], y: ix.y[k] || null,
+      b: ix.marcas[ix.b[k]] ?? '', m: ix.m[k], y: ix.y[k] || null, ms: ix.ms?.[k], ys: ix.ys?.[k],
       c: ix.familias[ix.c[k]] ?? '', s: ix.tipos[ix.s[k]] ?? '', o: ix.o[k],
     }));
     this.ms = new MiniSearch<Item>({
       idField: 'k',
       fields: ['n', 't', 'carro', 's', 'o'],
       extractField: (doc, campo) =>
-        campo === 'carro' ? `${doc.b} ${doc.m}` : (doc as any)[campo] ?? '',
+        campo === 'carro' ? `${doc.b} ${(doc.ms ?? [doc.m]).join(' ')}` : (doc as any)[campo] ?? '',
       tokenize: (s) => termos(s),
       processTerm: (t) => (t.length ? t : null),
       searchOptions: {
@@ -91,8 +104,8 @@ export class Busca {
     const faixa = FAIXAS.find((x) => x[0] === f.preco);
     const out = base.filter((it) =>
       (!f.marca || it.b === f.marca) &&
-      (!f.modelo || it.m === f.modelo) &&
-      (!ano || (it.y ? ano >= it.y[0] && ano <= it.y[1] : false)) &&
+      (!f.modelo || serveNoModelo(it, f.modelo)) &&
+      (!ano || dentro(ano, f.modelo ? anosNoModelo(it, f.modelo) : it.y)) &&
       (!f.tipo || it.c === f.tipo) &&
       (!faixa || (it.p >= faixa[2] && it.p < faixa[3])) &&
       (!f.frete || it.f));
@@ -116,7 +129,7 @@ export class Busca {
     };
     return {
       marcas: conta('marca', (i) => i.b),
-      modelos: f.marca ? conta('modelo', (i) => i.m) : [],
+      modelos: f.marca ? contarModelos(this.procurar({ ...f, modelo: undefined, ordem: 'rel' })) : [],
       tipos: conta('tipo', (i) => i.c),
       precos: FAIXAS.map(([k, rot, a, b]) => [k, rot,
         this.procurar({ ...f, preco: undefined }).filter((i) => i.p >= a && i.p < b).length] as const),
