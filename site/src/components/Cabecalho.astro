@@ -4,8 +4,6 @@ import Icone from './Icone.astro';
 import SugestoesBusca from './ui/SugestoesBusca';
 import MeuCarroEstilo from './ui/MeuCarroEstilo.astro';
 import { whatsUrl, resumo } from '../lib/dados';
-interface Props { escuro?: boolean; sobreposto?: boolean; }
-const { escuro = false, sobreposto = false } = Astro.props;
 const links: [string, string][] = [
   ['Peças', '/catalogo.html'], ['Carros', '/carros.html'],
   ['Como comprar', '/como-comprar.html'], ['O pátio', '/sobre.html'],
@@ -14,22 +12,22 @@ const atual = Astro.url.pathname;
 const ativo = (h: string) => atual === h || (h === '/catalogo.html' && atual.startsWith('/peca/')) ||
   (h === '/carros.html' && atual.startsWith('/carros/'));
 const carros = resumo().carros.slice(0, 8);
-// Busca sempre à vista no PC (fora do catálogo, que tem a própria). Na home ela espera a busca grande da abertura sair da tela.
+// Busca à vista no PC a partir de 1100 px (fora do catálogo, que tem a própria), também na home: a aba de busca da
+// abertura é só mais uma entrada (antes a do topo sumia ao abrir a aba e deixava um buraco no cabeçalho).
 // O campo vem pronto no HTML (sem JS, ele já busca no catálogo). As sugestões ao vivo (React) só carregam quando a
 // pessoa chega no campo: sem ilha do Astro aqui, a página não leva o código das ilhas nem o React à toa.
 const buscaNoTopo = !atual.startsWith('/catalogo');
-const buscaEspera = atual === '/' || atual === '/index.html';
 ---
 <MeuCarroEstilo />
-<header class:list={['cab', { 'cab-escuro': escuro, 'cab-sobre': sobreposto }]}>
+<header class="cab">
   <div class="moldura cab-linha">
-    <Logo escuro={escuro} altura={64} />
+    <Logo altura={64} />
     <nav class="cab-nav" aria-label="Principal">
       {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
     </nav>
     {buscaNoTopo && (
-      <div class:list={['cab-busca', { 'cab-busca-espera': buscaEspera }]} data-cab-busca>
-        <SugestoesBusca placeholder="Buscar peça, carro ou código" />
+      <div class="cab-busca" data-cab-busca>
+        <SugestoesBusca placeholder="Peça ou código" />
       </div>
     )}
     <div class="cab-acoes">
@@ -37,8 +35,11 @@ const buscaEspera = atual === '/' || atual === '/index.html';
         <Icone nome="carro" />
         <span class="cab-carro-txt" data-carro-txt>Meu carro</span>
       </button>
-      <a class="cab-icone" href="/catalogo.html#busca" aria-label="Buscar peça"><Icone nome="busca" /></a>
-      <a class="botao botao-laranja cab-whats" href={whatsUrl('Olá! Estou procurando uma peça.')} aria-label="Falar no WhatsApp">
+      {/* o chip já nasce com o carro salvo (antes do script principal: o cabeçalho e a abertura nunca discordam).
+          Mesmo desenho de pintarChip(); marca também html[data-carro] para quem reserva lugar ao carro (catálogo). */}
+      <script is:inline>try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')),b=document.currentScript.previousElementSibling,t=b.lastElementChild,s=(k,x)=>{var e=document.createElement('span');e.className='cab-carro-'+k;e.append(x);return e},m;c.m&&(document.documentElement.dataset.carro='',b.className+=' com-carro',m=s('modelo',s('marca',c.b+' ')),m.append(c.m),t.replaceChildren(m),c.y&&t.append(s('ano',''+c.y)))}catch(e){}</script>
+      <a class="cab-icone cab-lupa" href="/catalogo.html#busca" aria-label="Buscar peça"><Icone nome="busca" /></a>
+      <a class="botao botao-laranja cab-whats" href={whatsUrl('Olá! Estou procurando uma peça.')} aria-label="Chamar no WhatsApp">
         <Icone nome="whats" /><span>WhatsApp</span>
       </a>
       <button class="cab-icone cab-menu" type="button" aria-label="Abrir menu" aria-controls="menu-movel" data-abrir-menu>
@@ -68,32 +69,40 @@ const buscaEspera = atual === '/' || atual === '/index.html';
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
   </div>
-  <nav class="menu-links" aria-label="Menu principal">
-    {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
-    <a href="/garantia.html">Garantia e trocas</a>
-    <a href="/procuro-peca.html">Não achou? Procuro peça</a>
-  </nav>
-  <p class="menu-rotulo">Carros com mais peças</p>
-  <div class="menu-carros">
-    {carros.map((c) => <a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a>)}
+  {/* só o meio rola: o "Chamar no WhatsApp" fica sempre à vista no pé do menu, até no celular de 320 px */}
+  <div class="menu-corpo">
+    <nav class="menu-links" aria-label="Menu principal">
+      {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
+      <a href="/garantia.html" aria-current={atual === '/garantia.html' ? 'page' : undefined}>Garantia e trocas</a>
+      <a href="/procuro-peca.html" aria-current={atual === '/procuro-peca.html' ? 'page' : undefined}>Procuro peça</a>
+    </nav>
+    <p class="menu-rotulo">Carros com mais peças</p>
+    <div class="menu-carros">
+      {carros.map((c) => <a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a>)}
+    </div>
   </div>
-  <a class="botao botao-laranja menu-whats" href={whatsUrl('Olá! Estou procurando uma peça.')}><Icone nome="whats" />Falar no WhatsApp</a>
+  <a class="botao botao-laranja menu-whats" href={whatsUrl('Olá! Estou procurando uma peça.')}><Icone nome="whats" />Chamar no WhatsApp</a>
 </dialog>
 
 <script>
-  import { lerMeuCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
+  import { lerMeuCarro, EVENTO, ABRIR, ESCOLHIDO, type MeuCarro } from '../lib/meuCarro';
 
-  // chip do cabeçalho: mostra o carro salvo (sem carro: "Meu carro")
+  // chip do cabeçalho: mostra o carro salvo (sem carro: "Meu carro"). O mesmo desenho do script do HTML (logo acima).
+  // Modelo e ano em partes separadas: no aperto, o modelo ganha reticências e o ano nunca some.
+  const parte = (k: string, ...filhos: (Node | string)[]) => {
+    const e = document.createElement('span');
+    e.className = 'cab-carro-' + k;
+    e.append(...filhos);
+    return e;
+  };
   function pintarChip(c: MeuCarro | null) {
+    document.documentElement.toggleAttribute('data-carro', !!c);
     document.querySelectorAll<HTMLElement>('[data-abrir-carro]').forEach((b) => {
       const txt = b.querySelector<HTMLElement>('[data-carro-txt]');
       if (!txt) return;
-      txt.replaceChildren();
       if (c) {
-        const marca = document.createElement('span');
-        marca.className = 'cab-carro-marca';
-        marca.textContent = c.b + ' ';
-        txt.append(marca, c.m + (c.y ? ' ' + c.y : ''));
+        txt.replaceChildren(parte('modelo', parte('marca', c.b + ' '), c.m));
+        if (c.y) txt.append(parte('ano', String(c.y)));
         b.classList.add('com-carro');
         b.setAttribute('aria-label', 'Seu carro: ' + [c.b, c.m, c.y].filter(Boolean).join(' ') + '. Trocar ou tirar');
         b.title = 'Trocar ou tirar o seu carro';
@@ -108,20 +117,33 @@ const buscaEspera = atual === '/' || atual === '/index.html';
   pintarChip(lerMeuCarro());
   window.addEventListener(EVENTO, (e) => pintarChip((e as CustomEvent<MeuCarro | null>).detail));
 
-  // caixa "Seu carro" (carregada so ao abrir)
+  // caixa "Seu carro" (carregada só ao abrir). Aberta pela faixa da peça (origem 'peca'): ao escolher o ano a caixa
+  // fecha sozinha, a página volta para a faixa e a resposta acende ali (serve / confira o ano).
   const caixa = document.getElementById('meu-carro-dialogo') as HTMLDialogElement | null;
-  async function abrirCarro() {
-    if (!caixa || caixa.open) return;
+  const raizCaixa = caixa?.querySelector<HTMLElement>('[data-mc-raiz]');
+  async function abrirCarro(ev?: Event) {
+    if (!caixa || !raizCaixa || caixa.open) return;
+    raizCaixa.dataset.origem = (ev as CustomEvent<{ origem?: string } | null> | undefined)?.detail?.origem ?? '';
     const { montarPicker } = await import('./ui/meuCarroPicker');
-    montarPicker(caixa.querySelector<HTMLElement>('[data-mc-raiz]')!);
+    montarPicker(raizCaixa);
     caixa.showModal();
   }
-  window.addEventListener('abrir-meu-carro', abrirCarro);
-  document.querySelectorAll('[data-abrir-carro]').forEach((b) => b.addEventListener('click', abrirCarro));
+  window.addEventListener(ABRIR, abrirCarro);
+  document.querySelectorAll('[data-abrir-carro]').forEach((b) => b.addEventListener('click', () => abrirCarro()));
   caixa?.querySelector('[data-fechar-carro]')?.addEventListener('click', () => caixa.close());
   caixa?.addEventListener('click', (e) => { if (e.target === caixa) caixa.close(); });
+  caixa?.addEventListener(ESCOLHIDO, () => {
+    caixa.close();
+    const faixa = document.querySelector<HTMLElement>('[data-meu-carro]');
+    if (!faixa) return;
+    const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    faixa.scrollIntoView({ block: 'center', behavior: reduz ? 'auto' : 'smooth' });
+    faixa.classList.remove('enc-destaque');
+    requestAnimationFrame(() => faixa.classList.add('enc-destaque'));
+    setTimeout(() => faixa.classList.remove('enc-destaque'), 1600);
+  });
 
-  // busca do cabeçalho (PC largo): monta as sugestões (React) no 1º contato com o campo (mouse, foco ou toque).
+  // busca do cabeçalho (PC): monta as sugestões (React) no 1º contato com o campo (mouse, foco ou toque).
   // O que já foi digitado e o foco passam para o campo novo.
   const cabBuscaRaiz = document.querySelector<HTMLElement>('[data-cab-busca]');
   if (cabBuscaRaiz) {
@@ -148,82 +170,84 @@ const buscaEspera = atual === '/' || atual === '/index.html';
 
 <style is:global>
   /* Globais de propósito (sem o atributo de escopo em cada link do cabeçalho e do menu): tudo preso a
-     .cab (cabeçalho) ou .menu-movel (menu do celular). */
+     .cab (cabeçalho) ou .menu-movel (menu do celular). Site sempre claro. */
   .cab { position: sticky; top: 0; z-index: 50; background: color-mix(in oklab, var(--bg), transparent 12%);
          backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
          border-bottom: 1px solid color-mix(in oklab, var(--line), transparent 25%); }
   /* aparelho fraco: fundo sólido da mesma cor (desfocar a página a cada quadro da rolagem pesa) */
-  html.leve .cab:not(.cab-escuro):not(.cab-sobre) { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
-  .cab.cab-escuro { background: rgb(14 14 16 / .8); color: #f2f2f4; --line: #2a2b30; }
-  .cab.cab-sobre { position: absolute; inset: 0 0 auto 0; background: linear-gradient(180deg, rgb(0 0 0 / .55), transparent); border: 0; backdrop-filter: none; color: #fff; }
-  .cab .cab-linha { display: flex; align-items: center; gap: 20px; height: 68px; }
-  .cab .cab-linha .logo img { height: 54px; width: auto; display: block; }
-  .cab .cab-nav { display: none; gap: 2px; margin-left: 16px; }
+  html.leve .cab { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .cab .cab-linha { display: flex; align-items: center; gap: 10px; height: 68px; }
+  /* o logo nunca encolhe nem deforma: o que aperta é o resto (no celular estreito ele fica menor, na proporção certa) */
+  .cab .cab-linha > .logo { flex: none; }
+  .cab .cab-linha > .logo img { height: 54px; width: auto; max-width: none; display: block; }
+  .cab .cab-nav { display: none; gap: 2px; }
   .cab .cab-nav a { position: relative; padding: 10px 14px; border-radius: 10px; font-weight: 560; font-size: 15.5px; color: var(--ink-2);
-               transition: color .2s, background-color .2s; }
+               white-space: nowrap; transition: color .2s, background-color .2s; }
   .cab .cab-nav a:hover { color: var(--ink); background: color-mix(in oklab, var(--ink), transparent 94%); }
   .cab .cab-nav a[aria-current="page"] { color: var(--ink); }
   .cab .cab-nav a[aria-current="page"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 3px; height: 3px; border-radius: 3px;
                background: var(--accent); }
-  .cab .cab-acoes { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-  :is(.cab, .menu-movel) .cab-icone { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: inherit; }
+  .cab .cab-acoes { margin-left: auto; min-width: 0; display: flex; align-items: center; gap: 4px; }
+  :is(.cab, .menu-movel) .cab-icone { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: inherit; }
   :is(.cab, .menu-movel) .cab-icone:hover { background: color-mix(in oklab, currentColor, transparent 92%); }
   :is(.cab, .menu-movel) .cab-icone svg { width: 23px; height: 23px; }
-  .cab .cab-whats { --h: 44px; padding: 0 13px; font-size: 15px; }
+  .cab .cab-whats { --h: 44px; flex: none; padding: 0 12px; font-size: 15px; }
   .cab .cab-whats span { display: none; }
+  @media (max-width: 379px) { .cab .cab-linha > .logo img { height: 48px; } }
+  @media (max-width: 339px) { .cab .cab-linha > .logo img { height: 44px; } }
+  @media (min-width: 400px) { .cab .cab-acoes { gap: 6px; } }
   @media (min-width: 960px) {
-    .cab .cab-linha { height: 84px; } .cab .cab-linha .logo img { height: 66px; }
-    .cab .cab-nav { display: flex; } .cab .cab-whats { padding: 0 18px; } .cab .cab-whats span { display: inline; } .cab .cab-menu { display: none; }
+    .cab .cab-linha { height: 84px; gap: 16px; } .cab .cab-linha > .logo img { height: 66px; }
+    .cab .cab-nav { display: flex; } .cab .cab-acoes { gap: 10px; }
+    .cab .cab-whats { padding: 0 18px; } .cab .cab-whats span { display: inline; } .cab .cab-menu { display: none; }
   }
 
-  .menu-movel { margin: 0 0 0 auto; width: min(100%, 420px); height: 100dvh; max-height: none; border: 0; padding: 18px 20px 28px;
-                background: var(--bg); color: var(--ink); display: none; flex-direction: column; gap: 18px; overflow-y: auto;
+  .menu-movel { margin: 0 0 0 auto; width: min(100%, 420px); height: 100dvh; max-height: none; border: 0; padding: 18px 20px calc(20px + env(safe-area-inset-bottom));
+                background: var(--bg); color: var(--ink); display: none; flex-direction: column; gap: 14px; overflow: hidden;
                 transform: translateX(100%); transition: transform .32s cubic-bezier(.2,.8,.2,1), overlay .32s allow-discrete, display .32s allow-discrete; }
   .menu-movel[open] { display: flex; transform: none; }
   @starting-style { .menu-movel[open] { transform: translateX(100%); } }
   .menu-movel::backdrop { background: rgb(10 10 12 / .45); backdrop-filter: blur(4px); }
   html.leve .menu-movel::backdrop { backdrop-filter: none; }
-  .menu-movel .menu-topo { display: flex; justify-content: space-between; align-items: center; }
+  .menu-movel .menu-topo { flex: none; display: flex; justify-content: space-between; align-items: center; }
   .menu-movel .menu-topo .logo img { height: 52px; width: auto; }
+  .menu-movel .menu-corpo { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 18px;
+                            margin-inline: -4px; padding: 0 4px 8px; }
   .menu-movel .menu-links { display: grid; }
-  .menu-movel .menu-links a { padding: 14px 4px; font-stretch: 84%; font-weight: 800; font-size: 26px; border-bottom: 1px solid var(--line); }
+  .menu-movel .menu-links a { padding: 14px 4px; font-stretch: 84%; font-weight: 800; font-size: 26px; line-height: 1.15; border-bottom: 1px solid var(--line); }
   .menu-movel .menu-links a[aria-current="page"] { color: var(--accent-text); }
-  .menu-movel .menu-rotulo { margin: 8px 0 -6px; font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
+  .menu-movel .menu-rotulo { margin: 4px 0 -6px; font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
   .menu-movel .menu-carros { display: flex; flex-wrap: wrap; gap: 8px; }
   .menu-movel .menu-carros a { padding: 9px 13px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 14.5px; font-weight: 560; }
-  .menu-movel .menu-whats { margin-top: auto; --h: 54px; }
+  /* o pé do menu: fora da parte que rola, sempre à vista (um véu da cor do fundo por cima da lista) */
+  .menu-movel .menu-whats { flex: none; --h: 54px; width: 100%; box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), inset 0 -1px 0 rgb(0 0 0 / .12),
+                            0 1px 2px rgb(140 50 0 / .25), 0 8px 20px -8px color-mix(in oklab, var(--accent), transparent 30%), 0 -14px 18px -6px var(--bg); }
+  @media (max-width: 380px) { .menu-movel .menu-links a { font-size: 22px; padding-block: 11px; } }
 </style>
 
-<script>
-  // home: a busca do topo aparece quando a busca grande da abertura sai da tela (e volta a se esconder se ela voltar)
-  const cabBusca = document.querySelector<HTMLElement>('[data-cab-busca].cab-busca-espera');
-  const buscaGrande = document.querySelector('main .sb-grande');
-  if (cabBusca) {
-    if (!buscaGrande || !('IntersectionObserver' in window)) cabBusca.classList.remove('cab-busca-espera');
-    else new IntersectionObserver(([e]) => cabBusca.classList.toggle('cab-busca-espera', e.isIntersecting),
-      { rootMargin: '-84px 0px 0px 0px' }).observe(buscaGrande);
-  }
-</script>
-
 <style is:global>
-  /* busca no cabeçalho (PC largo): o mesmo campo com sugestões da abertura, em versão compacta; a lupa sai */
+  /* ---- busca no cabeçalho (PC): o mesmo campo com sugestões da abertura, em versão compacta; a lupa sai ----
+     De 1100 a 1279 px o menu fica mais junto e o chip mostra só modelo e ano: sobra lugar para o campo inteiro. */
   .cab .cab-busca { display: none; }
-  @media (min-width: 1180px) {
-    .cab .cab-busca ~ .cab-acoes, .cab .cab-nav, .cab .cab-linha > .logo { flex: none; }
-    .cab .cab-nav a { white-space: nowrap; }
-    .cab .cab-busca { display: block; flex: 1 1 340px; min-width: 200px; max-width: 440px; margin-left: auto;
-      transition: opacity .25s ease, transform .25s ease, visibility .25s; }
-    .cab .cab-busca ~ .cab-acoes { margin-left: 10px; }
-    .cab .cab-busca ~ .cab-acoes > a.cab-icone[href="/catalogo.html#busca"] { display: none; }
-    .cab .cab-busca-espera:not(:focus-within) { opacity: 0; visibility: hidden; transform: translateY(-4px); }
+  @media (min-width: 1100px) {
+    .cab .cab-nav { flex: none; }
+    /* o campo encolhe primeiro (fator 100) até o mínimo, que cabe o texto de exemplo inteiro ("Peça ou código": curto de
+       propósito, para sobrar lugar ao carro); daí em diante, só o chip cede (reticências no modelo; o ano fica) */
+    .cab .cab-busca { display: block; flex: 1 100 340px; min-width: 200px; max-width: 440px; margin-left: auto; }
+    .cab .cab-busca ~ .cab-acoes { margin-left: 0; flex: 0 1 auto; }
+    .cab .cab-busca ~ .cab-acoes > .cab-lupa { display: none; }
     .cab .cab-busca .sb-busca:not(.sb-grande) { height: 46px; border-radius: 12px; padding: 0 4px 0 14px; gap: 6px; box-shadow: inset 0 0 0 1.5px var(--line-2); }
     .cab .cab-busca .sb-busca:not(.sb-grande):focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 82%); }
-    .cab .cab-busca .sb-busca input { font-size: 15.5px; }
+    .cab .cab-busca .sb-busca input { font-size: 15.5px; min-width: 0; }
     .cab .cab-busca .sb-lupa svg { width: 19px; height: 19px; }
     .cab .cab-busca .sb-limpar { width: 36px; height: 36px; }
     .cab .cab-busca .sb-btn { --h: 38px; padding: 0 11px; border-radius: 9px; }
     .cab .cab-busca .sb-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .cab .cab-busca .sb-lista { right: auto; width: max(100%, 520px); }
   }
-  @media (prefers-reduced-motion: reduce) { .cab .cab-busca { transition: none; } }
+  @media (min-width: 1100px) and (max-width: 1279px) {
+    .cab .cab-linha { gap: 14px; }
+    .cab .cab-nav a { padding-inline: 10px; } .cab .cab-nav a[aria-current="page"]::after { left: 10px; right: 10px; }
+  }
+  @media (min-width: 1280px) { .cab .cab-linha { gap: 20px; } }
 </style>
