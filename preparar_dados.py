@@ -2311,11 +2311,16 @@ def modelos_do_titulo(marca, ws, principal, validos):
     Nome composto vale inteiro ("C4 Cactus", "New Fiesta" nao viram "C4"/"Fiesta" de novo);
     versao, motor e geracao ("T8", "G6", "E60") nao sao outro carro."""
     lista = [principal] if principal else []
+    geracao = GERACAO_MARCA.get(marca)
     i = 0
     while i < len(ws):
         achou = None
         for n in (2, 1):
             if i + n > len(ws):
+                continue
+            # chassi/geracao ("E46", "E60", "W203") nao e outro carro escrito no titulo: o apelido dele
+            # (Série 3, Série 5, Classe C) juntaria modelos que o dono ainda vai decidir (item L4)
+            if geracao and any(geracao.fullmatch(w.lower()) for w in ws[i:i + n]):
                 continue
             nome = modelo_canonico(marca, " ".join(ws[i:i + n]))
             alvo = validos.get((marca, gi.chave_modelo(nome))) if nome else None

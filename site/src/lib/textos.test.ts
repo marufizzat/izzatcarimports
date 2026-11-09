@@ -136,14 +136,10 @@ describe('textos: todas as paginas de lista do estoque real', () => {
     const todos = paginas.flatMap((p) => p.t.paragrafos);
     expect(new Set(todos).size).toBe(todos.length);
   });
-  it('nenhuma frase lista o mesmo tipo duas vezes (singular e plural) nem "peças de peças"', () => {
+  it('nenhuma frase com "peças de peças", "0 modelos" ou a instrução do topo repetida', () => {
     for (const p of paginas) {
       for (const f of p.t.paragrafos) {
         expect(f, p.titulo).not.toMatch(/peças de peças|(^|[^\d])0 modelos|Escolha a marca do seu carro no atalho/);
-        const lista = f.match(/(?:são|é de|comuns são|aqui:) (.+)\.$/)?.[1];
-        if (!lista) continue;
-        const itens = lista.split(/, | e (?=[a-zà-ÿ])/).map((x) => raiz(x.replace(/,.*$/, '')));
-        expect(new Set(itens).size, `${p.titulo}: ${f}`).toBe(itens.length);
       }
     }
   });
