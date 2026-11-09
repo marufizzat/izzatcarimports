@@ -1,40 +1,43 @@
 ---
-// Ficha e descricao. No computador: as duas lado a lado. No celular: abas (sem paredao de texto).
-// Ficha: o codigo, onde serve, e o que o anuncio diz da peca (ja limpo no preparar_dados.py: sem o carro
-// repetido, sem "Original-123", com a maiuscula certa). Valor com quebra de linha = um carro por linha.
-// O título do anúncio do ML fica aqui, no fim da ficha (saiu de baixo do nome: lá repetia o nome; mas é nele que
-// estão detalhes como "xDrive30e 2.0t B48" do motor). Descrição longa: recolhida em ~10 linhas pelo script.
+// Ficha técnica e descrição da peça: UM padrão para as 5 mil páginas (e as peças novas do robô), alimentado pelos
+// dados (regras em fichaTecnica.ts). No computador: as duas lado a lado. No celular: abas (sem paredão de texto).
+// Ficha: uma linha por dado, com ícone fino (sprite /icones.svg); "Serve em" com o logo da marca; código com Copiar.
+// Descrição: abertura + blocos com título e ícone (Compatibilidade, Função, Posição, Medidas, Estado da peça...).
+// O que já está no topo (nome, carro, anos) não se repete; o título do anúncio do ML fica numa nota no pé da ficha
+// (é nele que estão detalhes como "xDrive30e 2.0t B48" do motor). Descrição longa: recolhida pelo script.
 import type { Peca } from '../../lib/dados';
-import { codigoDaPeca } from '../../lib/dados';
+import { codigoDaPeca, resumo, logoInfo } from '../../lib/dados';
 import { modelosDa } from '../../lib/meuCarro';
+import Icone from '../Icone.astro';
+import { lerDescricao, montarFicha, so } from './fichaTecnica';
 interface Props { p: Peca; serve: string; serveRotulo?: string; }
 const { p, serve, serveRotulo = 'Serve em' } = Astro.props;
-const so = (s: string) => s.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
 const codTodos = (p.oem || '').split(/[\s,;/|]+/).map(so).filter(Boolean);
 // "Modelo do veículo" só quando diz algo a mais: igual a um dos carros da peça ou a todos juntos (já estão no
 // "Serve em"), com ou sem a marca, ou igual ao código, sai
 const modelos = modelosDa(p);
 const iguais = new Set([...modelos, modelos.join(''), [...modelos].reverse().join('')].flatMap((m) => [so(m), so(`${p.b}${m}`)]));
 const repete = ([k, v]: [string, string]) => k === 'Modelo do veículo' && (iguais.has(so(v)) || codTodos.includes(so(v)));
-const fichaML = p.ficha.filter((l) => !repete(l));
-const iCod = fichaML.findIndex(([k]) => k.startsWith('Código'));
-const serveLinha: [string, string][] = serve ? [[serveRotulo, serve]] : [];
-const ficha: [string, string][] = iCod >= 0
-  ? [fichaML[iCod], ...serveLinha, ...fichaML.filter((_, i) => i !== iCod)]
-  : [...serveLinha, ...fichaML];
+const d = lerDescricao(p.desc);
+const ficha = montarFicha(p.ficha, serve, serveRotulo, d.extras, repete);
+const cod = codigoDaPeca(p.oem);
+const marca = p.b ? resumo().marcas.find((m) => m.n === p.b) : undefined;
+const logo = marca ? logoInfo(marca.k, 30, 22) : null;
 // "C4 Cactus: Feel, Shine" -> o carro em destaque e as versoes do lado
 const linhas = (v: string) => v.split('\n').map((l) => { const m = /^([^:]{1,40}): (.+)$/.exec(l); return m ? { b: m[1], r: m[2] } : { b: '', r: l }; });
 // Texto padrao (o vendedor nao escreveu descricao): so fatos da peca, sem repetir o titulo do anuncio
 // nem o "na duvida, chame no WhatsApp" (o "Antes de comprar" la em cima ja diz).
 const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
 const carroTxt = p.b && p.m ? ` do ${p.b} ${p.m}` : p.b ? ` de ${p.b}` : '';
-const cod = codigoDaPeca(p.oem);
 const descTexto = [
   `${p.n} original${carroTxt}${anos ? `, ${anos}` : ''}${cod ? `, com o código ${cod} gravado` : ''}.`,
   'Peça usada, de carro com baixa legal no Detran-RS.',
   'As fotos são da própria peça: veja nelas o estado e os detalhes.',
 ].join(' ');
+const med = d.medidas;
+const dims = med ? ([['Comprimento', med.c], ['Largura', med.l], ['Altura', med.a]] as [string, string | undefined][]).filter(([, v]) => v) : [];
 ---
+
 <section class="secao detalhes" data-abas>
   <div class="moldura">
     <div class="abas" role="tablist" aria-label="Detalhes da peça">
@@ -44,24 +47,54 @@ const descTexto = [
     <div class="detalhes-grade">
       <div class="painel" id="painel-ficha" role="tabpanel" aria-labelledby="aba-ficha" data-painel="ficha">
         <h2 class="subtitulo">Ficha da peça</h2>
-        <table class="ficha">
-          <tbody>
-            {ficha.map(([k, v]) => (
-              <tr><th scope="row">{k}</th>
-                <td class={k.startsWith('Código') ? 'oem' : ''}>
-                  {k.startsWith('Modelos e') || v.includes('\n')
-                    ? linhas(v).map((l) => <span class="ficha-linha">{l.b && <b>{l.b}:</b>} {l.r}</span>)
-                    : v}
-                </td></tr>
-            ))}
-            <tr><th scope="row">Título do anúncio</th><td>{p.t}</td></tr>
-            <tr><th scope="row">Procedência</th><td>Peça original de carro com baixa legal no <span class="sem-quebra">Detran-RS</span> · <span class="sem-quebra">CDV nº 01060</span></td></tr>
-          </tbody>
-        </table>
+        <dl class="ficha">
+          {ficha.map((l) => (
+            <div class:list={['fl', { 'fl-cod': l.chave === 'codigo' }]}>
+              {l.chave === 'serve' && logo ? <dt><img class="fl-logo" src={logo.src} alt="" width={logo.w} height={logo.h} loading="lazy" />{l.rotulo}</dt> : <dt data-i={l.icone}>{l.rotulo}</dt>}
+              <dd>
+                {l.html ? <Fragment set:html={l.valor} /> : l.valor.includes('\n') ? linhas(l.valor).map((x) => <span class="ficha-linha">{x.b && <b>{x.b}:</b>} {x.r}</span>) : l.valor}
+                {l.chave === 'codigo' && cod && <button type="button" class="fl-copiar" data-copiar={cod} aria-label="Copiar o código"><Icone nome="copiar" /><span>Copiar</span></button>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <p class="ficha-nota" data-i="anuncio"><span>No anúncio do Mercado Livre: {p.t}</span></p>
       </div>
       <div class="painel" id="painel-desc" role="tabpanel" aria-labelledby="aba-desc" data-painel="desc">
         <h2 class="subtitulo">Descrição</h2>
-        {p.desc ? <div class="descricao" set:html={p.desc} /> : <p class="descricao">{descTexto}</p>}
+        <div class="descricao">
+          {(d.abertura.length ? d.abertura : [{ tag: 'p', itens: [] }]).map((b) => b.tag === 'p'
+            ? (b.itens.length ? b.itens.map((t) => <p class="desc-abre" set:html={t} />) : <p class="desc-abre">{descTexto}</p>)
+            : <Fragment set:html={`<${b.tag}>${b.itens.map((t) => `<li>${t}</li>`).join('')}</${b.tag}>`} />)}
+          {d.secoes.filter((s) => s.tipo === 'compat' || s.tipo === 'funcao' || s.tipo === 'posicao').concat(d.secoes.filter((s) => !['compat', 'funcao', 'posicao', 'ident'].includes(s.tipo))).map((s) => (
+            <div class="db">
+              <h3 data-i={s.icone}>{s.titulo}</h3>
+              {s.blocos.map((b) => b.tag === 'p' ? b.itens.map((t) => <p set:html={t} />) : <Fragment set:html={`<${b.tag}>${b.itens.map((t) => `<li>${t}</li>`).join('')}</${b.tag}>`} />)}
+            </div>
+          ))}
+          {med && (dims.length > 1 || med.peso) && (
+            <div class="db">
+              <h3 data-i="regua">Medidas</h3>
+              <div class="db-medidas">
+                {dims.length > 1 && <p class="dm-dim num">{dims.map(([, v], i) => <>{i > 0 && <i>×</i>}<b>{v}</b></>)}<small>{med.un}</small><span>{dims.map(([r]) => r.toLowerCase()).join(' × ')}</span></p>}
+                {med.peso && <p class="dm-peso num" data-i="peso"><b>{med.peso}</b><span>peso</span></p>}
+              </div>
+            </div>
+          )}
+          {d.estado && (
+            <div class="db">
+              <h3 data-i="estado">Estado da peça</h3>
+              {d.estado.chip && <p class="db-chip">{d.estado.chip}</p>}
+              {d.estado.texto.map((b) => b.tag === 'p' ? b.itens.map((t) => <p set:html={t} />) : <Fragment set:html={`<${b.tag}>${b.itens.map((t) => `<li>${t}</li>`).join('')}</${b.tag}>`} />)}
+            </div>
+          )}
+          {d.secoes.filter((s) => s.tipo === 'ident').map((s) => (
+            <div class="db">
+              <h3 data-i={s.icone}>{s.titulo}</h3>
+              {s.blocos.map((b) => b.tag === 'p' ? b.itens.map((t) => <p set:html={t} />) : <Fragment set:html={`<${b.tag}>${b.itens.map((t) => `<li>${t}</li>`).join('')}</${b.tag}>`} />)}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   </div>
@@ -95,7 +128,7 @@ const descTexto = [
     // Descrição longa do anúncio (a mediana tem ~1.900 letras): recolhida em ~10 linhas, com "Ler a descrição
     // completa". Decidido pelo tamanho do texto (sem medir a tela); sem JavaScript, ela aparece inteira.
     const desc = raiz.querySelector<HTMLElement>('div.descricao');
-    if (desc && (desc.textContent || '').length > 900) {
+    if (desc && (desc.textContent || '').length > 1100) {
       desc.classList.add('recolhida');
       desc.id = 'descricao-texto';
       const b = document.createElement('button');
@@ -117,7 +150,6 @@ const descTexto = [
 
 <style is:global>
   /* Globais de propósito (sem o atributo de escopo em cada linha da ficha): tudo preso a .detalhes. */
-
   .secao.detalhes { padding-top: 24px; }
   .detalhes .abas { display: none; gap: 6px; padding: 5px; margin-bottom: 18px; border-radius: 14px; background: var(--bg-2); }
   .detalhes .abas button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 15px; font-weight: 650; color: var(--ink-2); cursor: pointer; }
@@ -125,40 +157,99 @@ const descTexto = [
   .detalhes .detalhes-grade { display: grid; gap: 40px; }
   /* o mesmo tamanho de H2 em toda a página da peça (ficha, descrição, código, do mesmo carro) */
   .detalhes .subtitulo { margin: 0 0 14px; font-stretch: 84%; font-weight: 800; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.1; }
-  .detalhes .ficha { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-1); }
-  .detalhes .ficha th, .detalhes .ficha td { text-align: left; padding: 13px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
-  .detalhes .ficha tr:last-child th, .detalhes .ficha tr:last-child td { border-bottom: 0; }
-  .detalhes .ficha th { width: 40%; font-weight: 560; color: var(--ink-2); }
-  .detalhes .ficha td { overflow-wrap: anywhere; }
-  /* o código é o dado-chave: no mesmo tamanho do resto da ficha (antes era a menor letra da tabela) */
-  .detalhes .ficha td.oem { font-size: 15px; font-weight: 560; letter-spacing: .03em; line-height: 1.45; }
-  .detalhes .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
-  .detalhes .descricao h3 { margin: 22px 0 6px; font-size: 16px; font-weight: 700; color: var(--ink); }
+  .detalhes svg { flex: none; width: 20px; height: 20px; }
+  /* Ícones finos da ficha, da descrição e do guia do código (Lucide, ISC; os mesmos desenhos de lib/icones.ts, FICHA):
+     máscara CSS com o desenho embutido, num arquivo de CSS com cache. No HTML de cada peça entra só data-i="nome"
+     (um <svg><use> por linha somava ~1 KB por página). A cor vem do texto (currentColor). */
+  [data-i]::before { content: ""; flex: none; width: 20px; height: 20px; background: currentColor;
+    -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat; }
+  [data-i=codigo] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5v14M7 5v14M10 5v14M14 5v14M17 5v14M21 5v14'/%3E%3C/svg%3E"); }
+  [data-i=cor] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z'/%3E%3C/svg%3E"); }
+  [data-i=material] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z'/%3E%3Cpath d='m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65M22 12.65l-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65'/%3E%3C/svg%3E"); }
+  [data-i=posicao] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 1v4M12 19v4M1 12h4M19 12h4'/%3E%3C/svg%3E"); }
+  [data-i=fabrica] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z'/%3E%3Cpath d='M17 18h1M12 18h1M7 18h1'/%3E%3C/svg%3E"); }
+  [data-i=origem] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20'/%3E%3C/svg%3E"); }
+  [data-i=calendario] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2v4M16 2v4'/%3E%3Crect width='18' height='18' x='3' y='4' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3C/svg%3E"); }
+  [data-i=etiqueta] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z'/%3E%3Ccircle cx='7.5' cy='7.5' r='1.2'/%3E%3C/svg%3E"); }
+  [data-i=regua] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z'/%3E%3Cpath d='m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2'/%3E%3C/svg%3E"); }
+  [data-i=peso] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='5' r='3'/%3E%3Cpath d='M6.5 8a2 2 0 0 0-1.9 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.93-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z'/%3E%3C/svg%3E"); }
+  [data-i=estado] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E"); }
+  [data-i=funcao] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 7h-9M14 17H5'/%3E%3Ccircle cx='17' cy='17' r='3'/%3E%3Ccircle cx='7' cy='7' r='3'/%3E%3C/svg%3E"); }
+  [data-i=info] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E"); }
+  [data-i=anuncio] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4M10 9H8M16 13H8M16 17H8'/%3E%3C/svg%3E"); }
+  [data-i=lanterna] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6c0 2-2 2-2 4v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V10c0-2-2-2-2-4V2h12z'/%3E%3Cpath d='M6 6h12M12 12v.01'/%3E%3C/svg%3E"); }
+  [data-i=camera] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/%3E%3Ccircle cx='12' cy='13' r='3'/%3E%3C/svg%3E"); }
+  [data-i=veiculo] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2'/%3E%3Ccircle cx='7' cy='17' r='2'/%3E%3Cpath d='M9 17h6'/%3E%3Ccircle cx='17' cy='17' r='2'/%3E%3C/svg%3E"); }
+
+
+  /* FICHA: cartão, uma linha por dado: ícone fino + rótulo (cinza) | valor */
+  .detalhes .ficha { margin: 0; padding: 4px 20px; border-radius: 20px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  .detalhes .fl { display: grid; grid-template-columns: minmax(0, 11.5em) minmax(0, 1fr); gap: 4px 18px; align-items: start; padding: 14px 0; }
+  .detalhes .fl + .fl { border-top: 1px solid var(--line); }
+  .detalhes .fl dt { display: flex; align-items: center; gap: 11px; min-height: 24px; font-size: 14.5px; font-weight: 560; color: var(--ink-2); }
+  .detalhes .fl dt::before { color: var(--ink-3); }
+  .detalhes .fl-logo { flex: none; width: auto; max-width: 30px; height: auto; max-height: 22px; object-fit: contain; }
+  .detalhes .fl dd { margin: 0; min-width: 0; font-size: 15.5px; font-weight: 560; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+  /* o código: o dado-chave, em mono e com o "Copiar" do lado */
+  .detalhes .fl-cod dd { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-family: var(--font-mono); font-size: 16px; font-weight: 600; letter-spacing: .03em; }
+  .detalhes .fl-copiar { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 11px; border: 0; border-radius: 9px; background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--line-2); font-family: var(--font-sans); font-size: 13px; font-weight: 650; letter-spacing: 0; color: var(--ink); cursor: pointer; }
+  .detalhes .fl-copiar svg { width: 16px; height: 16px; }
+  .detalhes .fl-copiar:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
+  .detalhes .ficha-linha { display: block; }
+  .detalhes .ficha-linha + .ficha-linha { margin-top: 6px; }
+  .detalhes .ficha-linha b { font-weight: 680; }
+  .detalhes .ficha-nota { display: flex; gap: 9px; margin: 14px 4px 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-3); }
+  .detalhes .ficha-nota::before { width: 17px; height: 17px; margin-top: 1px; }
+
+  /* DESCRIÇÃO: abertura + blocos com título e ícone */
+  .detalhes .descricao { color: var(--ink-2); font-size: 15.5px; line-height: 1.62; overflow-wrap: anywhere; }
   .detalhes .descricao p { margin: 0 0 10px; }
-  /* regras da ficha limpa (listas, linhas da ficha) */
-  .detalhes .descricao ul, .detalhes .descricao ol { display: grid; gap: 5px; margin: 0 0 12px; padding-left: 1.25em; }
+  .detalhes .desc-abre { font-size: 16.5px; line-height: 1.55; color: var(--ink); text-wrap: pretty; }
+  .detalhes .db { padding: 18px 0 8px; border-top: 1px solid var(--line); }
+  .detalhes .desc-abre + .db, .detalhes .descricao > ul + .db { margin-top: 10px; }
+  .detalhes .db h3 { position: relative; display: flex; align-items: center; gap: 10px; min-height: 34px; margin: 0 0 10px; padding-left: 44px; font-size: 16px; font-weight: 720; color: var(--ink); }
+  /* o ícone num ladrilho: o ladrilho é o ::after (atrás) e o desenho, o ::before (na cor do texto laranja) */
+  .detalhes .db h3::after { content: ""; position: absolute; left: 0; top: 0; width: 34px; height: 34px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .detalhes .db h3::before { position: absolute; left: 7px; top: 7px; z-index: 1; color: var(--accent-text); }
+  .detalhes .descricao ul, .detalhes .descricao ol { display: grid; gap: 6px; margin: 0 0 12px; padding-left: 1.2em; }
   .detalhes .descricao ul { list-style: disc; }
   .detalhes .descricao ol { list-style: decimal; }
   .detalhes .descricao li { padding-left: 3px; }
   .detalhes .descricao li::marker { color: var(--ink-3); }
-  /* descrição longa recolhida: ~10 linhas e um degradê no fim (o botão abre) */
-  .detalhes .descricao.recolhida { max-height: 16.5em; overflow: hidden;
-    -webkit-mask-image: linear-gradient(#000 62%, transparent); mask-image: linear-gradient(#000 62%, transparent); }
+  .detalhes .descricao .db > :is(p, ul, ol) { margin-left: 44px; }
+  .detalhes .db-chip { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px !important; padding: 6px 12px 6px 10px; border-radius: 999px;
+    background: #ecf8f0; box-shadow: inset 0 0 0 1px #bfe6cc; color: #14532d; font-size: 14px; font-weight: 650; line-height: 1.3; }
+  .detalhes .db-chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #16a34a; flex: none; }
+  /* Medidas: régua (comprimento × largura × altura) e peso, só com medida real */
+  .detalhes .db-medidas { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 10px 44px; }
+  .detalhes .db-medidas p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 0; padding: 12px 16px; border-radius: 14px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); }
+  .detalhes .dm-dim b, .detalhes .dm-peso b { font-stretch: 84%; font-weight: 800; font-size: 24px; line-height: 1.1; }
+  .detalhes .dm-dim i { font-style: normal; color: var(--ink-3); }
+  .detalhes .dm-dim small { font-size: 14px; font-weight: 650; color: var(--ink-2); }
+  .detalhes .db-medidas span { flex-basis: 100%; font-size: 12.5px; color: var(--ink-3); }
+  .detalhes .dm-peso::before { align-self: center; color: var(--ink-3); }
+
+  /* descrição longa recolhida: ~12 linhas e um degradê no fim (o botão abre) */
+  .detalhes .descricao.recolhida { max-height: 22em; overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
   .detalhes .descricao-mais { display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; padding: 0 2px; border: 0; background: none;
     font: inherit; font-size: 15px; font-weight: 650; color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent);
     text-decoration-thickness: 2px; text-underline-offset: 4px; cursor: pointer; }
   .detalhes .descricao-mais:hover { color: var(--accent-text); }
-  .detalhes .ficha-linha { display: block; }
-  .detalhes .sem-quebra { white-space: nowrap; }
-  .detalhes .ficha-linha + .ficha-linha { margin-top: 7px; }
-  .detalhes .ficha-linha b { font-weight: 650; color: var(--ink); }
+  @media (max-width: 559px) {
+    .detalhes .ficha { padding: 2px 16px; }
+    .detalhes .fl { grid-template-columns: minmax(0, 1fr); padding: 12px 0; }
+    .detalhes .fl dd { padding-left: 31px; }
+    .detalhes .descricao .db > :is(p, ul, ol), .detalhes .db-medidas { margin-left: 0; }
+  }
   @media (max-width: 959px) {
     .detalhes .abas { display: flex; }
     .detalhes .detalhes-grade { gap: 0; }
     .detalhes .subtitulo { display: none; }
   }
   @media (min-width: 960px) {
-    .detalhes .detalhes-grade { grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+    .detalhes .detalhes-grade { grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 56px; align-items: start; }
     .detalhes .painel[hidden] { display: block !important; }
   }
 </style>
