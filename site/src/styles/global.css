@@ -278,3 +278,6 @@
 
 /* o anel de foco fica na caixa (.busca:focus-within); o campo de dentro nao ganha outro contorno */
 .busca input:focus, .busca input:focus-visible { outline: none; box-shadow: none; }
+
+/* capa de estúdio já vem com fundo e margem: ocupa a placa inteira */
+.etiqueta-foto img.estudio { padding: 0; object-fit: cover; }

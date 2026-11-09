@@ -1,0 +1,106 @@
+---
+// CHECKPOINT 1 v2 — pilotos com artes novas. noindex; apagar antes de publicar.
+import Base from '../../layouts/Base.astro';
+import Cabecalho from '../../components/Cabecalho.astro';
+import AberturaV2 from '../../components/v2/AberturaV2.astro';
+import NuvemMarcas from '../../components/v2/NuvemMarcas.astro';
+import CartaoPeca from '../../components/CartaoPeca.astro';
+import SugestoesBusca from '../../components/ui/SugestoesBusca';
+import { pecas, resumo, temEstudio, logoMarca } from '../../lib/dados';
+export function getStaticPaths() { return ['estudio', 'explodido', 'patio'].map((d) => ({ params: { d } })); }
+const d = Astro.params.d as string;
+const artes: Record<string, [string, string | undefined]> = {
+  estudio: ['/arte/v2/abertura-estudio.webp', undefined],
+  explodido: ['/arte/v2/abertura-explodido.webp', undefined],
+  patio: ['/arte/v2/abertura-patio.webp', undefined],
+};
+const comEstudio = pecas().filter((p) => temEstudio(p.id)).slice(0, 10);
+const xc60 = resumo().carros.find((c) => c.k === 'volvo-xc60')!;
+---
+<Base titulo={`Piloto v2 · ${d} · Izzat Car`} noindex>
+  <Cabecalho />
+  <AberturaV2 arte={artes[d][0]} arteCelular={artes[d][1]}>
+    <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Peça, carro ou código" />
+  </AberturaV2>
+
+  <section class="secao">
+    <div class="moldura">
+      <p class="pil">Piloto · selo de confiança (família de 4)</p>
+      <div class="selos-v2">
+        <div class="selo-v2"><img src="/arte/v2/selo-garantia.webp" alt="" width="96" height="96" /><b>90 dias de garantia</b><span>Em toda peça</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao faixa">
+    <div class="moldura">
+      <h2 class="titulo-secao">Escolha pela marca do seu carro</h2>
+      <p class="lead">Logo e nome de cada marca, com o total de peças no estoque.</p>
+      <div style="margin-top:24px"><NuvemMarcas /></div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <div class="moldura">
+      <h2 class="titulo-secao">Peças por sistema do carro</h2>
+      <p class="pil">Piloto · 2 das 20 artes de categoria (nome desenhado na arte; número de peças vivo)</p>
+      <div class="cats-v2">
+        {[['iluminacao', 'Iluminação'], ['freios', 'Freios']].map(([k, n]) => {
+          const f = resumo().familias.find((x) => x.k === k);
+          return <a class="cat-v2" href={`/categoria/${k}.html`}><img src={`/arte/v2/cat-${k}.webp`} alt={n} width="800" height="800" /><span class="cat-v2-qtd num">{f?.c} peças</span></a>;
+        })}
+      </div>
+    </div>
+  </section>
+
+  <section class="secao faixa">
+    <div class="moldura">
+      <h2 class="titulo-secao">Chegou no pátio</h2>
+      <p class="pil">Piloto · capas de estúdio automáticas (fundo removido, mesmo padrão em todas)</p>
+      <div class="trilho">{comEstudio.map((p, i) => <CartaoPeca p={p} eager={i < 3} />)}</div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <div class="moldura">
+      <h2 class="titulo-secao">Carros do pátio</h2>
+      <p class="pil">Piloto · arte do carro em estúdio (sem emblema) + logo e nome vivos</p>
+      <a class="carro-v2" href="/carros/volvo-xc60.html">
+        <img src="/arte/v2/carro-volvo-xc60.webp" alt="Volvo XC60" width="1200" height="800" />
+        <span class="carro-v2-info"><img src={logoMarca('volvo')!} alt="" width="28" height="28" /><span><b>Volvo XC60</b><small class="num">{xc60.anos?.[0]} a {xc60.anos?.[1]} · {xc60.c} peças</small></span></span>
+      </a>
+    </div>
+  </section>
+
+  <section class="secao faixa">
+    <div class="moldura">
+      <p class="pil">Piloto · banner novo (estúdio limpo, letra maior)</p>
+      <a class="banner-v2" href="#"><picture><source media="(max-width:700px)" srcset="/arte/v2/banner-serve-celular.webp" /><img src="/arte/v2/banner-serve.webp" alt="Serve no meu carro? Manda o modelo e o ano. A gente confere e te responde com foto. Chamar no WhatsApp" width="1536" height="1024" /></picture></a>
+    </div>
+  </section>
+</Base>
+<style>
+  .faixa { background: var(--bg-2); }
+  .titulo-secao { margin: 0 0 6px; }
+  .lead { margin: 0; }
+  .pil { display: inline-block; margin: 0 0 18px; padding: 6px 12px; border-radius: 99px; background: #1d1d1f; color: #fff; font-size: 12.5px; font-weight: 600; }
+  .selos-v2 { display: flex; gap: 24px; }
+  .selo-v2 { display: grid; justify-items: center; text-align: center; gap: 4px; padding: 22px 26px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .selo-v2 img { width: 96px; height: 96px; }
+  .selo-v2 b { font-stretch: 86%; font-weight: 800; font-size: 18px; }
+  .selo-v2 span { font-size: 14px; color: var(--ink-2); }
+  .cats-v2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; max-width: 760px; }
+  .cat-v2 { position: relative; border-radius: 22px; overflow: hidden; box-shadow: var(--shadow-1); transition: transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s; }
+  .cat-v2 img { width: 100%; height: auto; display: block; }
+  .cat-v2-qtd { position: absolute; top: 12px; right: 12px; padding: 6px 10px; border-radius: 99px; background: rgb(255 255 255 / .9); font-size: 12.5px; font-weight: 700; color: #1d1d1f; backdrop-filter: blur(6px); }
+  @media (hover: hover) { .cat-v2:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); } }
+  .carro-v2 { position: relative; display: block; max-width: 760px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-2); }
+  .carro-v2 > img { width: 100%; height: auto; display: block; }
+  .carro-v2-info { position: absolute; left: 18px; bottom: 16px; display: flex; gap: 12px; align-items: center; padding: 10px 16px 10px 12px; border-radius: 16px;
+    background: rgb(255 255 255 / .86); backdrop-filter: blur(12px); color: #1d1d1f; }
+  .carro-v2-info img { width: 28px; height: 28px; filter: brightness(0); }
+  .carro-v2-info b { display: block; font-stretch: 80%; font-weight: 820; font-size: 22px; line-height: 1; }
+  .carro-v2-info small { font-size: 13px; color: #55555b; }
+  .banner-v2 { display: block; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-2); }
+  .banner-v2 img { width: 100%; height: auto; display: block; }
+</style>

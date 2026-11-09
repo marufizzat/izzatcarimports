@@ -1,5 +1,5 @@
 // Le os dados gerados por ../preparar_dados.py (uma vez por build).
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 export type Peca = {
@@ -52,4 +52,22 @@ export const WHATS = '5553991170950';
 export const SITE = 'https://izzatcarimports.com.br';
 export function whatsUrl(texto: string) {
   return `https://wa.me/${WHATS}?text=${encodeURIComponent(texto)}`;
+}
+
+// Capa de ESTÚDIO (fundo limpo, gerada por capas_estudio.py) quando existir;
+// senão a foto do ML no tamanho pedido.
+let _estudio: Set<string> | null = null;
+export function temEstudio(id: string): boolean {
+  if (!_estudio) {
+    const dir = join(process.cwd(), 'public', 'estudio');
+    _estudio = new Set(existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.webp')).map((f) => f.slice(0, -5)) : []);
+  }
+  return _estudio.has(id);
+}
+export function capa(p: { id: string; fotos: string[] }, tam: Tam = 'O'): string {
+  return temEstudio(p.id) ? `/estudio/${p.id}.webp` : foto(p.fotos[0], tam);
+}
+export function logoMarca(k: string): string | null {
+  for (const ext of ['svg', 'png']) if (existsSync(join(process.cwd(), 'public', 'marcas', `${k}.${ext}`))) return `/marcas/${k}.${ext}`;
+  return null;
 }

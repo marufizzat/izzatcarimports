@@ -1,0 +1,43 @@
+---
+// Abertura v2: arte criada (cenário limpo) em tela cheia + busca e seletor VIVOS
+// na zona reservada (esquerda no PC, em cima no celular).
+import SeletorCarro from '../SeletorCarro.astro';
+interface Props { arte: string; arteCelular?: string; tom?: 'claro' | 'escuro'; }
+const { arte, arteCelular, tom = 'claro' } = Astro.props;
+---
+<section class:list={['abv2', `abv2-${tom}`]}>
+  <picture class="abv2-arte" aria-hidden="true">
+    <source media="(max-width: 767px)" srcset={arteCelular ?? arte} />
+    <img src={arte} alt="" width="1536" height="1024" fetchpriority="high" decoding="async" />
+  </picture>
+  <div class="moldura abv2-conteudo">
+    <h1 class="display abv2-h1">Qual peça o seu carro precisa?</h1>
+    <p class="abv2-lead">Peças originais de carros com baixa legal no Detran-RS. Nota fiscal e 90 dias de garantia em toda peça.</p>
+    <div class="abv2-busca"><slot name="busca" /></div>
+    <div class="abv2-seletor"><SeletorCarro /></div>
+  </div>
+</section>
+<style>
+  .abv2 { position: relative; isolation: isolate; overflow: hidden; background: #f1f0ed; min-height: min(86svh, 760px); display: grid; align-items: center; }
+  .abv2-arte { position: absolute; inset: 0; z-index: -1; }
+  .abv2-arte img { width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; }
+  .abv2-arte::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgb(244 243 240 / .96) 0%, rgb(244 243 240 / .86) 34%, rgb(244 243 240 / 0) 58%); }
+  .abv2-conteudo { display: grid; gap: 18px; padding-block: 56px; max-width: 1240px; }
+  .abv2-conteudo > * { max-width: 600px; }
+  .abv2-lead { max-width: 40ch; }
+  .abv2-seletor :global(.seletor-carro) { grid-template-columns: 1fr 1fr; }
+  .abv2-seletor :global(.seletor-carro .botao) { grid-column: auto; }
+  .abv2-h1 { margin: 0; font-size: clamp(44px, 5.6vw, 82px); color: #1d1d1f; }
+  .abv2-lead { margin: 0; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.5; color: #4a4a50; max-width: 44ch; }
+  .abv2-escuro .abv2-arte::after { background: linear-gradient(90deg, rgb(244 243 240 / .97) 0%, rgb(244 243 240 / .9) 38%, rgb(244 243 240 / 0) 62%); }
+  /* celular: conteúdo em cima, arte inteira EMBAIXO (nunca atrás do formulário) */
+  @media (max-width: 767px) {
+    .abv2 { display: flex; flex-direction: column; min-height: 0; background: #f2f1ee; }
+    .abv2-conteudo { order: 1; padding-block: 24px 8px; }
+    .abv2-arte { position: relative; order: 2; inset: auto; z-index: 0; display: block; margin-top: -40px; }
+    .abv2-arte img { height: auto; aspect-ratio: 1 / 1; object-position: 78% 60%; }
+    .abv2-arte::after { background: linear-gradient(180deg, #f2f1ee 0%, rgb(242 241 238 / 0) 30%); }
+  }
+  @media (prefers-color-scheme: dark) { .abv2 { color-scheme: light; } }
+</style>
