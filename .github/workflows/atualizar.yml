@@ -97,6 +97,8 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
           ESTUDIO_POR_RODADA: "150"
+          ESTUDIO_VERSAO: "2"   # enquadramento novo + selo da Izzat Car no canto (aprovado pelo dono em 09/11)
+          ESTUDIO_LOGO: "a"
           ESTUDIO_TEMPO_MAX: "1500"   # segundos: passou disso, para e deixa o resto pra proxima rodada
         run: |
           pip install "rembg[cpu]==2.0.*" scipy
