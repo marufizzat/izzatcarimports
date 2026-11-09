@@ -1,11 +1,38 @@
 ---
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import Pagina from '../layouts/Pagina.astro';
 import Catalogo from '../components/catalogo/Catalogo';
-import CartaoPeca from '../components/CartaoPeca.astro';
-import { pecas, resumo, logoInfo, SITE } from '../lib/dados';
+import SeloReputacao from '../components/SeloReputacao.astro';
+import { resumo, logoInfo, SITE } from '../lib/dados';
+import { Busca, capaItem, foto, type Indice } from '../lib/busca';
+import { idsMaisNovos } from '../components/catalogo/etiqueta';
 const r = resumo();
-// Sem JS (e para o Google): as 48 mais novas + atalhos por tipo e por carro.
-const primeiras = [...pecas()].sort((a, b) => (b.id > a.id ? 1 : -1)).slice(0, 48);
+// A 1ª tela vem pronta no HTML (no 4G, sem esperar o índice de ~360 KB): as 24 primeiras da ordem padrão e os
+// filtros, feitos com o MESMO public/dados/busca.json que o navegador baixa depois (os cartões não mudam quando ele chega).
+// Sem JS, é isto que aparece (e o Google lê), com os atalhos do pé.
+const ix: Indice = JSON.parse(readFileSync(join(process.cwd(), 'public', 'dados', 'busca.json'), 'utf-8'));
+const motor = new Busca(ix);
+const iniciais = motor.procurar({}).slice(0, 24);
+const facetasIniciais = motor.facetas({});
+// "Chegou agora" no catálogo: só as 8 mais novas (com 24, metade da 1ª tela levava o selo)
+const novos = [...idsMaisNovos(motor.itens.map((i) => i.id), 8)];
+// Fotos dos 2 primeiros cartões: pedidas já no <head> (só no catálogo sem busca). Os cartões da 1ª tela vêm com
+// loading="lazy": num endereço com busca, a vitrine padrão fica escondida e as fotos dela nem são baixadas
+// (no 4G, a banda vai inteira para o índice).
+const fotosTopo = iniciais.slice(0, 2).map((it) => (it.e !== '0' || !it.i ? { href: capaItem(it) } : {
+  href: foto(it.i, 'O'), imagesrcset: `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`,
+  imagesizes: '(min-width:1280px) 240px, (min-width:768px) 28vw, 46vw',
+}));
+// ?tipo= antigo (família do Mercado Livre, que o Google conhece: "Iluminação", "Peças de Interior") -> o bloco novo.
+// Com sub= junto ("Carroceria" + "Retrovisores Externos"), o tipo sai: o sub sozinho já filtra certo.
+const tiposAntigos = Object.fromEntries((r.antigas ?? []).map((a) => [a.n, r.familias.find((f) => f.k === a.para && f.c > 0)?.n ?? '']));
+// Antes da pintura (no <head>, sem esperar o CSS):
+// - ?tipo= antigo vira o novo (acima), antes de o catálogo ler o endereço;
+// - endereço com busca ou filtro: html.cat-url troca a vitrine padrão pelo esqueleto e o índice é pedido já;
+// - sem busca: as fotos dos 2 primeiros cartões são pedidas já, com prioridade;
+// - html.cat-url-filtro guarda o lugar das fichas; html.cat-carro, o do aviso "Seu carro".
+const scriptTopo = `(function(){var d=document.documentElement,h=document.head,u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},A=${JSON.stringify(tiposAntigos)},t0=g('tipo');if(t0&&A.hasOwnProperty(t0)){if(A[t0]&&!g('sub'))u.set('tipo',A[t0]);else u.delete('tipo');history.replaceState(history.state,'',location.pathname+'?'+u+location.hash)}var o=g('ordem'),a=Number(g('ano'))||0,fil=!!(g('marca')||g('modelo')||a||g('tipo')||g('sub')||g('preco'));function pre(x){var l=document.createElement('link');l.rel='preload';for(var k in x)l.setAttribute(k,x[k]);h.appendChild(l)}if(g('q')||fil||g('frete')==='1'||g('frete')==='true'||o==='asc'||o==='desc'){d.classList.add('cat-url');pre({as:'fetch',href:'/dados/busca.json',crossorigin:'anonymous'})}else ${JSON.stringify(fotosTopo)}.forEach(function(f){f.as='image';f.fetchpriority='high';pre(f)});if(fil)d.classList.add('cat-url-filtro');try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')||'null');if(c&&typeof c.b=='string'&&typeof c.m=='string')d.classList.add('cat-carro')}catch(e){}})();`;
 // Logos das marcas para os filtros (usados como estão, com as cores reais, num disco claro).
 const logos = Object.fromEntries(r.marcas.flatMap((m) => {
   const l = logoInfo(m.k, 26, 20);
@@ -25,14 +52,16 @@ const confianca: [string, string][] = [
 ---
 <Pagina titulo="Catálogo de peças originais | Izzat Car Imports"
         descricao={`Busque entre ${r.total.toLocaleString('pt-BR')} peças originais de desmanche legalizado: pelo nome, pelo carro ou pelo código gravado. Nota fiscal e 90 dias de garantia.`}>
-  <link slot="head" rel="preload" href="/dados/busca.json" as="fetch" crossorigin />
+  <script is:inline slot="head" set:html={scriptTopo} />
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <div class="cat-pagina">
     <div class="moldura">
       <div class="cat-cabeca">
         <nav class="cat-trilha" aria-label="Você está em"><a href="/index.html">Início</a><span aria-hidden="true">/</span><span aria-current="page">Catálogo</span></nav>
         <div class="cat-cabeca-linha">
-          <h1 class="display">Catálogo de peças</h1>
+          <h1 class="display" data-cat-titulo>Catálogo de peças</h1>
+          {/* título com os filtros do endereço, antes da pintura (a MESMA regra de tituloCatalogo em Catalogo.tsx) */}
+          <script is:inline>(function(){var u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},a=Number(g('ano'))||0,t=g('tipo'),sb=g('sub'),carro=[g('marca'),g('modelo')].filter(Boolean).join(' '),base=sb?sb:t?(t==='Outros'?'Outras peças':/^peças/i.test(t)?t:'Peças de '+t.toLowerCase()):'Peças',h=carro?base+' para '+carro+(a?' '+a:''):a?base+' para carro ano '+a:t||sb?base:'';if(h){var e=document.querySelector('[data-cat-titulo]');if(e)e.textContent=h;document.title=h+' | Izzat Car Imports'}})();</script>
           <p class="cat-lead">Peças originais de desmanche legal <span class="cat-nowrap">(CDV Detran-RS nº 01060)</span>.<span class="cat-lead-extra"> Ache pelo nome, pelo carro ou pelo código gravado na peça.</span></p>
           <ul class="cat-confianca" aria-label="Em toda peça">
             {confianca.map(([t, d]) => (
@@ -41,14 +70,18 @@ const confianca: [string, string][] = [
           </ul>
         </div>
       </div>
-      <Catalogo client:load total={r.total} logos={logos} />
-      <noscript>
-        <style is:inline>.cat{display:none}</style>
-        <div class="cat-grade">{primeiras.map((p) => <CartaoPeca p={p} />)}</div>
-      </noscript>
+      <Catalogo client:load total={r.total} logos={logos} iniciais={iniciais} facetasIniciais={facetasIniciais} novos={novos}>
+        <SeloReputacao variante="compacto" slot="selo" />
+      </Catalogo>
       <nav class="cat-atalhos" aria-label="Atalhos do catálogo">
-        <div><h2>Por tipo de peça</h2>{r.familias.filter((f) => f.n !== 'Outros').map((f) => <a href={`/categoria/${f.k}.html`}>{f.n}</a>)}</div>
-        <div><h2>Por carro</h2>{r.carros.slice(0, 24).map((c) => <a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a>)}<a href="/carros.html">Todos os carros</a></div>
+        <div>
+          <h2>Por sistema do carro</h2>
+          <ul>{r.familias.filter((f) => f.n !== 'Outros').map((f) => <li><a href={`/categoria/${f.k}.html`}>{f.n}</a></li>)}</ul>
+        </div>
+        <div>
+          <h2>Por carro</h2>
+          <ul>{r.carros.slice(0, 24).map((c) => <li><a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a></li>)}<li><a class="cat-atalhos-todos" href="/carros.html">Todos os carros</a></li></ul>
+        </div>
       </nav>
     </div>
   </div>
@@ -123,6 +156,13 @@ const confianca: [string, string][] = [
   @media (min-width: 1024px) {
     .cat-lateral { display: block; position: sticky; top: calc(var(--cat-cab) + 16px); align-self: start; max-height: calc(100dvh - var(--cat-cab) - 32px);
       overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; border-radius: 18px; }
+    /* tem mais filtros embaixo: um degradê no pé da lateral (some no fim da rolagem; sem rolagem, nem aparece) */
+    .cat-lateral::after { content: ""; position: sticky; bottom: 0; display: block; height: 44px; margin-top: -44px; border-radius: 0 0 18px 18px;
+      background: linear-gradient(to bottom, transparent, var(--surface) 85%); pointer-events: none; opacity: 0; }
+    @supports (animation-timeline: scroll()) {
+      .cat-lateral::after { animation: cat-lateral-fim linear both; animation-timeline: scroll(nearest block); }
+      @keyframes cat-lateral-fim { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+    }
   }
   .cat-filtros { display: grid; }
   .cat-lateral .cat-filtros { padding: 2px 0; border-radius: 18px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-1); }
@@ -149,7 +189,7 @@ const confianca: [string, string][] = [
   .cat-marca { width: 18px; height: 18px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-2); transition: box-shadow .15s, background-color .15s; }
   .cat-opcao:hover .cat-marca { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
   .cat-opcao[aria-pressed="true"] .cat-marca { background: #1d1d1f; box-shadow: inset 0 0 0 5px var(--accent); }
-  /* logo da marca como está (cores reais), num disco claro: contraste também no escuro */
+  /* logo da marca como está (cores reais), num disco claro */
   .com-logo .cat-opcao { min-height: 44px; padding-block: 4px; }
   .cat-logo { width: 40px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 10px; background: #f3f2ef; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); }
   .cat-logo img { display: block; max-width: 28px; max-height: 22px; width: auto; height: auto; object-fit: contain; }
@@ -158,7 +198,7 @@ const confianca: [string, string][] = [
   .cat-mais { display: inline-flex; align-items: center; gap: 4px; margin: 6px 0 0; padding: 8px; border: 0; background: none; font-weight: 650; font-size: 14px; color: var(--accent-text); }
   .cat-mais svg { width: 16px; height: 16px; }
   .cat-mais[aria-expanded="true"] svg { transform: rotate(180deg); }
-  .cat-nada { margin: 0; padding: 4px 8px 6px; font-size: 13.5px; color: var(--ink-3); }
+  .cat-nada { margin: 0; padding: 14px 16px; font-size: 14px; color: var(--ink-3); }
   .cat-ano select { height: 48px; padding-top: 16px; }
   .cat-filtros-carregando i { display: block; height: 14px; margin: 16px; border-radius: 7px; }
   .cat-filtros-carregando i:nth-child(3n + 1) { width: 46%; height: 16px; }
@@ -168,16 +208,21 @@ const confianca: [string, string][] = [
   .gv .cat-grupo-corpo { padding: 0 0 16px; }
   .gv .cat-opcao { min-height: 46px; font-size: 16px; }
   .gv .com-logo .cat-opcao { min-height: 50px; }
+  .gv .cat-nada { padding-inline: 2px; font-size: 15px; }
   .cat-gaveta-rodape { display: grid; grid-template-columns: auto 1fr; gap: 10px; }
   .cat-gaveta-rodape .botao { width: auto; --h: 52px; }
   .cat-gaveta-rodape .botao[disabled] { opacity: .45; cursor: default; }
 
-  /* topo dos resultados */
-  .cat-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
-  .cat-total { margin: 0 auto 0 0; min-width: 0; font-size: 15px; color: var(--ink-2); }
+  /* topo dos resultados: a linha do total tem altura fixa (o número chega depois sem empurrar a grade) */
+  .cat-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; min-height: 44px; }
+  .cat-total { flex: 1 1 0; min-width: 0; margin: 0; font-size: 15px; line-height: 44px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cat-total b { font-stretch: 84%; font-weight: 820; font-size: 24px; letter-spacing: -.01em; color: var(--ink); }
-  .cat-total-q { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+  .cat-total-q { font-weight: 600; color: var(--ink); }
+  .cat-total-espera { color: var(--ink-3); }
+  .cat-total-aprox { color: var(--ink); font-weight: 600; }
   [data-selo-reputacao] { flex: none; max-width: 100%; }
+  /* o selo do ML vai na linha do total só onde cabe sem empurrar a grade */
+  @media (max-width: 1279px) { .cat-barra [data-selo-reputacao] { display: none; } }
   .cat-ordem { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 34px 0 14px; border-radius: 12px;
     background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 14px; color: var(--ink-3); cursor: pointer; }
   .cat-ordem:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
@@ -195,12 +240,47 @@ const confianca: [string, string][] = [
   .cat-ficha:hover svg { color: var(--ink); }
   .cat-ficha-logo { width: 30px; height: 26px; margin-left: -8px; flex: none; display: grid; place-items: center; border-radius: 99px; background: #f3f2ef; }
   .cat-ficha-logo img { display: block; max-width: 20px; max-height: 15px; width: auto; height: auto; }
-  .cat-limpar { min-height: 40px; padding: 0 8px; border: 0; background: none; font-weight: 650; font-size: 14px; color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
+  .cat-limpar { flex: none; min-height: 40px; padding: 0 8px; border: 0; background: none; font-weight: 650; font-size: 14px; color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+  /* celular: as fichas numa linha só que rola de lado (altura fixa: o lugar delas é guardado antes da pintura) */
+  @media (max-width: 639px) {
+    .cat-ativos { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 2px 16px;
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+    .cat-ativos::-webkit-scrollbar { display: none; }
+    .cat-ficha { flex: none; }
+  }
+
+  /* 1ª tela pronta no HTML. Antes do JS, o endereço com busca ou filtro (html.cat-url, marcado pelo script do topo)
+     troca a vitrine padrão pelo esqueleto; as fichas (html.cat-url-filtro) e o aviso "Seu carro" (html.cat-carro)
+     têm o lugar guardado: nada empurra a grade quando o React assume. */
+  .so-url { display: none !important; }
+  html.cat-url .so-url { display: grid !important; }
+  html.cat-url .cat-ini, html.cat-url .cat-carregando-mais, html.cat-url .cat-lateral .cat-filtros:not(.cat-filtros-carregando) { display: none; }
+  html.cat-url .cat-total { visibility: hidden; }
+  html.cat-url-filtro .cat-ativos-vaga:empty { min-height: 56px; }
+  @media (max-width: 639px) { html.cat-url-filtro .cat-ativos-vaga:empty { min-height: 60px; } }
+  /* "Seu carro" com altura certa: no celular em 2 linhas (texto e botão), no PC numa linha só */
+  .cat-meu-vaga > .cat-meu { margin-bottom: 14px; }
+  @media (max-width: 639px) {
+    .cat-meu-vaga > .cat-meu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .cat-meu-vaga > .cat-meu .botao { width: 100%; }
+    html.cat-carro .cat-meu-vaga:empty { min-height: 144px; }
+  }
+  @media (min-width: 640px) {
+    .cat-meu-vaga > .cat-meu { flex-wrap: nowrap; }
+    .cat-meu-vaga > .cat-meu p { flex: 1; }
+    .cat-meu-vaga > .cat-meu b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cat-meu-vaga > .cat-meu .botao { flex: none; }
+    html.cat-carro .cat-meu-vaga:empty { min-height: 88px; }
+  }
 
   /* grade */
   .cat-grade { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   @media (min-width: 700px) { .cat-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
   @media (min-width: 1280px) { .cat-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
+  /* busca aproximada: as do carro digitado primeiro, depois as outras (um título em cada bloco) */
+  .cat-bloco { grid-column: 1 / -1; margin: 6px 0 -2px; font-stretch: 86%; font-weight: 800; font-size: 19px; line-height: 1.2; color: var(--ink); }
+  .cat-bloco span { font-stretch: 100%; font-weight: 560; font-size: 14.5px; color: var(--ink-3); }
+  .cat-bloco:not(:first-child) { margin-top: 18px; }
   .cat-esqueleto { display: flex; flex-direction: column; gap: 9px; padding-bottom: 16px; border-radius: 16px; overflow: hidden; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
   .cat-esqueleto i { display: block; aspect-ratio: 1; margin-bottom: 4px; }
   .cat-esqueleto b { display: block; height: 12px; margin-inline: 14px; border-radius: 6px; }
@@ -213,30 +293,45 @@ const confianca: [string, string][] = [
   @keyframes cat-brilho { to { background-position: -100% 0; } }
   .cat-mais-pecas { display: grid; justify-items: center; gap: 12px; margin-top: 36px; }
   .cat-mais-pecas p { margin: 0; font-size: 14px; color: var(--ink-2); }
-  .cat-progresso { display: block; width: min(280px, 70%); height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; }
-  .cat-progresso i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+  .cat-carregando-mais { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-3); }
+  .cat-giro { flex: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--accent); animation: cat-girar .8s linear infinite; }
+  @keyframes cat-girar { to { transform: rotate(360deg); } }
 
-  /* avisos e estado vazio */
-  .cat-aviso { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; margin-bottom: 18px; padding: 16px 18px; border-radius: 18px;
-    background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent), transparent 60%); }
-  .cat-aviso b { display: block; font-size: 16.5px; overflow-wrap: anywhere; }
-  .cat-aviso span { display: block; font-size: 14.5px; color: var(--ink-2); }
-  .cat-aviso .botao { grid-column: 1 / -1; justify-self: start; --h: 46px; }
-  @media (min-width: 900px) { .cat-aviso { grid-template-columns: auto 1fr auto; } .cat-aviso .botao { grid-column: auto; } }
-  .cat-erro { padding: 20px; border-radius: 16px; background: var(--surface); color: var(--ink-2); }
-  .cat-vazio { display: grid; gap: 20px 32px; align-items: center; padding: 24px; border-radius: 24px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-1); }
-  @media (min-width: 768px) { .cat-vazio { grid-template-columns: 280px 1fr; padding: 32px 40px 32px 32px; } }
-  .cat-vazio img { width: 100%; max-width: 280px; height: auto; border-radius: 20px; justify-self: center; }
-  .cat-vazio h2 { margin: 0 0 8px; font-stretch: 80%; font-weight: 820; font-size: clamp(26px, 3vw, 34px); line-height: 1.05; overflow-wrap: anywhere; text-wrap: balance; }
-  .cat-vazio p { margin: 0 0 18px; max-width: 46ch; color: var(--ink-2); }
-  .cat-vazio-botoes { display: flex; flex-wrap: wrap; gap: 10px; }
-  @media (max-width: 600px) { .cat-vazio-botoes .botao { width: 100%; } .cat-vazio img { max-width: 200px; } }
+  /* avisos, erro e estado vazio */
+  .cat-aviso, .cat-erro { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; align-items: center; margin-bottom: 18px; padding: 16px 18px; border-radius: 18px; }
+  .cat-aviso { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent), transparent 60%); }
+  .cat-erro { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line-2), var(--shadow-1); }
+  .cat-aviso b, .cat-erro b { display: block; font-size: 16.5px; line-height: 1.3; overflow-wrap: anywhere; }
+  .cat-aviso span, .cat-erro span { display: block; font-size: 14.5px; line-height: 1.45; color: var(--ink-2); }
+  .cat-aviso-botoes, .cat-erro-botoes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; }
+  .cat-aviso .botao, .cat-erro .botao { --h: 46px; }
+  @media (min-width: 900px) { .cat-aviso, .cat-erro { grid-template-columns: auto minmax(0, 1fr) auto; } .cat-aviso-botoes, .cat-erro-botoes { grid-column: auto; } }
+  @media (max-width: 560px) { .cat-aviso-botoes .botao, .cat-erro-botoes .botao { flex: 1 1 100%; } }
+  .cat-avise svg { color: var(--accent-text); }
+  .cat-vazio { display: grid; grid-template-columns: 88px minmax(0, 1fr); grid-template-areas: "img titulo" "texto texto" "botoes botoes"; gap: 12px 16px; align-items: center;
+    padding: 20px; border-radius: 24px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-1); }
+  .cat-vazio img { grid-area: img; width: 88px; height: 88px; border-radius: 16px; object-fit: cover; }
+  .cat-vazio h2 { grid-area: titulo; margin: 0; font-stretch: 80%; font-weight: 820; font-size: clamp(24px, 3vw, 34px); line-height: 1.05; overflow-wrap: anywhere; text-wrap: balance; }
+  .cat-vazio p { grid-area: texto; margin: 0; max-width: 46ch; color: var(--ink-2); }
+  .cat-vazio-botoes { grid-area: botoes; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  @media (max-width: 600px) { .cat-vazio-botoes .botao { flex: 1 1 100%; padding-inline: 16px; } }
+  /* celular bem estreito: "Procurar no pátio" numa linha (o ícone já diz WhatsApp; o leitor de tela ouve tudo) */
+  @media (max-width: 379px) { .cat-so-largo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
+  @media (min-width: 768px) {
+    .cat-vazio { grid-template-columns: 240px minmax(0, 1fr); grid-template-areas: "img titulo" "img texto" "img botoes"; gap: 10px 32px; padding: 32px 40px 32px 32px; }
+    .cat-vazio img { width: 240px; height: 240px; border-radius: 20px; align-self: center; }
+    .cat-vazio h2 { align-self: end; }
+    .cat-vazio-botoes { align-self: start; margin-top: 8px; }
+  }
 
-  /* atalhos (para quem chega sem JS e para o Google) */
-  .cat-atalhos { display: grid; gap: 28px; margin-top: 72px; padding-top: 32px; border-top: 1px solid var(--line); }
-  @media (min-width: 900px) { .cat-atalhos { grid-template-columns: 1fr 1fr; } }
-  .cat-atalhos div { display: flex; flex-wrap: wrap; gap: 8px; align-content: start; }
-  .cat-atalhos h2 { flex-basis: 100%; margin: 0 0 4px; font-stretch: 86%; font-weight: 800; font-size: 18px; }
-  .cat-atalhos a { padding: 8px 12px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; font-weight: 560; }
-  .cat-atalhos a:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
+  /* atalhos do pé (para quem chega sem JS e para o Google): colunas de links, não pílulas */
+  .cat-atalhos { display: grid; gap: 28px; margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--line); }
+  @media (min-width: 900px) { .cat-atalhos { grid-template-columns: 1fr 2fr; gap: 40px; } }
+  .cat-atalhos h2 { margin: 0 0 8px; font-stretch: 86%; font-weight: 800; font-size: 18px; }
+  .cat-atalhos ul { list-style: none; margin: 0; padding: 0; columns: 2 150px; column-gap: 24px; }
+  @media (min-width: 900px) { .cat-atalhos div + div ul { columns: 3 150px; } }
+  .cat-atalhos li { break-inside: avoid; }
+  .cat-atalhos a { display: inline-block; padding: 6px 0; font-size: 14.5px; line-height: 1.35; color: var(--ink-2); }
+  .cat-atalhos a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .cat-atalhos .cat-atalhos-todos { font-weight: 650; color: var(--accent-text); }
 </style>

@@ -11,6 +11,19 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - `site/src/data/pecas.json` e `resumo.json` (usados para montar as páginas);
    - `site/public/dados/busca.json` (o índice que a busca do navegador usa).
    Aqui ficam a leitura de **marca, modelo e ano** pelo título e o **nome limpo** da peça.
+   - **Tipo da peça** (`s`, os cartões "Por tipo" da categoria): a árvore do ML vira o nome da loja em `TIPO_LOJA`
+     (sinônimos num nome só; grupo do ML que mistura de tudo vira "Outros", sem cartão). Família/tipo errados do ML
+     são corrigidos pelo nome da peça em `REGRAS_NOME` (chave de roda, módulo do câmbio, motor de vidro...).
+   - **Bloco** (`c`, as categorias da home e `/categoria/<k>.html`): os 25 `BLOCOS` do jeito que o cliente procura
+     (Retrovisores, Faróis e Lanternas, Maçanetas e Fechaduras…; nome, chave e ordem iguais aos da arte), nunca a
+     família do ML. Sai do tipo `s` (`_TIPOS_DO_BLOCO`); o nome manda quando o ML errou (`BLOCO_PELO_NOME`) ou quando o
+     tipo junta 2 blocos (`BLOCO_NO_TIPO`); o tipo "Outros" vai pelas palavras do nome. O que não cai em nada fica em
+     "Outros" (fora da grade). Tipo novo do ML sem bloco: o teste avisa.
+   - **Peça de 2+ carros** (`ms`, e `ys` quando a faixa de anos muda de um carro para outro): "Volvo S60 Xc60" aparece
+     na página, no filtro, na contagem e no Meu carro dos dois (`site/src/lib/meuCarro.ts`: `modelosDa`,
+     `serveNoModelo`, `anosNoModelo`). A URL da peça não muda.
+   - **Descrição**: só as seções sobre a peça; "chat do anúncio" vira WhatsApp; sai o dado repetido e a medida-padrão
+     do modelo de anúncio (`DIM_PADRAO_MIN`).
    Testes: `python testes/test_dados.py`.
 3. `site/` é um projeto **Astro**: `npm --prefix site run build` gera `site/dist/`.
 4. O workflow `.github/workflows/atualizar.yml` faz 1→2→3, confere os links e publica `site/dist` no GitHub Pages
@@ -56,6 +69,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Novos: `/carros.html`, `/carros/<marca-modelo>.html`, `/marca/<marca>.html`, `/categoria/<tipo>.html`,
   `/como-comprar.html`, `/garantia.html`, `/envios.html`, `/sobre.html`, `/contato.html`, `/procuro-peca.html`.
 - `/veiculos.html` redireciona para `/carros.html`.
+- `/categoria/<família antiga do ML>.html` (pecas-de-interior, carroceria, iluminacao…) redireciona para o bloco mais
+  próximo (`FAMILIAS_ANTIGAS` em `preparar_dados.py` → `site/src/pages/categoria/[antiga].html.ts`); o `?tipo=` antigo
+  do catálogo vira o bloco novo no `<head>` de `catalogo.astro`.
 
 ## Onde mexer
 | Quero mudar… | Arquivo |
@@ -67,6 +83,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 | Leitura de marca/modelo/nome | `preparar_dados.py` |
 | GA4 / Meta Pixel | `site/public/rastreio.js` (só mede no domínio de verdade) |
 | Artes (v2: abertura, categorias, carros, selos, banners, passos, topos, história, 404) | `site/public/arte/v2/` — texto desenhado na arte; prompts em `site/SUPER-PLANEJAMENTO-v2.md` |
+| Artes dos blocos (`cat-<k>.webp` e o topo sem o nome) | `node scripts/instalar-cats.mjs [pasta dos PNG]` na pasta `site/` (bloco sem arte: o nome num fundo de estúdio) |
 | Logos das marcas | `site/public/marcas/` (simple-icons e car-logos-dataset; viewBox recortado) |
 
 ## Regras da marca (manual da vitrine)
@@ -87,10 +104,17 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Sem ilha do Astro na página da peça: a busca do cabeçalho monta o React no 1º contato com o campo e a galeria em tela
   cheia monta quando o navegador folga (`PecaTopo.astro`). "Pedir no WhatsApp" do cartão e os estados do "Serve no seu
   carro" são montados pelo script. "Do mesmo carro" mostra 6 cartões.
-- Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`): sem vidro desfocado, sem 3D no coverflow, sem o
-  "respirar" da abertura e sem animação de altura nas perguntas.
-- Busca: o índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
-  O catálogo pinta os cartões aos poucos (12 por quadro).
+- Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`: até 2 núcleos, até 4 GB no Chrome ou economia de
+  dados; o Safari informa sempre 4 ou 8 núcleos, então iPhone não entra): sem vidro desfocado, sem 3D no coverflow,
+  sem o "respirar" da abertura e sem animação de altura nas perguntas.
+- Busca: UMA regra para o catálogo e as sugestões (`lib/busca.ts`): ano solto vira filtro; todas as palavras, depois com
+  erro de digitação (nunca em termo com número), depois as parecidas (`aproximado`); o carro digitado vem primeiro.
+  O índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
+- Catálogo: a 1ª tela (24 cartões e os filtros) vem pronta no HTML, feita no build com o MESMO `busca.json`; o índice só
+  desce depois das fotos dela, ou já se o endereço traz busca/filtro (`html.cat-url`, marcado no `<head>` de
+  `catalogo.astro`, que também guarda o lugar das fichas e do "Seu carro"). Lotes de 48 (2 entram sozinhos, depois o
+  botão); dentro do lote, 12 cartões e depois 4 por vez quando o navegador folga. O selo "Serve no seu…" fica sobre a
+  foto do cartão (aparecer não empurra a grade).
 
 ## Rodar no computador
 ```

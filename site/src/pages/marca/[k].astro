@@ -24,18 +24,24 @@ const lead = m.m.length > 0
 
   <div class="moldura">
     <ModelosMarca marca={m} carros={carros} logo={logo} />
-    <section class="secao-lista">
-      <TextoApoio paragrafos={texto.paragrafos} />
-    </section>
-    <section class="secao-lista">
-      <h2 class="titulo-secao">As mais novas {m.n}</h2>
+    <section class="secao-lista" aria-labelledby="h-novas">
+      <div class="grade-cabeca">
+        <h2 class="titulo-secao" id="h-novas">As mais novas {m.n}</h2>
+        <p class="num">{lista.length > 24 ? `24 de ${lista.length.toLocaleString('pt-BR')} peças` : `${lista.length} ${lista.length === 1 ? 'peça' : 'peças'}`}</p>
+      </div>
       <div class="mais-novas"><GradePecas lista={lista.slice(0, 24)} total={lista.length} linkTodas={`/catalogo.html?marca=${encodeURIComponent(m.n)}`} /></div>
+    </section>
+    {/* texto de apoio no fim: a escolha do carro e as peças vêm antes */}
+    <section class="secao-lista secao-apoio">
+      <TextoApoio paragrafos={texto.paragrafos} />
     </section>
   </div>
 </Pagina>
 <style>
   .secao-lista { padding-top: clamp(40px, 6vw, 64px); padding-bottom: 24px; }
   .secao-lista:last-child { padding-bottom: 72px; }
-  .titulo-secao { margin: 0 0 22px; }
+  .grade-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; margin-bottom: clamp(18px, 2.4vw, 26px); }
+  .grade-cabeca h2 { margin: 0; }
+  .grade-cabeca p { margin: 0; font-size: 15px; color: var(--ink-2); }
   .mais-novas { margin-top: 4px; }
 </style>

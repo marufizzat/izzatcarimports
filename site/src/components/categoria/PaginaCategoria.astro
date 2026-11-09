@@ -1,0 +1,96 @@
+---
+// Página da categoria (bloco de peças: preparar_dados.py, BLOCOS). Topo com a contagem real; atalhos baixos ("Por
+// marca do carro" com as marcas mais fortes de cara e o resto em "Ver as N marcas"; "Por tipo" em cartões baixos); a
+// grade com título; o texto de apoio no fim. Assim as peças chegam mais cedo na tela. Rota: pages/categoria/[k].astro.
+import Pagina from '../../layouts/Pagina.astro';
+import TopoArte from '../TopoArte.astro';
+import GradePecas from '../GradePecas.astro';
+import AtalhosVisuais from '../AtalhosVisuais.astro';
+import TextoApoio from '../TextoApoio.astro';
+import { pecas, resumo, logoInfo, capaEstudio, type Peca } from '../../lib/dados';
+import { textosCategoria, tituloCategoria, temaCategoria } from '../../lib/textos';
+import { arteTopo } from '../../lib/categorias';
+import { fotoVitrine } from '../../lib/vitrine';
+interface Props { k: string }
+const r = resumo();
+const f = r.familias.find((x) => x.k === Astro.props.k)!;
+const lista = pecas().filter((p) => p.c === f.n).sort((a, b) => (b.id > a.id ? 1 : -1));
+const N = lista.length;
+const fmt = (n: number) => n.toLocaleString('pt-BR');
+const base = `/catalogo.html?tipo=${encodeURIComponent(f.n)}`;
+const conta = (chave: (p: (typeof lista)[number]) => string) => Object.entries(lista.reduce<Record<string, number>>((o, p) => { const k = chave(p); if (k) o[k] = (o[k] || 0) + 1; return o; }, {})).sort((a, b) => b[1] - a[1]);
+// Marcas do carro: ficha com o logo real (como em /carros.html)
+const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
+const marcas = conta((p) => p.b).map(([n, q]) => ({ n, c: q, h: `${base}&marca=${encodeURIComponent(n)}`, logo: logoInfo(kMarca(n), 30, 22) }));
+
+// Foto do tipo: a capa de estúdio de uma peça CUJO NOME COMEÇA pela palavra do tipo ("Lâmpadas" -> uma lâmpada,
+// não o reator), de preferência a maquiada; sem nenhuma assim, a 1ª capa do grupo (como antes).
+const sem = (s: string) => s.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+function singular(w: string): string {
+  if (w.endsWith('oes') || w.endsWith('aes')) return w.slice(0, -3) + 'ao';
+  if (w.endsWith('ais')) return w.slice(0, -2) + 'l';
+  if (w.endsWith('eis')) return w.slice(0, -3) + 'el';
+  if (w.endsWith('ois')) return w.slice(0, -3) + 'ol';
+  if (w.endsWith('res') || w.endsWith('zes') || w.endsWith('ses')) return w.slice(0, -2);
+  if (w.endsWith('ns')) return w.slice(0, -2) + 'm';
+  if (w.endsWith('s')) return w.slice(0, -1);
+  return w;
+}
+function fotoDoTipo(tipo: string): string | null {
+  const alvo = singular(sem(tipo.split(/\s+/)[0] || ''));
+  let achou: string | null = null;
+  if (alvo.length >= 3) {
+    for (const p of lista as Peca[]) {
+      if (p.s !== tipo || !singular(sem((p.n || '').split(/\s+/)[0] || '')).startsWith(alvo)) continue;
+      const c = capaEstudio(p.id);
+      if (!c) continue;
+      if (c.startsWith('/estudio-pro/')) return c;
+      achou ??= c;
+    }
+  }
+  return achou ?? fotoVitrine(lista, (p) => p.s === tipo);
+}
+// Tipos: cartão baixo com a foto de estúdio de uma peça do grupo
+const tipos = conta((p) => p.s).filter(([n]) => n !== 'Outros').slice(0, 14).map(([n, q]) => ({
+  n, c: q,
+  // o mesmo filtro do número do cartão (campo s), e não busca por texto: o catálogo abre com a mesma contagem
+  h: `/catalogo.html?tipo=${encodeURIComponent(f.n)}&sub=${encodeURIComponent(n)}`,
+  foto: fotoDoTipo(n),
+}));
+const texto = textosCategoria(f, lista);
+// a contagem já está no lead e a escolha da marca já está nos atalhos: esses parágrafos não se repetem embaixo
+const apoio = texto.paragrafos.slice(1).filter((p) => !/^Escolha a marca/i.test(p));
+// quando o nome do bloco já é a peça: "241 mangueiras do motor originais" (e não "peças de mangueiras do motor")
+const { tema, ehPeca } = temaCategoria(f);
+const oQue = ehPeca ? `${fmt(N)} ${tema} ${N === 1 ? 'original' : 'originais'}` : `${fmt(N)} ${N === 1 ? 'peça original' : 'peças originais'} de ${tema}`;
+const lead = `${oQue}, de carros com baixa legal no Detran-RS. Com nota fiscal e 90 dias de garantia.`;
+const tituloGrade = ehPeca ? `${tema.charAt(0).toUpperCase()}${tema.slice(1)} originais` : `Peças de ${tema}`;
+// Arte do topo SEM a faixa do nome (o H1 já diz o nome), no tamanho real do recorte (muda de uma arte para outra).
+// Sem a arte (ainda): só o texto.
+const topo = arteTopo(f.k);
+---
+<Pagina titulo={tituloCategoria(f.n)} descricao={texto.meta}>
+  <TopoArte trilha={[['Início', '/index.html'], ['Catálogo', '/catalogo.html'], [f.n, `/categoria/${f.k}.html`]]}
+    titulo={f.n} arte={topo?.src} arteW={topo?.w} arteH={topo?.h} encaixe="contem" lead={lead}>
+    <AtalhosVisuais titulo="Por marca do carro" modo="marca" itens={marcas} limite={10} limitePc={6} minimo={3} id="marcas" mais={`Ver as ${marcas.length} marcas`} />
+    <AtalhosVisuais titulo="Por tipo" modo="tipo" itens={tipos} limite={9} limitePc={4} id="tipos" />
+  </TopoArte>
+  <div class="moldura">
+    <section class="cat-pecas" aria-labelledby="h-pecas">
+      <div class="grade-cabeca">
+        <h2 class="titulo-secao" id="h-pecas">{tituloGrade}</h2>
+        <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{N > 1 ? ' · as mais novas primeiro' : ''}</p>
+      </div>
+      <GradePecas lista={lista.slice(0, 48)} total={N} linkTodas={base} />
+    </section>
+    {apoio.length > 0 && <div class="cat-apoio"><TextoApoio paragrafos={apoio} /></div>}
+  </div>
+</Pagina>
+<style>
+  .cat-pecas { padding-top: clamp(32px, 4.4vw, 52px); }
+  .grade-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; margin-bottom: clamp(18px, 2.4vw, 26px); }
+  .grade-cabeca h2 { margin: 0; }
+  .grade-cabeca p { margin: 0; font-size: 15px; color: var(--ink-2); }
+  .cat-apoio { padding-block: clamp(40px, 5vw, 64px) clamp(56px, 7vw, 88px); }
+  .cat-pecas:last-child { padding-bottom: clamp(56px, 7vw, 88px); }
+</style>

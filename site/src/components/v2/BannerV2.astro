@@ -50,7 +50,8 @@ const icone = ICONE[nome] ?? 'conversa';
   .banner-v2 { display: block; border-radius: 26px; overflow: hidden; background: #efeeeb; box-shadow: var(--shadow-2); transition: transform .35s cubic-bezier(.2,.7,.2,1); }
   .banner-v2 img { display: block; width: 100%; height: auto; }
   @media (hover: hover) { .banner-v2:hover { transform: translateY(-3px); } }
-  .banner-v2:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+  /* foco do teclado: o anel global (global.css, :focus-visible), só um pouco mais afastado do cartão */
+  .banner-v2:focus-visible { outline-offset: 4px; }
 
   /* faixa: cartão baixo, fio laranja na borda esquerda e um brilho quente no canto */
   .faixa-whats { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr) auto;

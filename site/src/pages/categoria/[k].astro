@@ -1,46 +1,10 @@
 ---
-import Pagina from '../../layouts/Pagina.astro';
-import TopoArte from '../../components/TopoArte.astro';
-import GradePecas from '../../components/GradePecas.astro';
-import AtalhosVisuais from '../../components/AtalhosVisuais.astro';
-import TextoApoio from '../../components/TextoApoio.astro';
-import { pecas, resumo, logoInfo } from '../../lib/dados';
-import { textosCategoria, tituloCategoria } from '../../lib/textos';
-import { fotoVitrine } from '../../lib/vitrine';
-export function getStaticPaths() { return resumo().familias.filter((f) => f.n !== 'Outros').map((f) => ({ params: { k: f.k }, props: { k: f.k } })); }
-const r = resumo();
-const f = r.familias.find((x) => x.k === Astro.props.k)!;
-const lista = pecas().filter((p) => p.c === f.n).sort((a, b) => (b.id > a.id ? 1 : -1));
-const base = `/catalogo.html?tipo=${encodeURIComponent(f.n)}`;
-const conta = (chave: (p: (typeof lista)[number]) => string) => Object.entries(lista.reduce<Record<string, number>>((o, p) => { const k = chave(p); if (k) o[k] = (o[k] || 0) + 1; return o; }, {})).sort((a, b) => b[1] - a[1]);
-// Marcas do carro: chip com o logo real (como em /carros.html)
-const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
-const marcas = conta((p) => p.b).map(([n, q]) => ({ n, c: q, h: `${base}&marca=${encodeURIComponent(n)}`, logo: logoInfo(kMarca(n), 26, 18) }));
-// Tipos: cartao com a foto de estudio de uma peca do grupo
-const tipos = conta((p) => p.s).filter(([n]) => n !== 'Outros').slice(0, 14).map(([n, q]) => ({
-  n, c: q,
-  h: `/catalogo.html?q=${encodeURIComponent(n)}&tipo=${encodeURIComponent(f.n)}`,
-  foto: fotoVitrine(lista, (p) => p.s === n),
-}));
-const texto = textosCategoria(f, lista);
-// Arte do topo SEM a faixa do nome (o H1 ja diz o nome). Altura real do recorte: 632, e 648 no Freios (base mais baixa).
-const arteAltura = f.k === 'freios' ? 648 : 632;
+// /categoria/<k>.html: um bloco de peças (components/categoria/PaginaCategoria.astro). As chaves antigas que o Google
+// conhece redirecionam em [antiga].html.ts.
+import PaginaCategoria from '../../components/categoria/PaginaCategoria.astro';
+import { resumo } from '../../lib/dados';
+export function getStaticPaths() {
+  return resumo().familias.filter((f) => f.k !== 'outros' && f.c > 0).map((f) => ({ params: { k: f.k }, props: { k: f.k } }));
+}
 ---
-<Pagina titulo={tituloCategoria(f.n)} descricao={texto.meta}>
-  <TopoArte trilha={[['Início', '/index.html'], ['Catálogo', '/catalogo.html'], [f.n, `/categoria/${f.k}.html`]]}
-    titulo={f.n} arte={`/arte/v2/topo-cat-${f.k}.webp`} arteW={800} arteH={arteAltura} encaixe="contem"
-    lead="Escolha a marca do seu carro para chegar mais rápido.">
-    <AtalhosVisuais titulo="Por marca do carro" modo="marca" itens={marcas} />
-    <AtalhosVisuais titulo="Por tipo" modo="tipo" itens={tipos} />
-  </TopoArte>
-  <div class="moldura">
-    <section class="secao-lista">
-      <TextoApoio paragrafos={texto.paragrafos} />
-      <div class="grade-topo"><GradePecas lista={lista.slice(0, 48)} total={lista.length} linkTodas={base} /></div>
-    </section>
-  </div>
-</Pagina>
-<style>
-  .secao-lista { padding-top: 40px; padding-bottom: 72px; }
-  .grade-topo { margin-top: 36px; }
-</style>
+<PaginaCategoria k={Astro.props.k} />

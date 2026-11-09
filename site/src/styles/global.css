@@ -41,6 +41,12 @@
   --display-wdth: 78%;
   --display-wght: 820;
   --display-case: none;
+  /* anel do teclado: o MESMO em todo o site (laranja escuro, 4,7:1 no fundo claro; o laranja puro dá 2,6:1) */
+  --foco: var(--accent-text);
+  --foco-halo: color-mix(in oklab, var(--accent), transparent 72%);
+  /* páginas irmãs (topos com arte, institucionais, contato, procuro, 404): o mesmo H1 e o mesmo respiro de cartão */
+  --h1-pagina: clamp(42px, 5.6vw, 80px);
+  --pad-cartao: clamp(22px, 4vw, 56px);
   color-scheme: light;
 }
 
@@ -57,6 +63,7 @@
   --line: #2a2b30;
   --line-2: #36373d;
   --accent-text: #ff8a3d;
+  --foco: var(--accent-text);       /* o anel do teclado acompanha a faixa escura (laranja claro, 7,7:1) */
   background: var(--bg);
   color: var(--ink);
 }
@@ -75,7 +82,7 @@
   }
   body { min-height: 100dvh; line-height: 1.5; }
   ::selection { background: var(--accent); color: var(--on-accent); }
-  :focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; border-radius: 6px; box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent), transparent 70%); }
+  :focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; border-radius: 6px; box-shadow: 0 0 0 6px var(--foco-halo); }
   img, video { display: block; max-width: 100%; }
   a { color: inherit; text-decoration: none; }
   button { font: inherit; color: inherit; cursor: pointer; }
@@ -175,6 +182,8 @@
 .etiqueta-foto img { width: 100%; height: 100%; object-fit: contain; padding: 8%; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
 /* capa de estúdio já vem com fundo, sombra e margem: ocupa a placa inteira */
 .etiqueta-foto img.estudio { padding: 0; object-fit: cover; }
+/* foto que não carregou: fica a placa clara (sem o ícone quebrado e o título cru do anúncio) */
+.etiqueta-foto img.sem-capa { visibility: hidden; }
 @media (hover: hover) {
   .etiqueta-cx:hover { transform: translateY(-3px); }
   .etiqueta-cx:hover .etiqueta { box-shadow: 0 0 0 1px var(--line-2), var(--shadow-2); }
@@ -192,9 +201,16 @@
 .etiqueta-dados { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; padding: 12px 14px 14px; }
 .etiqueta-carro { font-size: 12.5px; font-weight: 650; font-stretch: 94%; line-height: 1.3; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .etiqueta-anos { font-weight: 500; color: var(--ink-3); }
-/* cartão estreito (celular): carro numa linha e os anos na outra, para o ano nunca ser cortado */
+/* cartão largo: peça de 2+ carros ("Volkswagen Virtus / Polo / Up") vai para a 2ª linha e o ano nunca é cortado */
+@container etiqueta (min-width: 215px) {
+  .etiqueta-carro { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .etiqueta-anos { white-space: nowrap; }
+}
+/* cartão estreito (celular): carro numa linha e os anos na outra, para o ano nunca ser cortado;
+   carro de nome longo ("Land Rover Discovery") em até 2 linhas e o nome da peça em até 3 */
 @container etiqueta (max-width: 214px) {
   .etiqueta-modelo, .etiqueta-anos { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .etiqueta-modelo { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; overflow-wrap: anywhere; }
   .etiqueta-sep { display: none; }
   .etiqueta-dados { padding: 11px 12px 12px; }
   .etiqueta-preco { padding-top: 8px; font-size: 26px; }
@@ -204,6 +220,7 @@
   margin-top: 1px; font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+@container etiqueta (max-width: 214px) { .etiqueta-nome { -webkit-line-clamp: 3; } }
 .etiqueta-cod { font-size: 12px; line-height: 1.4; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .etiqueta-cod .oem { font-size: 11.5px; letter-spacing: .03em; color: var(--ink-2); }
 .etiqueta-preco {
@@ -220,12 +237,19 @@
 .etiqueta-confia svg { width: 15px; height: 15px; flex: none; color: var(--accent-text); }
 .etiqueta-confia > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @container etiqueta (max-width: 214px) { .etiqueta-confia-longo { display: none; } }
-/* "Serve no seu XC60" (equipe Meu carro): o script troca o texto, então o visto é desenhado no ::before */
+/* cartão bem estreito (320–360 px): a garantia em letra mais estreita (a família tem largura variável), inteira */
+@container etiqueta (max-width: 160px) { .etiqueta-confia { gap: 5px; font-stretch: 82%; letter-spacing: -.005em; } .etiqueta-confia svg { width: 14px; height: 14px; } }
+/* "Serve no seu XC60" (equipe Meu carro): o script troca o texto, então o visto é desenhado no ::before.
+   Fica SOBRE a foto, no canto de baixo: o carro salvo é lido depois da pintura e o selo não pode empurrar o
+   cartão (nem a grade inteira) quando aparece. */
 .etiqueta .etiqueta-serve {
-  display: block; align-self: flex-start; max-width: 100%; margin: 0 0 5px; padding: 3px 9px 3px 4px; border-radius: 99px;
-  background: var(--serve-bg); color: var(--serve-ink); box-shadow: inset 0 0 0 1px var(--serve-borda);
+  position: absolute; z-index: 1; left: 10px; top: calc(100cqi - 34px);
+  display: block; max-width: calc(100% - 20px); margin: 0; padding: 3px 9px 3px 4px; border-radius: 99px;
+  background: var(--serve-bg); color: var(--serve-ink); box-shadow: inset 0 0 0 1px var(--serve-borda), 0 2px 8px -3px rgb(16 16 20 / .28);
   font-size: 12px; font-weight: 700; line-height: 16px; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity .2s ease;
 }
+@container etiqueta (max-width: 214px) { .etiqueta .etiqueta-serve { left: 8px; top: calc(100cqi - 30px); max-width: calc(100% - 16px); } }
 .etiqueta .etiqueta-serve::before {
   content: ""; display: inline-block; width: 16px; height: 16px; margin-right: 5px; vertical-align: top; border-radius: 50%;
   background: #1f9d55 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.6 8.4 7 10.6l4.4-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
@@ -245,6 +269,7 @@
   }
   .etiqueta-acao svg { width: 18px; height: 18px; flex: none; }
   .etiqueta-cx:hover .etiqueta-acao, .etiqueta-cx:focus-within .etiqueta-acao { opacity: 1; transform: none; pointer-events: auto; }
+  .etiqueta-cx:hover .etiqueta-serve, .etiqueta-cx:focus-within .etiqueta-serve { opacity: 0; }
   .etiqueta-acao:hover { filter: brightness(1.05); }
   .etiqueta-acao:focus-visible { outline: 3px solid #1d1d1f; outline-offset: 2px; border-radius: 11px; box-shadow: 0 0 0 5px #fff; }
 }
@@ -264,7 +289,7 @@
   box-shadow: inset 0 0 0 1.5px var(--line-2), var(--shadow-1);
   transition: box-shadow .2s ease;
 }
-.busca:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 82%), var(--shadow-1); }
+.busca:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px var(--foco-halo), var(--shadow-1); }
 .busca svg { width: 22px; height: 22px; color: var(--ink-3); flex: none; }
 .busca input {
   flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent;
@@ -272,6 +297,27 @@
 }
 .busca input::placeholder { color: var(--ink-3); }
 .busca .botao { --h: 48px; }
+/* o "×" azul do navegador sai de TODO campo de busca (404, /carros, garantia...), não só do catálogo */
+.busca input::-webkit-search-cancel-button,
+.busca input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
+
+/* Campo de formulário com rótulo em cima (envios, procuro peça): borda, foco e erro iguais em todo o site.
+   Campo com erro E com o cursor: a borda de erro continua e ganha o halo, para a pessoa ver onde está digitando. */
+.campo { display: grid; gap: 7px; align-content: start; min-width: 0; }
+.campo label { font-size: 14.5px; font-weight: 620; color: var(--ink); }
+.campo .opc { font-weight: 500; color: var(--ink-3); }
+.campo input {
+  width: 100%; height: 52px; padding: 0 16px; border: 0; outline: 0; border-radius: 12px;
+  background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; font-weight: 500;
+  box-shadow: inset 0 0 0 1.5px var(--line-2); transition: box-shadow .2s ease;
+}
+.campo input::placeholder { color: var(--ink-3); opacity: 1; font-weight: 500; }
+@media (hover: hover) { .campo input:hover:not(:focus) { box-shadow: inset 0 0 0 1.5px var(--ink-3); } }
+.campo input:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px var(--foco-halo); }
+.campo input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--accent-text); }
+.campo input[aria-invalid="true"]:focus { box-shadow: inset 0 0 0 2px var(--accent-text), 0 0 0 5px var(--foco-halo); }
+.campo .erro { margin: 0; font-size: 14px; line-height: 1.4; font-weight: 580; color: var(--accent-text); }
+.campo .erro[hidden] { display: none; }
 
 .seletor {
   position: relative; display: block;
@@ -303,6 +349,10 @@
 .trilho > * { scroll-snap-align: start; }
 @media (min-width: 1024px) { .trilho { grid-auto-columns: calc((100% - 4 * 16px) / 5); } }
 
+/* Anel do teclado dentro de áreas que rolam: o overflow cortava o anel de fora (sobrava um traço).
+   Ali o anel vai para DENTRO do item; nas outras partes do site ele continua de fora. */
+:is(.cat-lateral, .vit-abas, .galeria-miniaturas, .trilho) :focus-visible { outline-offset: -3px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; scroll-behavior: auto !important; }
 }
@@ -313,11 +363,12 @@
 /* o anel de foco fica na caixa (.busca:focus-within); o campo de dentro nao ganha outro contorno */
 .busca input:focus, .busca input:focus-visible { outline: none; box-shadow: none; }
 
-/* Painéis de estúdio (arte clara): SEMPRE com as cores do tema claro, mesmo no modo escuro do celular. */
+/* Painéis de estúdio (arte clara): SEMPRE com as cores claras, também quando ficam dentro de uma faixa escura
+   (.faixa-escura: rodapé e "Por dentro do pátio"). O site é sempre claro; esta classe só protege essas ilhas. */
 .tema-estudio {
   --bg: #f5f5f7; --bg-2: #ececf0; --surface: #ffffff; --surface-2: #f7f7f9;
   --ink: #1d1d1f; --ink-2: #5b5b61; --ink-3: #65656b; --line: #e2e2e7; --line-2: #d1d1d6;
-  --accent-text: #c2410c; --accent-soft: #fff1e6; --plate: #ffffff;
+  --accent-text: #c2410c; --accent-soft: #fff1e6; --plate: #ffffff; --foco: #c2410c;
   --shadow-1: 0 1px 2px rgb(16 16 20 / .05), 0 6px 18px -6px rgb(16 16 20 / .10);
   --shadow-2: 0 2px 6px rgb(16 16 20 / .06), 0 24px 48px -16px rgb(16 16 20 / .22);
   color: var(--ink); color-scheme: light;

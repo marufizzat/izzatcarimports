@@ -1,6 +1,8 @@
 ---
-// "Como achar o código na sua peça velha": o código DESTA peça bem grande + onde procurar na peça velha
-// + atalho para mandar a foto do código no WhatsApp (a gente confere na peça).
+// "Como achar o código na sua peça velha": foto de estúdio (etiqueta e código gravado numa peça, sem texto legível;
+// /arte/v2/guia-codigo.webp, a mesma em todas as peças, com cache) com o código DESTA peça por cima, e os 3 passos
+// com ícone + atalho para mandar a foto do código no WhatsApp.
+// Estilos globais presos a .guia-codigo (sem o atributo de escopo em cada tag).
 import Icone from '../Icone.astro';
 import { whatsUrl } from '../../lib/dados';
 interface Props { cod: string; titulo: string; url: string; }
@@ -10,17 +12,20 @@ const msg = `Olá! Quero conferir se esta peça é igual à minha:\n${titulo}\n$
 <section class="secao guia-codigo" id="como-achar-codigo" aria-labelledby="guia-codigo-titulo">
   <div class="moldura">
     <div class="gc-cartao">
-      <div class="gc-codigo">
-        <span class="gc-rot">Código desta peça</span>
-        <b class="gc-num oem">{cod}</b>
-        <p>Se a sua peça velha tem o mesmo código, é a mesma peça.</p>
+      <div class="gc-foto">
+        <img src="/arte/v2/guia-codigo.webp" alt="" width="1000" height="667" loading="lazy" decoding="async" />
+        <div class="gc-codigo">
+          <span class="gc-rot">Código desta peça</span>
+          <b class="gc-num oem">{cod}</b>
+          <p>Se a sua peça velha tem o mesmo código, é a mesma peça.</p>
+        </div>
       </div>
       <div class="gc-dicas">
         <h2 class="gc-titulo" id="guia-codigo-titulo">Como achar o código na sua peça velha</h2>
         <ol>
-          <li><b>Procure a etiqueta</b> colada na carcaça. O código costuma ser a sequência maior de letras e números.</li>
-          <li><b>Sem etiqueta?</b> Ele pode estar gravado em relevo no plástico ou estampado no metal. Limpe a sujeira e use a lanterna do celular.</li>
-          <li><b>Ficou em dúvida?</b> Mande uma foto do código. A gente confere na peça e te responde.</li>
+          <li data-i="etiqueta"><span><b>Procure a etiqueta</b> colada na carcaça. O código costuma ser a sequência maior de letras e números.</span></li>
+          <li data-i="lanterna"><span><b>Sem etiqueta?</b> Ele pode estar gravado em relevo no plástico ou estampado no metal. Limpe a sujeira e use a lanterna do celular.</span></li>
+          <li data-i="camera"><span><b>Ficou em dúvida?</b> Mande uma foto do código pelo botão abaixo.</span></li>
         </ol>
         <a class="botao botao-linha gc-botao" href={whatsUrl(msg)}><Icone nome="whats" />Mandar foto do código</a>
       </div>
@@ -28,23 +33,32 @@ const msg = `Olá! Quero conferir se esta peça é igual à minha:\n${titulo}\n$
   </div>
 </section>
 
-<style>
+<style is:global>
   .guia-codigo { padding-top: 8px; scroll-margin-top: 90px; }
-  .gc-cartao { display: grid; gap: 0; border-radius: 22px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1); }
-  .gc-codigo { padding: 26px 24px; background: var(--surface-2); display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-  .gc-rot { font-size: 13.5px; font-weight: 650; color: var(--ink-2); }
-  .gc-num { font-size: clamp(30px, 6vw, 44px); font-weight: 700; letter-spacing: .02em; color: var(--ink); line-height: 1.05; overflow-wrap: anywhere; }
-  .gc-codigo p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); max-width: 30ch; }
-  .gc-dicas { padding: 26px 24px 28px; }
-  .gc-titulo { margin: 0 0 14px; font-size: clamp(22px, 2.6vw, 28px); font-weight: 820; font-stretch: 84%; line-height: 1.1; color: var(--ink); }
-  .gc-dicas ol { margin: 0 0 20px; padding-left: 1.3em; display: grid; gap: 10px; }
-  .gc-dicas li { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); padding-left: 4px; text-wrap: pretty; }
-  .gc-dicas li::marker { font-weight: 800; color: var(--accent-text); }
-  .gc-dicas li b { color: var(--ink); font-weight: 700; }
-  .gc-botao { display: inline-flex; gap: 8px; }
+  .guia-codigo .gc-cartao { display: grid; border-radius: 24px; overflow: hidden; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  /* foto de estúdio com o código desta peça numa placa por cima */
+  .guia-codigo .gc-foto { position: relative; min-height: 280px; background: #f4f3f0; }
+  .guia-codigo .gc-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .guia-codigo .gc-codigo { position: absolute; left: 14px; right: 14px; bottom: 14px; display: grid; gap: 3px; padding: 14px 16px; border-radius: 16px;
+    background: rgb(255 255 255 / .94); box-shadow: 0 10px 30px -12px rgb(0 0 0 / .35), inset 0 0 0 1px rgb(0 0 0 / .05); }
+  .guia-codigo .gc-rot { font-size: 13px; font-weight: 650; color: var(--ink-2); }
+  .guia-codigo .gc-num { font-size: clamp(26px, 4.4vw, 38px); font-weight: 700; letter-spacing: .02em; color: var(--ink); line-height: 1.05; overflow-wrap: anywhere; }
+  .guia-codigo .gc-codigo p { margin: 0; font-size: 14px; line-height: 1.4; color: var(--ink-2); }
+  .guia-codigo .gc-dicas { padding: 26px 20px 28px; }
+  .guia-codigo .gc-titulo { margin: 0 0 18px; font-size: clamp(24px, 2.4vw, 30px); font-weight: 800; font-stretch: 84%; line-height: 1.1; color: var(--ink); }
+  .guia-codigo .gc-dicas ol { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 14px; }
+  .guia-codigo .gc-dicas li { position: relative; min-height: 40px; padding-left: 54px; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+  /* ícone (data-i, máscara do AbasDetalhes) num ladrilho laranja-claro */
+  .guia-codigo .gc-dicas li::after { content: ""; position: absolute; left: 0; top: 0; width: 40px; height: 40px; border-radius: 12px; background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 78%); }
+  .guia-codigo .gc-dicas li::before { position: absolute; left: 10px; top: 10px; z-index: 1; color: var(--accent-text); }
+  .guia-codigo .gc-dicas li span { display: block; padding-top: 8px; }
+  .guia-codigo .gc-dicas li b { color: var(--ink); font-weight: 700; }
+  .guia-codigo .gc-botao { display: inline-flex; gap: 8px; }
   @media (min-width: 820px) {
-    .gc-cartao { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
-    .gc-codigo { padding: 34px 34px; }
-    .gc-dicas { padding: 34px 38px 36px; }
+    .guia-codigo .gc-cartao { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .guia-codigo .gc-foto { min-height: 400px; }
+    .guia-codigo .gc-codigo { left: 22px; right: auto; bottom: 22px; max-width: calc(100% - 44px); padding: 16px 20px; }
+    .guia-codigo .gc-dicas { padding: 38px 42px 40px; align-self: center; }
   }
 </style>

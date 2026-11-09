@@ -1,110 +1,252 @@
 ---
-// Categorias: uma ARTE por família (peça em estúdio + nome desenhado na arte) + nº de peças vivo.
+// Categorias: um cartão por BLOCO de peças (preparar_dados.py: BLOCOS, na ordem do que mais se procura), com a ARTE
+// (peça em estúdio + nome desenhado) e o nº de peças vivo. Bloco cuja arte ainda não chegou: o nome num fundo de estúdio.
 // Referência de layout: Shop by Category Grid (ziegfiroyt/ecommerce4, 21st.dev #29288) em bento.
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { resumo } from '../../lib/dados';
-const fams = resumo().familias.filter((f) => f.n !== 'Outros' && existsSync(join(process.cwd(), 'public', 'arte', 'v2', `cat-${f.k}.webp`)));
+// O bento fecha a grade sem buraco (lib/categorias.ts: bento): quantos cartões grandes e se o último cartão
+// ("Ver o catálogo inteiro", texto vivo) entra, no tablet (4 colunas) e no PC (5). Com carro salvo,
+// "Ver as N peças do seu carro" (sempre).
+// Com carro salvo: cada categoria mostra a contagem DELE (sem o bento; só as que têm peça). Se o ano salvo não tem
+// peça agora, conta o modelo em todos os anos; se o modelo saiu do site, a grade fica a normal. Sempre com um aviso.
+import { resumo, whatsUrl } from '../../lib/dados';
+import { arteCartao, bento } from '../../lib/categorias';
+const fams = resumo().familias.filter((f) => f.k !== 'outros' && f.c > 0).map((f) => ({ ...f, arte: arteCartao(f.k) }));
+const total = resumo().total;
 const NO_CELULAR = 8;
+// número pequeno na vitrine passa a ideia de pátio vazio: abaixo disso a categoria aparece sem a contagem (sem carro salvo)
+const POUCAS = 30;
+const b4 = bento(fams.length, 4);
+const b5 = bento(fams.length, 5);
 ---
-<div class="cats" data-cats>
+<div class:list={['cats', { 'sem-todas-4': !b4.todas, 'sem-todas-5': !b5.todas }]} data-cats data-whats={whatsUrl('Olá! Procuro peça para o meu carro: ')}>
   <p class="cats-carro" data-cats-carro hidden>
-    <span>Contando as peças do <b data-cats-nome></b>.</span>
-    <button type="button" data-cats-trocar>Trocar carro</button>
+    <span data-cats-msg></span>
+    <span class="cats-carro-acoes">
+      <button type="button" data-cats-ano hidden>Informar o ano</button>
+      <a data-cats-whats hidden href="#">Procurar no pátio</a>
+      <button type="button" data-cats-trocar>Trocar carro</button>
+    </span>
   </p>
   <ul class="cats-grade">
     {fams.map((f, i) => (
-      <li class:list={['cat', { 'cat-grande': i < 2, 'cat-extra': i >= NO_CELULAR }]}>
+      <li class:list={['cat', { 'cat-g4': i < b4.grandes, 'cat-g5': i < b5.grandes, 'cat-extra': i >= NO_CELULAR, 'cat-sem-arte': !f.arte }]}>
         <a href={`/categoria/${f.k}.html`} data-tipo={f.n} data-href-base={`/categoria/${f.k}.html`} data-base={f.c} aria-label={`${f.n}: ${f.c.toLocaleString('pt-BR')} peças`}>
-          <img src={`/arte/v2/cat-${f.k}.webp`} alt="" width="800" height="800" loading="lazy" decoding="async" />
-          <span class="cat-qtd num" data-qtd>{f.c.toLocaleString('pt-BR')} peças</span>
+          {f.arte
+            ? <img src={f.arte} alt="" width="800" height="800" loading="lazy" decoding="async" />
+            : <span class="cat-estudio" aria-hidden="true"><span class="cat-nome">{f.n}</span></span>}
+          <span class="cat-qtd num" data-qtd hidden={f.c < POUCAS}>{f.c.toLocaleString('pt-BR')} peças</span>
         </a>
       </li>
     ))}
+    <li class="cat cat-todas cat-extra">
+      <a href="/catalogo.html" data-cats-todas data-total={total}>
+        <span class="cat-todas-qtd num" data-cats-todas-qtd>{total.toLocaleString('pt-BR')} peças</span>
+        <span class="cat-todas-txt" data-cats-todas-txt>Ver o catálogo inteiro</span>
+        <svg class="cat-todas-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6" /></svg>
+      </a>
+    </li>
   </ul>
   {fams.length > NO_CELULAR && (
     <button type="button" class="botao botao-linha cats-mais" data-mais aria-expanded="false">Ver as {fams.length} categorias</button>
   )}
 </div>
 <script>
-  import { lerMeuCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';
-  // Com carro salvo, cada categoria mostra a contagem DELE (busca.json so e baixado nesse caso).
-  type Indice = { marcas: string[]; familias: string[]; id: string[]; b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[] };
+  import { lerMeuCarro, linkCatalogo, serveNoModelo, anosNoModelo, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
+  // Com carro salvo, cada categoria mostra a contagem DELE (busca.json só é baixado nesse caso).
+  type Indice = { marcas: string[]; familias: string[]; id: string[]; b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[];
+                  ms?: Record<string, string[]>; ys?: Record<string, ([number, number] | null)[]> };
   let indice: Promise<Indice> | null = null;
   const ler = () => (indice ??= fetch('/dados/busca.json').then((r) => r.json()));
   const raiz = document.querySelector<HTMLElement>('[data-cats]');
+  const NO_CELULAR = 8;
+  const POUCAS = 30;
+  const fmt = (n: number) => n.toLocaleString('pt-BR');
+  const pecas = (n: number) => `${fmt(n)} ${n === 1 ? 'peça' : 'peças'}`;
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+  const tiles = () => Array.from(raiz?.querySelectorAll<HTMLAnchorElement>('a[data-tipo]') ?? []);
+  let abertoPelaPessoa = false;
+  /** "Ver as N categorias" (celular) conta as que estão à vista; com até 8, nem aparece e a grade já vem inteira. */
+  function arrumarExtras() {
+    if (!raiz) return;
+    let k = 0;
+    for (const a of tiles()) {
+      const li = a.closest('li')!;
+      if (li.hidden) continue;
+      li.classList.toggle('cat-extra', k++ >= NO_CELULAR);
+    }
+    raiz.classList.toggle('aberto', abertoPelaPessoa || k <= NO_CELULAR);
+    const mais = raiz.querySelector<HTMLButtonElement>('[data-mais]');
+    if (mais) {
+      mais.hidden = abertoPelaPessoa || k <= NO_CELULAR;
+      mais.textContent = `Ver as ${k} categorias`;
+    }
+  }
+
+  function aviso(html: string, { ano = false, whats = '' } = {}) {
+    const p = raiz?.querySelector<HTMLElement>('[data-cats-carro]');
+    if (!p) return;
+    p.hidden = !html;
+    p.querySelector('[data-cats-msg]')!.innerHTML = html;
+    p.querySelector<HTMLElement>('[data-cats-ano]')!.hidden = !ano;
+    const w = p.querySelector<HTMLAnchorElement>('[data-cats-whats]')!;
+    w.hidden = !whats;
+    if (whats) w.href = whats;
+  }
+
+  function ultimo(c: MeuCarro | null, n: number) {
+    const a = raiz?.querySelector<HTMLAnchorElement>('[data-cats-todas]');
+    if (!a) return;
+    const total = Number(a.dataset.total);
+    a.href = c ? linkCatalogo(c) : '/catalogo.html';
+    a.querySelector('[data-cats-todas-qtd]')!.textContent = pecas(c ? n : total);
+    a.querySelector('[data-cats-todas-txt]')!.textContent = c ? `Ver todas as peças do seu ${c.m}` : 'Ver o catálogo inteiro';
+  }
 
   function restaurar() {
-    raiz?.querySelectorAll<HTMLAnchorElement>('a[data-tipo]').forEach((a) => {
+    if (!raiz) return;
+    raiz.removeAttribute('data-com-carro');
+    for (const a of tiles()) {
       a.href = a.dataset.hrefBase!;
-      (a.closest('li') as HTMLElement).style.display = '';
+      (a.closest('li') as HTMLElement).hidden = false;
       const q = a.querySelector<HTMLElement>('[data-qtd]');
       const base = Number(a.dataset.base);
-      if (q) { q.hidden = false; q.textContent = `${base.toLocaleString('pt-BR')} peças`; }
-      a.setAttribute('aria-label', `${a.dataset.tipo}: ${base.toLocaleString('pt-BR')} peças`);
-    });
-    raiz?.querySelector<HTMLElement>('[data-cats-carro]')?.setAttribute('hidden', '');
+      if (q) { q.hidden = base < POUCAS; q.textContent = `${fmt(base)} peças`; }
+      a.setAttribute('aria-label', `${a.dataset.tipo}: ${fmt(base)} peças`);
+    }
+    ultimo(null, 0);
+    aviso('');
+    arrumarExtras();
+  }
+
+  function contar(d: Indice, marca: number, modelo: string, ano: number | null) {
+    const cont = new Map<string, number>();
+    let n = 0;
+    for (let k = 0; k < d.id.length; k++) {
+      // a peça de 2+ carros (ms) conta para cada um deles, com a faixa de anos daquele carro (ys)
+      const p = { m: d.m[k], y: d.y[k] || null, ms: d.ms?.[k], ys: d.ys?.[k] };
+      if (d.b[k] !== marca || !serveNoModelo(p, modelo)) continue;
+      if (ano != null) { const y = anosNoModelo(p, modelo); if (!y || ano < y[0] || ano > y[1]) continue; }
+      const fam = d.familias[d.c[k]];
+      cont.set(fam, (cont.get(fam) ?? 0) + 1);
+      n++;
+    }
+    return { cont, n };
   }
 
   async function aplicar(c: MeuCarro | null) {
     if (!raiz) return;
     if (!c) return restaurar();
     const d = await ler();
+    if (lerMeuCarro()?.m !== c.m || lerMeuCarro()?.b !== c.b) return; // trocou de carro enquanto baixava
     const marca = d.marcas.indexOf(c.b);
-    const cont = new Map<string, number>();
-    for (let k = 0; k < d.id.length; k++) {
-      if (d.b[k] !== marca || d.m[k] !== c.m) continue;
-      if (c.y != null) { const y = d.y[k]; if (!y || c.y < y[0] || c.y > y[1]) continue; }
-      const fam = d.familias[d.c[k]];
-      cont.set(fam, (cont.get(fam) ?? 0) + 1);
+    let { cont, n } = contar(d, marca, c.m, c.y);
+    const nome = esc([c.b, c.m, c.y].filter(Boolean).join(' '));
+    let usado: MeuCarro = c;
+    // ano salvo sem peça agora: conta o modelo em todos os anos (a grade nunca zera)
+    if (!n && c.y != null) {
+      ({ cont, n } = contar(d, marca, c.m, null));
+      usado = { ...c, y: null };
+      if (n) aviso(`Sem peças do <b>${esc(c.m)} ${c.y}</b> agora. Contando as do <b>${esc(c.m)}</b> de todos os anos.`);
+    } else if (n) {
+      aviso(c.y != null ? `Contando as peças do <b>${nome}</b>.` : `Contando as peças do <b>${nome}</b>, de todos os anos.`, { ano: c.y == null });
     }
-    const nome = [c.b, c.m, c.y].filter(Boolean).join(' ');
-    raiz.querySelectorAll<HTMLAnchorElement>('a[data-tipo]').forEach((a) => {
-      const n = cont.get(a.dataset.tipo!) ?? 0;
+    // modelo que saiu do site: a grade normal, com o aviso e o WhatsApp
+    if (!n) {
+      restaurar();
+      const whats = raiz.dataset.whats + encodeURIComponent([c.b, c.m, c.y].filter(Boolean).join(' '));
+      aviso(`Sem peças do <b>${esc(c.b)} ${esc(c.m)}</b> no site agora. A gente procura no pátio.`, { whats });
+      return;
+    }
+    raiz.setAttribute('data-com-carro', '');
+    for (const a of tiles()) {
+      const k = cont.get(a.dataset.tipo!) ?? 0;
       const u = new URLSearchParams({ tipo: a.dataset.tipo!, marca: c.b, modelo: c.m });
-      if (c.y) u.set('ano', String(c.y));
+      if (usado.y) u.set('ano', String(usado.y));
       a.href = `/catalogo.html?${u.toString()}`;
       const q = a.querySelector<HTMLElement>('[data-qtd]');
-      (a.closest('li') as HTMLElement).style.display = n === 0 ? 'none' : '';
-      if (q) q.textContent = `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça' : 'peças'}`;
-      a.setAttribute('aria-label', `${a.dataset.tipo}: ${n.toLocaleString('pt-BR')} peças para o seu ${nome}`);
-    });
-    const aviso = raiz.querySelector<HTMLElement>('[data-cats-carro]');
-    if (aviso) { aviso.hidden = false; aviso.querySelector('[data-cats-nome]')!.textContent = nome; }
+      (a.closest('li') as HTMLElement).hidden = k === 0;
+      if (q) { q.hidden = false; q.textContent = pecas(k); }
+      a.setAttribute('aria-label', `${a.dataset.tipo}: ${pecas(k)} para o seu ${[usado.b, usado.m, usado.y].filter(Boolean).join(' ')}`);
+    }
+    ultimo(usado, n);
+    arrumarExtras();
   }
 
-  raiz?.querySelector<HTMLButtonElement>('[data-cats-trocar]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('abrir-meu-carro')));
+  raiz?.querySelector<HTMLButtonElement>('[data-cats-trocar]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent(ABRIR)));
+  raiz?.querySelector<HTMLButtonElement>('[data-cats-ano]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent(ABRIR)));
   raiz?.querySelector<HTMLButtonElement>('[data-mais]')?.addEventListener('click', (e) => {
-    raiz.classList.add('aberto'); (e.currentTarget as HTMLElement).remove();
+    abertoPelaPessoa = true;
+    raiz.classList.add('aberto'); (e.currentTarget as HTMLElement).hidden = true;
   });
   aplicar(lerMeuCarro());
   window.addEventListener(EVENTO, (e) => aplicar((e as CustomEvent<MeuCarro | null>).detail));
 </script>
 <style>
   .cats-grade { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; }
+  .cat[hidden] { display: none !important; }
   .cat a { position: relative; display: block; border-radius: 20px; overflow: hidden; background: #efeeeb; box-shadow: var(--shadow-1);
     transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
   .cat img { display: block; width: 100%; height: auto; aspect-ratio: 1; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
   .cat-qtd { position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 99px; background: rgb(255 255 255 / .92);
     font-size: 12px; font-weight: 700; color: #1d1d1f; box-shadow: 0 2px 8px -4px rgb(0 0 0 / .25); }
+  .cat-qtd[hidden] { display: none; }
+  /* bloco sem arte (ainda): o nome no mesmo estúdio das artes, com o pedestal e o filete laranja delas */
+  .cat-estudio { position: relative; display: grid; align-content: end; aspect-ratio: 1; padding: clamp(14px, 7%, 30px);
+    background: radial-gradient(80% 70% at 62% 34%, #fbfaf8 0%, #efeeeb 58%, #e4e2de 100%); color: #1d1d1f; }
+  .cat-estudio::before { content: ""; position: absolute; left: 22%; right: 22%; top: 40%; height: 13%; border-radius: 50%;
+    background: radial-gradient(closest-side, #4a4a4d 0%, #2a2a2c 70%, #1d1d1f 100%);
+    box-shadow: 0 3px 0 -1px var(--accent), 0 14px 24px -10px rgb(255 106 0 / .55), 0 26px 30px -20px rgb(0 0 0 / .5); }
+  .cat-nome { position: relative; font-stretch: 78%; font-weight: 820; font-size: clamp(19px, 5.4vw, 30px); line-height: .98;
+    letter-spacing: -.01em; text-wrap: balance; max-width: 92%; padding-bottom: 10px; }
+  .cat-nome::after { content: ""; position: absolute; left: 0; bottom: 0; width: 2.4em; height: 4px; border-radius: 4px; background: var(--accent); }
+  /* o último cartão: texto vivo no mesmo estúdio das artes */
+  .cat-todas a { aspect-ratio: 1; display: grid; align-content: end; gap: 10px; padding: clamp(14px, 6%, 26px);
+    background: radial-gradient(90% 80% at 70% 30%, #fbfaf8 0%, #efeeeb 60%, #e6e4e0 100%); color: #1d1d1f; }
+  .cat-todas-txt { font-stretch: 78%; font-weight: 820; font-size: clamp(22px, 5.6vw, 34px); line-height: .98; letter-spacing: -.01em; text-wrap: balance; }
+  .cat-todas-qtd { position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 99px; background: rgb(255 255 255 / .92);
+    font-size: 12px; font-weight: 700; box-shadow: 0 2px 8px -4px rgb(0 0 0 / .25); }
+  .cat-todas-seta { width: 40px; height: 40px; padding: 9px; border-radius: 50%; background: var(--accent); color: #1d1d1f; fill: none; stroke: currentColor;
+    stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s; }
   .cat-extra { display: none; }
   .aberto .cat-extra { display: block; }
   .cats-mais { margin: 16px auto 0; display: flex; }
-  .cats-carro { margin: 0 0 16px; }
+  .cats-mais[hidden] { display: none; }
+  /* aviso do carro (era um CSS provisório no MeuCarroEstilo) */
+  .cats-carro { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 0 0 16px; font-size: 15px; color: var(--ink-2); text-wrap: pretty; }
+  .cats-carro[hidden] { display: none; }
+  .cats-carro :global(b) { color: var(--ink); }
+  .cats-carro-acoes { display: inline-flex; flex-wrap: wrap; gap: 4px 16px; }
+  .cats-carro button, .cats-carro a { min-height: 32px; border: 0; background: none; padding: 0; font-size: 15px; font-weight: 650; color: var(--accent-text);
+    text-decoration: underline; text-underline-offset: 3px; }
+  .cats-carro [hidden] { display: none; }
+  /* tablet (4 colunas) e PC (5): bento com os primeiros grandes; sem carro, o último cartão só entra se fecha a grade */
   @media (min-width: 700px) {
-    .cats-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-    .cat-extra { display: block; } .cats-mais { display: none; }
+    .cats-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .cat-extra { display: block; } .cats-mais { display: none !important; }
+    .cat-todas-txt { font-size: clamp(22px, 2.6vw, 34px); }
+    .cat-nome { font-size: clamp(18px, 2.2vw, 28px); }
+  }
+  @media (min-width: 700px) and (max-width: 1079px) {
+    .cat-g4 { grid-column: span 2; grid-row: span 2; }
+    .cat-g4 .cat-nome { font-size: clamp(30px, 4.4vw, 48px); }
+    .cats.sem-todas-4:not([data-com-carro]) .cat-todas { display: none; }
   }
   @media (min-width: 1080px) {
     .cats-grade { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    .cat-grande { grid-column: span 2; grid-row: span 2; }
+    .cat-g5 { grid-column: span 2; grid-row: span 2; }
+    .cat-g5 .cat-nome { font-size: clamp(34px, 3.4vw, 52px); }
     .cat-qtd { top: 12px; right: 12px; font-size: 12.5px; }
-    .cat-grande .cat-qtd { top: 18px; right: 18px; font-size: 14px; padding: 7px 13px; }
+    .cat-g5 .cat-qtd { top: 18px; right: 18px; font-size: 14px; padding: 7px 13px; }
+    .cats.sem-todas-5:not([data-com-carro]) .cat-todas { display: none; }
   }
+  /* com carro: grade regular (o bento grande ao lado de um vazio parecia defeito) */
+  .cats[data-com-carro] :is(.cat-g4, .cat-g5) { grid-column: auto; grid-row: auto; }
+  .cats[data-com-carro] :is(.cat-g4, .cat-g5) .cat-qtd { top: 12px; right: 12px; font-size: 12.5px; padding: 5px 10px; }
+  .cats[data-com-carro] :is(.cat-g4, .cat-g5) .cat-nome { font-size: clamp(18px, 2.2vw, 28px); }
   @media (hover: hover) {
     .cat a:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
     .cat a:hover img { transform: scale(1.03); }
+    .cat-todas a:hover .cat-todas-seta { transform: translateX(3px); }
   }
-  .cat a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   @media (prefers-reduced-motion: reduce) { .cat a, .cat img { transition: none; } }
 </style>

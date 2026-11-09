@@ -1,20 +1,23 @@
 ---
 // "Serve no seu carro?" logo abaixo do nome: UMA linha de encaixe (antes eram a faixa + o "Serve em" repetido).
-// Peça com marca e modelo: 4 estados (convite, serve, confira o ano, outro carro). O HTML traz só o convite; os
-// outros três só existem com carro salvo (localStorage, logo com JS), então o script os monta na hora, com o mesmo
-// desenho (assim eles não pesam nas 5 mil páginas).
+// Peça com marca e modelo: 5 estados (convite, serve, confira o ano, falta o ano, outro carro). O HTML traz só o
+// convite; os outros só existem com carro salvo (localStorage, logo com JS), então o script os monta na hora, com o
+// mesmo desenho (assim eles não pesam nas 5 mil páginas). "Serve" (verde) só com o ano salvo dentro da faixa da peça
+// (lib/meuCarro.ts); sem o ano, a faixa fica neutra e pergunta o ano ali mesmo.
 // Altura mínima reservada (2 linhas): no PC a troca de estado não mexe em nada; no celular, "serve" e
 // "confira o ano" podem quebrar em 3 linhas e descer o preço uns 15-30 px (o botão segue na primeira tela).
 // Peça só com a marca: "Peça de <marca>, anos" (sem prometer o modelo). Nunca escrevemos "não serve".
 // Estilos globais (classes .enc-*, só deste componente): os estados montados pelo script usam as mesmas regras.
 import Icone from '../Icone.astro';
-interface Props { b: string; m: string; y: [number, number] | null; }
-const { b, m, y } = Astro.props;
+import { nomeModelos, atributosModelos } from '../../lib/meuCarro';
+// Peça de 2+ carros (ms, ys): "Serve em Volvo S60 e XC60" e o "serve no seu" vale para cada um deles.
+interface Props { b: string; m: string; y: [number, number] | null; ms?: string[]; ys?: [number, number][]; }
+const { b, m, y, ms, ys } = Astro.props;
 const anos = y ? (y[0] === y[1] ? String(y[0]) : `${y[0]} a ${y[1]}`) : '';
-const carro = [b, m].filter(Boolean).join(' ');
+const carro = nomeModelos({ b, m, ms });
 ---
 {b && m ? (
-  <section class="enc" data-meu-carro data-b={b} data-m={m} data-y0={y ? y[0] : ''} data-y1={y ? y[1] : ''} aria-label="Serve no seu carro?" aria-live="polite">
+  <section class="enc" data-meu-carro data-b={b} data-m={m} data-y0={y ? y[0] : ''} data-y1={y ? y[1] : ''} {...atributosModelos(ms, ys)} aria-label="Serve no seu carro?" aria-live="polite">
     <div class="enc-estado" data-estado="convite">
       <span class="enc-icone"><Icone nome="carro" /></span>
       <p class="enc-txt">
@@ -33,26 +36,43 @@ const carro = [b, m].filter(Boolean).join(' ');
 ) : null}
 
 <script>
-  import { lerMeuCarro, serveNoMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';
+  import {
+    lerMeuCarro, salvarMeuCarro, serveNoMeuCarro, nomeCarro, nomeModelos, anosNoModelo, lerModelos, linkCatalogo, EVENTO, ABRIR,
+    type MeuCarro,
+  } from '../../lib/meuCarro';
 
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   // o mesmo desenho do <Icone nome="check" />
   const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
   const TROCAR = '<button type="button" class="enc-trocar" data-abrir-meu-carro>Trocar</button>';
-  const SALVO = '<small>Seu carro salvo: <span data-nome-carro>carro</span></small>';
+  // o carro salvo é um link para as peças dele (outro carro / confira o ano: um caminho útil, sem crescer a faixa)
+  const SALVO = '<small>Seu carro salvo: <a class="enc-link" data-link-carro href="/catalogo.html" title="Ver as peças do seu carro"><span data-nome-carro>carro</span> ›</a></small>';
+  // anos do campo "Qual o ano do seu?" (do mais novo ao mais velho)
+  const anoAtual = new Date().getFullYear();
+  const ANOS = Array.from({ length: anoAtual + 2 - 1980 }, (_, i) => anoAtual + 1 - i)
+    .map((y) => `<option value="${y}">${y}</option>`).join('');
 
   document.querySelectorAll<HTMLElement>('[data-meu-carro]').forEach((el) => {
     const p = {
       b: el.dataset.b || '',
       m: el.dataset.m || '',
       y: el.dataset.y0 && el.dataset.y1 ? ([Number(el.dataset.y0), Number(el.dataset.y1)] as [number, number]) : null,
+      ...lerModelos(el.dataset.ms, el.dataset.ys),
     };
-    const carro = esc([p.b, p.m].filter(Boolean).join(' '));
-    const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
+    const carro = esc(nomeModelos(p));
+    const faixa = (y: [number, number] | null) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0]} a ${y[1]}`) : '');
+    const anos = faixa(p.y);
     const iconeCarro = el.querySelector('[data-estado="convite"] .enc-icone')?.innerHTML ?? '';
+    // peça de 2+ carros: modelo e anos são os do carro salvo ([data-modelo-carro], [data-anos-carro], preenchidos em mostrar)
     const html: Record<string, string> = {
-      sim: `<div class="enc-estado enc-sim" data-estado="sim"><span class="enc-icone">${CHECK}</span><p class="enc-txt"><span>Serve no seu <b data-nome-carro>carro</b></span><small>${anos ? `Peça de ${anos}` : `Peça do ${carro}`}</small></p>${TROCAR}</div>`,
-      'confira-ano': `<div class="enc-estado enc-ano" data-estado="confira-ano"><span class="enc-icone" aria-hidden="true">!</span><p class="enc-txt"><span>Confira o ano: esta peça é de <b>${anos}</b></span>${SALVO}</p>${TROCAR}</div>`,
+      sim: `<div class="enc-estado enc-sim" data-estado="sim"><span class="enc-icone">${CHECK}</span><p class="enc-txt"><span>Serve no seu <b data-nome-carro>carro</b></span><small>Peça de <span data-anos-carro>${anos}</span></small></p>${TROCAR}</div>`,
+      'confira-ano': `<div class="enc-estado enc-ano" data-estado="confira-ano"><span class="enc-icone" aria-hidden="true">!</span><p class="enc-txt"><span>Confira o ano: esta peça é de <b data-anos-carro>${anos}</b></span>${SALVO}</p>${TROCAR}</div>`,
+      // falta o ano: neutro (nada de verde). Peça com anos: pergunta o ano ali mesmo; peça sem anos: confira o código.
+      'falta-ano': `<div class="enc-estado" data-estado="falta-ano"><span class="enc-icone">${iconeCarro}</span><p class="enc-txt">`
+        + `<span data-com-anos>Serve no <b data-modelo-carro>${esc(p.m)}</b> de <span data-anos-carro>${anos}</span></span>`
+        + `<small class="enc-pergunta" data-com-anos>Qual o ano do seu? <span class="enc-ano-campo"><span aria-hidden="true">Escolher</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><select data-ano-carro aria-label="Ano do seu carro"><option value="">Escolher</option>${ANOS}</select></span></small>`
+        + `<span data-sem-anos>Serve em <b>${carro}</b></span><small data-sem-anos>O anúncio não traz o ano. Confira o código gravado ou pergunte no WhatsApp.</small>`
+        + `</p>${TROCAR}</div>`,
       outro: `<div class="enc-estado" data-estado="outro"><span class="enc-icone">${iconeCarro}</span><p class="enc-txt"><span>Serve em <b>${carro}</b>${anos ? `, ${anos}` : ''}</span>${SALVO}</p>${TROCAR}</div>`,
     };
     const mostrar = (c: MeuCarro | null) => {
@@ -61,11 +81,28 @@ const carro = [b, m].filter(Boolean).join(' ');
       if (!el.querySelector(`[data-estado="${chave}"]`) && html[chave]) el.insertAdjacentHTML('beforeend', html[chave]);
       el.querySelectorAll<HTMLElement>('[data-estado]').forEach((e) => { e.hidden = e.dataset.estado !== chave; });
       if (c) el.querySelectorAll('[data-nome-carro]').forEach((n) => { n.textContent = nomeCarro(c); });
+      const doCarro = c && s ? anosNoModelo(p, c.m) : null;
+      if (c && s) {
+        el.querySelectorAll('[data-modelo-carro]').forEach((n) => { n.textContent = c.m; });
+        el.querySelectorAll('[data-anos-carro]').forEach((n) => { n.textContent = faixa(doCarro); });
+      }
+      el.querySelectorAll<HTMLElement>('[data-com-anos]').forEach((n) => { n.hidden = !doCarro; });
+      el.querySelectorAll<HTMLElement>('[data-sem-anos]').forEach((n) => { n.hidden = !!doCarro; });
+      if (c) el.querySelectorAll<HTMLAnchorElement>('[data-link-carro]').forEach((a) => { a.href = linkCatalogo(c); });
+      if (chave === 'falta-ano') el.querySelectorAll<HTMLSelectElement>('[data-ano-carro]').forEach((s) => { s.value = ''; });
     };
     mostrar(lerMeuCarro());
     window.addEventListener(EVENTO, (e) => mostrar((e as CustomEvent<MeuCarro | null>).detail ?? null));
     el.addEventListener('click', (e) => {
-      if ((e.target as Element).closest('[data-abrir-meu-carro]')) window.dispatchEvent(new CustomEvent('abrir-meu-carro'));
+      // a caixa sabe que veio da peça: ao escolher o ano ela fecha e a resposta aparece aqui
+      if ((e.target as Element).closest('[data-abrir-meu-carro]')) window.dispatchEvent(new CustomEvent(ABRIR, { detail: { origem: 'peca' } }));
+    });
+    // "Qual o ano do seu?": o ano entra no carro salvo e a faixa responde na hora (serve ou confira o ano)
+    el.addEventListener('change', (e) => {
+      const s = e.target as HTMLSelectElement;
+      const c = lerMeuCarro();
+      if (!s.matches('[data-ano-carro]') || !s.value || !c) return;
+      salvarMeuCarro({ ...c, y: Number(s.value) });
     });
   });
 </script>
@@ -101,6 +138,23 @@ const carro = [b, m].filter(Boolean).join(' ');
   .enc-ano .enc-icone { background: #f5b700; color: #1d1d1f; box-shadow: none; }
   .enc-ano .enc-txt, .enc-ano .enc-txt b { color: #6b4100; }
   .enc-ano .enc-txt small, .enc-ano .enc-trocar { color: #7a4a00; }
-
-  
+  /* falta o ano: o campo do ano tem a altura de uma linha (a faixa não cresce). O <select> de verdade fica transparente
+     por cima do texto "Escolher ▾", com 16 px (abaixo disso o iPhone dá zoom na página ao tocar) e área de toque maior */
+  .enc-pergunta { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; }
+  .enc-txt [hidden] { display: none; }
+  .enc-ano-campo { position: relative; display: inline-flex; align-items: center; gap: 3px; color: var(--ink); font-size: 14px; font-weight: 650;
+                   line-height: 1.3; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px;
+                   text-underline-offset: 3px; }
+  .enc-ano-campo svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .enc-ano-campo select { position: absolute; inset: -9px -6px; width: calc(100% + 12px); height: calc(100% + 18px); margin: 0; padding: 0; border: 0;
+                          opacity: 0; appearance: none; -webkit-appearance: none; font-size: 16px; cursor: pointer; }
+  .enc-ano-campo:hover { color: var(--accent-text); }
+  .enc-ano-campo:has(select:focus-visible) { outline: 3px solid var(--accent-text); outline-offset: 3px; border-radius: 6px; }
+  .enc-link { font-weight: 650; color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent);
+              text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+  .enc-link:hover { color: var(--accent-text); }
+  /* depois de escolher na caixa aberta pela faixa: a resposta acende por um instante */
+  .enc.enc-destaque .enc-estado:not([hidden]) { animation: enc-acende 1.2s ease; }
+  @keyframes enc-acende { 0%, 60% { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in oklab, var(--accent), transparent 78%); } }
+  @media (prefers-reduced-motion: reduce) { .enc.enc-destaque .enc-estado:not([hidden]) { animation: none; } }
 </style>

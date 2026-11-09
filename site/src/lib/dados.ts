@@ -8,11 +8,19 @@ export type Peca = {
   oem: string; o: string; ficha: [string, string][]; desc: string; rel: string[];
   /** Unidades em estoque no ML ("available"). Ausente = sem o dado: a página não fala de estoque. */
   q?: number;
+  /** Peça que serve em 2+ carros da marca ("Volvo S60 Xc60" no título): ["S60", "XC60"], o 1º é o m.
+   *  Ela aparece na página, no filtro e no Meu carro de cada um (lib/meuCarro.ts: modelosDa). */
+  ms?: string[];
+  /** Anos de cada carro do ms, quando a faixa muda de um para outro (o período de venda corta). */
+  ys?: [number, number][];
 };
 export type Resumo = {
   updated: string; total: number;
   marcas: { n: string; k: string; c: number; m: { n: string; k: string; c: number }[] }[];
+  /** Blocos (o jeito que o cliente procura, preparar_dados.py: BLOCOS), na ordem da grade; "Outros" (k "outros") no fim. */
   familias: { n: string; k: string; c: number }[];
+  /** Endereço antigo (família do ML que o Google conhece) -> bloco: /categoria/<k>.html redireciona para <para>. */
+  antigas?: { k: string; n: string; para: string }[];
   carros: { k: string; b: string; m: string; c: number; anos: [number, number] | null;
             fams: [string, number][]; capas: string[] }[];
   chegou: string[]; preco: { min: number; max: number };
@@ -112,6 +120,7 @@ export function codigoValido(c: string | null | undefined): boolean {
   const s = (c || '').trim();
   if (/^[\d.-]+$/.test(s)) {
     if (/^((19|20)\d{2}[-.]?)+$/.test(s)) return false;
+    if (/^(\d{1,3})\1+\d?$/.test(s.replace(/[.-]/g, ''))) return false; // enchimento: "101010101", "777777"
     return (s.match(/\d/g) || []).length >= 6;
   }
   return s.length >= 5 && /[a-z]/i.test(s) && /\d/.test(s);

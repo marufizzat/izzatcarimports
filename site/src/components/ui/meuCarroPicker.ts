@@ -4,37 +4,40 @@
 // Desenho: três campos no topo (Marca | Modelo | Ano, como nas lojas de autopeças) e, embaixo, a escolha do
 // campo aberto: discos com o logo da marca, depois os modelos. O Ano é um <select> de verdade dentro do campo
 // (lista longa: até 38 anos) e o resultado mostra a contagem real com o botão "Ver as N peças".
+// O ano é o que decide o encaixe ("serve" só com ano: lib/meuCarro.ts): sem ano, o resultado convida a escolher.
 //
 // Dados: /dados/meu-carro.json (lib/garagem.ts, no build). A abertura já vem com a grade de marcas no HTML,
 // gerada por htmlInicial() com os MESMOS dados; o script só redesenha quando o estado muda.
 // Estilos: ui/MeuCarroEstilo.astro (globais, sempre dentro de .mc-raiz). Salva só no navegador (lib/meuCarro.ts).
-import { lerMeuCarro, salvarMeuCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';
+// Caixa aberta pela faixa da página da peça (raiz com data-origem="peca"): o resultado ganha "Conferir nesta peça"
+// e, ao escolher o ano, a raiz avisa (evento ESCOLHIDO) para a caixa fechar e mostrar a resposta na faixa.
+import { lerMeuCarro, salvarMeuCarro, carregarGaragem as baixarGaragem, linkCatalogo, EVENTO, ESCOLHIDO, type MeuCarro } from '../../lib/meuCarro';
+import { linkWhats } from '../catalogo/etiqueta';
 
 export type Modelo = { n: string; c: number; ya: [number, number][] };
 export type Marca = { n: string; k: string; logo: string | null; lw: number; lh: number; c: number; modelos: Modelo[] };
 export type Garagem = { v: number; total: number; marcas: Marca[] };
 export type Handle = { recarregar: () => void };
+export { linkCatalogo };
 
 type Etapa = 'marca' | 'modelo' | 'pronto';
-type Estado = { etapa: Etapa; marca: Marca | null; modelo: Modelo | null; ano: number | null; todas: boolean; todosModelos: boolean };
+type Estado = {
+  etapa: Etapa; marca: Marca | null; modelo: Modelo | null; ano: number | null; todas: boolean; todosModelos: boolean;
+  /** ano salvo que não tem peça agora (o carro salvo continua com ele; aqui mostra todos os anos e avisa) */
+  anoSemPeca: number | null;
+  /** carro salvo cuja marca ou modelo não tem peça no site agora (volta para as marcas e avisa) */
+  carroSemPeca: string | null;
+  /** caixa aberta pela faixa da página da peça */
+  naPeca: boolean;
+};
 
-/** Marcas de cara (no celular o CSS mostra só as 8 primeiras); o resto fica em "Ver todas". */
+/** Marcas de cara (onde a grade tem 4 colunas, o CSS mostra só as 8 primeiras); o resto fica em "Ver todas". */
 export const MARCAS_DE_CARA = 12;
 const MODELOS_DE_CARA = 8;
 
-let carregado: Promise<Garagem> | null = null;
 export function carregarGaragem(): Promise<Garagem> {
   // ~6 KB comprimido: pedido logo na montagem, para o primeiro toque numa marca já ter os modelos
-  carregado ??= fetch('/dados/meu-carro.json')
-    .then((r) => {
-      if (!r.ok) throw new Error(String(r.status));
-      return r.json() as Promise<Garagem>;
-    })
-    .catch((e) => {
-      carregado = null;
-      throw e;
-    });
-  return carregado;
+  return baixarGaragem<Garagem>();
 }
 
 export const esc = (s: string) =>
@@ -49,13 +52,6 @@ export function contagem(mo: Modelo, ano: number | null): number {
   return mo.ya.find(([y]) => y === ano)?.[1] ?? 0;
 }
 
-/** Link do catálogo já filtrado pelo carro (mesmos parâmetros que catalogo.astro entende). */
-export function linkCatalogo(c: MeuCarro): string {
-  const u = new URLSearchParams({ marca: c.b, modelo: c.m });
-  if (c.y) u.set('ano', String(c.y));
-  return `/catalogo.html?${u.toString()}`;
-}
-
 /** Acha marca/modelo do carro salvo dentro dos dados. */
 export function achar(g: Garagem, c: MeuCarro | null) {
   if (!c) return null;
@@ -65,14 +61,24 @@ export function achar(g: Garagem, c: MeuCarro | null) {
 }
 
 const SETA = '<svg class="mc-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-const inicial = (): Estado => ({ etapa: 'marca', marca: null, modelo: null, ano: null, todas: false, todosModelos: false });
+const inicial = (): Estado => ({
+  etapa: 'marca', marca: null, modelo: null, ano: null, todas: false, todosModelos: false, anoSemPeca: null, carroSemPeca: null, naPeca: false,
+});
+
+// Nome da marca: de cara, uma linha (os longos, "Volkswagen", um pouco menores): a grade da abertura nunca muda de altura
+// quando a fonte chega. Em "Ver todas" (depois do toque), até 2 linhas, com hífen só se precisar; o nome inteiro fica no aria-label.
+const QUEBRA: Record<string, string> = { Volkswagen: 'Volks&shy;wagen', Chevrolet: 'Chevro&shy;let', Mitsubishi: 'Mitsu&shy;bishi' };
+const nomeMarca = (n: string) => QUEBRA[n] ?? esc(n);
+const whats = (txt: string) => esc(linkWhats(txt));
 
 // ---- desenho (funções puras: rodam no build para a abertura e no navegador) ----
 
+/** logo que é só letreiro bem largo (Dodge, Iveco) viraria um fio no disco: vai o nome escrito no lugar (e não repete embaixo) */
+const nomeNoDisco = (m: Marca) => !(m.logo && m.lh > 0 && m.lw / m.lh < 4.2);
+
 function disco(m: Marca): string {
-  // logo que é só letreiro bem largo (Dodge, Iveco) viraria um fio no disco: vai o nome escrito no lugar
-  if (m.logo && m.lh > 0 && m.lw / m.lh < 4.2)
-    return `<span class="mc-disco"><img src="${esc(m.logo)}" alt="" width="${m.lw}" height="${m.lh}" loading="lazy" decoding="async" /></span>`;
+  if (!nomeNoDisco(m))
+    return `<span class="mc-disco"><img src="${esc(m.logo!)}" alt="" width="${m.lw}" height="${m.lh}" loading="lazy" decoding="async" /></span>`;
   return `<span class="mc-disco mc-disco-nome" aria-hidden="true">${esc(m.n)}</span>`;
 }
 
@@ -81,11 +87,12 @@ function htmlCampos(e: Estado): string {
     <button type="button" class="mc-campo${valor ? ' mc-campo-cheio' : ''}" data-acao="ir" data-alvo="${alvo}" data-chave="ir:${alvo}"${pode && e.etapa === alvo ? ' aria-current="step"' : ''}${pode ? '' : ' disabled'}>
       <small>${rot}</small><b>${valor ? esc(valor) : vazio}</b>${SETA}</button>`;
   const mo = e.modelo;
+  // "Todos" no campo e "Todos os anos" na lista: a mesma palavra para o mesmo estado
   const opcoes = mo
-    ? [`<option value=""${e.ano == null ? ' selected' : ''}>Qualquer ano · ${pecasTxt(mo.c)}</option>`]
+    ? [`<option value=""${e.ano == null ? ' selected' : ''}>Todos os anos · ${pecasTxt(mo.c)}</option>`]
         .concat(mo.ya.map(([y, c]) => `<option value="${y}"${e.ano === y ? ' selected' : ''}>${y} · ${pecasTxt(c)}</option>`))
         .join('')
-    : '<option value="">Qualquer ano</option>';
+    : '<option value="">Todos os anos</option>';
   const convite = e.etapa === 'pronto' && mo && e.ano == null;
   return `
   <div class="mc-campos" role="group" aria-label="Seu carro">
@@ -93,7 +100,7 @@ function htmlCampos(e: Estado): string {
     ${botao('modelo', 'Modelo', mo?.n ?? null, e.marca?.modelos.length ? 'Escolha' : '—', !!e.marca?.modelos.length)}
     <label class="mc-campo mc-campo-ano${e.ano != null ? ' mc-campo-cheio' : ''}${convite ? ' mc-convite' : ''}"${mo ? '' : ' data-off'}>
       <small>Ano</small><b>${e.ano != null ? e.ano : mo ? 'Todos' : '—'}</b>${SETA}
-      <select data-campo="ano" data-chave="campo:ano" aria-label="Ano do carro (opcional)"${mo ? '' : ' disabled'}>${opcoes}</select>
+      <select data-campo="ano" data-chave="campo:ano" aria-label="Ano do carro"${mo ? '' : ' disabled'}>${opcoes}</select>
     </label>
   </div>`;
 }
@@ -104,9 +111,12 @@ function htmlMarcas(g: Garagem, e: Estado): string {
   const tiles = lista
     .map((m) => `
       <li><button type="button" class="mc-marca" data-acao="marca" data-n="${esc(m.n)}" data-chave="marca:${esc(m.n)}"${m.n === foco ? ' data-foco' : ''} aria-pressed="${e.marca?.n === m.n}" aria-label="${esc(m.n)}, ${pecasTxt(m.c)}" title="${esc(m.n)}">
-        ${disco(m)}<span class="mc-marca-nome" aria-hidden="true">${esc(m.n)}</span></button></li>`)
+        ${disco(m)}${nomeNoDisco(m) ? '' : `<span class="mc-marca-nome${m.n.length >= 9 ? ' mc-longo' : ''}" aria-hidden="true">${nomeMarca(m.n)}</span>`}</button></li>`)
     .join('');
-  return `
+  const aviso = e.carroSemPeca
+    ? `<p class="mc-aviso-linha">Sem peças do <b>${esc(e.carroSemPeca)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Olá! Procuro peça para ${e.carroSemPeca}. Tem no pátio?`)}">peça no WhatsApp</a>.</p>`
+    : '';
+  return `${aviso}
     <ul class="mc-marcas"${e.todas ? ' data-todas' : ''} aria-label="Marcas">${tiles}</ul>
     <button type="button" class="mc-mais" data-acao="todas" data-chave="todas" aria-expanded="${e.todas}">${e.todas ? 'Mostrar menos marcas' : `Ver todas as ${g.marcas.length} marcas`}${SETA}</button>`;
 }
@@ -114,11 +124,13 @@ function htmlMarcas(g: Garagem, e: Estado): string {
 function htmlModelos(e: Estado): string {
   const m = e.marca!;
   const todas = `/catalogo.html?${new URLSearchParams({ marca: m.n }).toString()}`;
+  const procura = `<a class="mc-link" href="${whats(`Olá! Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}">Não achou o modelo? A gente procura no pátio</a>`;
   if (!m.modelos.length)
     // marca sem modelo lido nos anúncios (ex.: Mini): vai direto para as peças dela
     return `
-    <p class="mc-frase">As peças da <b>${esc(m.n)}</b> ainda não estão separadas por modelo.</p>
-    <a class="botao botao-laranja mc-ver" href="${esc(todas)}" data-chave="ver" data-foco>${m.c === 1 ? 'Ver a peça' : `Ver as ${pecasTxt(m.c)} da ${esc(m.n)}`}</a>`;
+    <p class="mc-frase"><b class="num">${fmt(m.c)}</b> ${m.c === 1 ? 'peça' : 'peças'} da <b>${esc(m.n)}</b>. Confira o modelo e o ano em cada peça.</p>
+    <a class="botao botao-laranja mc-ver" href="${esc(todas)}" data-chave="ver" data-foco>${m.c === 1 ? 'Ver a peça' : `Ver as ${pecasTxt(m.c)} da ${esc(m.n)}`}</a>
+    <p class="mc-pe">${procura}</p>`;
   const cortar = !e.todosModelos && m.modelos.length > MODELOS_DE_CARA + 1;
   const lista = cortar ? m.modelos.slice(0, MODELOS_DE_CARA) : m.modelos;
   const foco = e.modelo?.n ?? lista[0]?.n;
@@ -132,7 +144,7 @@ function htmlModelos(e: Estado): string {
     : '';
   return `
     <ul class="mc-modelos" aria-label="Modelos ${esc(m.n)}">${tiles}${mais}</ul>
-    <a class="mc-link" href="${esc(todas)}">${m.c === 1 ? `Ver a peça da ${esc(m.n)}` : `Ver todas as ${pecasTxt(m.c)} da ${esc(m.n)}`}</a>`;
+    <p class="mc-pe"><a class="mc-link" href="${esc(todas)}">${m.c === 1 ? `Ver a peça da ${esc(m.n)}` : `Ver todas as ${pecasTxt(m.c)} da ${esc(m.n)}`}</a>${procura}</p>`;
 }
 
 function htmlPronto(e: Estado): string {
@@ -140,13 +152,25 @@ function htmlPronto(e: Estado): string {
   const n = contagem(mo, e.ano);
   const carro: MeuCarro = { b: e.marca!.n, m: mo.n, y: e.ano };
   const nome = `${carro.b} ${carro.m}${carro.y ? ` ${carro.y}` : ''}`;
+  const ver = n === 1 ? 'Ver a peça' : `Ver as ${fmt(n)} peças`;
+  // sem ano: o encaixe ainda não foi conferido (o ano é o que decide); o ano salvo sem peça agora ganha o aviso
+  const linha = e.anoSemPeca
+    ? `<p class="mc-aviso-linha">Sem peças do <b>${esc(mo.n)} ${e.anoSemPeca}</b> agora. Mostrando todos os anos.</p>`
+    : e.ano == null
+      ? `<p class="mc-dica"><span>Qual o ano? Assim a gente confere o encaixe.</span> <button type="button" data-acao="ano" data-chave="ano">Escolher o ano</button></p>`
+      : '';
+  const acao = e.naPeca
+    ? `<button type="button" class="botao botao-laranja mc-ver" data-acao="conferir" data-chave="ver" data-foco>Conferir nesta peça</button>
+    <a class="mc-link mc-link-centro" href="${esc(linkCatalogo(carro))}">${n === 1 ? 'Ver a peça do seu carro' : `Ver as ${fmt(n)} peças do seu carro`}</a>`
+    : `<a class="botao botao-laranja mc-ver" href="${esc(linkCatalogo(carro))}" data-chave="ver" data-foco>${ver}</a>`;
   return `
     <div class="mc-resumo">${disco(e.marca!)}
       <p class="mc-frase"><b class="num">${fmt(n)}</b> ${n === 1 ? 'peça' : 'peças'} para o seu <b>${esc(nome)}</b></p></div>
-    <a class="botao botao-laranja mc-ver" href="${esc(linkCatalogo(carro))}" data-chave="ver" data-foco>${n === 1 ? 'Ver a peça' : `Ver as ${fmt(n)} peças`}</a>
+    ${linha}
+    ${acao}
     <p class="mc-nota"><span>Salvo neste aparelho.</span>
-      <button type="button" data-acao="trocar" data-chave="trocar">Trocar carro</button>
-      <button type="button" data-acao="tirar" data-chave="tirar">Esquecer</button></p>`;
+      <span class="mc-nota-acoes"><button type="button" data-acao="trocar" data-chave="trocar">Trocar carro</button>
+      <button type="button" data-acao="tirar" data-chave="tirar">Esquecer</button></span></p>`;
 }
 
 function htmlCorpo(g: Garagem, e: Estado): string {
@@ -160,6 +184,13 @@ function htmlEsqueleto(): string {
     <span class="mc-mais mc-esqueleto-txt" aria-hidden="true">&nbsp;</span></div>`;
 }
 
+function htmlErro(): string {
+  return `<div class="mc-corpo" data-etapa="erro"><div class="mc-aviso"><p>Não deu para carregar os carros agora.</p>
+    <p class="mc-aviso-acoes"><button type="button" class="botao botao-linha" data-acao="recarregar" data-chave="recarregar" data-foco>Tentar de novo</button>
+      <a class="mc-link" href="/catalogo.html">Ver o catálogo</a>
+      <a class="mc-link" href="${whats('Olá! Estou procurando uma peça.')}">Chamar no WhatsApp</a></p></div></div>`;
+}
+
 /** Marcação inicial (campos + grade de marcas), igual à que o script desenha: a abertura já nasce com ela. */
 export function htmlInicial(g: Garagem): string {
   const e = inicial();
@@ -169,7 +200,7 @@ export function htmlInicial(g: Garagem): string {
 // ---- comportamento ----
 
 /** Monta o seletor dentro de `raiz`. Se a raiz já veio do build (data-ssr), aproveita a marcação.
- *  Chamar de novo na mesma raiz só atualiza com o carro salvo. */
+ *  Chamar de novo na mesma raiz só atualiza com o carro salvo (e com a origem da caixa, data-origem). */
 export function montarPicker(raiz: HTMLElement): Handle {
   const existente = (raiz as HTMLElement & { _meuCarro?: Handle })._meuCarro;
   if (existente) {
@@ -195,16 +226,24 @@ export function montarPicker(raiz: HTMLElement): Handle {
   voz.setAttribute('aria-live', 'polite');
 
   function aplicarSalvo() {
-    const a = g && achar(g, lerMeuCarro());
+    const salvo = lerMeuCarro();
+    const a = g && achar(g, salvo);
     e.todas = false;
     e.todosModelos = false;
+    e.naPeca = raiz.dataset.origem === 'peca';
+    e.anoSemPeca = null;
+    e.carroSemPeca = null;
     if (a) {
       e.marca = a.marca;
       e.modelo = a.modelo;
-      // ano salvo que não tem mais peça no estoque: mostra "qualquer ano" (sem mexer no que está salvo)
-      e.ano = a.ano != null && a.modelo.ya.some(([y]) => y === a.ano) ? a.ano : null;
+      // ano salvo que não tem peça agora: mostra todos os anos e avisa (o carro salvo continua com o ano dele)
+      const temAno = a.ano != null && a.modelo.ya.some(([y]) => y === a.ano);
+      e.ano = temAno ? a.ano : null;
+      e.anoSemPeca = a.ano != null && !temAno ? a.ano : null;
       e.etapa = 'pronto';
     } else {
+      // carro salvo que não está mais no estoque (marca ou modelo sem peça): volta às marcas, com aviso
+      e.carroSemPeca = g && salvo ? `${salvo.b} ${salvo.m}` : null;
       e.marca = null;
       e.modelo = null;
       e.ano = null;
@@ -215,21 +254,21 @@ export function montarPicker(raiz: HTMLElement): Handle {
   function anunciar() {
     if (!e.marca || !e.modelo) return;
     const n = contagem(e.modelo, e.ano);
-    voz.textContent = `${pecasTxt(n)} para o seu ${e.marca.n} ${e.modelo.n}${e.ano ? ` ${e.ano}` : ''}`;
+    voz.textContent = `${pecasTxt(n)} para o seu ${e.marca.n} ${e.modelo.n}${e.ano ? ` ${e.ano}` : ''}${e.ano ? '' : '. Escolha o ano para conferir o encaixe'}`;
   }
 
   function salvar() {
     if (!e.marca || !e.modelo) return;
     salvando = true;
+    e.anoSemPeca = null;
+    e.carroSemPeca = null;
     salvarMeuCarro({ b: e.marca.n, m: e.modelo.n, y: e.ano });
     salvando = false;
     anunciar();
   }
 
   function corpo(): string {
-    if (erro)
-      return `${htmlCampos(e)}<div class="mc-corpo"><p class="mc-aviso">Não deu para carregar os carros agora.
-        <button type="button" data-acao="recarregar" data-chave="recarregar">Tentar de novo</button></p></div>`;
+    if (erro) return htmlCampos(e) + htmlErro();
     if (!g) return htmlCampos(e) + htmlEsqueleto();
     return htmlCampos(e) + htmlCorpo(g, e);
   }
@@ -260,6 +299,11 @@ export function montarPicker(raiz: HTMLElement): Handle {
     }
   }
 
+  /** Vindo da página da peça: avisa a caixa para fechar e mostrar a resposta na faixa. */
+  function escolhido() {
+    if (e.naPeca) raiz.dispatchEvent(new CustomEvent(ESCOLHIDO, { bubbles: true }));
+  }
+
   function agir(b: HTMLElement) {
     if (!g) return;
     const acao = b.dataset.acao;
@@ -267,6 +311,12 @@ export function montarPicker(raiz: HTMLElement): Handle {
       e.todas = !e.todas;
     } else if (acao === 'modelos') {
       e.todosModelos = true;
+    } else if (acao === 'ano') {
+      abrirAno();
+      return;
+    } else if (acao === 'conferir') {
+      escolhido();
+      return;
     } else if (acao === 'marca') {
       const m = g.marcas.find((x) => x.n === b.dataset.n);
       if (!m) return;
@@ -302,6 +352,8 @@ export function montarPicker(raiz: HTMLElement): Handle {
       e.modelo = null;
       e.ano = null;
       e.todas = false;
+      e.anoSemPeca = null;
+      e.carroSemPeca = null;
       e.etapa = 'marca';
       salvarMeuCarro(null);
       voz.textContent = 'Carro esquecido neste aparelho.';
@@ -328,7 +380,7 @@ export function montarPicker(raiz: HTMLElement): Handle {
           return;
         }
         // a marcação do build já é exatamente este estado: não redesenha (nada pisca)
-        if (raiz.hasAttribute('data-ssr') && !raiz.hasAttribute('data-salvo') && e.etapa === 'marca') {
+        if (raiz.hasAttribute('data-ssr') && !raiz.hasAttribute('data-salvo') && e.etapa === 'marca' && !e.carroSemPeca) {
           raiz.removeAttribute('data-ssr');
           return;
         }
@@ -371,6 +423,7 @@ export function montarPicker(raiz: HTMLElement): Handle {
     e.etapa = 'pronto';
     salvar();
     desenhar();
+    if (e.ano != null) escolhido();
   });
 
   // Outra parte do site salvou (ou limpou) o carro: atualiza este seletor também.

@@ -40,14 +40,14 @@ const ld = {
   ],
 };
 ---
-<Pagina titulo="Izzat Car Imports | Peças originais de desmanche legalizado"
+<Pagina titulo="Izzat Car Imports | Peças originais de desmanche legalizado" rodapeSelos={false}
         descricao={`Peças originais de carros com baixa legal no Detran-RS (CDV nº 01060). Nota fiscal e 90 dias de garantia em toda peça. Ache pelo carro ou pelo código gravado.`}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio.webp" media="(min-width: 768px)" fetchpriority="high" />
   <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio-celular.webp" media="(max-width: 767px)" fetchpriority="high" />
 
   <AberturaV2 arte="/arte/v2/abertura-estudio.webp" arteCelular="/arte/v2/abertura-estudio-celular.webp">
-    <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Nome da peça ou código" />
+    <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Ex.: rádio XC60" />
   </AberturaV2>
 
   <section class="selos-faixa" aria-label="Garantias da Izzat Car">
@@ -58,7 +58,7 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-destaques" class="titulo-secao">Destaques do pátio</h2>
-        <p class="lead">Peças originais com preço, nota fiscal e 90 dias de garantia. Toque na peça para ver as fotos e o código gravado.</p>
+        <p class="lead">Peças originais com preço, nota fiscal e 90 dias de garantia. Abra a peça para ver as fotos e o código gravado.</p>
       </div>
       <VitrineDestaques />
       <BannerV2 class="vitrine-serve" nome="banner-serve" href={whatsUrl(msgServe)}
@@ -68,12 +68,9 @@ const ld = {
 
   <section class="secao cv" aria-labelledby="t-cat">
     <div class="moldura">
-      <div class="cabeca-secao linha">
-        <div>
-          <h2 id="t-cat" class="titulo-secao">Peças por sistema do carro</h2>
-          <p class="lead">Escolha a parte do carro e veja tudo o que tem no estoque.</p>
-        </div>
-        <a class="botao botao-linha" href="/catalogo.html">Ver o catálogo inteiro</a>
+      <div class="cabeca-secao">
+        <h2 id="t-cat" class="titulo-secao">Peças por sistema do carro</h2>
+        <p class="lead">Escolha a parte do carro e veja tudo o que tem no estoque.</p>
       </div>
       <GradeCategorias />
     </div>
@@ -84,7 +81,7 @@ const ld = {
       <div class="cabeca-secao linha">
         <div>
           <h2 id="t-chegou" class="titulo-secao">Chegou no pátio</h2>
-          <p class="lead">Os anúncios mais novos, direto do desmonte.</p>
+          <p class="lead">Os anúncios mais novos, direto do pátio.</p>
         </div>
         <a class="botao botao-linha" href="/catalogo.html?ordem=novos">Ver todas as novidades</a>
       </div>
@@ -136,7 +133,7 @@ const ld = {
           ['Confirme o seu carro', 'Manda o modelo e o ano. A gente confere na peça.'],
           ['Feche a compra', 'No Mercado Livre ou direto pelo WhatsApp.'],
           ['Receba em casa', 'Com nota fiscal e código de rastreio.']].map(([t, s], i) => (
-          <li><img src={`/arte/v2/passo-${i + 1}.webp`} alt={`${i + 1}. ${t}. ${s}`} width="800" height="800" loading="lazy" decoding="async" /></li>
+          <li><img src={`/arte/v2/passo-${i + 1}.webp`} alt={`${i + 1}. ${t}`} width="800" height="671" loading="lazy" decoding="async" /><p>{s}</p></li>
         ))}
       </ol>
     </div>
@@ -172,9 +169,19 @@ const ld = {
   .cabeca-secao { display: grid; gap: 8px; margin-bottom: 28px; max-width: 62ch; }
   .cabeca-secao.linha { max-width: none; grid-template-columns: 1fr; align-items: end; gap: 16px; }
   @media (min-width: 768px) { .cabeca-secao.linha { grid-template-columns: 1fr auto; } }
+  /* celular: o "Ver todas…" da seção vem DEPOIS dos cartões (antes ocupava a 1ª dobra de cada seção) */
+  @media (max-width: 767px) {
+    .moldura:has(> .cabeca-secao.linha) { display: flex; flex-direction: column; }
+    .cabeca-secao.linha { display: contents; }
+    .cabeca-secao.linha > div { margin-bottom: 24px; display: grid; gap: 8px; }
+    .cabeca-secao.linha > .botao { order: 2; align-self: stretch; margin-top: 10px; }
+  }
   .cabeca-secao .lead { margin: 0; }
   .titulo-secao { margin: 0; }
   .faixa { background: var(--bg-2); }
+  /* duas seções seguidas com o mesmo fundo: o respiro de uma não soma com o da outra (era um buraco de 170–224 px) */
+  .secao:not(.faixa):has(+ .secao:not(.faixa)) { padding-bottom: clamp(32px, 4vw, 60px); }
+  .secao:not(.faixa) + .secao:not(.faixa) { padding-top: clamp(32px, 4vw, 60px); }
   /* Fluidez: seções abaixo da dobra só são desenhadas quando chegam perto da tela (a home abre mais leve no
      celular). "auto" guarda o tamanho já desenhado (sem pulo na rolagem). Só em seções com o respiro normal
      (.secao): nada nelas passa da borda (o content-visibility corta o que passar). */
@@ -187,12 +194,18 @@ const ld = {
   .vitrine-secao { padding-top: clamp(48px, 6vw, 88px); }
   .vitrine-secao :global(.vitrine-serve) { margin-top: clamp(36px, 4.4vw, 56px); }
 
+  /* passos: a arte mostra o número e o título; a frase vai em texto vivo embaixo (a desenhada era miúda e em outra
+     fonte e fica fora do corte: as 4 artes têm o título até 668 px e a frase a partir de 674 px, de 800).
+     Ao refazer as artes só com número e título, tirar o aspect-ratio do corte. */
   .passos { list-style: none; margin: 0; padding: 4px 4px 12px; display: grid; grid-auto-flow: column; grid-auto-columns: 78%; gap: 14px;
             overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .passos::-webkit-scrollbar { display: none; }
-  .passos li { scroll-snap-align: start; }
-  .passos img { display: block; width: 100%; height: auto; border-radius: 22px; box-shadow: var(--shadow-1); background: #efeeeb; }
-  @media (min-width: 900px) { .passos { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; gap: 18px; } }
+  .passos li { scroll-snap-align: start; display: grid; align-content: start; border-radius: 22px; overflow: hidden; box-shadow: var(--shadow-1);
+               background: linear-gradient(90deg, #e9e6e4, #e1dddb); }
+  .passos img { display: block; width: 100%; height: auto; aspect-ratio: 800 / 671; object-fit: cover; object-position: 50% 0; }
+  .passos p { margin: -2px 0 0; padding: 0 clamp(16px, 6%, 24px) clamp(16px, 6%, 22px); font-size: 15px; line-height: 1.4; color: #3d3d42; text-wrap: pretty; }
+  @media (min-width: 600px) { .passos { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; gap: 16px; } }
+  @media (min-width: 900px) { .passos { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
 
 
   .faq { display: grid; gap: 8px; }
@@ -205,4 +218,10 @@ const ld = {
   .faq-ajuda span { font-size: 15px; color: var(--ink-2); }
   .faq-ajuda .botao { margin-top: 10px; justify-self: start; }
   @media (min-width: 1024px) { .faq .cabeca-secao { position: sticky; top: 110px; } }
+  /* celular e tablet: o "Ficou outra dúvida?" vem DEPOIS das perguntas */
+  @media (max-width: 1023px) {
+    .faq .cabeca-secao { display: contents; }
+    .faq .cabeca-secao .lead { margin-bottom: 20px; }
+    .faq-ajuda { order: 3; margin-top: 16px; }
+  }
 </style>
