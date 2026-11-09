@@ -1,0 +1,58 @@
+---
+// Categorias: uma ARTE por família (peça em estúdio + nome desenhado na arte) + nº de peças vivo.
+// Referência de layout: Shop by Category Grid (ziegfiroyt/ecommerce4, 21st.dev #29288) em bento.
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { resumo } from '../../lib/dados';
+const fams = resumo().familias.filter((f) => f.n !== 'Outros' && existsSync(join(process.cwd(), 'public', 'arte', 'v2', `cat-${f.k}.webp`)));
+const NO_CELULAR = 8;
+---
+<div class="cats" data-cats>
+  <ul class="cats-grade">
+    {fams.map((f, i) => (
+      <li class:list={['cat', { 'cat-grande': i < 2, 'cat-extra': i >= NO_CELULAR }]}>
+        <a href={`/categoria/${f.k}.html`} aria-label={`${f.n}: ${f.c.toLocaleString('pt-BR')} peças`}>
+          <img src={`/arte/v2/cat-${f.k}.webp`} alt="" width="800" height="800" loading={i < 4 ? 'eager' : 'lazy'} decoding="async" />
+          <span class="cat-qtd num">{f.c.toLocaleString('pt-BR')} peças</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+  {fams.length > NO_CELULAR && (
+    <button type="button" class="botao botao-linha cats-mais" data-mais aria-expanded="false">Ver as {fams.length} categorias</button>
+  )}
+</div>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cats]').forEach((el) => {
+    el.querySelector<HTMLButtonElement>('[data-mais]')?.addEventListener('click', (e) => {
+      el.classList.add('aberto'); (e.currentTarget as HTMLElement).remove();
+    });
+  });
+</script>
+<style>
+  .cats-grade { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; }
+  .cat a { position: relative; display: block; border-radius: 20px; overflow: hidden; background: #efeeeb; box-shadow: var(--shadow-1);
+    transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
+  .cat img { display: block; width: 100%; height: auto; aspect-ratio: 1; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+  .cat-qtd { position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 99px; background: rgb(255 255 255 / .92);
+    font-size: 12px; font-weight: 700; color: #1d1d1f; box-shadow: 0 2px 8px -4px rgb(0 0 0 / .25); }
+  .cat-extra { display: none; }
+  .aberto .cat-extra { display: block; }
+  .cats-mais { margin: 16px auto 0; display: flex; }
+  @media (min-width: 700px) {
+    .cats-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .cat-extra { display: block; } .cats-mais { display: none; }
+  }
+  @media (min-width: 1080px) {
+    .cats-grade { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .cat-grande { grid-column: span 2; grid-row: span 2; }
+    .cat-qtd { top: 12px; right: 12px; font-size: 12.5px; }
+    .cat-grande .cat-qtd { top: 18px; right: 18px; font-size: 14px; padding: 7px 13px; }
+  }
+  @media (hover: hover) {
+    .cat a:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+    .cat a:hover img { transform: scale(1.03); }
+  }
+  .cat a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .cat a, .cat img { transition: none; } }
+</style>

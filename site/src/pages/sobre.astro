@@ -1,84 +1,44 @@
 ---
 import Pagina from '../layouts/Pagina.astro';
-import Topo from '../components/inst/Topo.astro';
+import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
 import Icone from '../components/Icone.astro';
 import SeloCDV from '../components/SeloCDV.astro';
-import Video from '../components/Video.astro';
-import { whatsUrl, SITE } from '../lib/dados';
+import { SITE } from '../lib/dados';
 
 const canonical = `${SITE}/sobre.html`;
-const ld = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
-    { '@type': 'ListItem', position: 2, name: 'O pátio', item: canonical },
-  ],
-};
+const canonicalPath = '/sobre.html';
+const historia = [
+  { n: 1, t: 'Chega com baixa legal', s: 'O carro entra com a baixa feita, dentro da lei.', alt: 'Carro chegando ao pátio, com a documentação de baixa sobre um pedestal' },
+  { n: 2, t: 'É desmontado com calma', s: 'Peça por peça, com cuidado.', alt: 'Farol já removido, apoiado num carrinho de ferramentas, ao lado do carro' },
+  { n: 3, t: 'Cada peça é conferida', s: 'Ela é fotografada e anunciada com o código original, para você achar a peça certa.', alt: 'Alternador limpo sobre a bancada, com etiqueta laranja' },
+  { n: 4, t: 'Embalada e enviada', s: 'Cada peça é embalada com cuidado, e todo envio vai com código de rastreio.', alt: 'Peça embalada em caixa de papelão, com fita laranja' },
+];
 ---
 <Pagina
   titulo="O pátio, desmanche em Aceguá-RS | Izzat Car Imports"
   descricao="Desmanche credenciado pelo Detran-RS, CDV nº 01060, em Aceguá-RS. Carros com baixa legal, cada peça identificada e rastreável, com código original."
   canonical={canonical}
 >
-  <Fragment slot="head">
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
-  </Fragment>
-
-  <Topo
+  <TopoArte trilha={[['Início', '/index.html'], ['O pátio', canonicalPath]]}
     titulo="O pátio"
     lead="Um desmanche credenciado pelo Detran-RS, na fronteira de Aceguá. Cada carro chega com baixa legal, e cada peça sai identificada."
-    trilha={[{ nome: 'Início', href: '/index.html' }, { nome: 'O pátio' }]}
-  />
+    arte="/arte/v2/topo-patio.webp" />
 
   <div class="moldura">
-    <figure class="inst-janela inst-janela--16x9 sob-galpao">
-      <Video nome="h-galpao" rotulo="Galpão do desmanche: corredor de prateleiras com motores e peças, piso claro e luz natural" prioridade />
-    </figure>
-
-    <section class="inst-sec" aria-labelledby="h-processo">
-      <div class="inst-duas">
-        <div class="inst-texto">
-          <h2 class="titulo-secao inst-h2" id="h-processo">De carro a peças</h2>
-          <p>Cada carro segue o mesmo caminho, do começo ao fim, dentro da lei.</p>
-        </div>
-        <ol class="inst-numeros">
-          <li>
-            <div>
-              <b>Chega com baixa legal</b>
-              <p>O carro entra com a baixa feita, dentro da lei.</p>
-            </div>
+    <section class="inst-sec sob-historia" aria-labelledby="h-processo">
+      <h2 class="titulo-secao inst-h2" id="h-processo">Do carro à peça</h2>
+      <p class="sob-intro">Cada carro segue o mesmo caminho, do começo ao fim, dentro da lei.</p>
+      <ol class="sob-passos">
+        {historia.map((h) => (
+          <li class="sob-passo">
+            <figure>
+              <img src={`/arte/v2/historia-${h.n}.webp`} alt={h.alt} width="1200" height="800" loading="lazy" decoding="async" />
+              <figcaption><span class="sob-num num">{h.n}</span><span><b>{h.t}</b>{h.s}</span></figcaption>
+            </figure>
           </li>
-          <li>
-            <div>
-              <b>É desmontado</b>
-              <p>Peça por peça, com calma e cuidado.</p>
-            </div>
-          </li>
-          <li>
-            <div>
-              <b>Cada peça é conferida</b>
-              <p>Ela é fotografada e anunciada com o código original, para você achar a peça certa.</p>
-            </div>
-          </li>
-        </ol>
-      </div>
-    </section>
-
-    <section class="sob-verticais-wrap" aria-labelledby="h-dentro">
-      <h2 class="titulo-secao inst-h2" id="h-dentro">Por dentro do pátio</h2>
-      <div class="inst-verticais">
-        <figure class="inst-janela">
-          <Video nome="v-showroom" rotulo="Showroom com parede de rodas e um Mini Cooper verde-água" />
-        </figure>
-        <figure class="inst-janela">
-          <Video nome="v-rodas" rotulo="Parede de rodas de liga e aros, em movimento lento" />
-        </figure>
-        <figure class="inst-janela">
-          <Video nome="v-motores" rotulo="Motores e caixas de câmbio em prateleiras metálicas" />
-        </figure>
-      </div>
+        ))}
+      </ol>
     </section>
 
     <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-legal">
@@ -92,14 +52,12 @@ const ld = {
       </div>
     </section>
 
-    <section class="inst-sec inst-sec--linha" aria-labelledby="h-destaque">
-      <div class="inst-duas">
-        <div class="inst-texto">
-          <h2 class="titulo-secao inst-h2" id="h-destaque">Destaque em Aceguá</h2>
-          <p>O pátio ganhou o Destaque Aceguá 2025 no Melhores do Ano Aceguá, na categoria desmanche de veículos.</p>
-        </div>
-        <p class="sob-destaque display"><span>Destaque</span> Aceguá 2025</p>
+    <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-destaque">
+      <div class="inst-texto">
+        <h2 class="titulo-secao inst-h2" id="h-destaque">Destaque em Aceguá</h2>
+        <p>O pátio ganhou o Destaque Aceguá 2025 no Melhores do Ano Aceguá, na categoria desmanche de veículos.</p>
       </div>
+      <p class="sob-destaque display"><span>Destaque</span> Aceguá 2025</p>
     </section>
 
     <section class="inst-sec inst-sec--linha inst-duas" aria-labelledby="h-onde">
@@ -126,28 +84,18 @@ const ld = {
   />
 </Pagina>
 
-<script>
-  // Quem pede menos movimento ve o video parado (o poster), sem tocar.
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.querySelectorAll<HTMLVideoElement>('video[autoplay]').forEach((v) => v.pause());
-  }
-</script>
-
 <style>
-  .sob-galpao { margin-top: 4px; }
-  .sob-verticais-wrap { padding-block: clamp(48px, 7vw, 96px); }
-  .sob-verticais-wrap .inst-h2 { margin-bottom: clamp(20px, 3vw, 32px); }
-  .inst-verticais {
-    display: grid; grid-auto-flow: column; grid-auto-columns: 64vw; gap: 14px;
-    margin: 0 -16px; padding: 4px 16px 12px; overflow-x: auto; overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none;
-  }
-  .inst-verticais::-webkit-scrollbar { display: none; }
-  .inst-verticais > figure { scroll-snap-align: start; aspect-ratio: 9 / 16; }
-  @media (min-width: 768px) {
-    .inst-verticais { margin: 0; padding: 0; grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); grid-auto-columns: auto; overflow: visible; gap: 20px; }
-    .inst-verticais > figure { aspect-ratio: 4 / 5; }
-  }
+  .sob-historia { padding-bottom: clamp(24px, 4vw, 48px); }
+  .sob-historia .inst-h2 { margin-bottom: 8px; }
+  .sob-intro { margin: 0 0 clamp(24px, 3.4vw, 40px); font-size: 17px; line-height: 1.6; color: var(--ink-2); max-width: 60ch; }
+  .sob-passos { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(28px, 4vw, 44px); grid-template-columns: 1fr; }
+  @media (min-width: 760px) { .sob-passos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 32px; } }
+  .sob-passo figure { margin: 0; display: grid; gap: 16px; }
+  .sob-passo img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 24px; background: #efeeeb; box-shadow: var(--shadow-1); }
+  .sob-passo figcaption { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
+  .sob-passo figcaption b { display: block; margin-bottom: 4px; font-stretch: 86%; font-weight: 800; font-size: clamp(20px, 2vw, 24px); line-height: 1.1; color: var(--ink); }
+  .sob-num { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 17px;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 6px 14px -6px rgb(255 106 0 / .7); }
   .sob-selo { display: grid; place-items: center; }
   @media (min-width: 900px) { .sob-selo { justify-items: start; } }
   .sob-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }

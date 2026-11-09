@@ -2,23 +2,19 @@
 import Pagina from '../layouts/Pagina.astro';
 import Catalogo from '../components/catalogo/Catalogo';
 import CartaoPeca from '../components/CartaoPeca.astro';
-import { pecas, resumo, SITE } from '../lib/dados';
+import TopoArte from '../components/TopoArte.astro';
+import { pecas, resumo } from '../lib/dados';
 const r = resumo();
 // Sem JS (e para o Google): as 48 mais novas + atalhos por tipo e por carro.
 const primeiras = [...pecas()].sort((a, b) => (b.id > a.id ? 1 : -1)).slice(0, 48);
-const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
-  { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
-  { '@type': 'ListItem', position: 2, name: 'Catálogo', item: `${SITE}/catalogo.html` } ] };
 ---
 <Pagina titulo="Catálogo de peças originais | Izzat Car Imports"
         descricao={`Busque entre ${r.total.toLocaleString('pt-BR')} peças originais de desmanche legalizado: pelo nome, pelo carro ou pelo código gravado. Nota fiscal e 90 dias de garantia.`}>
-  <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   <link slot="head" rel="preload" href="/dados/busca.json" as="fetch" crossorigin />
+  <TopoArte trilha={[['Início', '/index.html'], ['Catálogo', '/catalogo.html']]} titulo="Catálogo de peças"
+    lead="Ache pelo nome da peça, pelo carro ou pelo código gravado nela. Todas originais, com nota fiscal e 90 dias de garantia."
+    arte="/arte/v2/topo-catalogo.webp" />
   <div class="moldura cat-pagina">
-    <header class="cat-cabeca">
-      <h1 class="display">Catálogo de peças</h1>
-      <p class="lead">Ache pelo nome da peça, pelo carro ou pelo código gravado nela. Todas originais, com nota fiscal e 90 dias de garantia.</p>
-    </header>
     <Catalogo client:load total={r.total} />
     <noscript>
       <div class="cat-grade">{primeiras.map((p) => <CartaoPeca p={p} />)}</div>
@@ -31,10 +27,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 </Pagina>
 
 <style is:global>
-  .cat-pagina { padding-block: clamp(28px, 4vw, 56px) 72px; }
-  .cat-cabeca { display: grid; gap: 10px; margin-bottom: 22px; max-width: 64ch; }
-  .cat-cabeca h1 { margin: 0; font-size: clamp(40px, 5vw, 64px); }
-  .cat-cabeca .lead { margin: 0; }
+  .cat-pagina { padding-block: clamp(20px, 3vw, 36px) 72px; }
   .cat-busca { position: sticky; top: 76px; z-index: 30; }
   @media (min-width: 960px) { .cat-busca { top: 96px; } }
   .cat-limpar-texto { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ink-3); }

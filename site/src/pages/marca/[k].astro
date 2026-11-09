@@ -1,10 +1,10 @@
 ---
 import Pagina from '../../layouts/Pagina.astro';
-import TopoListagem from '../../components/TopoListagem.astro';
+import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
-import CartaoCarro from '../../components/CartaoCarro.astro';
+import CarrosArte from '../../components/CarrosArte.astro';
 import Atalhos from '../../components/Atalhos.astro';
-import { pecas, resumo } from '../../lib/dados';
+import { pecas, resumo, logoInfo } from '../../lib/dados';
 export function getStaticPaths() { return resumo().marcas.map((m) => ({ params: { k: m.k }, props: { k: m.k } })); }
 const r = resumo();
 const m = r.marcas.find((x) => x.k === Astro.props.k)!;
@@ -12,24 +12,33 @@ const lista = pecas().filter((p) => p.b === m.n).sort((a, b) => (b.id > a.id ? 1
 const carros = r.carros.filter((c) => c.b === m.n);
 const comPagina = new Set(carros.map((c) => c.m));
 const outros = m.m.filter((x) => !comPagina.has(x.n)).map((x) => [x.n, x.c, `/catalogo.html?marca=${encodeURIComponent(m.n)}&modelo=${encodeURIComponent(x.n)}`] as [string, number, string]);
+const logo = logoInfo(m.k, 160, 90);
 ---
 <Pagina titulo={`Peças ${m.n} originais | Izzat Car Imports`}
         descricao={`${m.c} peças originais ${m.n} de desmanche legalizado, com nota fiscal e 90 dias de garantia. Modelos: ${m.m.slice(0, 6).map((x) => x.n).join(', ')}.`}>
+  <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [m.n, `/marca/${m.k}.html`]]}
+    titulo={`Peças ${m.n}`} logo={logo}
+    lead={`${m.c} peças originais ${m.n} no estoque, de ${m.m.length} ${m.m.length === 1 ? "modelo" : "modelos"}. Escolha o seu carro ou veja as mais novas abaixo.`}>
+    <Atalhos titulo="Outros modelos" itens={outros} />
+  </TopoArte>
+
   <div class="moldura">
-    <TopoListagem trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [m.n, `/marca/${m.k}.html`]]}
-      titulo={`Peças ${m.n}`} apoio={`${m.c} peças originais ${m.n} no estoque, de ${m.m.length} modelos. Escolha o seu carro ou veja as mais novas abaixo.`}>
-      <Atalhos titulo="Outros modelos" itens={outros} />
-    </TopoListagem>
-    {carros.length > 0 && <section class="secao-lista"><div class="grade-carros">{carros.map((c) => <CartaoCarro c={c} />)}</div></section>}
+    {carros.length > 0 && (
+      <section class="secao-lista">
+        <h2 class="titulo-secao">Carros {m.n} do pátio</h2>
+        <div class="carros-marca"><CarrosArte carros={carros} marca={m.k} /></div>
+      </section>
+    )}
     <section class="secao-lista">
       <h2 class="titulo-secao">As mais novas {m.n}</h2>
-      <GradePecas lista={lista.slice(0, 24)} total={lista.length} linkTodas={`/catalogo.html?marca=${encodeURIComponent(m.n)}`} />
+      <div class="mais-novas"><GradePecas lista={lista.slice(0, 24)} total={lista.length} linkTodas={`/catalogo.html?marca=${encodeURIComponent(m.n)}`} /></div>
     </section>
   </div>
 </Pagina>
 <style>
-  .secao-lista { padding-bottom: 56px; }
-  .titulo-secao { margin: 0 0 20px; }
-  .grade-carros { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  @media (min-width: 900px) { .grade-carros { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
+  .secao-lista { padding-top: clamp(40px, 6vw, 64px); padding-bottom: 24px; }
+  .secao-lista:last-child { padding-bottom: 72px; }
+  .titulo-secao { margin: 0 0 22px; }
+  .carros-marca { margin-top: 4px; }
+  .mais-novas { margin-top: 4px; }
 </style>

@@ -17,6 +17,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    e, se existirem os segredos `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`, também no Worker `izzatcar-site`
    (`site/wrangler.jsonc`, servido sem redirecionar `.html`; `site/worker/index.js` só trata `/` e 404).
 5. `fotos_limpas.py` escolhe a capa de cada peça (foto só da peça); cache em `fotos_limpas.json`.
+   `capas_estudio.py` transforma essa capa em **foto de estúdio** (fundo removido + base clara com sombra)
+   em `site/public/estudio/<MLB>.webp`. As prontas ficam no ramo **`capas-estudio`** (o robô baixa, gera só as
+   das peças novas com rembg e devolve). No Mac: `ESTUDIO_MOTOR=vision` usa o recorte nativo (bem mais rápido).
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
 
 ## Endereços (não mudar — o Google já conhece)
@@ -31,13 +34,15 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 |---|---|
 | Cores, fontes, botões, etiqueta da peça | `site/src/styles/global.css` |
 | Página da peça | `site/src/pages/peca/[slug].astro` e `site/src/components/PecaTopo.astro` |
-| Home | `site/src/pages/index.astro` e `site/src/components/Abertura.astro` |
+| Home | `site/src/pages/index.astro` e `site/src/components/v2/*` (abertura, selos, categorias, marcas, carros, banners) |
 | Catálogo (busca e filtros) | `site/src/components/catalogo/Catalogo.tsx` e `site/src/lib/busca.ts` |
 | Leitura de marca/modelo/nome | `preparar_dados.py` |
 | GA4 / Meta Pixel | `site/public/rastreio.js` (só mede no domínio de verdade) |
-| Artes (banners, passos, 404) | `site/public/arte/` e `site/public/banners/` — texto desenhado na arte |
+| Artes (v2: abertura, categorias, carros, selos, banners, passos, topos, história, 404) | `site/public/arte/v2/` — texto desenhado na arte; prompts em `site/SUPER-PLANEJAMENTO-v2.md` |
+| Logos das marcas | `site/public/marcas/` (simple-icons e car-logos-dataset; viewBox recortado) |
 
 ## Regras da marca (manual da vitrine)
+- **Cenário nunca bagunçado**: nada de vídeo/foto real da loja no site; capa de peça sempre de estúdio.
 - Laranja `#FF6A00` **sempre com letra grafite `#1d1d1f`** (nunca branca).
 - Logo: só os arquivos originais em `site/public/identidade/` (nunca redesenhar).
 - Não escrever: frete grátis em arte, número de peças em arte, "tem aqui", preço em arte,

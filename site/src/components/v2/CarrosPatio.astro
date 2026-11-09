@@ -1,0 +1,46 @@
+---
+// Carros do pátio: arte do carro em estúdio (sem emblema) + logo real + nome + anos + nº de peças, vivos.
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { resumo, logoInfo } from '../../lib/dados';
+interface Props { limite?: number }
+const { limite = 12 } = Astro.props;
+const marcas = resumo().marcas;
+const kMarca = (b: string) => marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
+const carros = resumo().carros.filter((c) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${c.k}.webp`))).slice(0, limite);
+---
+<ul class="carros-v2">
+  {carros.map((c) => { const l = logoInfo(kMarca(c.b), 40, 26); return (
+    <li><a class="carro-v2" href={`/carros/${c.k}.html`}>
+      <span class="carro-v2-arte"><img src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" /></span>
+      <span class="carro-v2-info">
+        <span class="carro-v2-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>
+        <span class="carro-v2-txt"><b>{`${c.b} ${c.m}`}</b><small class="num">{c.anos ? `${c.anos[0]} a ${c.anos[1]} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</small></span>
+        <svg class="carro-v2-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </span>
+    </a></li>); })}
+</ul>
+<style>
+  .carros-v2 { list-style: none; margin: 0; padding: 4px 2px 14px; display: grid; gap: 12px; grid-auto-flow: column; grid-auto-columns: 80%;
+    overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .carros-v2::-webkit-scrollbar { display: none; }
+  .carros-v2 li { scroll-snap-align: start; }
+  @media (min-width: 700px) { .carros-v2 { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; gap: 16px; } }
+  @media (min-width: 1080px) { .carros-v2 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+  .carro-v2 { display: grid; border-radius: 22px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1);
+    transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
+  .carro-v2-arte { display: block; background: #efeeeb; overflow: hidden; }
+  .carro-v2-arte img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; transition: transform .7s cubic-bezier(.2,.7,.2,1); }
+  .carro-v2-info { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 12px 16px 14px 12px; }
+  .carro-v2-logo { width: 52px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: #f3f2ef; }
+  .carro-v2-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
+  .carro-v2-txt b { display: block; font-stretch: 82%; font-weight: 820; font-size: 21px; line-height: 1.05; }
+  .carro-v2-txt small { display: block; margin-top: 3px; font-size: 13.5px; color: var(--ink-2); }
+  .carro-v2-seta { width: 22px; height: 22px; color: var(--ink-3); transition: transform .3s, color .3s; }
+  @media (hover: hover) {
+    .carro-v2:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+    .carro-v2:hover .carro-v2-arte img { transform: scale(1.035); }
+    .carro-v2:hover .carro-v2-seta { transform: translateX(3px); color: var(--accent-text); }
+  }
+  .carro-v2:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+</style>

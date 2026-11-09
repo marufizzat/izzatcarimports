@@ -1,48 +1,35 @@
 ---
 import Pagina from '../layouts/Pagina.astro';
-import Topo from '../components/inst/Topo.astro';
+import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
 import Icone from '../components/Icone.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/como-comprar.html`;
+const canonicalPath = '/como-comprar.html';
 const ML = 'https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS';
 const msgSite = 'Olá! Vim pelo site e quero comprar uma peça. Pode me ajudar?';
 const passos = [
-  { src: '/arte/passo-1.webp', alt: 'Ache a peça — Pelo nome, pelo carro ou pelo código gravado.' },
-  { src: '/arte/passo-2.webp', alt: 'Confirme o seu carro — Manda o modelo e o ano. A gente confere na peça.' },
-  { src: '/arte/passo-3.webp', alt: 'Feche a compra — No Mercado Livre ou direto pelo WhatsApp.' },
-  { src: '/arte/passo-4.webp', alt: 'Receba em casa — Com nota fiscal e código de rastreio.' },
+  { src: '/arte/v2/passo-1.webp', alt: 'Ache a peça — Pelo nome, pelo carro ou pelo código gravado.' },
+  { src: '/arte/v2/passo-2.webp', alt: 'Confirme o seu carro — Manda o modelo e o ano. A gente confere na peça.' },
+  { src: '/arte/v2/passo-3.webp', alt: 'Feche a compra — No Mercado Livre ou direto pelo WhatsApp.' },
+  { src: '/arte/v2/passo-4.webp', alt: 'Receba em casa — Com nota fiscal e código de rastreio.' },
 ];
-const ld = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
-    { '@type': 'ListItem', position: 2, name: 'Como comprar', item: canonical },
-  ],
-};
 ---
 <Pagina
   titulo="Como comprar peças originais | Izzat Car Imports"
   descricao="Em 4 passos: ache a peça, confirme o seu carro, feche a compra pelo Mercado Livre ou pelo WhatsApp e receba em casa com nota fiscal."
   canonical={canonical}
 >
-  <Fragment slot="head">
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
-  </Fragment>
-
-  <Topo
+    <TopoArte trilha={[['Início', '/index.html'], ['Como comprar', canonicalPath]]}
     titulo="Como comprar"
-    lead="Quatro passos, do pedido até a peça na sua casa. Se preferir, a gente fecha tudo pelo WhatsApp."
-    trilha={[{ nome: 'Início', href: '/index.html' }, { nome: 'Como comprar' }]}
-  />
+    lead="Quatro passos, do pedido até a peça na sua casa. Se preferir, a gente fecha tudo pelo WhatsApp." />
 
   <section class="moldura passos-wrap" aria-label="Os 4 passos">
     <ol class="passos">
       {passos.map((p, i) => (
         <li class="passo">
-          <img src={p.src} alt={p.alt} width="1024" height="1024" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
+          <img src={p.src} alt={p.alt} width="800" height="800" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
         </li>
       ))}
     </ol>

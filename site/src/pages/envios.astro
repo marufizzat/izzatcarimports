@@ -1,34 +1,22 @@
 ---
 import Pagina from '../layouts/Pagina.astro';
-import Topo from '../components/inst/Topo.astro';
+import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
 import Icone from '../components/Icone.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/envios.html`;
-const ld = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
-    { '@type': 'ListItem', position: 2, name: 'Envios', item: canonical },
-  ],
-};
+const canonicalPath = '/envios.html';
 ---
 <Pagina
   titulo="Envios para todo o Brasil | Izzat Car Imports"
   descricao="Enviamos peças para todo o Brasil com código de rastreio. O frete aparece no anúncio do Mercado Livre, e pelo WhatsApp a gente cota para o seu CEP."
   canonical={canonical}
 >
-  <Fragment slot="head">
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
-  </Fragment>
-
-  <Topo
+    <TopoArte trilha={[['Início', '/index.html'], ['Envios', canonicalPath]]}
     titulo="Envios para todo o Brasil"
     lead="A peça sai embalada com cuidado, com nota fiscal e código de rastreio para você acompanhar."
-    trilha={[{ nome: 'Início', href: '/index.html' }, { nome: 'Envios' }]}
-  />
+    arte="/arte/v2/topo-envios.webp" />
 
   <div class="moldura">
     <section class="inst-sec" aria-labelledby="h-frete">

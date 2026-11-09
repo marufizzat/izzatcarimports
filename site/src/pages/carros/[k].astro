@@ -1,10 +1,10 @@
 ---
 import Pagina from '../../layouts/Pagina.astro';
-import TopoListagem from '../../components/TopoListagem.astro';
+import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
 import Atalhos from '../../components/Atalhos.astro';
-import BannerArte from '../../components/BannerArte.astro';
-import { pecas, resumo, foto, whatsUrl } from '../../lib/dados';
+import BannerV2 from '../../components/v2/BannerV2.astro';
+import { pecas, resumo, foto, whatsUrl, logoInfo } from '../../lib/dados';
 export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
 const c = resumo().carros.find((x) => x.k === Astro.props.k)!;
 const lista = pecas().filter((p) => p.b === c.b && p.m === c.m).sort((a, b) => (b.id > a.id ? 1 : -1));
@@ -12,28 +12,27 @@ const base = `/catalogo.html?marca=${encodeURIComponent(c.b)}&modelo=${encodeURI
 const fams = Object.entries(lista.reduce<Record<string, number>>((o, p) => ((o[p.c] = (o[p.c] || 0) + 1), o), {}))
   .sort((a, b) => b[1] - a[1]).map(([n, q]) => [n, q, `${base}&tipo=${encodeURIComponent(n)}`] as [string, number, string]);
 const anos = c.anos ? `${c.anos[0]} a ${c.anos[1]}` : '';
+const marca = resumo().marcas.find((m) => m.n === c.b);
+const logo = logoInfo(marca?.k ?? c.b.toLowerCase(), 64, 36);
 ---
 <Pagina titulo={`Peças ${c.b} ${c.m}${anos ? ` ${anos}` : ''} originais | Izzat Car`} ogImagem={foto(c.capas[0], 'F')}
         descricao={`${c.c} peças originais de ${c.b} ${c.m}${anos ? ` (${anos})` : ''} com nota fiscal e 90 dias de garantia. Desmanche credenciado pelo Detran-RS, CDV nº 01060.`}>
+  <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [`${c.b} ${c.m}`, `/carros/${c.k}.html`]]}
+    antes={c.b} titulo={c.m} logo={logo} arte={`/arte/v2/carro-${c.k}.webp`} encaixe="meio"
+    lead={`${c.c} peças originais${anos ? ` para ${c.b} ${c.m} de ${anos}` : ''}. Confira o ano e o código gravado; na dúvida, a gente confere pelo WhatsApp.`}>
+    <Atalhos titulo="Peças por sistema" itens={fams} />
+  </TopoArte>
   <div class="moldura">
-    <TopoListagem trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [`${c.b} ${c.m}`, `/carros/${c.k}.html`]]}
-      antes={c.b} titulo={c.m} apoio={`${c.c} peças originais${anos ? ` para ${c.b} ${c.m} de ${anos}` : ''}. Confira o ano e o código gravado; na dúvida, a gente confere pelo WhatsApp.`}>
-      <span slot="lado" class="mosaico-carro" aria-hidden="true">{c.capas.slice(0, 4).map((k) => <img src={foto(k, 'C')} alt="" width="200" height="200" />)}</span>
-      <Atalhos titulo="Peças por sistema" itens={fams} />
-    </TopoListagem>
     <section class="secao-lista">
       <GradePecas lista={lista.slice(0, 48)} total={lista.length} linkTodas={base} />
     </section>
     <section class="secao-lista">
-      <BannerArte arte="/banners/A_oficina_clara" movel="/arte/serve-movel" href={whatsUrl(`Olá! Tenho um ${c.b} ${c.m} ano ____ e quero confirmar se uma peça serve: ____`)}
+      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Tenho um ${c.b} ${c.m} ano ____ e quero confirmar se uma peça serve: ____`)}
         texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
     </section>
   </div>
 </Pagina>
 <style>
   .secao-lista { padding-bottom: 64px; }
-  .mosaico-carro { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: clamp(220px, 28vw, 360px); padding: 8px; border-radius: 24px;
-    background: var(--surface); box-shadow: var(--shadow-2); justify-self: center; }
-  .mosaico-carro img { width: 100%; aspect-ratio: 1; object-fit: contain; padding: 10%; border-radius: 16px; background: var(--plate); }
-  @media (max-width: 899px) { .mosaico-carro { display: none; } }
+  .secao-lista:first-child { padding-top: 8px; }
 </style>

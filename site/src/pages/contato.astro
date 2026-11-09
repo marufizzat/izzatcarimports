@@ -1,34 +1,22 @@
 ---
 import Pagina from '../layouts/Pagina.astro';
-import Topo from '../components/inst/Topo.astro';
+import TopoArte from '../components/TopoArte.astro';
 import Icone from '../components/Icone.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/contato.html`;
+const canonicalPath = '/contato.html';
 const msg = 'Olá! Estou procurando uma peça.';
-const ld = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
-    { '@type': 'ListItem', position: 2, name: 'Contato', item: canonical },
-  ],
-};
 ---
 <Pagina
   titulo="Contato | Izzat Car Imports, Aceguá-RS"
   descricao="Fale com a Izzat Car Imports pelo WhatsApp (53) 99117-0950, pelo Instagram ou pelo Mercado Livre. Desmanche credenciado em Aceguá-RS."
   canonical={canonical}
 >
-  <Fragment slot="head">
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
-  </Fragment>
-
-  <Topo
+    <TopoArte trilha={[['Início', '/index.html'], ['Contato', canonicalPath]]}
     titulo="Fale com a gente"
     lead="O jeito mais rápido é o WhatsApp. Manda a peça ou o carro que a gente responde."
-    trilha={[{ nome: 'Início', href: '/index.html' }, { nome: 'Contato' }]}
-  />
+    arte="/arte/v2/topo-contato.webp" />
 
   <div class="moldura">
     <section class="con-principal" aria-labelledby="h-whats">

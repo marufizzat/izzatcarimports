@@ -71,3 +71,16 @@ export function logoMarca(k: string): string | null {
   for (const ext of ['svg', 'png']) if (existsSync(join(process.cwd(), 'public', 'marcas', `${k}.${ext}`))) return `/marcas/${k}.${ext}`;
   return null;
 }
+/** Logo + tamanho de exibição dentro de uma caixa (mantém a proporção real: logo largo fica largo). */
+export function logoInfo(k: string, caixaL = 54, caixaA = 30): { src: string; w: number; h: number; png: boolean } | null {
+  const src = logoMarca(k);
+  if (!src) return null;
+  const arq = readFileSync(join(process.cwd(), 'public', src));
+  let rw = 1, rh = 1;
+  if (src.endsWith('.svg')) {
+    const vb = /viewBox="([^"]+)"/.exec(arq.toString('utf8'))?.[1].trim().split(/[\s,]+/).map(Number);
+    if (vb && vb.length === 4) { rw = vb[2]; rh = vb[3]; }
+  } else { rw = arq.readUInt32BE(16); rh = arq.readUInt32BE(20); }
+  const esc = Math.min(caixaL / rw, caixaA / rh);
+  return { src, w: Math.round(rw * esc), h: Math.round(rh * esc), png: src.endsWith('.png') };
+}

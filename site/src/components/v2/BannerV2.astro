@@ -1,0 +1,17 @@
+---
+// Banner v2: arte com o texto DESENHADO (estúdio limpo, Maruf). Versão em pé no celular. Texto no alt.
+interface Props { nome: string; texto: string; href: string; class?: string }
+const { nome, texto, href, class: cls } = Astro.props;
+---
+<a class:list={['banner-v2', cls]} href={href} aria-label={texto}>
+  <picture>
+    <source media="(max-width: 700px)" srcset={`/arte/v2/${nome}-celular.webp`} width="1024" height="1536" />
+    <img src={`/arte/v2/${nome}.webp`} alt={texto} width="1536" height="1024" loading="lazy" decoding="async" />
+  </picture>
+</a>
+<style>
+  .banner-v2 { display: block; border-radius: 26px; overflow: hidden; background: #efeeeb; box-shadow: var(--shadow-2); transition: transform .35s cubic-bezier(.2,.7,.2,1); }
+  .banner-v2 img { display: block; width: 100%; height: auto; }
+  @media (hover: hover) { .banner-v2:hover { transform: translateY(-3px); } }
+  .banner-v2:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+</style>

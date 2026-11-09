@@ -1,0 +1,57 @@
+---
+// Cartoes de carro com a arte de estudio (carro-<k>.webp) + logo real da marca + nome + anos + pecas.
+// Carros sem arte viram uma linha limpa (sem foto de peca). Usado nas paginas de marca.
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { logoInfo, type Resumo } from '../lib/dados';
+interface Props { carros: Resumo['carros']; marca: string; }
+const { carros, marca } = Astro.props;
+const com = carros.filter((c) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${c.k}.webp`)));
+const sem = carros.filter((c) => !com.includes(c));
+const logo = logoInfo(marca, 40, 26);
+---
+{com.length > 0 && (
+  <ul class="carros-arte">
+    {com.map((c) => (
+      <li><a class="carro-arte" href={`/carros/${c.k}.html`}>
+        <span class="carro-arte-img"><img src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" /></span>
+        <span class="carro-arte-info">
+          <span class="carro-arte-logo">{logo && <img src={logo.src} alt="" width={logo.w} height={logo.h} class:list={[{ svg: !logo.png }]} loading="lazy" />}</span>
+          <span class="carro-arte-txt"><b>{`${c.b} ${c.m}`}</b><small class="num">{c.anos ? `${c.anos[0]} a ${c.anos[1]} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</small></span>
+        </span>
+      </a></li>
+    ))}
+  </ul>
+)}
+{sem.length > 0 && (
+  <ul class="carros-linhas">
+    {sem.map((c) => (
+      <li><a href={`/carros/${c.k}.html`}><b>{`${c.b} ${c.m}`}</b><span class="num">{c.anos ? `${c.anos[0]} a ${c.anos[1]} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</span></a></li>
+    ))}
+  </ul>
+)}
+<style>
+  .carros-arte { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 900px) { .carros-arte { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+  .carro-arte { display: grid; border-radius: 22px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1);
+    transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
+  .carro-arte-img { display: block; background: #efeeeb; overflow: hidden; }
+  .carro-arte-img img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; transition: transform .7s cubic-bezier(.2,.7,.2,1); }
+  .carro-arte-info { display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: center; padding: 12px 14px 14px 12px; }
+  .carro-arte-logo { width: 48px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: #f3f2ef; }
+  .carro-arte-logo img { max-width: 36px; max-height: 26px; width: auto; height: auto; }
+  .carro-arte-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
+  .carro-arte-txt b { display: block; font-stretch: 82%; font-weight: 820; font-size: clamp(18px, 1.8vw, 21px); line-height: 1.1; }
+  .carro-arte-txt small { display: block; margin-top: 3px; font-size: 13.5px; color: var(--ink-2); }
+  @media (hover: hover) {
+    .carro-arte:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+    .carro-arte:hover .carro-arte-img img { transform: scale(1.035); }
+  }
+  .carro-arte:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .carros-linhas { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 900px) { .carros-linhas { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .carros-linhas a { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .carros-linhas a:hover { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .carros-linhas b { font-weight: 700; font-size: 16px; }
+  .carros-linhas span { font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+</style>

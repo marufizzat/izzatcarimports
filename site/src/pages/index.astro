@@ -1,24 +1,18 @@
 ---
 import Pagina from '../layouts/Pagina.astro';
-import Abertura from '../components/Abertura.astro';
-import Categorias from '../components/Categorias.astro';
+import AberturaV2 from '../components/v2/AberturaV2.astro';
+import SelosV2 from '../components/v2/SelosV2.astro';
+import GradeCategorias from '../components/v2/GradeCategorias.astro';
+import NuvemMarcas from '../components/v2/NuvemMarcas.astro';
+import CarrosPatio from '../components/v2/CarrosPatio.astro';
+import BannerV2 from '../components/v2/BannerV2.astro';
 import CartaoPeca from '../components/CartaoPeca.astro';
-import CartaoCarro from '../components/CartaoCarro.astro';
-import BannerArte from '../components/BannerArte.astro';
-import Video from '../components/Video.astro';
-import Icone from '../components/Icone.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
-import { pecas, pecaPorId, resumo, whatsUrl, SITE } from '../lib/dados';
+import { pecaPorId, resumo, whatsUrl, temEstudio, SITE } from '../lib/dados';
 
 const r = resumo();
-const todas = pecas();
-const destaque = todas.find((p) => /^Farol/.test(p.n) && !/milha|neblina|auxiliar/i.test(p.n) && p.limpa && p.fotos.length >= 5 && p.p > 300 && p.p < 2500 && p.m)
-  ?? todas.find((p) => /^Farol/.test(p.n) && p.fotos.length >= 5 && p.p > 300 && p.p < 2500 && p.m)
-  ?? todas.find((p) => p.c === 'Iluminação' && p.fotos.length >= 5)!;
-const chegou = r.chegou.map(pecaPorId).filter((p): p is NonNullable<typeof p> => !!p).slice(0, 12);
-const carros = r.carros.slice(0, 8);
-const marcas = r.marcas.filter((m) => m.c >= 5);
+const chegou = r.chegou.map(pecaPorId).filter((p): p is NonNullable<typeof p> => !!p && temEstudio(p.id)).slice(0, 14);
 const msgServe = 'Olá! Quero saber se uma peça serve no meu carro. Meu carro é: ____ (modelo) ____ (ano). A peça é: ____';
 const msgOficina = 'Olá! Sou de oficina/revenda e quero mandar uma lista de peças. Carro e ano: ____. Peças: ____';
 const msgProcura = 'Olá! Não achei a peça no site. Meu carro é ____ (modelo e ano) e procuro: ____';
@@ -48,19 +42,27 @@ const ld = {
 <Pagina titulo="Izzat Car Imports | Peças originais de desmanche legalizado"
         descricao={`Peças originais de carros com baixa legal no Detran-RS (CDV nº 01060). Nota fiscal e 90 dias de garantia em toda peça. Ache pelo carro ou pelo código gravado.`}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
-  <link slot="head" rel="preload" as="image" href="/midia/v-showroom.jpg" fetchpriority="high" />
+  <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio.webp" media="(min-width: 768px)" fetchpriority="high" />
+  <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio-celular.webp" media="(max-width: 767px)" fetchpriority="high" />
 
-  <Abertura destaque={destaque}>
+  <AberturaV2 arte="/arte/v2/abertura-estudio.webp" arteCelular="/arte/v2/abertura-estudio-celular.webp">
     <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Peça, carro ou código" />
-  </Abertura>
+  </AberturaV2>
+
+  <section class="selos-faixa" aria-label="Garantias da Izzat Car">
+    <div class="moldura"><SelosV2 /></div>
+  </section>
 
   <section class="secao" aria-labelledby="t-cat">
     <div class="moldura">
-      <div class="cabeca-secao">
-        <h2 id="t-cat" class="titulo-secao">Peças por sistema do carro</h2>
-        <p class="lead">Cada foto é uma peça de verdade do nosso estoque.</p>
+      <div class="cabeca-secao linha">
+        <div>
+          <h2 id="t-cat" class="titulo-secao">Peças por sistema do carro</h2>
+          <p class="lead">Escolha a parte do carro e veja tudo o que tem no estoque.</p>
+        </div>
+        <a class="botao botao-linha" href="/catalogo.html">Ver o catálogo inteiro</a>
       </div>
-      <Categorias />
+      <GradeCategorias />
     </div>
   </section>
 
@@ -71,16 +73,39 @@ const ld = {
           <h2 id="t-chegou" class="titulo-secao">Chegou no pátio</h2>
           <p class="lead">Os anúncios mais novos, direto do desmonte.</p>
         </div>
-        <a class="botao botao-linha" href="/catalogo.html?ordem=novos">Ver todas as peças</a>
+        <div class="cabeca-acoes">
+          <span class="setas" aria-hidden="false">
+            <button type="button" class="seta" data-rolar="-1" aria-label="Peças anteriores"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg></button>
+            <button type="button" class="seta" data-rolar="1" aria-label="Próximas peças"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+          </span>
+          <a class="botao botao-linha" href="/catalogo.html?ordem=novos">Ver todas as novidades</a>
+        </div>
       </div>
-      <div class="trilho">{chegou.map((p, i) => <CartaoPeca p={p} eager={i < 2} />)}</div>
+      <div class="trilho" data-trilho>{chegou.map((p, i) => <CartaoPeca p={p} eager={i < 2} />)}</div>
     </div>
   </section>
 
-  <section class="secao">
+  <section class="secao secao-banner">
     <div class="moldura">
-      <BannerArte arte="/banners/A_oficina_clara" movel="/arte/serve-movel" href={whatsUrl(msgServe)}
-        texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
+      <BannerV2 nome="banner-serve" href={whatsUrl(msgServe)}
+        texto="Serve no meu carro? Manda o modelo e o ano. A gente confere e te responde com foto. Chamar no WhatsApp" />
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="t-marcas">
+    <div class="moldura">
+      <div class="cabeca-secao">
+        <h2 id="t-marcas" class="titulo-secao">Escolha pela marca do seu carro</h2>
+        <p class="lead">{r.marcas.length} marcas no estoque. Toque na sua para ver só as peças dela.</p>
+      </div>
+      <NuvemMarcas />
+    </div>
+  </section>
+
+  <section class="secao secao-banner">
+    <div class="moldura">
+      <BannerV2 nome="banner-nao-achou" href={whatsUrl(msgProcura)}
+        texto="Não achou a peça? A gente procura no pátio. Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp. Chamar no WhatsApp" />
     </div>
   </section>
 
@@ -93,10 +118,7 @@ const ld = {
         </div>
         <a class="botao botao-linha" href="/carros.html">Ver os {r.carros.length} carros</a>
       </div>
-      <div class="grade-carros">{carros.map((c) => <CartaoCarro c={c} />)}</div>
-      <nav class="marcas" aria-label="Peças por marca">
-        {marcas.map((m) => <a href={`/marca/${m.k}.html`}>{m.n}<span class="num">{m.c.toLocaleString('pt-BR')}</span></a>)}
-      </nav>
+      <CarrosPatio />
     </div>
   </section>
 
@@ -114,54 +136,49 @@ const ld = {
           ['Confirme o seu carro', 'Manda o modelo e o ano. A gente confere na peça.'],
           ['Feche a compra', 'No Mercado Livre ou direto pelo WhatsApp.'],
           ['Receba em casa', 'Com nota fiscal e código de rastreio.']].map(([t, s], i) => (
-          <li><img src={`/arte/passo-${i + 1}.webp`} alt={`${i + 1}. ${t}. ${s}`} width="1024" height="1024" loading="eager" decoding="async" /></li>
+          <li><img src={`/arte/v2/passo-${i + 1}.webp`} alt={`${i + 1}. ${t}. ${s}`} width="800" height="800" loading="lazy" decoding="async" /></li>
         ))}
       </ol>
     </div>
   </section>
 
-  <section class="secao patio faixa-escura" aria-labelledby="t-patio">
-    <div class="moldura patio-grade">
-      <div class="patio-texto">
-        <h2 id="t-patio" class="titulo-secao">Por dentro do pátio</h2>
-        <p class="lead">Somos um desmanche credenciado pelo Detran-RS em Aceguá. Cada carro chega com baixa legal, é desmontado com cuidado e cada peça é conferida, fotografada e anunciada com o código original.</p>
-        <a class="botao botao-laranja" href="/sobre.html">Conhecer o pátio</a>
-      </div>
-      <div class="patio-videos">
-        <div class="patio-largo"><Video nome="h-galpao" rotulo="Galpão de peças da Izzat Car" class="v" /></div>
-        <div class="patio-alto"><Video nome="v-motores" class="v" /></div>
-        <div class="patio-alto"><Video nome="v-rodas" class="v" /></div>
-      </div>
-    </div>
-  </section>
 
-  <section class="secao">
-    <div class="moldura duas-artes">
-      <BannerArte arte="/arte/banner-oficinas" movel="/arte/oficinas-movel" href={whatsUrl(msgOficina)}
+  <section class="secao faixa secao-banner">
+    <div class="moldura">
+      <BannerV2 nome="banner-oficinas" href={whatsUrl(msgOficina)}
         texto="Oficinas e revendas: separamos as peças pra sua oficina. Manda a lista com carro e ano: a gente confere e responde com foto e código. Falar com a gente" />
-      <BannerArte arte="/arte/banner-nao-achou" movel="/arte/nao-achou-movel" href={whatsUrl(msgProcura)}
-        texto="Não achou a peça? A gente procura no pátio. Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp. Chamar no WhatsApp" />
     </div>
   </section>
 
-  <section class="secao faixa" aria-labelledby="t-faq">
+  <section class="secao" aria-labelledby="t-faq">
     <div class="moldura faq">
       <div class="cabeca-secao">
         <h2 id="t-faq" class="titulo-secao">Perguntas que a gente mais recebe</h2>
         <p class="lead">Respostas curtas, do jeito que a gente responde no balcão.</p>
         <aside class="faq-ajuda">
-          <img src="/icones/conversa-192.webp" alt="" width="56" height="56" loading="lazy" />
-          <div>
+          <img src="/arte/v2/atendimento.webp" alt="" width="1024" height="537" loading="lazy" decoding="async" />
+          <div class="faq-ajuda-txt">
             <b>Ficou outra dúvida?</b>
             <span>Manda no WhatsApp. Quem responde é a equipe do pátio.</span>
+            <a class="botao botao-laranja" href={whatsUrl('Olá! Tenho uma dúvida:')}>Perguntar no WhatsApp</a>
           </div>
-          <a class="botao botao-laranja" href={whatsUrl('Olá! Tenho uma dúvida:')}>Perguntar no WhatsApp</a>
         </aside>
       </div>
       <Acordeao itens={perguntas.map(([pergunta, resposta]) => ({ pergunta, resposta }))} />
     </div>
   </section>
 </Pagina>
+
+<script>
+  document.querySelectorAll<HTMLElement>('section').forEach((sec) => {
+    const t = sec.querySelector<HTMLElement>('[data-trilho]');
+    const bs = sec.querySelectorAll<HTMLButtonElement>('[data-rolar]');
+    if (!t || !bs.length) return;
+    const atualiza = () => { bs[0].disabled = t.scrollLeft < 8; bs[1].disabled = t.scrollLeft + t.clientWidth > t.scrollWidth - 8; };
+    bs.forEach((b) => b.addEventListener('click', () => t.scrollBy({ left: Number(b.dataset.rolar) * t.clientWidth * 0.8, behavior: 'smooth' })));
+    t.addEventListener('scroll', atualiza, { passive: true }); atualiza();
+  });
+</script>
 
 <style>
   .cabeca-secao { display: grid; gap: 8px; margin-bottom: 28px; max-width: 62ch; }
@@ -170,53 +187,35 @@ const ld = {
   .cabeca-secao .lead { margin: 0; }
   .titulo-secao { margin: 0; }
   .faixa { background: var(--bg-2); }
-  .link { color: var(--accent-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 
-  .grade-carros { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); }
-  @media (min-width: 900px) { .grade-carros { grid-template-columns: repeat(4, 1fr); gap: 18px; } }
-  .marcas { display: flex; gap: 8px; margin-top: 28px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
-  @media (min-width: 900px) { .marcas { flex-wrap: wrap; overflow: visible; } }
-  .marcas a { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; background: var(--surface);
-              box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; font-size: 15px; transition: box-shadow .2s; }
-  .marcas a:hover { box-shadow: inset 0 0 0 1.5px var(--accent); }
-  .marcas span { font-size: 12.5px; color: var(--ink-3); font-weight: 500; }
+  .selos-faixa { position: relative; z-index: 1; margin-top: -28px; }
+  @media (max-width: 767px) { .selos-faixa { margin-top: 0; padding-top: 4px; } }
+  .secao-banner { padding-block: clamp(28px, 4vw, 56px); }
 
   .passos { list-style: none; margin: 0; padding: 4px 4px 12px; display: grid; grid-auto-flow: column; grid-auto-columns: 78%; gap: 14px;
             overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .passos::-webkit-scrollbar { display: none; }
   .passos li { scroll-snap-align: start; }
-  .passos img { width: 100%; height: auto; border-radius: 20px; box-shadow: var(--shadow-1); background: var(--surface); }
-  @media (min-width: 900px) { .passos { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; } }
+  .passos img { display: block; width: 100%; height: auto; border-radius: 22px; box-shadow: var(--shadow-1); background: #efeeeb; }
+  @media (min-width: 900px) { .passos { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; gap: 18px; } }
 
-  .patio-grade { display: grid; gap: 32px; align-items: center; }
-  @media (min-width: 1024px) { .patio-grade { grid-template-columns: .8fr 1.2fr; gap: 56px; } }
-  .patio-texto { display: grid; gap: 18px; justify-items: start; }
-  .patio-texto .lead { margin: 0; color: var(--ink-2); }
-  .patio-videos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .patio-largo { grid-column: 1 / -1; aspect-ratio: 16 / 9; border-radius: 22px; overflow: hidden; background: #000; }
-  .patio-alto { aspect-ratio: 4 / 5; border-radius: 22px; overflow: hidden; background: #000; }
-  .patio-videos :global(.v) { width: 100%; height: 100%; object-fit: cover; object-position: 50% 32%; }
-  @media (min-width: 1024px) { .patio-videos { grid-template-columns: 1.6fr 1fr 1fr; } .patio-largo { grid-column: auto; aspect-ratio: auto; height: 100%; } .patio-alto { aspect-ratio: 9 / 14; } }
-
-  .duas-artes { display: grid; gap: 20px; }
-  @media (min-width: 1024px) { .duas-artes { grid-template-columns: 1fr 1fr; } }
+  .cabeca-acoes { display: flex; align-items: center; gap: 12px; }
+  .setas { display: none; gap: 8px; }
+  @media (min-width: 900px) and (hover: hover) { .setas { display: inline-flex; } }
+  .seta { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer; background: var(--surface);
+    color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); transition: box-shadow .2s, transform .2s; }
+  .seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .seta:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 6px 14px -8px rgb(0 0 0 / .3); }
+  .seta:disabled { opacity: .35; cursor: default; box-shadow: inset 0 0 0 1px var(--line); }
+  .seta:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   .faq { display: grid; gap: 8px; }
-  @media (min-width: 1024px) { .faq { grid-template-columns: .8fr 1.2fr; gap: 56px; align-items: start; } }
-  .faq-ajuda { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; align-items: center; margin-top: 18px; padding: 18px; border-radius: 18px;
-               background: var(--surface); box-shadow: var(--shadow-1); }
-  .faq-ajuda img { width: 52px; height: 52px; }
-  .faq-ajuda b { display: block; font-size: 16.5px; }
-  .faq-ajuda span { display: block; font-size: 14.5px; color: var(--ink-2); }
-  .faq-ajuda .botao { grid-column: 1 / -1; }
+  @media (min-width: 1024px) { .faq { grid-template-columns: .85fr 1.15fr; gap: 56px; align-items: start; } }
+  .faq-ajuda { margin-top: 18px; border-radius: 24px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1); }
+  .faq-ajuda img { display: block; width: 100%; height: auto; background: #efeeeb; }
+  .faq-ajuda-txt { display: grid; gap: 6px; padding: 18px 20px 20px; }
+  .faq-ajuda b { font-stretch: 86%; font-weight: 800; font-size: 20px; }
+  .faq-ajuda span { font-size: 15px; color: var(--ink-2); }
+  .faq-ajuda .botao { margin-top: 10px; justify-self: start; }
   @media (min-width: 1024px) { .faq .cabeca-secao { position: sticky; top: 110px; } }
-  .pergunta { border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-1); }
-  .pergunta summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px;
-                      padding: 18px 20px; font-weight: 650; font-size: 17px; }
-  .pergunta summary::-webkit-details-marker { display: none; }
-  .pergunta summary span { position: relative; width: 14px; height: 14px; flex: none; }
-  .pergunta summary span::before, .pergunta summary span::after { content: ""; position: absolute; left: 0; top: 6px; width: 14px; height: 2px; border-radius: 2px;
-                      background: var(--accent-text); transition: transform .25s ease; }
-  .pergunta summary span::after { transform: rotate(90deg); }
-  .pergunta[open] summary span::after { transform: rotate(0deg); }
-  .pergunta p { margin: 0; padding: 0 20px 18px; color: var(--ink-2); max-width: 64ch; }
 </style>

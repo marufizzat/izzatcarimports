@@ -1,29 +1,32 @@
 ---
-// Marcas com LOGO + nome + nº de peças (logos: simple-icons e car-logos-dataset, GitHub).
-import { resumo, logoMarca } from '../../lib/dados';
+// Marcas com LOGO real + nome + nº de peças (logos: simple-icons e car-logos-dataset, GitHub).
+// Referência: Logo Cloud grid (shadcnui-blocks/logo-cloud-09, 21st.dev #21465). No celular vira trilho de 3 linhas.
+import { resumo, logoInfo } from '../../lib/dados';
 const marcas = resumo().marcas.filter((m) => m.c >= 5);
 ---
 <ul class="nuvem">
-  {marcas.map((m) => { const l = logoMarca(m.k); return (
+  {marcas.map((m) => { const l = logoInfo(m.k); return (
     <li><a href={`/marca/${m.k}.html`} class="nuvem-item">
-      <span class="nuvem-logo">{l && (l.endsWith('.svg') ? <img src={l} alt="" width="40" height="40" class="svg" loading="lazy" /> : <img src={l} alt="" width="40" height="40" class="png" loading="lazy" />)}</span>
+      <span class="nuvem-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" decoding="async" />}</span>
       <span class="nuvem-nome">{m.n}</span>
-      <span class="nuvem-qtd num">{m.c.toLocaleString('pt-BR')} peças</span>
+      <span class="nuvem-qtd num">{m.c.toLocaleString('pt-BR')} {m.c === 1 ? 'peça' : 'peças'}</span>
     </a></li>); })}
 </ul>
 <style>
-  .nuvem { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  @media (min-width: 640px) { .nuvem { grid-template-columns: repeat(4, 1fr); } }
-  @media (min-width: 1080px) { .nuvem { grid-template-columns: repeat(6, 1fr); gap: 12px; } }
-  .nuvem-item { display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; padding: 14px 16px;
+  .nuvem { list-style: none; margin: 0; padding: 4px 2px 12px; display: grid; gap: 10px;
+    grid-auto-flow: column; grid-template-rows: repeat(3, auto); grid-auto-columns: minmax(200px, 62vw);
+    overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .nuvem::-webkit-scrollbar { display: none; }
+  .nuvem li { scroll-snap-align: start; }
+  @media (min-width: 640px) { .nuvem { grid-auto-flow: row; grid-template-rows: none; grid-template-columns: repeat(3, 1fr); overflow: visible; } }
+  @media (min-width: 900px) { .nuvem { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 1180px) { .nuvem { grid-template-columns: repeat(6, 1fr); gap: 12px; } }
+  .nuvem-item { display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; padding: 12px 14px 12px 12px;
     border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-1); transition: transform .25s cubic-bezier(.2,.7,.2,1), box-shadow .25s; }
-  .nuvem-logo { grid-row: 1 / span 2; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--surface-2); }
-  .nuvem-logo img { width: 28px; height: 28px; object-fit: contain; }
-  .nuvem-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); opacity: .85; transition: filter .25s, opacity .25s; }
-  .nuvem-logo img.png { filter: grayscale(1) contrast(1.1); opacity: .85; }
-  .nuvem-nome { font-weight: 700; font-size: 15.5px; line-height: 1.1; font-stretch: 92%; }
-  .nuvem-qtd { font-size: 12.5px; color: var(--ink-2); }
-  @media (hover: hover) { .nuvem-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
-    .nuvem-item:hover .nuvem-logo img { filter: none; opacity: 1; } }
-  @media (prefers-color-scheme: dark) { .nuvem-logo { background: #f4f4f6; } }
+  .nuvem-logo { grid-row: 1 / span 2; width: 64px; height: 46px; display: grid; place-items: center; border-radius: 12px; background: #f3f2ef; }
+  .nuvem-logo img { display: block; }
+  .nuvem-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
+  .nuvem-nome { align-self: end; font-weight: 750; font-size: 15.5px; line-height: 1.15; font-stretch: 84%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nuvem-qtd { align-self: start; font-size: 12.5px; color: var(--ink-2); }
+  @media (hover: hover) { .nuvem-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); } }
 </style>

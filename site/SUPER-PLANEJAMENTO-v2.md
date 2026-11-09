@@ -51,39 +51,66 @@ Regra-mãe (Izzat, 09/11): **cenário nunca pode ser bagunçado** · todo bloco 
 Zoom em: ortografia exata (acentos), nenhum texto extra, peça fiel/real, sem logo inventado, mãos com 5 dedos, rosto do Maruf igual à ficha, zona reservada vazia, cenário sem nenhuma bagunça. Reprovou → refaz do zero (conversa nova) · até 3 tentativas · reprovadas vão para a Lixeira.
 
 
-## Produção completa (depois do checkpoint 1)
-### Categorias (17 restantes; padrão = prompt P4, mesma câmera/pedestal/luz; 1:1)
-| arquivo | NOME desenhado | PEÇA |
+## Produção completa — DIREÇÃO ESCOLHIDA: A · Estúdio (Izzat, 09/11)
+Regras de produção (valem para todas):
+- **Uma família = uma ferramenta + a arte-piloto anexada como referência de estilo** em toda geração (categorias e selos: ChatGPT; carros, banners com Maruf, passos, topos, história, OG/404/vazio: Codex).
+- **Um objeto só** por arte de categoria/selo (regra "ícone = um objeto só").
+- **Nome desenhado = nome da família no site** (o mesmo do título da página e da trilha). "Outros" fica fora da grade (não tem página).
+- Texto das categorias: mesma fonte, tamanho e posição da referência (maiúsculas ≈ 8% da altura); nome longo quebra em DUAS linhas, nunca diminui a letra.
+
+### Categorias (17 restantes; padrão = prompt P4 + anexar `arte-v2/p4-cat-iluminacao.png`; 1:1)
+| arquivo | NOME desenhado (exato) | PEÇA (uma só) |
 |---|---|---|
-| cat-pecas-de-interior.webp | Interior | um volante esportivo original em couro preto com costura cinza, sem emblema no centro |
-| cat-motor.webp | Motor | um motor 4 cilindros completo e limpo (bloco, cabeçote e coletor), sem marca visível |
-| cat-carroceria.webp | Carroceria | um retrovisor externo elétrico prata com pisca integrado |
-| cat-sistema-eletrico.webp | Elétrica | um módulo eletrônico automotivo (ECU) de alumínio com conectores pretos |
-| cat-climatizacao.webp | Climatização | um compressor de ar-condicionado automotivo com polia |
-| cat-injecao.webp | Injeção | um corpo de borboleta eletrônico (TBI) de alumínio com conector |
-| cat-pecas-de-exterior.webp | Exterior | uma grade dianteira moderna preto brilhante, sem emblema |
-| cat-janelas-e-vedacoes.webp | Vidros e Vedações | uma máquina de vidro elétrico com motor, trilho e cabos |
-| cat-fechaduras-e-chaves.webp | Travas e Chaves | uma chave canivete automotiva com controle de 3 botões, sem logotipo, ao lado de uma fechadura de porta |
-| cat-suspensao-e-direcao.webp | Suspensão e Direção | um amortecedor com mola helicoidal (conjunto coilover) preto e prata |
-| cat-ignicao.webp | Ignição | uma bobina de ignição individual (tipo caneta) preta |
-| cat-transmissao.webp | Câmbio | uma caixa de câmbio automático de alumínio, limpa |
-| cat-seguranca.webp | Segurança | um módulo de airbag do volante e um cinto de segurança com pré-tensionador |
-| cat-som-e-multimidia.webp | Som e Multimídia | uma central multimídia automotiva com tela touch APAGADA (tela preta, sem ícones) |
-| cat-filtros.webp | Filtros | uma caixa de filtro de ar automotiva preta com o duto de entrada |
-| cat-arrefecimento.webp | Arrefecimento | um radiador de alumínio com eletroventilador acoplado |
-| cat-escapamentos.webp | Escapamento | um catalisador e silencioso em aço inox escovado |
+| cat-pecas-de-interior | Peças de Interior | um volante original em couro preto com costura cinza, miolo central liso sem emblema |
+| cat-motor | Motor | um motor 4 cilindros completo e limpo (bloco, cabeçote com tampa de válvulas e coletor), sem marca visível |
+| cat-carroceria | Carroceria | um retrovisor externo elétrico prata com pisca integrado |
+| cat-sistema-eletrico | Sistema Elétrico | um módulo eletrônico automotivo (ECU) de alumínio com conectores pretos, sem etiqueta e sem texto |
+| cat-climatizacao | Climatização | um compressor de ar-condicionado automotivo com polia |
+| cat-injecao | Injeção | um corpo de borboleta eletrônico (TBI) de alumínio com conector |
+| cat-pecas-de-exterior | Peças de Exterior | uma grade dianteira moderna preto brilhante, centro liso sem emblema |
+| cat-janelas-e-vedacoes | Janelas e Vedações | uma máquina de vidro elétrico com motor, trilho e cabos |
+| cat-fechaduras-e-chaves | Fechaduras e Chaves | uma chave canivete automotiva aberta com controle de 3 botões, sem logotipo |
+| cat-suspensao-e-direcao | Suspensão e Direção | um amortecedor com mola helicoidal (conjunto completo) preto e prata |
+| cat-ignicao | Ignição | uma bobina de ignição individual tipo caneta, preta, em pé |
+| cat-transmissao | Transmissão | uma caixa de câmbio automático de alumínio, limpa |
+| cat-seguranca | Segurança | um módulo de airbag do volante com capa grafite lisa, sem emblema |
+| cat-som-e-multimidia | Som e Multimídia | uma central multimídia automotiva com a tela APAGADA (preta, sem ícones) e botões sem texto |
+| cat-filtros | Filtros | uma caixa de filtro de ar automotiva preta com o duto de entrada |
+| cat-arrefecimento | Arrefecimento | um radiador de alumínio com eletroventilador acoplado |
+| cat-escapamentos | Escapamentos | um silencioso (abafador) de aço inox escovado com ponteira |
 
-### Carros do pátio (11 restantes; padrão = prompt P5, sem emblema/logo/placa, mesma cor prata, 3/4 dianteira)
-BMW X3, Jaguar E-Pace, Jeep Compass, Volvo S60, Renault Kardian, Honda WR-V, Citroën C3, Chevrolet Tracker, Audi A4, Fiat Toro, Volkswagen Gol
+### Selos (3 restantes; padrão = prompt P6 + anexar `arte-v2/p6-selo-garantia.png`; 1:1; SEM texto)
+- selo-nota-fiscal: uma folha de nota fiscal com o cantinho dobrado, linhas cinza sem letras legíveis, e um carimbo redondo laranja #FF6A00 com check grafite
+- selo-cdv: um selo oficial de credenciamento — medalha redonda grafite com borda serrilhada, aro laranja #FF6A00, duas fitas laranja penduradas abaixo e um check em relevo no centro
+- selo-envio: uma caixa de papelão fechada e limpa com fita laranja #FF6A00 e uma seta curva de movimento grafite
 
-### Selos (3 restantes; padrão = prompt P6, um objeto 3D só)
-- selo-nota-fiscal: uma folha de nota fiscal com cantinho dobrado e um carimbo de check laranja
-- selo-cdv: um escudo/medalha redonda grafite com aro laranja e o número "01060" em relevo (ÚNICO texto)
-- selo-envio: uma caixa de papelão fechada com fita laranja e seta de movimento
+### Abertura A — celular (refazer)
+P1 vertical 2:3, mesma composição de `arte-v2/p1-estudio-celular.png`, mas SEM a central multimídia (troca por um turbocompressor): nenhuma tela, nenhum ícone, nenhum texto. Topo 45% vazio.
 
-### Banners v2 (PC 3:2 + celular 2:3, estúdio limpo, padrão P7)
-- Oficinas e revendas (Maruf com prancheta) · Não achou a peça? (Maruf com lanterna, estúdio)
-### Como comprar (4 artes 1:1, estúdio claro, número em disco laranja com algarismo grafite, título e subtítulo desenhados)
-### Topo de páginas (7, 3:1 panorâmicas, peça-símbolo em estúdio + zona livre à esquerda): Catálogo, Carros, Garantia (escudo), Envios (caixa), Contato (celular com balão), Procuro peça (lupa sobre peças), O pátio (galpão impecável sem pessoas)
-### O pátio — "Do carro à peça" (4 cenas limpas e organizadas): chega com baixa legal · desmontagem cuidadosa · peça conferida e etiquetada · embalada e enviada
-### Outros: estado vazio da busca, 404, imagem de compartilhamento (OG)
+### Carros do pátio (11; padrão = P5 + anexar `arte-v2-codex/p5-carro-xc60.png` + fotos reais do modelo; 3:2)
+BMW X3 (2018+), Jaguar E-Pace, Jeep Compass (2017+), Volvo S60 (2019+), Renault Kardian, Honda WR-V, Citroën C3, Chevrolet Tracker (2020+), Audi A4 (B8), Fiat Toro, Volkswagen Gol (G5/G6). Todos prata, 3/4 dianteira, mesmo estúdio, SEM emblema/logo/placa.
+
+### Banners v2 com Maruf (PC 3:2 + celular 2:3; padrão P7 + anexar `arte-v2-codex/p7-banner-serve-pc.png` + fichas)
+- **Oficinas:** pílula "OFICINAS E REVENDAS" · título "Separamos as peças pra sua oficina." (pincel sob "pra sua oficina") · subtítulo "Manda a lista com carro e ano: a gente confere e responde com foto e código." · botão "Falar com a gente" · Maruf segurando uma prancheta com as duas mãos.
+- **Não achou:** pílula "NÃO ACHOU A PEÇA?" · título "A gente procura no pátio." (pincel sob "no pátio") · subtítulo "Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp." · botão "Chamar no WhatsApp" · Maruf de braços cruzados, sorriso confiante, ao lado de uma bancada de estúdio limpa com 3 peças alinhadas (alternador, farol, pinça de freio).
+
+### Como comprar (4 artes 1:1; estúdio claro; a 1ª vira referência das outras 3)
+Disco laranja #FF6A00 com o algarismo grafite no canto superior esquerdo; objeto 3D no centro-alto; título (condensada extra-pesada grafite) e subtítulo (regular grafite, grande) desenhados embaixo, alinhados à esquerda.
+1. "Ache a peça" / "Pelo nome, pelo carro ou pelo código gravado." — uma lupa grafite sobre um alternador
+2. "Confirme o seu carro" / "Manda o modelo e o ano. A gente confere na peça." — um celular de tela apagada em pé ao lado de um farol, com um balão de conversa 3D laranja flutuando
+3. "Feche a compra" / "No Mercado Livre ou direto pelo WhatsApp." — uma sacola de compras grafite com alça laranja com uma pinça de freio dentro
+4. "Receba em casa" / "Com nota fiscal e código de rastreio." — uma caixa de papelão com fita laranja e uma nota fiscal dobrada encostada
+
+### Topo de páginas (7; gerar 3:2 com TUDO dentro da faixa central de 25% a 75% da altura — recorte final 2,4:1; objeto no terço direito, 55% da esquerda vazio; sem texto)
+Catálogo (fila de peças sobre balcão de estúdio: farol, alternador, pinça, bobina, retrovisor) · Carros (frente de um SUV prata genérico sem emblema saindo da penumbra do estúdio) · Garantia (escudo 3D laranja com check grafite, grande) · Envios (caixa com fita laranja sobre rampa de estúdio, seta de movimento) · Contato (celular de tela apagada com balão de conversa 3D laranja) · Procuro peça (lupa grande sobre três peças) · O pátio (bancada de estúdio impecável com peças alinhadas, cada uma com etiqueta laranja pendurada sem texto)
+
+### O pátio — "Do carro à peça" (4 cenas 3:2, sem texto, sem pessoas, tudo impecável)
+1. Carro chega: SUV prata genérico sem emblema/placa num box claro e vazio, pasta de documentos grafite sobre um pedestal ao lado
+2. Desmontagem cuidadosa: o farol já removido apoiado num carrinho de ferramentas grafite impecável, ao lado da frente do carro
+3. Peça conferida e etiquetada: um alternador limpo sobre bancada clara com etiqueta laranja pendurada e uma lupa
+4. Embalada e enviada: caixa de papelão com fita laranja, plástico-bolha limpo e a peça dentro
+
+### Outros (Codex)
+- og (1536×1024 → recorte 1200×630): estúdio com farol-herói e 3 peças à direita; à esquerda o título desenhado "Peças originais de desmanche legalizado." e subtítulo "Nota fiscal e 90 dias de garantia."; canto inferior esquerdo livre para o logo real.
+- 404 (1:1, sem texto): um único parafuso sobre o pedestal grafite com aro laranja, sob um holofote, estúdio vazio.
+- vazio-busca (1:1, sem texto): uma lupa grafite deitada sobre o pedestal vazio com aro laranja.
