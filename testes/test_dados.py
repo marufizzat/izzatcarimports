@@ -458,6 +458,262 @@ def test_ficha_limpa():
     assert ficha({"title": "x", "attrs": {"MANUFACTURER": "Bosch"}}, "Volvo", "S60") == [["Fabricante da peça", "Bosch"]]
 
 
+def test_tipos_com_nome_da_loja():
+    """Auditoria 2, L1: os tipos da pagina de categoria eram pedacos da arvore do ML ("De Vidros",
+    "Faróis Traseiros" para lanternas ao lado de "Lanternas", "Suportes de Bateris", "Catalisador" e
+    "Catalisadores"). Agora: o nome que o cliente procura, e os sinonimos num nome so."""
+    from preparar_dados import tipo_loja, _titulo_tipo
+    assert tipo_loja("Interruptores de Vidros") == "Botões do Vidro Elétrico"
+    assert tipo_loja("Interruptores de Luzes") == "Chaves de Seta e Luz"
+    assert tipo_loja("Interruptores de Para-brisas") == "Chaves do Limpador"
+    assert tipo_loja("Interruptores de Piscas-alertas") == "Botões do Pisca-alerta"
+    assert tipo_loja("Faróis Traseiros") == tipo_loja("Lanternas") == "Lanternas Traseiras"
+    assert tipo_loja("Faróis de três Stop") == "Brake Light"
+    assert tipo_loja("Catalisador") == tipo_loja("Catalisadores") == "Catalisadores"
+    assert tipo_loja("Quebra Sol") == tipo_loja("Quebra Sóis") == "Quebra-sóis"
+    assert tipo_loja("Mangueira Radiador") == tipo_loja("Mangueiras de Arrefecimento")
+    assert tipo_loja("Maçanetas para Portas") == tipo_loja("Maçanetas das Portas")
+    assert tipo_loja("Estéreos com Tela") == "Centrais Multimídia" and tipo_loja("Estéreos sem Tela") == "Rádios"
+    assert tipo_loja("Suportes de Bateris") == "Caixas e Suportes da Bateria"            # erro do ML
+    assert tipo_loja("Pára-Lamas") == "Para-lamas" and tipo_loja("Válvulas Solenóides") == "Válvulas Solenoides"
+    # o mesmo nome do ML com sentido diferente conforme a familia
+    assert tipo_loja("Bolsas de Ar", "Suspensão e Direção") == "Suspensão a Ar e Nivelamento"
+    assert tipo_loja("Bolsas de Ar", "Peças de Interior") == "Airbags, Módulos e Sensores"
+    # nome que nao esta na tabela: so a maiuscula padronizada
+    assert _titulo_tipo("Painéis laterais") == "Painéis Laterais"
+    assert _titulo_tipo("Braços De Suspensão") == "Braços de Suspensão"
+    assert tipo_loja("Sondas Novas") == "Sondas Novas"
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        import re
+        from collections import defaultdict
+        por_fam = defaultdict(set)
+        for x in json.loads(pecas.read_text(encoding="utf-8")):
+            por_fam[x["c"]].add(x["s"])
+        tipos = {t for ts in por_fam.values() for t in ts if t}
+        # regra do codigo (vale para qualquer estoque): preposicao ganha a mae e a 1a letra e maiuscula
+        ruins = {t for t in tipos if re.match(r"^(de|do|da|dos|das|com|sem|para)\s", t, re.I) or t[:1].islower()}
+        assert not ruins, ruins
+        # o resto depende das categorias que o ML cria: so AVISA (nao pode travar a publicacao)
+        crus = {t for t in tipos if re.search(r"Pára|Bateris|Solenóide|Modulos de Fusiveis|três Stop|^Interruptores de", t)}
+        if crus:
+            print(f"AVISO: tipo com nome cru do ML (por em TIPO_LOJA): {sorted(crus)}")
+
+        def raiz(t):   # sinonimo singular/plural na mesma familia ("Catalisador" e "Catalisadores")
+            return " ".join(re.sub(r"(oes|aes|es|s)$", "", w) for w in gi_sem(t).split())
+        for fam, ts in por_fam.items():
+            raizes = defaultdict(list)
+            for t in ts:
+                raizes[raiz(t)].append(t)
+            dup = [v for v in raizes.values() if len(v) > 1]
+            if dup:
+                print(f"AVISO: {fam} com o mesmo tipo em 2 nomes (juntar em TIPO_LOJA): {dup}")
+
+
+def gi_sem(t):
+    import gerar_indice as gi
+    return gi.strip_accents(t).lower()
+
+
+def test_peca_na_familia_certa():
+    """Auditoria 2, L7: o nome da peca manda mais que a categoria que o vendedor escolheu no ML."""
+    from preparar_dados import classificar, modelo_canonico
+    casos = [
+        # (nome limpo, familia do ML, tipo do ML) -> (familia, tipo)
+        (("Chave roda 17mm", "Fechaduras e Chaves", "Chaves de Roda"), ("Segurança", "Macacos e Chaves de Roda")),
+        (("Chave roda", "Fechaduras e Chaves", "Chaves de Roda"), ("Segurança", "Macacos e Chaves de Roda")),
+        (("Macaco tesoura", "Janelas e Vedações", "Macacos Hidráulicos"), ("Segurança", "Macacos e Chaves de Roda")),
+        (("Módulo câmbio automático", "Ignição", "Módulos de Ignição e Imobilizador"),
+         ("Transmissão", "Módulos do Câmbio e da Tração")),
+        (("Conversor torque câmbio", "Ignição", "Conversores de Voltagem"), ("Transmissão", "Câmbios e Peças Internas")),
+        (("Botão freio de mão", "Ignição", "Outros Botões"), ("Freios", "Botões do Freio de Mão")),
+        (("Mangueira vácuo freio", "Ignição", "Mangueiras e Linhas do Motor"),
+         ("Freios", "Mangueiras e Flexíveis do Freio")),
+        (("Sensor hidrovácuo", "Ignição", "Mangueiras e Linhas do Motor"), ("Freios", "Sensores do Freio")),
+        (("Motor vidro dianteiro direito", "Motor", "Motores"),
+         ("Janelas e Vedações", "Máquinas e Motores de Vidro Elétrico")),
+        (("Botão vidro traseiro direito", "Ignição", "Outros Botões"), ("Peças de Interior", "Botões do Vidro Elétrico")),
+        (("Botão start stop engine", "Ignição", "Outros Botões"), ("Ignição", "Botões de Partida")),
+        # botoes que o ML mistura: o nome escolhe o tipo
+        (("Botão trava portas", "Peças de Interior", "Botões da Trava Elétrica"),
+         ("Peças de Interior", "Botões da Trava Elétrica")),
+        (("Botão ESP", "Peças de Interior", "Botões da Trava Elétrica"), ("Peças de Interior", "Outros Botões")),
+        (("Botão trava memória banco esquerdo", "Peças de Interior", "Botões da Trava Elétrica"),
+         ("Peças de Interior", "Outros Botões")),
+        (("Botão desembaçador traseiro", "Peças de Interior", "Outros Botões"),
+         ("Peças de Interior", "Botões do Desembaçador")),
+        # grupo misturado do ML ("Outros"): moldura do painel ganha o tipo certo
+        (("Moldura lateral esquerda painel", "Peças de Interior", "Outros"),
+         ("Peças de Interior", "Acabamentos do Painel")),
+        # o que ja esta certo nao muda
+        (("Alavanca freio de mão", "Peças de Interior", "Alavancas do Freio de Mão"),
+         ("Peças de Interior", "Alavancas do Freio de Mão")),
+        (("Motor vidro elétrico", "Janelas e Vedações", "Máquinas e Motores de Vidro Elétrico"),
+         ("Janelas e Vedações", "Máquinas e Motores de Vidro Elétrico")),
+        (("Bomba vácuo", "Freios", "Bombas de Vácuo"), ("Freios", "Bombas de Vácuo")),
+    ]
+    for (nome, fam, tipo), esperado in casos:
+        assert classificar(nome, fam, tipo) == esperado, (nome, classificar(nome, fam, tipo))
+    # HB20X e HB20S sao o HB20
+    assert modelo_canonico("Hyundai", "Hb20x") == "HB20" and modelo_canonico("Hyundai", "HB20S") == "HB20"
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        import re
+        for x in json.loads(pecas.read_text(encoding="utf-8")):
+            n = gi_sem(x["n"])
+            assert not (re.match(r"chave (de )?roda\b", n) and x["c"] == "Fechaduras e Chaves"), x["id"]
+            assert not (re.match(r"modulo (do )?cambio\b", n) and x["c"] == "Ignição"), x["id"]
+            assert not (re.match(r"(motor|maquina) (de )?vidro\b(?!.*\bmanual)", n) and x["c"] == "Motor"), x["id"]
+
+
+def test_peca_em_dois_carros():
+    """Auditoria 2, L5: "Volvo S60 Xc60" serve nos dois. Antes so o S60 contava: o dono do XC60 nao via
+    a peca na pagina do carro, no filtro nem no Meu carro (a busca achava 515, o carro mostrava 475)."""
+    from preparar_dados import modelos_do_titulo, anos_por_modelo, nome_limpo, modelos_de, anos_no_modelo
+    volvo = {("Volvo", "s60"): "S60", ("Volvo", "xc60"): "XC60"}
+    # chassi nao e outro carro: "320i E90" nao vira "Série 3" (juntar os modelos e decisao do dono, item L4)
+    bmw = {("BMW", "320i"): "320i", ("BMW", "serie3"): "Série 3", ("BMW", "530i"): "530i", ("BMW", "serie5"): "Série 5"}
+    assert modelos_do_titulo("BMW", ["320i", "E90"], "320i", bmw) == ["320i"]
+    assert modelos_do_titulo("BMW", ["330i", "530i", "E46", "E60"], "530i", bmw) == ["530i"]
+    merc = {("Mercedes-Benz", "c320"): "C320", ("Mercedes-Benz", "classec"): "Classe C",
+            ("Mercedes-Benz", "c180"): "C180", ("Mercedes-Benz", "c200"): "C200"}
+    assert modelos_do_titulo("Mercedes-Benz", ["C320", "W203"], "C320", merc) == ["C320"]
+    assert modelos_do_titulo("Mercedes-Benz", ["C180", "C200"], "C180", merc) == ["C180", "C200"]   # os 2 escritos
+    assert modelos_do_titulo("Volvo", ["S60", "Xc60", "T8"], "S60", volvo) == ["S60", "XC60"]   # T8 e versao
+    citroen = {("Citroën", "c4cactus"): "C4 Cactus", ("Citroën", "c4"): "C4"}
+    assert modelos_do_titulo("Citroën", ["C4", "Cactus"], "C4 Cactus", citroen) == ["C4 Cactus"]  # nome composto
+    vw = {("Volkswagen", "gol"): "Gol", ("Volkswagen", "voyage"): "Voyage"}
+    assert modelos_do_titulo("Volkswagen", ["Gol", "Voyage", "G6"], "Gol", vw) == ["Gol", "Voyage"]  # G6 e geracao
+    fiat = {("Fiat", "toro"): "Toro", ("Fiat", "argo"): "Argo"}
+    assert modelos_do_titulo("Fiat", ["Toro", "Argo", "Renegade"], "Toro", fiat) == ["Toro", "Argo"]  # Jeep fica fora
+    assert modelos_do_titulo("Volvo", ["S60"], "S60", volvo) == ["S60"]
+    # a faixa do titulo vale para todos, cortada no periodo de venda de cada carro
+    assert anos_por_modelo(["Fit", "WR-V"], "Honda", 2015, 2021) == (["Fit", "WR-V"], [[2015, 2021], [2017, 2021]])
+    assert anos_por_modelo(["S60", "XC60"], "Volvo", 2018, 2024) == (["S60", "XC60"], None)
+    assert anos_por_modelo(["Palio", "Argo"], "Fiat", 2004, 2012) == (["Palio"], None)       # Argo em 2004: impossivel
+    # os outros carros saem do nome, como o modelo
+    assert nome_limpo("Alternador Fiat Palio Siena Strada 1.0 15/21 83631750", "Fiat", "Palio",
+                      ["Palio", "Siena", "Strada"]) == "Alternador"
+    x = {"m": "Fit", "y": [2015, 2021], "ms": ["Fit", "WR-V"], "ys": [[2015, 2021], [2017, 2021]]}
+    assert modelos_de(x) == ["Fit", "WR-V"] and anos_no_modelo(x, "WR-V") == [2017, 2021]
+    assert modelos_de({"m": "XC60", "y": None}) == ["XC60"] and modelos_de({"m": "", "y": None}) == []
+    pasta = ROOT / "site" / "src" / "data"
+    if (pasta / "pecas.json").exists():
+        from collections import Counter
+        pecas = json.loads((pasta / "pecas.json").read_text(encoding="utf-8"))
+        resumo = json.loads((pasta / "resumo.json").read_text(encoding="utf-8"))
+        busca = json.loads((ROOT / "site" / "public" / "dados" / "busca.json").read_text(encoding="utf-8"))
+        conta = Counter((x["b"], mod) for x in pecas if x["b"] for mod in modelos_de(x))
+        for c in resumo["carros"]:          # a pagina do carro conta a peca de 2+ carros em cada um
+            assert c["c"] == conta[(c["b"], c["m"])], (c["k"], c["c"], conta[(c["b"], c["m"])])
+        for i, x in enumerate(pecas):
+            if x.get("ms"):
+                assert x["ms"][0] == x["m"] and len(x["ms"]) == len(set(x["ms"])) >= 2, x["id"]
+                assert busca["ms"][str(i)] == x["ms"], x["id"]
+                assert not x.get("ys") or (len(x["ys"]) == len(x["ms"]) and busca["ys"][str(i)] == x["ys"]), x["id"]
+            else:
+                assert str(i) not in busca["ms"] and not x.get("ys"), x["id"]
+
+
+def test_descricao_sem_lixo_do_ml():
+    """Auditoria 2, L2: "chat do anuncio" (o site nao tem chat), "sem giria", o paragrafo da condicao
+    duas vezes, o mesmo dado nas duas listas, "Codigo OEM: SEM CODIGO" e a medida-padrao do modelo de
+    anuncio (25 x 18 x 15 cm em pecas de todo tamanho) saem."""
+    import preparar_dados as pd
+    texto = ("MACANETA INTERNA ESQ RENAULT SANDERO DUSTER - ORIGINAL DE FABRICA - OEM 8200733848\n\n"
+             "Peca original RENAULT SANDERO DUSTER (2008 ate 2022). Codigo OEM 8200733848. Procedencia legal.\n\n"
+             "====\nIDENTIFICACAO DA PECA\n====\n+ Peca: Macaneta Interna Esq\n+ Codigo OEM (Original Equipment "
+             "Manufacturer): 8200733848\n+ Codigo de fabrica / Part Number: 8200733848\n+ Material: Plastico\n"
+             "+ Cor predominante: Preto\n+ Condicao: Em excelente estado de conservacao\n+ Anos:\n\n"
+             "====\nAPLICACAO E COMPATIBILIDADE\n====\nMesmo OEM = encaixe perfeito, sem adaptacoes, sem giria, "
+             "sem furadeira.\nPara garantir a compatibilidade exata, recomendamos:\n1) Conferir o codigo OEM;\n"
+             "2) Em duvida, envie mensagem pelo chat do anuncio - identificamos na hora.\n\n"
+             "====\nESPECIFICACOES TECNICAS\n====\n+ Material: Plastico\n+ Cor: Preto\n+ Comprimento da peca: 25 cm\n"
+             "+ Largura da peca: 18 cm\n+ Altura da peca: 15 cm\n+ Peso aproximado embalagem: 1500 g\n"
+             "+ Condicao: Em excelente estado\n\n"
+             "====\nCONDICAO REAL DA PECA\n====\nSem trincas estruturais, sem rachaduras visiveis e sem partes "
+             "faltando.\nPode apresentar discretos sinais superficiais, compativeis com armazenamento e manuseio.\n"
+             "Caso exista qualquer detalhe relevante, ele sera demonstrado nas fotos do anuncio.\n\n"
+             "====\nPeca em excelente estado de conservacao.\nSem trincas estruturais, sem rachaduras visiveis, sem "
+             "partes faltando.\nPode apresentar discretos sinais superficiais.\nSe a peca tiver qualquer detalhe "
+             "relevante, mostramos nas fotos do anuncio.\n\n"
+             "====\nFUNCAO\n====\nMacaneta Interna: peca original responsavel pela funcao correspondente no veiculo. "
+             "Codigo OEM sem codigo. Substituicao recomendada quando houver desgaste.\n")
+    antes = set(pd._DIM_PADRAO)
+    try:
+        pd._DIM_PADRAO.clear()
+        pd._DIM_PADRAO.add(("25", "18", "15"))
+        h = pd.descricao(texto, "Maçaneta interna esquerda")
+    finally:
+        pd._DIM_PADRAO.clear()
+        pd._DIM_PADRAO.update(antes)
+    assert "chat" not in h and "gíria" not in h and "giria" not in h, h
+    assert "<li>Em dúvida, chame a gente no WhatsApp.</li>" in h, h
+    assert "sem adaptações, sem furadeira." in h, h
+    assert "ORIGINAL DE FABRICA" not in h.upper() or "original de fábrica - OEM" not in h, h       # a manchete sai
+    assert h.count("Sem trincas") == 1, h                                   # o paragrafo da condicao, uma vez
+    assert h.count("Material: Plástico") == 1 and h.count("Preto") == 1, h  # o mesmo dado nas duas listas
+    assert "Código OEM: 8200733848" in h and "Part Number" not in h, h
+    assert "Em excelente estado</li>" not in h, h                           # so encurta o de cima: sai
+    assert "25 cm" not in h and "1500 g" not in h, h                        # medida-padrao do modelo
+    assert "Anos:" not in h and "sem código" not in h.lower(), h
+    assert "função correspondente" not in h and "Substituição recomendada quando houver desgaste." in h, h
+    assert "<li>Peça: Maçaneta interna esquerda</li>" in h, h               # o nome limpo, nao "Esq"
+    # medida que nao e o padrao fica
+    h2 = pd.descricao("ESPECIFICACOES TECNICAS\n====\n+ Comprimento da peca: 11 cm\n+ Largura da peca: 21 cm\n"
+                      "+ Altura da peca: 43 cm\n")
+    assert "11 cm" in h2 and "43 cm" in h2, h2
+    assert pd.dimensoes_padrao([texto] * pd.DIM_PADRAO_MIN) == {("25", "18", "15")}
+    assert pd.dimensoes_padrao([texto] * (pd.DIM_PADRAO_MIN - 1)) == set()
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        import re
+        # no gerado so AVISA: o vendedor pode mudar o modelo do anuncio (nao pode travar a publicacao)
+        ruim = re.compile(r"chat do an|g[ií]ria|sem c[oó]digo|m[uú]ltiplas fontes|fun[cç][aã]o correspondente", re.I)
+        ruins = [x["id"] for x in json.loads(pecas.read_text(encoding="utf-8")) if ruim.search(x["desc"])]
+        if ruins:
+            print(f"AVISO: {len(ruins)} descricoes ainda com lixo do anuncio: {ruins[:5]}")
+
+
+def test_nome_sem_lado_repetido_nem_codigo_minusculo():
+    """Auditoria 2, L6: lado repetido ("esquerda esquerdo/motorista"), trecho dobrado, "Break light fuz
+    freio" e codigo de motor em minuscula ("m270")."""
+    from preparar_dados import nome_limpo
+    casos = [
+        ("Lanterna Traseira Esquerda Esquerdo/motorista Volvo Xc60 18/24 31420415", "Volvo", "XC60",
+         "Lanterna traseira esquerda"),
+        ("Lanterna Tampa Traseira Direita Direito/passageiro Jeep Compass 17/21", "Jeep", "Compass",
+         "Lanterna tampa traseira direita"),
+        ("Macaneta Interna Esquerda Cromada Lado Esquerdo (motorista) Hyundai Hb20 12/19", "Hyundai", "HB20",
+         "Maçaneta interna esquerda cromada"),
+        ("Quebra Sol Motorista Esquerdo Fiat Toro 16/24", "Fiat", "Toro", "Quebra-sol esquerdo"),
+        ("Quebra Sol Direito Passageiro Fiat Toro 16/24", "Fiat", "Toro", "Quebra-sol direito"),
+        ("Moldura Painel Instrumentos Moldura Painel Instrumentos Volvo Xc60 18/24", "Volvo", "XC60",
+         "Moldura painel instrumentos"),
+        ("Break Light Luz Freio Volvo Xc60 18/24 31395779", "Volvo", "XC60", "Brake light (luz de freio)"),
+        ("Break Light Fuz Freio Fiat Toro 16/24", "Fiat", "Toro", "Brake light (luz de freio)"),
+        ("Luz De Freio Break Light Fiat Toro 16/24", "Fiat", "Toro", "Luz de freio (brake light)"),
+        ("Chicote Chassis B200 W246 Mercedes 12/18", "Mercedes-Benz", "", "Chicote chassis B200 W246"),
+        # lado diferente fica: e outra informacao
+        ("Par Lanterna Esquerda Direita Volvo Xc60 18/24", "Volvo", "XC60", "Par lanterna esquerda direita"),
+        # sem modelo no cartao: o carro escrito no nome e a pista, com a grafia certa
+        ("Botao Retrovisor Nissan Versa Kicks 2017", "Nissan", "", "Botão retrovisor Versa Kicks"),
+    ]
+    for titulo, marca, modelo, esperado in casos:
+        assert nome_limpo(titulo, marca, modelo) == esperado, (titulo, nome_limpo(titulo, marca, modelo))
+    # "polo" da bateria nao vira carro quando a peca ja tem modelo
+    assert nome_limpo("Cabo Polo Negativo Bateria Jaguar E-pace 18/24", "Jaguar", "E-Pace") == "Cabo polo negativo bateria"
+
+
+def test_codigo_de_enchimento():
+    """Auditoria 2, L8: "101010101" e enchimento, nao codigo gravado na peca."""
+    from preparar_dados import codigo_valido
+    for lixo in ("101010101", "1212121", "5555551", "010101", "123123"):
+        assert not codigo_valido(lixo), lixo
+    for bom in ("1J0858601", "030864", "31476671", "9806675280", "1000001"):
+        assert codigo_valido(bom), bom
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

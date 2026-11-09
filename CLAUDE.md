@@ -11,6 +11,14 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - `site/src/data/pecas.json` e `resumo.json` (usados para montar as páginas);
    - `site/public/dados/busca.json` (o índice que a busca do navegador usa).
    Aqui ficam a leitura de **marca, modelo e ano** pelo título e o **nome limpo** da peça.
+   - **Tipo da peça** (`s`, os cartões "Por tipo" da categoria): a árvore do ML vira o nome da loja em `TIPO_LOJA`
+     (sinônimos num nome só; grupo do ML que mistura de tudo vira "Outros", sem cartão). Família/tipo errados do ML
+     são corrigidos pelo nome da peça em `REGRAS_NOME` (chave de roda, módulo do câmbio, motor de vidro...).
+   - **Peça de 2+ carros** (`ms`, e `ys` quando a faixa de anos muda de um carro para outro): "Volvo S60 Xc60" aparece
+     na página, no filtro, na contagem e no Meu carro dos dois (`site/src/lib/meuCarro.ts`: `modelosDa`,
+     `serveNoModelo`, `anosNoModelo`). A URL da peça não muda.
+   - **Descrição**: só as seções sobre a peça; "chat do anúncio" vira WhatsApp; sai o dado repetido e a medida-padrão
+     do modelo de anúncio (`DIM_PADRAO_MIN`).
    Testes: `python testes/test_dados.py`.
 3. `site/` é um projeto **Astro**: `npm --prefix site run build` gera `site/dist/`.
 4. O workflow `.github/workflows/atualizar.yml` faz 1→2→3, confere os links e publica `site/dist` no GitHub Pages

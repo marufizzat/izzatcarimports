@@ -44,13 +44,16 @@ export function vendas(): Map<string, number> {
 }
 
 const ABREVIADO = /(^|[\s,./-])(tras|dian|diant|esq|esque|dir|inf|sup)(?=$|[\s,./-])/i;
+// código de motor/chassi que sobrou em minúscula no nome ("m270", "a200"): o nome não está pronto para a vitrine
+const CODIGO_MINUSCULO = /(^|\s)[a-z]{1,3}\d{2,4}[a-z]?(?=$|\s)/;
 const ehPro = (p: Peca) => (capaEstudio(p.id) ?? '').startsWith('/estudio-pro/');
 const completo = (p: Peca) => (p.y ? 1 : 0) + (p.o || p.oem ? 1 : 0);
 const comeco = (n: string) => n.toLowerCase().split(/\s+/)[0];
 
 /** Peça que pode ir para a vitrine (capa de estúdio, carro identificado, nome apresentável, preço). */
 export function apresentavel(p: Peca): boolean {
-  return !!capaEstudio(p.id) && !!p.b && !!p.m && p.p > 0 && p.limpa !== false && !ABREVIADO.test(p.n);
+  return !!capaEstudio(p.id) && !!p.b && !!p.m && p.p > 0 && p.limpa !== false && !ABREVIADO.test(p.n)
+    && !CODIGO_MINUSCULO.test(p.n);
 }
 
 type Regras = { n: number; porCarro?: number; porTipo?: number };
