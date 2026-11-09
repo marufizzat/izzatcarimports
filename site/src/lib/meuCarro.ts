@@ -3,6 +3,7 @@
 //   localStorage['izzatcar.meuCarro'] = {"b":"Volvo","m":"XC60","y":2019}   (y pode ser null)
 //   ao mudar: window.dispatchEvent(new CustomEvent('meu-carro', { detail: carro | null }))
 // b = marca e m = modelo EXATAMENTE como nos dados (p.b / p.m); y = ano escolhido.
+// A peça que serve em 2+ carros traz ms (e ys): ela vale para o carro salvo se ele estiver no ms.
 // Roda em toda página: nada de lib/dados.ts ou lib/garagem.ts aqui (puxariam o pecas.json inteiro).
 
 export type MeuCarro = { b: string; m: string; y: number | null };
@@ -40,18 +41,65 @@ export function salvarMeuCarro(c: MeuCarro | null) {
 /** "xc60" = "XC 60" = "XC-60" */
 export const norm = (s: string | null | undefined) => (s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
 
-/** A peça serve no carro salvo? Só dizemos "serve" com o ANO salvo e dentro da faixa de anos da peça.
+/** Peça como o "Meu carro" a vê. ms = os carros quando a peça serve em 2+ ("Volvo S60 Xc60" no título:
+ *  ["S60", "XC60"], o 1º é sempre o m); ys = a faixa de anos de cada um, quando muda de um carro para outro. */
+export type PecaCarro = {
+  b?: string | null; m?: string | null; y?: [number, number] | null;
+  ms?: string[] | null; ys?: ([number, number] | null)[] | null;
+};
+
+/** Carros em que a peça serve: os do ms, ou só o m. */
+export function modelosDa(p: PecaCarro): string[] {
+  return p.ms && p.ms.length ? p.ms : p.m ? [p.m] : [];
+}
+
+/** A peça serve no modelo (comparação com norm)? */
+export function serveNoModelo(p: PecaCarro, modelo: string | null | undefined): boolean {
+  const k = norm(modelo);
+  return !!k && modelosDa(p).some((x) => norm(x) === k);
+}
+
+/** Faixa de anos da peça NAQUELE carro (a do ys, quando a peça serve em 2+ e a faixa muda). */
+export function anosNoModelo(p: PecaCarro, modelo: string | null | undefined): [number, number] | null {
+  const i = p.ms && p.ys ? p.ms.findIndex((x) => norm(x) === norm(modelo)) : -1;
+  return i >= 0 ? (p.ys![i] ?? null) : (p.y ?? null);
+}
+
+/** "Volvo S60 e XC60" (todos os carros da peça, com a marca uma vez só). */
+export function nomeModelos(p: PecaCarro): string {
+  const ms = modelosDa(p);
+  const lista = ms.length <= 1 ? ms.join('') : `${ms.slice(0, -1).join(', ')} e ${ms[ms.length - 1]}`;
+  return [p.b, lista].filter(Boolean).join(' ');
+}
+
+/** A peça serve no carro salvo? Só dizemos "serve" com o ANO salvo e dentro da faixa de anos da peça
+ *  (na peça de 2+ carros, a faixa daquele carro: anosNoModelo).
  *  - 'sim':         marca e modelo batem, o carro tem ano e ele está dentro da faixa da peça;
  *  - 'confira-ano': marca e modelo batem, o carro tem ano e ele está FORA da faixa da peça;
  *  - 'falta-ano':   marca e modelo batem, mas não dá para conferir o ano: o carro salvo está sem ano
  *                   (convidar a informar) ou o anúncio não traz os anos (conferir o código na peça);
  *  - null:          sem carro salvo, outro carro, ou peça sem marca/modelo.
  *  Nunca dizemos "não serve": na dúvida, um aviso neutro. */
-export function serveNoMeuCarro(p: { b?: string | null; m?: string | null; y?: [number, number] | null }, c: MeuCarro | null): Serve {
+export function serveNoMeuCarro(p: PecaCarro, c: MeuCarro | null): Serve {
   if (!c || !p.b || !p.m) return null;
-  if (norm(p.b) !== norm(c.b) || norm(p.m) !== norm(c.m)) return null;
-  if (c.y == null || !p.y) return 'falta-ano';
-  return c.y >= p.y[0] && c.y <= p.y[1] ? 'sim' : 'confira-ano';
+  if (norm(p.b) !== norm(c.b) || !serveNoModelo(p, c.m)) return null;
+  const y = anosNoModelo(p, c.m);
+  if (c.y == null || !y) return 'falta-ano';
+  return c.y >= y[0] && c.y <= y[1] ? 'sim' : 'confira-ano';
+}
+
+/** Atributos data-* do cartão e da faixa da peça (data-ms="S60|XC60", data-ys="2018-2024|2019-2024"). */
+export function atributosModelos(ms?: string[] | null, ys?: ([number, number] | null)[] | null) {
+  return {
+    'data-ms': ms && ms.length > 1 ? ms.join('|') : undefined,
+    'data-ys': ms && ms.length > 1 && ys ? ys.map((a) => (a ? `${a[0]}-${a[1]}` : '')).join('|') : undefined,
+  };
+}
+/** O contrário de atributosModelos: lê data-ms/data-ys de volta. */
+export function lerModelos(ms?: string, ys?: string): Pick<PecaCarro, 'ms' | 'ys'> {
+  if (!ms) return {};
+  const anos = ys ? ys.split('|').map((a) => { const [x, z] = a.split('-').map(Number); return x && z ? [x, z] as [number, number] : null; }) : null;
+  return { ms: ms.split('|'), ys: anos };
 }
 
 /** "Volvo XC60 2019" */

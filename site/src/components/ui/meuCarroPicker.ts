@@ -72,11 +72,11 @@ const whats = (txt: string) => esc(linkWhats(txt));
 
 // ---- desenho (funções puras: rodam no build para a abertura e no navegador) ----
 
-/** logo que é só letreiro bem largo (Dodge, Iveco) viraria um fio no disco: vai o nome escrito no lugar */
-const discoComNome = (m: Marca) => !(m.logo && m.lh > 0 && m.lw / m.lh < 4.2);
+/** logo que é só letreiro bem largo (Dodge, Iveco) viraria um fio no disco: vai o nome escrito no lugar (e não repete embaixo) */
+const nomeNoDisco = (m: Marca) => !(m.logo && m.lh > 0 && m.lw / m.lh < 4.2);
 
 function disco(m: Marca): string {
-  if (!discoComNome(m))
+  if (!nomeNoDisco(m))
     return `<span class="mc-disco"><img src="${esc(m.logo!)}" alt="" width="${m.lw}" height="${m.lh}" loading="lazy" decoding="async" /></span>`;
   return `<span class="mc-disco mc-disco-nome" aria-hidden="true">${esc(m.n)}</span>`;
 }
@@ -110,7 +110,7 @@ function htmlMarcas(g: Garagem, e: Estado): string {
   const tiles = lista
     .map((m) => `
       <li><button type="button" class="mc-marca" data-acao="marca" data-n="${esc(m.n)}" data-chave="marca:${esc(m.n)}"${m.n === foco ? ' data-foco' : ''} aria-pressed="${e.marca?.n === m.n}" aria-label="${esc(m.n)}, ${pecasTxt(m.c)}" title="${esc(m.n)}">
-        ${disco(m)}<span class="mc-marca-nome" aria-hidden="true">${discoComNome(m) ? '' : nomeMarca(m.n)}</span></button></li>`)
+        ${disco(m)}${nomeNoDisco(m) ? '' : `<span class="mc-marca-nome" aria-hidden="true">${nomeMarca(m.n)}</span>`}</button></li>`)
     .join('');
   const aviso = e.carroSemPeca
     ? `<p class="mc-aviso-linha">Sem peças do <b>${esc(e.carroSemPeca)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Olá! Procuro peça para ${e.carroSemPeca}. Tem no pátio?`)}">peça no WhatsApp</a>.</p>`

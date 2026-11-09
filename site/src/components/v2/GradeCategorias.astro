@@ -45,9 +45,10 @@ const POUCAS = 30;
   )}
 </div>
 <script>
-  import { lerMeuCarro, linkCatalogo, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
+  import { lerMeuCarro, linkCatalogo, serveNoModelo, anosNoModelo, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
   // Com carro salvo, cada categoria mostra a contagem DELE (busca.json só é baixado nesse caso).
-  type Indice = { marcas: string[]; familias: string[]; id: string[]; b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[] };
+  type Indice = { marcas: string[]; familias: string[]; id: string[]; b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[];
+                  ms?: Record<string, string[]>; ys?: Record<string, ([number, number] | null)[]> };
   let indice: Promise<Indice> | null = null;
   const ler = () => (indice ??= fetch('/dados/busca.json').then((r) => r.json()));
   const raiz = document.querySelector<HTMLElement>('[data-cats]');
@@ -116,8 +117,10 @@ const POUCAS = 30;
     const cont = new Map<string, number>();
     let n = 0;
     for (let k = 0; k < d.id.length; k++) {
-      if (d.b[k] !== marca || d.m[k] !== modelo) continue;
-      if (ano != null) { const y = d.y[k]; if (!y || ano < y[0] || ano > y[1]) continue; }
+      // a peça de 2+ carros (ms) conta para cada um deles, com a faixa de anos daquele carro (ys)
+      const p = { m: d.m[k], y: d.y[k] || null, ms: d.ms?.[k], ys: d.ys?.[k] };
+      if (d.b[k] !== marca || !serveNoModelo(p, modelo)) continue;
+      if (ano != null) { const y = anosNoModelo(p, modelo); if (!y || ano < y[0] || ano > y[1]) continue; }
       const fam = d.familias[d.c[k]];
       cont.set(fam, (cont.get(fam) ?? 0) + 1);
       n++;

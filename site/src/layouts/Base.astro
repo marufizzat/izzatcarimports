@@ -19,9 +19,11 @@ const previa = process.env.PREVIA === '1';
   <meta name="description" content={descricao} />
   <link rel="canonical" href={canon} />
   {(noindex || previa) && <meta name="robots" content="noindex, nofollow" />}
-  {/* aparelho fraco (até 4 núcleos, até 4 GB ou economia de dados): html.leve tira o vidro desfocado, o 3D e as
-      animações de altura (cada componente diz o que muda). Antes do 1º desenho, para nada trocar na frente da pessoa. */}
-  <script is:inline>{let n=navigator;(n.hardwareConcurrency<5||n.deviceMemory<5||n.connection?.saveData)&&document.documentElement.classList.add('leve')}</script>
+  {/* aparelho fraco (até 2 núcleos, até 4 GB de memória ou economia de dados): html.leve tira o vidro desfocado, o 3D
+      e as animações de altura (cada componente diz o que muda). Antes do 1º desenho, para nada trocar na frente da
+      pessoa. Núcleos só abaixo de 3: o Safari (iPhone, iPad, Mac) informa 4 ou 8 de propósito, nunca menos; a memória
+      só o Chrome informa (iPhone fica fora, como deve). */}
+  <script is:inline>{let n=navigator;(n.hardwareConcurrency<3||n.deviceMemory<5||n.connection?.saveData)&&document.documentElement.classList.add('leve')}</script>
   <meta name="theme-color" content="#f5f5f7" />
   {/* ícone quadrado (o Google exige quadrado, múltiplo de 48 px; o carro.svg é retangular e virava o globo cinza) */}
   <link rel="icon" href="/favicon.ico" sizes="48x48" />
