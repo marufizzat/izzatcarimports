@@ -24,6 +24,8 @@ export function juntar(xs: string[]): string {
 }
 
 const P = (n: number) => (n === 1 ? 'peça' : 'peças');
+/** Familia como sistema do carro, para a frase: "peças de interior" -> "interior". */
+const sistema = (n: string) => n.replace(/^peças de /i, '');
 const O = (n: number) => (n === 1 ? 'original' : 'originais');
 const M = (n: number) => (n === 1 ? 'modelo' : 'modelos');
 
@@ -35,18 +37,38 @@ export function minuscula(s: string): string {
     .join(' ');
 }
 
-/** Os 'n' mais frequentes (sem vazios e sem "Outros"); empate em ordem alfabetica. */
+/** Os 'n' mais frequentes (sem vazios e sem "Outros"/"Outros Botões"); empate em ordem alfabetica. */
 export function contar(itens: (string | null | undefined)[], n = 3): string[] {
   const m = new Map<string, number>();
   for (const x of itens) {
     const v = (x ?? '').trim();
-    if (!v || /^outros$/i.test(v)) continue;
+    if (!v || /^outr[oa]s\b/i.test(v)) continue;
     m.set(v, (m.get(v) ?? 0) + 1);
   }
   return [...m.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
     .slice(0, n)
     .map((e) => e[0]);
+}
+
+/** Raiz do nome, para nao repetir singular e plural ("Catalisador" e "Catalisadores"). */
+export function raiz(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/\s+/)
+    .map((w) => w.replace(/(oes|aes|es|s)$/, '')).join(' ');
+}
+
+/** Os 'n' tipos de peca mais frequentes, sem repetir a mesma raiz, em minusculas para a frase. */
+export function tiposFrase(itens: (string | null | undefined)[], n = 2): string[] {
+  const out: string[] = [];
+  const vistos = new Set<string>();
+  for (const t of contar(itens, 30)) {
+    const r = raiz(t);
+    if (vistos.has(r)) continue;
+    vistos.add(r);
+    out.push(minuscula(t));
+    if (out.length >= n) break;
+  }
+  return out;
 }
 
 /** Faixa de anos das pecas que tem ano lido (y). null se nenhuma tem. */
@@ -66,9 +88,9 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
   const N = lista.length;
   if (!N) return { paragrafos: [], meta: f.n };
   const tema = f.n.replace(/^Peças de /i, '').toLowerCase();
-  const subs = contar(lista.map((p) => p.s), 3).map(minuscula);
+  const subs = tiposFrase(lista.map((p) => p.s), 2);
   const marcas = contar(lista.map((p) => p.b), 3);
-  const modelos = new Set(lista.filter((p) => p.m).map((p) => `${p.b} ${p.m}`)).size;
+  const modelos = new Set(lista.flatMap((p) => (p.ms?.length ? p.ms : p.m ? [p.m] : []).map((m) => `${p.b} ${m}`))).size;
   const a = faixaAnos(lista);
   const anosFrase = a ? `, de carros de ${a[0] === a[1] ? a[0] : `${a[0]} a ${a[1]}`}` : '';
   const k = `categoria:${f.k}`;
@@ -81,18 +103,17 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
   const paragrafos = [p1];
   if (subs.length) {
     paragrafos.push(escolha(`${k}:2`, [
-      `As que mais aparecem são ${juntar(subs)}.`,
-      `Os tipos com mais anúncios são ${juntar(subs)}.`,
-      `Entre elas, as mais frequentes são ${juntar(subs)}.`,
+      `Os tipos com mais peças são ${juntar(subs)}.`,
+      `Entre elas, as mais comuns são ${juntar(subs)}.`,
+      `O que mais aparece aqui: ${juntar(subs)}.`,
     ]));
   }
   if (marcas.length) {
-    const base = `${modelos} ${M(modelos)}`;
-    paragrafos.push(escolha(`${k}:3`, [
+    const base = modelos ? `${modelos} ${M(modelos)}` : '';
+    paragrafos.push(base ? escolha(`${k}:3`, [
       `As marcas com mais peças são ${juntar(marcas)}, e há peças para ${base}${anosFrase}.`,
       `Há peças para ${base}${anosFrase}; a marca com mais peças é ${marcas[0]}.`,
-      `Escolha a marca do seu carro no atalho acima para ver só as peças de ${tema} dessa marca.`,
-    ]));
+    ]) : `As marcas com mais peças são ${juntar(marcas)}${anosFrase}.`);
   }
   const meta = `${N} peças originais de ${tema}${subs.length ? `: ${juntar(subs.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
   return { paragrafos, meta };
@@ -107,7 +128,7 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
   const anos = a ? ` (${anoTxt(a)})` : '';
   const k = `carro:${c.k}`;
   const fams = (c.fams ?? []).filter(([n]) => n !== 'Outros').slice(0, 3).map(([n]) => n.toLowerCase());
-  const subs = contar(lista.map((p) => p.s), 3).map(minuscula);
+  const subs = tiposFrase(lista.map((p) => p.s), 2);
 
   const p1 = escolha(`${k}:1`, [
     `Temos ${N} ${P(N)} ${O(N)} para ${nome}${anos}.`,
@@ -117,15 +138,15 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
   const paragrafos = [p1];
   if (fams.length) {
     paragrafos.push(escolha(`${k}:2`, [
-      `Em ${nome}, as que mais aparecem são ${juntar(fams)}.`,
-      `Os sistemas com mais peças para ${nome} são ${juntar(fams)}.`,
-      `Em ${nome} aparecem mais ${juntar(fams)}.`,
+      `No ${nome}, a maioria é de ${juntar(fams)}.`,
+      `Para o ${nome}, aparecem mais peças de ${juntar(fams.map(sistema))}.`,
+      `Os sistemas com mais peças para o ${nome} são ${juntar(fams.map(sistema))}.`,
     ]));
   }
   if (subs.length) {
     paragrafos.push(escolha(`${k}:3`, [
-      `Para ${nome}, as peças mais frequentes são ${juntar(subs)}.`,
-      `Os tipos de peça que mais aparecem para ${nome} são ${juntar(subs)}.`,
+      `Os tipos de peça que mais aparecem para o ${nome} são ${juntar(subs)}.`,
+      `Entre as peças do ${nome}, as mais comuns são ${juntar(subs)}.`,
     ]));
   } else {
     paragrafos.push(`Confira o ano e o código gravado da peça para ${nome}; na dúvida, a gente confere pelo WhatsApp.`);
@@ -145,12 +166,13 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
   const anosFrase = a ? `, com carros de ${anoTxt(a)}` : '';
   const k = `marca:${m.n}`;
 
+  // sem modelo lido (Mini, Lifan): nada de "para 0 modelos"
   const paragrafos: string[] = [
-    escolha(`${k}:1`, [
+    modelos ? escolha(`${k}:1`, [
       `Temos ${N} ${P(N)} ${O(N)} de ${m.n} para ${modelos} ${M(modelos)}.`,
-      `Há ${N} ${P(N)} ${O(N)} de ${m.n} em estoque, para ${modelos} ${M(modelos)} diferentes.`,
+      `Há ${N} ${P(N)} ${O(N)} de ${m.n} em estoque, para ${modelos} ${M(modelos)}${modelos > 1 ? ' diferentes' : ''}.`,
       `As peças de ${m.n} no estoque somam ${N}, de ${modelos} ${M(modelos)}.`,
-    ]),
+    ]) : `Temos ${N} ${P(N)} ${O(N)} de ${m.n} no estoque.`,
   ];
   if (nomes.length) {
     paragrafos.push(escolha(`${k}:2`, [
@@ -161,11 +183,11 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
   }
   if (fams.length) {
     paragrafos.push(escolha(`${k}:3`, [
-      `As peças mais numerosas são de ${juntar(fams)}${anosFrase}.`,
-      `Os sistemas com mais peças são ${juntar(fams)}${anosFrase}.`,
+      `A maioria é de ${juntar(fams)}${anosFrase}.`,
+      `Os sistemas com mais peças são ${juntar(fams.map(sistema))}${anosFrase}.`,
     ]));
   }
-  const meta = `${N} peças originais de ${m.n} para ${modelos} ${M(modelos)}${nomes.length ? `: ${juntar(nomes.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  const meta = `${N} peças originais de ${m.n}${modelos ? ` para ${modelos} ${M(modelos)}` : ''}${nomes.length ? `: ${juntar(nomes.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
   return { paragrafos, meta };
 }
 

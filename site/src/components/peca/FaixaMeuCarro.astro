@@ -8,13 +8,15 @@
 // Peça só com a marca: "Peça de <marca>, anos" (sem prometer o modelo). Nunca escrevemos "não serve".
 // Estilos globais (classes .enc-*, só deste componente): os estados montados pelo script usam as mesmas regras.
 import Icone from '../Icone.astro';
-interface Props { b: string; m: string; y: [number, number] | null; }
-const { b, m, y } = Astro.props;
+import { nomeModelos, atributosModelos } from '../../lib/meuCarro';
+// Peça de 2+ carros (ms, ys): "Serve em Volvo S60 e XC60" e o "serve no seu" vale para cada um deles.
+interface Props { b: string; m: string; y: [number, number] | null; ms?: string[]; ys?: [number, number][]; }
+const { b, m, y, ms, ys } = Astro.props;
 const anos = y ? (y[0] === y[1] ? String(y[0]) : `${y[0]} a ${y[1]}`) : '';
-const carro = [b, m].filter(Boolean).join(' ');
+const carro = nomeModelos({ b, m, ms });
 ---
 {b && m ? (
-  <section class="enc" data-meu-carro data-b={b} data-m={m} data-y0={y ? y[0] : ''} data-y1={y ? y[1] : ''} aria-label="Serve no seu carro?" aria-live="polite">
+  <section class="enc" data-meu-carro data-b={b} data-m={m} data-y0={y ? y[0] : ''} data-y1={y ? y[1] : ''} {...atributosModelos(ms, ys)} aria-label="Serve no seu carro?" aria-live="polite">
     <div class="enc-estado" data-estado="convite">
       <span class="enc-icone"><Icone nome="carro" /></span>
       <p class="enc-txt">
@@ -33,7 +35,7 @@ const carro = [b, m].filter(Boolean).join(' ');
 ) : null}
 
 <script>
-  import { lerMeuCarro, serveNoMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';
+  import { lerMeuCarro, serveNoMeuCarro, nomeCarro, lerModelos, EVENTO, type MeuCarro } from '../../lib/meuCarro';
 
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   // o mesmo desenho do <Icone nome="check" />
@@ -46,6 +48,7 @@ const carro = [b, m].filter(Boolean).join(' ');
       b: el.dataset.b || '',
       m: el.dataset.m || '',
       y: el.dataset.y0 && el.dataset.y1 ? ([Number(el.dataset.y0), Number(el.dataset.y1)] as [number, number]) : null,
+      ...lerModelos(el.dataset.ms, el.dataset.ys),
     };
     const carro = esc([p.b, p.m].filter(Boolean).join(' '));
     const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';

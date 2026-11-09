@@ -8,9 +8,11 @@ import BannerV2 from '../../components/v2/BannerV2.astro';
 import { pecas, resumo, foto, whatsUrl, logoInfo } from '../../lib/dados';
 import { textosCarro, tituloCarro } from '../../lib/textos';
 import { fotoVitrine } from '../../lib/vitrine';
+import { serveNoModelo } from '../../lib/meuCarro';
 export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
 const c = resumo().carros.find((x) => x.k === Astro.props.k)!;
-const lista = pecas().filter((p) => p.b === c.b && p.m === c.m).sort((a, b) => (b.id > a.id ? 1 : -1));
+// a peça que serve em 2+ carros ("Volvo S60 Xc60") aparece na página de cada um (lib/meuCarro.ts)
+const lista = pecas().filter((p) => p.b === c.b && serveNoModelo(p, c.m)).sort((a, b) => (b.id > a.id ? 1 : -1));
 const base = `/catalogo.html?marca=${encodeURIComponent(c.b)}&modelo=${encodeURIComponent(c.m)}`;
 const fams = Object.entries(lista.reduce<Record<string, number>>((o, p) => ((o[p.c] = (o[p.c] || 0) + 1), o), {}))
   .sort((a, b) => b[1] - a[1]).map(([n, q]) => ({ n, c: q, h: `${base}&tipo=${encodeURIComponent(n)}`, foto: fotoVitrine(lista, (p) => p.c === n) }));

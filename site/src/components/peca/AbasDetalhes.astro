@@ -10,9 +10,11 @@ interface Props { p: Peca; serve: string; serveRotulo?: string; }
 const { p, serve, serveRotulo = 'Serve em' } = Astro.props;
 const so = (s: string) => s.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
 const codTodos = (p.oem || '').split(/[\s,;/|]+/).map(so).filter(Boolean);
-// "Modelo do veículo" só quando diz algo a mais: igual ao modelo (já está no "Serve em") ou igual ao código, sai
+// "Modelo do veículo" só quando diz algo a mais: igual ao modelo ou aos modelos da peça (já estão no "Serve em")
+// ou igual ao código, sai
+const ms = p.ms && p.ms.length > 1 ? [p.ms.join(''), [...p.ms].reverse().join('')].map(so) : [];
 const repete = ([k, v]: [string, string]) =>
-  k === 'Modelo do veículo' && (so(v) === so(p.m) || so(v) === so(`${p.b}${p.m}`) || codTodos.includes(so(v)));
+  k === 'Modelo do veículo' && (so(v) === so(p.m) || so(v) === so(`${p.b}${p.m}`) || ms.includes(so(v)) || codTodos.includes(so(v)));
 const fichaML = p.ficha.filter((l) => !repete(l));
 const iCod = fichaML.findIndex(([k]) => k.startsWith('Código'));
 const serveLinha: [string, string][] = serve ? [[serveRotulo, serve]] : [];

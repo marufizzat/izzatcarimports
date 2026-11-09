@@ -8,6 +8,7 @@ import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
 import { doMesmoCarro } from '../../lib/relacionadas';
+import { nomeModelos } from '../../lib/meuCarro';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
@@ -34,7 +35,7 @@ function porCarro(): Map<string, Peca[]> {
 // "Fechadura" sem marca, por exemplo); contado uma vez por build.
 const anosDe = (y: Peca['y'], sep: string) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}${sep}${y[1]}`) : '');
 function tituloBase(x: Peca): string {
-  const nome = [x.b, x.m].filter(Boolean).join(' ');
+  const nome = nomeModelos(x);
   const cod = codigoDaPeca(x.oem);
   return [x.n, nome, anosDe(x.y, '–'), cod].filter(Boolean).join(' ');
 }
@@ -72,8 +73,10 @@ const daMarca = temCarro ? [] : p.rel.map(pecaPorId).filter((x): x is Peca => !!
 const url = `${SITE}/peca/${p.slug}.html`;
 const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
 const anosTxt = anosDe(p.y, ' a ');
-// ficha: "Serve em Volvo XC60, 2018 a 2024"; só a marca: "Carro"; sem marca: só "Anos" (antes saía "Carro: , 2015 a 2024")
-const serve = nomeCarro ? nomeCarro + (anosTxt ? `, ${anosTxt}` : '') : anosTxt;
+// ficha: "Serve em": todos os carros da peça ("Volvo S60 e XC60" quando o título diz os dois), com os anos.
+// Só com a marca: "Carro" (sem prometer o modelo); sem marca: só "Anos" (antes saía "Carro: , 2015 a 2024")
+const carros = nomeModelos(p);
+const serve = carros ? carros + (anosTxt ? `, ${anosTxt}` : '') : anosTxt;
 const serveRotulo = p.m ? 'Serve em' : p.b ? 'Carro' : 'Anos';
 const unica = p.q === 1;
 // código só quando parece código de verdade (5+ com letra e número, ou 6+ dígitos), em maiúsculas
@@ -81,7 +84,7 @@ const codigo = codigoDaPeca(p.oem);
 const base = tituloBase(p);
 const titulo = `${base}${tituloRepetido(base) ? ` ${p.id}` : ''} | Izzat Car`;
 // descrição (Google e prévia do link): o nome limpo + carro + anos, nunca o título cru do anúncio
-const sobre = `${p.n} original${nomeCarro ? ` ${p.m ? 'do' : 'de'} ${nomeCarro}` : ''}${anosTxt ? `, ${anosTxt}` : ''}${codigo ? `, código ${codigo}` : ''}`;
+const sobre = `${p.n} original${carros ? ` ${p.m ? 'do' : 'de'} ${carros}` : ''}${anosTxt ? `, ${anosTxt}` : ''}${codigo ? `, código ${codigo}` : ''}`;
 const descricao = `${sobre}. Peça usada, de carro com baixa legal no Detran-RS. R$ ${brl(p.p)}, nota fiscal e 90 dias de garantia.`;
 const trilha: [string, string][] = [['Início', '/index.html'], ['Catálogo', '/catalogo.html']];
 if (fam && fam.n !== 'Outros') trilha.push([fam.n, `/categoria/${fam.k}.html`]);

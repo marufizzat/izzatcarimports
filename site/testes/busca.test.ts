@@ -3,6 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { Busca, normal } from '../src/lib/busca';
+import { serveNoModelo, anosNoModelo } from '../src/lib/meuCarro';
 
 const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8'));
 const b = new Busca(ix);
@@ -37,7 +38,24 @@ describe('busca do catalogo', () => {
     const ano = alvo.y![0];
     const r = b.procurar({ marca: alvo.b, modelo: alvo.m, ano });
     expect(r.length).toBeGreaterThan(0);
-    expect(r.every((x) => x.b === alvo.b && x.m === alvo.m && x.y && x.y[0] <= ano && x.y[1] >= ano)).toBe(true);
+    // a peça de 2+ carros entra pelo ms, com a faixa de anos daquele carro
+    expect(r.every((x) => {
+      const y = anosNoModelo(x, alvo.m);
+      return x.b === alvo.b && serveNoModelo(x, alvo.m) && !!y && y[0] <= ano && y[1] >= ano;
+    })).toBe(true);
+  });
+
+  it('peça de 2 carros ("Volvo S60 Xc60") aparece no filtro de cada um e conta nos dois modelos', (ctx) => {
+    const alvo = b.itens.find((i) => i.ms && i.ms.length > 1);
+    if (!alvo) return ctx.skip();
+    for (const m of alvo.ms!) {
+      expect(b.procurar({ marca: alvo.b, modelo: m }).some((x) => x.id === alvo.id), m).toBe(true);
+    }
+    const modelos = new Map(b.facetas({ marca: alvo.b }).modelos);
+    const sozinhos = (m: string) => b.itens.filter((x) => x.b === alvo.b && (x.ms ?? [x.m]).includes(m)).length;
+    for (const m of alvo.ms!) expect(modelos.get(m), m).toBe(sozinhos(m));
+    // nunca dois do mesmo carro na lista
+    expect(new Set(alvo.ms).size).toBe(alvo.ms!.length);
   });
 
   it('ano solto na busca vira filtro', (ctx) => {
