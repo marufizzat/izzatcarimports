@@ -62,7 +62,7 @@ const perguntas = [
 ];
 ---
 <div class="peca-topo">
-  <div class="galeria" data-galeria>
+  <div class="galeria" data-galeria data-titulo={p.n}>
     <div class="galeria-palco" data-palco>
       <ul class="galeria-trilho" data-trilho>
         {fotos.map((f, i) => (
@@ -81,7 +81,7 @@ const perguntas = [
       <div class="galeria-miniaturas" aria-label="Fotos da peça">
         {fotos.map((f, i) => (
           <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
-            <img class:list={[{ estudio: f.e }]} src={f.m} alt="" width="72" height="72" loading="lazy" />
+            <img class:list={[{ estudio: f.e }]} src={f.m} alt="" width="72" height="72" loading="lazy" decoding="async" />
           </button>
         ))}
       </div>
@@ -147,7 +147,10 @@ const perguntas = [
   import { lerMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
 
   // WhatsApp leva o carro salvo na mensagem (troca só a linha "Meu carro é ...").
+  // [data-whats-espelho] (o botão da barra fixa do celular) recebe o mesmo link do botão principal.
   const pedidos = [...document.querySelectorAll<HTMLAnchorElement>('[data-whats]')];
+  const espelhos = [...document.querySelectorAll<HTMLAnchorElement>('[data-whats-espelho]')];
+  const principal = document.querySelector<HTMLAnchorElement>('[data-compra-botoes] [data-whats]') ?? pedidos[0];
   const avisos = [...document.querySelectorAll<HTMLElement>('[data-whats-carro]')];
   const atualizarWhats = (c: MeuCarro | null) => {
     pedidos.forEach((a) => {
@@ -155,10 +158,24 @@ const perguntas = [
       const linha = c ? `Meu carro é ${nomeCarro(c)}. ` : (a.dataset.sem || '');
       a.href = `${base}?text=${encodeURIComponent((a.dataset.cabeca || '') + linha + (a.dataset.cauda || ''))}`;
     });
+    if (principal) espelhos.forEach((a) => { a.href = principal.href; });
     avisos.forEach((s) => { s.textContent = c ? ` e o seu ${nomeCarro(c)}` : ''; });
   };
   atualizarWhats(lerMeuCarro());
   window.addEventListener(EVENTO, (e) => atualizarWhats((e as CustomEvent<MeuCarro | null>).detail ?? null));
+
+  // Galeria em tela cheia (React): a lista de fotos ela lê do próprio trilho ([data-trilho] img).
+  let telaCheia: Promise<void> | null = null;
+  function montarTelaCheia(titulo: string) {
+    telaCheia ??= (async () => {
+      const [{ createElement }, { createRoot }, { default: GaleriaTelaCheia }] = await Promise.all([
+        import('react'), import('react-dom/client'), import('./ui/GaleriaTelaCheia'),
+      ]);
+      const raiz = document.createElement('div');
+      document.body.append(raiz);
+      createRoot(raiz).render(createElement(GaleriaTelaCheia, { titulo }));
+    })();
+  }
 
   document.querySelectorAll<HTMLElement>('[data-galeria]').forEach((g) => {
     const trilho = g.querySelector<HTMLElement>('[data-trilho]')!;
@@ -176,12 +193,16 @@ const perguntas = [
       if (minis[i]?.offsetParent) minis[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
     };
     trilho.addEventListener('scroll', () => requestAnimationFrame(marcar), { passive: true });
-    // toque/clique na foto abre a galeria em tela cheia (ilha GaleriaTelaCheia; pinça la para ampliar)
+    // toque/clique na foto abre a galeria em tela cheia (GaleriaTelaCheia, em React; pinça lá para ampliar)
     trilho.addEventListener('click', () => {
       const i = Math.round(trilho.scrollLeft / trilho.clientWidth);
-      (window as any).__galeriaPendente = i; // se a ilha ainda nao montou, ela abre ao montar
+      (window as any).__galeriaPendente = i; // se a galeria ainda nao montou, ela abre ao montar
       window.dispatchEvent(new CustomEvent('abrir-galeria', { detail: { indice: i } }));
+      montarTelaCheia(g.dataset.titulo || '');
     });
+    // monta quando o navegador folgar (como o client:idle das ilhas), sem ilha do Astro na página
+    if ('requestIdleCallback' in window) requestIdleCallback(() => montarTelaCheia(g.dataset.titulo || ''));
+    else setTimeout(() => montarTelaCheia(g.dataset.titulo || ''), 200);
     minis.forEach((b) => b.addEventListener('click', () =>
       trilho.scrollTo({ left: Number(b.dataset.ir) * trilho.clientWidth, behavior: 'smooth' })));
 
@@ -206,7 +227,9 @@ const perguntas = [
   });
 </script>
 
-<style>
+<style is:global>
+  /* Estilos globais de propósito (classes .peca-topo, .galeria-*, .compra-*, .estoque*, .confianca*, só deste
+     componente): sem o atributo de escopo em cada tag da galeria e da compra, a página da peça fica mais leve. */
   .peca-topo { display: grid; gap: 22px; }
   @media (min-width: 960px) { .peca-topo { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 56px; align-items: start; } }
   .galeria { min-width: 0; }
@@ -281,7 +304,7 @@ const perguntas = [
   .confianca-itens small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--ink-3); }
   .confianca-itens .confianca-link { color: var(--ink-2); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
   .confianca-itens a:hover b { color: var(--accent-text); }
-  .confianca :global(.rep-linha) { padding-top: 14px; border-top: 1px solid var(--line); }
+  .confianca .rep-linha { padding-top: 14px; border-top: 1px solid var(--line); }
   /* celular estreito: uma coluna (em duas, os títulos quebravam em 3 linhas) */
   @media (max-width: 559px) {
     .confianca { gap: 12px; padding: 14px 14px 14px 12px; }

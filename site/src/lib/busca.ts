@@ -46,14 +46,25 @@ export class Busca {
   itens: Item[];
   /** true quando nenhuma peca tinha TODAS as palavras e a lista mostra as mais proximas */
   aproximado = false;
-  ms: MiniSearch<Item>;
+  // Fluidez: o índice de texto (MiniSearch, ~5 mil peças) não é montado de uma vez no construtor.
+  // Sem texto na busca (catálogo aberto, filtros) ele nem é preciso; prepararIndice() monta aos poucos,
+  // em pedaços pequenos entre as tarefas da página; quem precisar antes (this.ms) completa na hora. O índice
+  // final é o mesmo (as peças entram na mesma ordem).
+  private _ms: MiniSearch<Item> | null = null;
+  private _feitos = 0;
+  // a mesma busca de texto se repete muitas vezes (lista + cada faceta): guarda as últimas
+  private _textos = new Map<string, { base: Item[]; aproximado: boolean }>();
+  private _novos: Item[] | null = null;
   constructor(ix: Indice) {
     this.itens = ix.id.map((id, k) => ({
       k, id, t: ix.t[k], n: ix.n[k], p: ix.p[k], i: ix.i[k], h: ix.h[k], f: ix.f[k] === '1', e: ix.e?.[k] || '0',
       b: ix.marcas[ix.b[k]] ?? '', m: ix.m[k], y: ix.y[k] || null,
       c: ix.familias[ix.c[k]] ?? '', s: ix.tipos[ix.s[k]] ?? '', o: ix.o[k],
     }));
-    this.ms = new MiniSearch<Item>({
+  }
+
+  private indice(): MiniSearch<Item> {
+    return (this._ms ??= new MiniSearch<Item>({
       idField: 'k',
       fields: ['n', 't', 'carro', 's', 'o'],
       extractField: (doc, campo) =>
@@ -66,26 +77,65 @@ export class Busca {
         fuzzy: (t) => (t.length >= 5 && !/\d/.test(t) ? 0.2 : false),
         combineWith: 'AND',
       },
-    });
-    this.ms.addAll(this.itens);
+    }));
+  }
+
+  /** O índice de texto completo (completa agora o que faltar). */
+  get ms(): MiniSearch<Item> {
+    const ms = this.indice();
+    while (this._feitos < this.itens.length) ms.add(this.itens[this._feitos++]);
+    return ms;
+  }
+
+  /** Monta o índice aos poucos (~8 ms por vez, cedendo a vez para a página entre os pedaços). */
+  async prepararIndice(): Promise<void> {
+    const ms = this.indice();
+    while (this._feitos < this.itens.length) {
+      const fim = performance.now() + 8;
+      while (this._feitos < this.itens.length && performance.now() < fim) ms.add(this.itens[this._feitos++]);
+      if (this._feitos < this.itens.length) await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+
+  /** Peças da busca de texto, na ordem de relevância (com as mais próximas quando nenhuma tem todas as palavras). */
+  private porTexto(texto: string): { base: Item[]; aproximado: boolean } {
+    let m = this._textos.get(texto);
+    if (!m) {
+      let r = this.ms.search(texto);
+      let aproximado = false;
+      if (!r.length) { r = this.ms.search(texto, { combineWith: 'OR' }).slice(0, 300); aproximado = r.length > 0; }
+      m = { base: r.map((x) => this.itens[x.id as number]), aproximado };
+      this._textos.set(texto, m);
+      if (this._textos.size > 24) this._textos.delete(this._textos.keys().next().value!);
+    }
+    return m;
+  }
+
+  /** Todas as peças, das que chegaram agora para as mais antigas (os ids do ML crescem). */
+  private porNovos(): Item[] {
+    return (this._novos ??= [...this.itens].sort((a, b) => (b.id > a.id ? 1 : b.id < a.id ? -1 : 0)));
   }
 
   procurar(f: Filtros): Item[] {
     let base: Item[];
-    let score: Map<number, number> | null = null;
+    let comTexto = false;
     const q = (f.q || '').trim();
     let anoQ: number | undefined;
     let texto = q;
     // um ano solto na busca ("palio 2010") vira filtro de ano
     const mAno = q.match(/\b(19[89]\d|20[0-3]\d)\b/);
     if (mAno && !(/peugeot/i.test(q) && /\b(2008|3008|5008)\b/.test(q))) { anoQ = Number(mAno[1]); texto = q.replace(mAno[0], ' ').trim(); }
+    const o = f.ordem || 'rel';
     if (texto) {
-      let r = this.ms.search(texto);
+      const r = this.porTexto(texto);
+      this.aproximado = r.aproximado;
+      base = r.base;
+      comTexto = true;
+    } else {
       this.aproximado = false;
-      if (!r.length) { r = this.ms.search(texto, { combineWith: 'OR' }).slice(0, 300); this.aproximado = r.length > 0; }
-      score = new Map(r.map((x) => [x.id as number, x.score]));
-      base = r.map((x) => this.itens[x.id as number]);
-    } else { base = this.itens; this.aproximado = false; }
+      // sem texto, "relevantes" e "chegaram agora" são a mesma ordem: a lista já vem ordenada
+      base = o === 'rel' || o === 'novos' ? this.porNovos() : this.itens;
+    }
 
     const ano = f.ano || anoQ;
     const faixa = FAIXAS.find((x) => x[0] === f.preco);
@@ -97,16 +147,16 @@ export class Busca {
       (!faixa || (it.p >= faixa[2] && it.p < faixa[3])) &&
       (!f.frete || it.f));
 
-    const o = f.ordem || 'rel';
     if (o === 'asc') out.sort((a, b) => a.p - b.p);
     else if (o === 'desc') out.sort((a, b) => b.p - a.p);
-    else if (o === 'novos' || (!score && o === 'rel'))
+    else if (o === 'novos' && comTexto)
       out.sort((a, b) => (b.id > a.id ? 1 : b.id < a.id ? -1 : 0));
     return out;
   }
 
   // contagem de cada faceta SEM o proprio filtro (igual ao Mercado Livre)
   facetas(f: Filtros) {
+    const aprox = this.aproximado; // as contagens não mexem no aviso de "mais próximas" da lista
     const conta = (sem: keyof Filtros, chave: (i: Item) => string) => {
       const m = new Map<string, number>();
       for (const it of this.procurar({ ...f, [sem]: undefined, ordem: 'rel' })) {
@@ -114,13 +164,15 @@ export class Busca {
       }
       return [...m.entries()].sort((a, b) => b[1] - a[1]);
     };
-    return {
+    const semPreco = this.procurar({ ...f, preco: undefined, ordem: 'rel' });
+    const r = {
       marcas: conta('marca', (i) => i.b),
       modelos: f.marca ? conta('modelo', (i) => i.m) : [],
       tipos: conta('tipo', (i) => i.c),
-      precos: FAIXAS.map(([k, rot, a, b]) => [k, rot,
-        this.procurar({ ...f, preco: undefined }).filter((i) => i.p >= a && i.p < b).length] as const),
+      precos: FAIXAS.map(([k, rot, a, b]) => [k, rot, semPreco.filter((i) => i.p >= a && i.p < b).length] as const),
     };
+    this.aproximado = aprox;
+    return r;
   }
 
   sugestoes(q: string, n = 6): Item[] {

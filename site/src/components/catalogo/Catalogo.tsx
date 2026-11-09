@@ -2,20 +2,22 @@
 // Estado na URL com os MESMOS parametros do site antigo:
 //   q, marca, modelo, ano, tipo, preco, frete, ordem
 // O cartão (Etiqueta) é o MESMO desenho de CartaoPeca.astro; as regras ficam em ./etiqueta.ts.
-import { useEffect, useMemo, useRef, useState, useDeferredValue, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useDeferredValue, startTransition, type ReactNode } from 'react';
 import { Busca, FAIXAS, capaItem, foto, type Filtros, type Indice, type Item } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
 import { serveNoMeuCarro } from '../../lib/meuCarro';
 import {
   linhaCarro, codigoPeca, precoPartes, msgWhats, linkWhats, urlPeca, idsMaisNovos, dadosCarro,
-  CLASSE_CARTAO, VITRINE_CLARA, ICONE_WHATS, ICONE_GARANTIA,
+  CLASSE_CARTAO, VITRINE_CLARA, icone,
 } from './etiqueta';
 
 /** Logo da marca (calculado no build por logoInfo em catalogo.astro). */
 export type Logo = { src: string; w: number; h: number };
 
 const LOTE = 48;
+// Fluidez: os cartões entram na tela aos poucos (PEDACO por quadro), sem uma tarefa longa de 48 cartões de uma vez.
+const PEDACO = 12;
 const ORDENS: [NonNullable<Filtros['ordem']>, string][] = [
   ['rel', 'Mais relevantes'], ['novos', 'Chegaram agora'], ['asc', 'Menor preço'], ['desc', 'Maior preço'],
 ];
@@ -45,7 +47,8 @@ function escreverUrl(f: Filtros) {
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
 
-const Whats = () => <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d={ICONE_WHATS} /></svg>;
+// ícones longos pelo sprite /icones.svg (src/lib/icones.ts): o mesmo desenho do cartão do build
+const Whats = () => <svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone('whats')} /></svg>;
 const Seta = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
 );
@@ -76,7 +79,7 @@ export function Etiqueta({ it, eager, novo, meuModelo }: { it: Item; eager?: boo
           {cod && <span className="etiqueta-cod" title="Código gravado na peça">Cód. <span className="oem">{cod}</span></span>}
           <span className="etiqueta-preco num"><small>R$</small>{reais}<small><span className="sr-only">,</span>{cent}</small></span>
           <span className="etiqueta-confia">
-            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={ICONE_GARANTIA} /></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone('garantia')} /></svg>
             <span><span className="etiqueta-confia-longo">Original · </span>90 dias de garantia</span>
           </span>
         </div>
@@ -166,7 +169,15 @@ export default function Catalogo({ total: totalInicial, logos = {}, selo }: Prop
   useEffect(() => {
     const ini = lerUrl();
     setF(ini); setTexto(ini.q || '');
-    fetch('/dados/busca.json').then((r) => r.json()).then((ix: Indice) => setBusca(new Busca(ix))).catch(() => setErro(true));
+    fetch('/dados/busca.json').then((r) => r.json()).then(async (ix: Indice) => {
+      const b = new Busca(ix);
+      // o índice de texto é montado aos poucos: já, quando a URL traz texto; senão, quando o navegador folgar
+      if ((ini.q || '').trim()) await b.prepararIndice();
+      else if ('requestIdleCallback' in window) requestIdleCallback(() => { void b.prepararIndice(); });
+      else setTimeout(() => { void b.prepararIndice(); }, 1500);
+      // a 1ª montagem da vitrine é uma transição: o React pode ceder a vez no meio (sem travar a página)
+      startTransition(() => setBusca(b));
+    }).catch(() => setErro(true));
   }, []);
 
   // texto digitado entra no filtro com um pequeno atraso (e a lista volta ao começo se estava lá embaixo)
@@ -280,6 +291,15 @@ export default function Catalogo({ total: totalInicial, logos = {}, selo }: Prop
   const carregando = !busca && !erro;
   const total = busca ? resultado.length : totalInicial;
   const lista = resultado.slice(0, qtd);
+  // pintura aos poucos: nova lista recomeça com PEDACO cartões; os demais entram um pedaço por quadro
+  const [pintados, setPintados] = useState(PEDACO);
+  const [listaPintada, setListaPintada] = useState(resultado);
+  if (listaPintada !== resultado) { setListaPintada(resultado); setPintados(PEDACO); }
+  useEffect(() => {
+    if (pintados >= lista.length) return;
+    const q = requestAnimationFrame(() => setPintados((n) => n + PEDACO));
+    return () => cancelAnimationFrame(q);
+  }, [pintados, lista.length]);
   const procuro = [f.q, f.marca, f.modelo, f.ano].filter(Boolean).join(' ');
   const pecas = (n: number) => (n === 1 ? 'peça' : 'peças');
 
@@ -367,7 +387,7 @@ export default function Catalogo({ total: totalInicial, logos = {}, selo }: Prop
           )}
           {busca && resultado.length > 0 && (
             <>
-              <div className="cat-grade">{lista.map((it, i) => <Etiqueta key={it.id} it={it} eager={i < 4} novo={novos.has(it.id)} meuModelo={meuCarro && serveNoMeuCarro(it, meuCarro) === 'sim' ? meuCarro.m : null} />)}</div>
+              <div className="cat-grade">{lista.slice(0, pintados).map((it, i) => <Etiqueta key={it.id} it={it} eager={i < 4} novo={novos.has(it.id)} meuModelo={meuCarro && serveNoMeuCarro(it, meuCarro) === 'sim' ? meuCarro.m : null} />)}</div>
               <div ref={fimRef} />
               {qtd < resultado.length && (
                 <div className="cat-mais-pecas">

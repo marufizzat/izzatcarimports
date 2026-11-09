@@ -7,7 +7,9 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-type Props = { fotos: string[]; titulo: string };
+// fotos: sem a prop, a galeria lê as fotos do trilho da página ([data-trilho] img, a mesma ordem): assim a lista
+// não se repete dentro do HTML de cada peça.
+type Props = { fotos?: string[]; titulo: string };
 type Vista = { s: number; x: number; y: number };
 type Gesto = {
   modo: 'arrastar' | 'pinca';
@@ -77,8 +79,14 @@ function prenderTab(e: globalThis.KeyboardEvent, raiz: HTMLElement | null) {
   else if (!e.shiftKey && (ativo === f[f.length - 1] || !raiz.contains(ativo))) { e.preventDefault(); f[0].focus(); }
 }
 
-export default function GaleriaTelaCheia({ fotos, titulo }: Props) {
+function fotosDaPagina(): string[] {
+  if (typeof document === 'undefined') return [];
+  return [...document.querySelectorAll<HTMLImageElement>('[data-trilho] img')].map((i) => i.getAttribute('src') || '').filter(Boolean);
+}
+
+export default function GaleriaTelaCheia({ fotos: fotosProp, titulo }: Props) {
   const id = useId();
+  const [fotos] = useState<string[]>(() => fotosProp ?? fotosDaPagina());
   const [aberta, setAberta] = useState(false);
   const [on, setOn] = useState(false);
   const [i, setI] = useState(0);

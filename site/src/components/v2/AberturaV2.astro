@@ -134,7 +134,7 @@ const atalhos = populares(4);
     .abv2-abas [role="tab"] { font-size: 14.5px; }
     .abv2-abas [role="tab"] :global(svg) { display: none; }
   }
-  @media (prefers-color-scheme: dark) { .abv2 { color-scheme: light; } }
+  
 
   /* o único movimento da abertura: a arte "respira" de leve conforme a pessoa rola (CSS, sem JS).
      Desligado em prefers-reduced-motion; só onde o navegador suporta linha do tempo de rolagem. */
@@ -143,6 +143,8 @@ const atalhos = populares(4);
       .abv2-arte img { animation: abv-respira linear both; animation-timeline: scroll(root block); animation-range: 0px 70vh; }
     }
   }
+  /* aparelho fraco: arte parada (como no "reduzir movimento") */
+  :global(html.leve) .abv2-arte img { animation: none; }
   @keyframes abv-respira {
     from { transform: translate3d(0, -14px, 0) scale(1.08); }
     to { transform: translate3d(0, 12px, 0) scale(1.08); }

@@ -2,9 +2,11 @@
 // Cartão da peça (vitrine). O MESMO desenho do cartão do catálogo (Etiqueta, em catalogo/Catalogo.tsx):
 // foto de estúdio em cima; carro e anos, nome, código gravado, preço e a linha de confiança embaixo.
 // .etiqueta-cx segura o cartão (a.etiqueta) e a ação rápida "Pedir no WhatsApp" (link irmão: link dentro de link quebra o HTML).
+// A ação rápida "Pedir no WhatsApp" (só aparece com mouse; no toque o CSS esconde) é criada pelo script abaixo,
+// com a mensagem pronta lida do próprio cartão: não se repete no HTML de cada página. Ícones pelo sprite /icones.svg.
 import type { Peca } from '../lib/dados';
 import { foto, fotoSrcset, capaEstudio, resumo } from '../lib/dados';
-import { linhaCarro, codigoPeca, precoPartes, msgWhats, linkWhats, urlPeca, dadosCarro, CLASSE_CARTAO, ICONE_WHATS, ICONE_GARANTIA } from './catalogo/etiqueta';
+import { linhaCarro, codigoPeca, precoPartes, dadosCarro, CLASSE_CARTAO, icone } from './catalogo/etiqueta';
 interface Props { p: Peca; base?: string; eager?: boolean; /** selo "Chegou agora"; sem a prop, vale resumo().chegou */ novo?: boolean; }
 const { p, base = '/peca/', eager = false } = Astro.props;
 const { carro, anos } = linhaCarro(p.b, p.m, p.y);
@@ -12,7 +14,6 @@ const cod = codigoPeca(p.o);
 const [reais, cent] = precoPartes(p.p);
 const est = capaEstudio(p.id);
 const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
-const whats = linkWhats(msgWhats(p.t, p.p, urlPeca(p.slug, base)));
 ---
 <div class={CLASSE_CARTAO}>
   <a class="etiqueta" href={`${base}${p.slug}.html`} {...dadosCarro(p.b, p.m, p.y)}>
@@ -28,17 +29,15 @@ const whats = linkWhats(msgWhats(p.t, p.p, urlPeca(p.slug, base)));
       <span class="etiqueta-nome">{p.n}</span>
       {cod && <span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">{cod}</span></span>}
       <span class="etiqueta-preco num"><small>R$</small>{reais}<small><span class="sr-only">,</span>{cent}</small></span>
-      <span class="etiqueta-confia"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d={ICONE_GARANTIA} /></svg><span><span class="etiqueta-confia-longo">Original · </span>90 dias de garantia</span></span>
+      <span class="etiqueta-confia"><svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone('garantia')} /></svg><span><span class="etiqueta-confia-longo">Original · </span>90 dias de garantia</span></span>
     </div>
-  </a>
-  <a class="etiqueta-acao" href={whats} target="_blank" rel="noopener" aria-label={`Pedir no WhatsApp: ${p.n}`}>
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d={ICONE_WHATS} /></svg>Pedir no WhatsApp
   </a>
 </div>
 
 <script>
   // selo "Serve no seu ..." quando o carro salvo bate com a peça (regra do contrato meuCarro.ts)
   import { lerMeuCarro, serveNoMeuCarro, EVENTO } from '../lib/meuCarro';
+  import { linkWhats, msgWhatsTexto, SITE, icone } from './catalogo/etiqueta';
   function marcar() {
     const c = lerMeuCarro();
     document.querySelectorAll<HTMLElement>('a.etiqueta[data-b]').forEach((el) => {
@@ -53,4 +52,26 @@ const whats = linkWhats(msgWhats(p.t, p.p, urlPeca(p.slug, base)));
   }
   marcar();
   window.addEventListener(EVENTO, marcar);
+
+  // "Pedir no WhatsApp" do cartão (o mesmo link do cartão do catálogo): criado aqui, no fim do cartão, com a mesma
+  // mensagem do botão da peça. Título = alt da foto, nome = o do cartão, preço = o do cartão, endereço = o link dele.
+  function acoes() {
+    document.querySelectorAll<HTMLElement>('.etiqueta-cx').forEach((cx) => {
+      if (cx.querySelector('.etiqueta-acao')) return;
+      const cartao = cx.querySelector<HTMLAnchorElement>('a.etiqueta');
+      const titulo = cartao?.querySelector('img')?.alt;
+      const nome = cartao?.querySelector('.etiqueta-nome')?.textContent;
+      const preco = cartao?.querySelector('.etiqueta-preco')?.textContent?.replace(/^\s*R\$\s*/, '').trim();
+      if (!cartao || !titulo || !nome || !preco) return;
+      const a = document.createElement('a');
+      a.className = 'etiqueta-acao';
+      a.href = linkWhats(msgWhatsTexto(titulo, preco, SITE + cartao.getAttribute('href')));
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.setAttribute('aria-label', `Pedir no WhatsApp: ${nome}`);
+      a.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('whats')}"></use></svg>Pedir no WhatsApp`;
+      cx.append(a);
+    });
+  }
+  acoes();
 </script>

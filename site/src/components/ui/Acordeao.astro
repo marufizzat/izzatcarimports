@@ -35,7 +35,9 @@ const jsonLd = JSON.stringify({
 </div>
 {ld && <script type="application/ld+json" set:html={jsonLd} />}
 
-<style>
+<style is:global>
+  /* Globais de propósito (classes .acd-*, só deste componente): sem o atributo de escopo em cada pergunta. */
+
   .acd { interpolate-size: allow-keywords; border-top: 1px solid var(--line); }
   .acd-item { border-bottom: 1px solid var(--line); }
 
@@ -55,8 +57,7 @@ const jsonLd = JSON.stringify({
     background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line);
     transition: background-color .25s ease, box-shadow .25s ease;
   }
-  .acd-sinal::before,
-  .acd-sinal::after {
+  .acd-sinal::before, .acd-sinal::after {
     content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 2px; margin: -1px 0 0 -7px;
     border-radius: 2px; background: var(--ink);
     transition: transform .36s cubic-bezier(.2,.8,.2,1), opacity .25s ease;
@@ -77,6 +78,7 @@ const jsonLd = JSON.stringify({
     transition: block-size .36s cubic-bezier(.2,.8,.2,1), content-visibility .36s allow-discrete;
   }
   .acd-item[open]::details-content { block-size: auto; }
+  html.leve .acd-item::details-content { transition: none; }
 
   .acd-link { font-weight: 650; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
   .acd-link:hover { color: var(--accent-text); }
