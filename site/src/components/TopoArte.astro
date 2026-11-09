@@ -6,8 +6,8 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { SITE } from '../lib/dados';
 interface Logo { src: string; w: number; h: number; png: boolean }
-interface Props { trilha: [string, string][]; antes?: string; titulo: string; lead?: string; arte?: string; logo?: Logo | null; encaixe?: 'cobre' | 'contem' | 'meio'; }
-const { trilha, antes, titulo, lead, arte, logo, encaixe = 'cobre' } = Astro.props;
+interface Props { trilha: [string, string][]; antes?: string; titulo: string; lead?: string; arte?: string; arteW?: number; arteH?: number; logo?: Logo | null; encaixe?: 'cobre' | 'contem' | 'meio'; }
+const { trilha, antes, titulo, lead, arte, arteW = 1536, arteH = 640, logo, encaixe = 'cobre' } = Astro.props;
 const temArte = !!arte && existsSync(join(process.cwd(), 'public', arte));
 const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
 ---
@@ -27,7 +27,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
         <h1 class="display">{titulo}</h1>
         {lead && <p class="lead">{lead}</p>}
       </div>
-      {temArte && <div class="topo-arte"><img src={arte} alt="" width="1536" height="640" fetchpriority="high" decoding="async" /></div>}
+      {temArte && <div class="topo-arte"><img src={arte} alt="" width={arteW} height={arteH} fetchpriority="high" decoding="async" /></div>}
       {!temArte && logo && (
         <div class="topo-disco" aria-hidden="true"><img src={logo.src} alt="" width={logo.w} height={logo.h} class:list={[{ svg: !logo.png }]} /></div>
       )}

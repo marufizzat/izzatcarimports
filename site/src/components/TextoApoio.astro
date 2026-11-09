@@ -1,0 +1,14 @@
+---
+// Texto proprio da pagina (categoria, carro, marca): 2-3 frases feitas dos dados reais, vindas de lib/textos.ts.
+interface Props { paragrafos: string[] }
+const { paragrafos } = Astro.props;
+---
+{paragrafos.length > 0 && (
+  <section class="texto-apoio">
+    {paragrafos.map((p) => <p>{p}</p>)}
+  </section>
+)}
+<style>
+  .texto-apoio { display: grid; gap: 10px; max-width: 70ch; padding-top: 8px; }
+  .texto-apoio p { margin: 0; color: var(--ink-2); font-size: 16px; line-height: 1.65; }
+</style>
