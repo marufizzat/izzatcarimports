@@ -1,5 +1,6 @@
 ---
 // Carros do pátio: arte do carro em estúdio (sem emblema) + logo real + nome + anos + nº de peças, vivos.
+// Anos no mesmo formato do cartão da peça ("2013–2026", catalogo/etiqueta.ts).
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { resumo, logoInfo } from '../../lib/dados';
@@ -18,7 +19,7 @@ const carros = todos ? resumo().carros : resumo().carros.filter((c) => temArte(c
         : (() => { const g = logoInfo(kMarca(c.b), 110, 64); return <span class="carro-v2-arte carro-v2-sem">{g && <img src={g.src} alt="" width={g.w} height={g.h} style={`width:${g.w}px;height:${g.h}px`} class={g.png ? 'png' : 'svg'} loading="lazy" />}</span>; })()}
       <span class="carro-v2-info">
         <span class="carro-v2-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>
-        <span class="carro-v2-txt"><b>{`${c.b} ${c.m}`}</b><small class="num">{c.anos ? `${c.anos[0]} a ${c.anos[1]} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</small></span>
+        <span class="carro-v2-txt"><b>{`${c.b} ${c.m}`}</b><small class="num">{c.anos ? `${c.anos[0] === c.anos[1] ? c.anos[0] : `${c.anos[0]}–${c.anos[1]}`} · ` : ''}{c.c.toLocaleString('pt-BR')} peças</small></span>
         <svg class="carro-v2-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </span>
     </a></li>); })}

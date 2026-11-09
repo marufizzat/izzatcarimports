@@ -2,17 +2,19 @@
 // "Chegou no pátio": no computador (com mouse, sem reduzir movimento) vira um carrossel 3D estilo coverflow;
 // no celular, com "reduzir movimento" e em aparelho fraco (html.leve) continua o trilho de arrastar (.trilho, data-trilho).
 // Os cartões são o CartaoPeca de sempre. Só CSS 3D + um script pequeno; sem dependências.
-// Posição de cada cartão = data-o (distância até o cartão ativo). O servidor já põe a posição
-// inicial (ativo = 0), então o desktop aparece certo antes do script.
+// Posição de cada cartão = data-o (distância até o cartão ativo). O servidor já põe a posição inicial (o ativo é o 3º:
+// palco cheio dos dois lados, com as mais novas à esquerda), então o desktop aparece certo antes do script.
+// Com mouse, as setas valem também no trilho ("reduzir movimento" e aparelho fraco): dá para chegar às 14.
 import type { Peca } from '../../lib/dados';
 import CartaoPeca from '../CartaoPeca.astro';
 
 interface Props { pecas: Peca[]; id: string; rotulo: string }
 const { pecas, id, rotulo } = Astro.props;
 const n = pecas.length;
-const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
+const INICIO = Math.min(2, Math.max(0, n - 1));
+const posInicial = (i: number) => (Math.abs(i - INICIO) <= 2 ? String(i - INICIO) : 'x');
 ---
-<div class="cf" data-cf role="region" aria-labelledby={id}>
+<div class="cf" data-cf data-inicio={INICIO} role="region" aria-labelledby={id}>
   <ul class="cf-lista trilho" data-trilho aria-label={rotulo}>
     {pecas.map((p, i) => (
       <li class="cf-item" data-o={posInicial(i)}>
@@ -21,11 +23,11 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
     ))}
   </ul>
   <div class="cf-controles">
-    <button type="button" class="cf-seta" data-cf-ant aria-label="Peça anterior" disabled>
+    <button type="button" class="cf-seta" data-cf-ant aria-label="Peça anterior" disabled={INICIO === 0}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
     </button>
-    <p class="cf-status num" aria-live="polite" data-cf-status>1 de {n}</p>
-    <button type="button" class="cf-seta" data-cf-prox aria-label="Próxima peça" disabled={n < 2}>
+    <p class="cf-status num" aria-live="polite" data-cf-status>{INICIO + 1} de {n}</p>
+    <button type="button" class="cf-seta" data-cf-prox aria-label="Próxima peça" disabled={INICIO >= n - 1}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
     </button>
   </div>
@@ -46,7 +48,7 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
     if (!lista || !ant || !prox || !status) return;
     const itens = Array.from(lista.children) as HTMLLIElement[];
     const total = itens.length;
-    let ativo = 0;
+    let ativo = Math.min(Number(raiz.dataset.inicio) || 0, Math.max(0, total - 1));
     let arrastou = false; // um arrastar não pode virar clique (abrir a peça)
     let x0 = 0;
     let emArraste = false;
@@ -57,6 +59,7 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
         const o = i - ativo;
         li.dataset.o = Math.abs(o) <= 2 ? String(o) : 'x';
       });
+      if (!modo.matches) return pintaTrilho();
       ant.disabled = ativo === 0;
       prox.disabled = ativo >= total - 1;
       status.textContent = `${ativo + 1} de ${total}`;
@@ -68,11 +71,31 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
       ativo = novo;
       pinta();
       if (!modo.matches) {
-        // trilho (celular): centraliza o cartão sem mexer na página
+        // trilho (celular, "reduzir movimento", aparelho fraco): centraliza o cartão sem mexer na página
         const li = itens[ativo];
         const reduz = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         lista.scrollTo({ left: li.offsetLeft - (lista.clientWidth - li.offsetWidth) / 2, behavior: reduz ? 'auto' : 'smooth' });
       }
+    };
+    // Trilho com mouse ("reduzir movimento", aparelho fraco): as setas passam uma página de cartões e o status diz
+    // quais estão à vista ("1–5 de 14"); seta apagada na ponta. Rolado na mão (trackpad), tudo acompanha.
+    const pintaTrilho = () => {
+      const esq = lista.scrollLeft, dir = esq + lista.clientWidth;
+      const vistos = itens.map((li, k) => [k, li.offsetLeft + li.offsetWidth / 2] as const).filter(([, m]) => m >= esq && m <= dir).map(([k]) => k);
+      const a = vistos[0] ?? 0, z = vistos[vistos.length - 1] ?? 0;
+      // folga de 8 px: o trilho tem respiro nas pontas e o encaixe (scroll-snap) para no 1º cartão, não no zero
+      ant.disabled = esq <= 8;
+      prox.disabled = dir >= lista.scrollWidth - 8;
+      status.textContent = a === z ? `${a + 1} de ${total}` : `${a + 1}–${z + 1} de ${total}`;
+    };
+    let quadro = 0;
+    lista.addEventListener('scroll', () => {
+      if (modo.matches || quadro) return;
+      quadro = requestAnimationFrame(() => { quadro = 0; pintaTrilho(); });
+    }, { passive: true });
+    const pagina = (lado: number) => {
+      const reduz = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      lista.scrollBy({ left: lado * lista.clientWidth, behavior: reduz ? 'auto' : 'smooth' });
     };
 
     const foco = (i: number) => {
@@ -80,8 +103,8 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
       itens[ativo].querySelector<HTMLAnchorElement>('a')?.focus({ preventScroll: true });
     };
 
-    ant.addEventListener('click', () => foco(ativo - 1));
-    prox.addEventListener('click', () => foco(ativo + 1));
+    ant.addEventListener('click', () => (modo.matches ? foco(ativo - 1) : pagina(-1)));
+    prox.addEventListener('click', () => (modo.matches ? foco(ativo + 1) : pagina(1)));
 
     // teclado: ← → (Início/Fim) andam pelos cartões; quem tem o foco acompanha
     raiz.addEventListener('keydown', (e) => {
@@ -141,14 +164,33 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
       vai(ativo + (e.deltaX > 0 ? 1 : -1));
     }, { passive: true });
 
+    // trilho: começa no começo (as mais novas), sem rolar a página
+    if (!modo.matches) ativo = 0;
     pinta();
   });
 </script>
 
 <style>
   .cf-lista { position: relative; }
-  .cf-item { position: relative; }
+  /* cartões da mesma altura (a base da fileira fica reta, com nome de 1 ou 2 linhas) */
+  .cf-item { position: relative; display: flex; }
+  .cf-item > :global(.etiqueta-cx) { flex: 1; }
   .cf-controles { display: none; }
+  /* com mouse, as setas também no trilho (o trilho não mostra barra de rolagem) */
+  @media (hover: hover) and (pointer: fine) {
+    .cf-controles { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 2px; }
+    .cf-status { min-width: 9ch; margin: 0; text-align: center; font-size: 15px; font-weight: 650; color: var(--ink-2); }
+    .cf-seta {
+      width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer;
+      background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2), 0 6px 14px -10px rgb(0 0 0 / .35);
+      transition: box-shadow .2s, transform .2s, opacity .2s;
+    }
+    .cf-seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .cf-seta:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 10px 20px -10px rgb(0 0 0 / .4); }
+    .cf-seta:active:not(:disabled) { transform: translateY(1px); }
+    .cf-seta:disabled { opacity: .35; cursor: default; }
+    .cf-seta:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  }
 
   /* ---- Modo coverflow (desktop com mouse, sem reduzir movimento) ---- */
   /* (aparelho fraco, html.leve: fica o trilho de arrastar, como no celular) */
@@ -167,33 +209,23 @@ const posInicial = (i: number) => (Math.abs(i) <= 2 ? String(i) : 'x');
       transition: transform .75s cubic-bezier(.2,.75,.2,1), opacity .55s ease;
       backface-visibility: hidden;
     }
-    /* véu: os cartões de lado ficam um pouco apagados */
+    /* véu: os cartões de lado ficam um pouco apagados (o véu cobre o cartão inteiro, com o mesmo canto) */
     :global(html:not(.leve)) .cf-item::after {
-      content: ""; position: absolute; inset: 8px; border-radius: 18px; pointer-events: none;
+      content: ""; position: absolute; inset: 0; border-radius: 16px; pointer-events: none;
       background: var(--bg); opacity: 0; transition: opacity .55s ease;
     }
-    :global(html:not(.leve)) .cf-item[data-o="0"] { transform: translate3d(0, 0, 0) scale(1.05); z-index: 5; }
-    :global(html:not(.leve)) .cf-item[data-o="-1"] { transform: translate3d(calc(var(--cw) * -.74), 0, -110px) rotateY(40deg) scale(.88); z-index: 4; }
-    :global(html:not(.leve)) .cf-item[data-o="1"] { transform: translate3d(calc(var(--cw) * .74), 0, -110px) rotateY(-40deg) scale(.88); z-index: 4; }
-    :global(html:not(.leve)) .cf-item[data-o="-2"] { transform: translate3d(calc(var(--cw) * -1.28), 0, -240px) rotateY(56deg) scale(.74); z-index: 3; }
-    :global(html:not(.leve)) .cf-item[data-o="2"] { transform: translate3d(calc(var(--cw) * 1.28), 0, -240px) rotateY(-56deg) scale(.74); z-index: 3; }
+    /* os de lado menos girados e mais abertos: dá para ler nome e preço de 3 peças de uma vez */
+    :global(html:not(.leve)) .cf-item[data-o="0"] { transform: translate3d(0, 0, 0) scale(1.04); z-index: 5; }
+    :global(html:not(.leve)) .cf-item[data-o="-1"] { transform: translate3d(calc(var(--cw) * -.9), 0, -90px) rotateY(24deg) scale(.9); z-index: 4; }
+    :global(html:not(.leve)) .cf-item[data-o="1"] { transform: translate3d(calc(var(--cw) * .9), 0, -90px) rotateY(-24deg) scale(.9); z-index: 4; }
+    :global(html:not(.leve)) .cf-item[data-o="-2"] { transform: translate3d(calc(var(--cw) * -1.62), 0, -200px) rotateY(36deg) scale(.78); z-index: 3; }
+    :global(html:not(.leve)) .cf-item[data-o="2"] { transform: translate3d(calc(var(--cw) * 1.62), 0, -200px) rotateY(-36deg) scale(.78); z-index: 3; }
     :global(html:not(.leve)) .cf-item[data-o="x"] { transform: translate3d(0, 0, -420px) scale(.6); opacity: 0; visibility: hidden; z-index: 0; }
-    :global(html:not(.leve)) .cf-item[data-o="-1"]::after, :global(html:not(.leve)) .cf-item[data-o="1"]::after { opacity: .18; }
-    :global(html:not(.leve)) .cf-item[data-o="-2"]::after, :global(html:not(.leve)) .cf-item[data-o="2"]::after { opacity: .34; }
+    :global(html:not(.leve)) .cf-item[data-o="-1"]::after, :global(html:not(.leve)) .cf-item[data-o="1"]::after { opacity: .12; }
+    :global(html:not(.leve)) .cf-item[data-o="-2"]::after, :global(html:not(.leve)) .cf-item[data-o="2"]::after { opacity: .28; }
     :global(html:not(.leve)) .cf-item[data-o="0"] .etiqueta { box-shadow: var(--shadow-2); }
 
-    :global(html:not(.leve)) .cf-controles { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 6px; }
-    :global(html:not(.leve)) .cf-status { min-width: 9ch; margin: 0; text-align: center; font-size: 15px; font-weight: 650; color: var(--ink-2); }
-    :global(html:not(.leve)) .cf-seta {
-      width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer;
-      background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2), 0 6px 14px -10px rgb(0 0 0 / .35);
-      transition: box-shadow .2s, transform .2s, opacity .2s;
-    }
-    :global(html:not(.leve)) .cf-seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    :global(html:not(.leve)) .cf-seta:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 10px 20px -10px rgb(0 0 0 / .4); }
-    :global(html:not(.leve)) .cf-seta:active:not(:disabled) { transform: translateY(1px); }
-    :global(html:not(.leve)) .cf-seta:disabled { opacity: .35; cursor: default; }
-    :global(html:not(.leve)) .cf-seta:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    :global(html:not(.leve)) .cf-controles { margin-top: 6px; }
   }
 
   @media (prefers-reduced-motion: reduce) {

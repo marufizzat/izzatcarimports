@@ -4,14 +4,16 @@
 //   "Pelo carro" (aberta): marca com logo -> modelo -> ano -> "Ver as N peças" (SeletorCarro).
 //   "Pelo nome ou código": a busca com sugestões + até 4 atalhos de tipos de peça, todos diferentes.
 // Os selos (CDV, nota fiscal, 90 dias) ficam na faixa logo abaixo: aqui não se repetem.
+// Até 1023 px (celular, iPad em pé, janela média) tudo empilha: o cartão na largura certa e a arte embaixo, nunca
+// atrás do cartão. A partir de 1024, a arte à direita. A troca da ARTE continua em 767 px (a mesma media do preload).
 import SeletorCarro from '../SeletorCarro.astro';
 import Icone from '../Icone.astro';
 import { populares } from '../../lib/populares';
-interface Props { arte: string; arteCelular?: string; tom?: 'claro' | 'escuro'; }
-const { arte, arteCelular, tom = 'claro' } = Astro.props;
+interface Props { arte: string; arteCelular?: string; }
+const { arte, arteCelular } = Astro.props;
 const atalhos = populares(4);
 ---
-<section class:list={['abv2', 'tema-estudio', `abv2-${tom}`]} aria-labelledby="abv2-titulo">
+<section class="abv2 tema-estudio" aria-labelledby="abv2-titulo">
   <picture class="abv2-arte" aria-hidden="true">
     <source media="(max-width: 767px)" srcset={arteCelular ?? arte} />
     <img src={arte} alt="" width="1536" height="1024" fetchpriority="high" decoding="async" />
@@ -116,8 +118,8 @@ const atalhos = populares(4);
     box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; font-weight: 620; color: var(--ink-2); transition: box-shadow .18s ease, color .18s ease; }
   .abv2-atalhos a:hover { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink-3); }
 
-  /* celular: conteúdo em cima, a arte inteira EMBAIXO (nunca atrás do cartão) */
-  @media (max-width: 767px) {
+  /* celular e tablet: conteúdo em cima, a arte inteira EMBAIXO (nunca atrás do cartão) */
+  @media (max-width: 1023px) {
     .abv2 { display: flex; flex-direction: column; min-height: 0; background: #f2f1ee; }
     .abv2-conteudo { order: 1; padding-block: 20px 6px; gap: 12px; }
     .abv2-conteudo > * { max-width: none; }
@@ -129,6 +131,17 @@ const atalhos = populares(4);
     .abv2-arte { order: 2; position: relative; inset: auto; width: auto; margin-top: -34px; -webkit-mask-image: none; mask-image: none; }
     .abv2-arte img { height: auto; aspect-ratio: 1 / 1; object-position: 50% 50%; }
     .abv2-arte::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, #f2f1ee 0%, rgb(242 241 238 / 0) 30%); }
+  }
+  /* tablet: o cartão com largura de cartão (não de tela), a arte larga do PC recortada nas peças */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .abv2-conteudo { padding-block: 40px 8px; gap: 14px; }
+    .abv2-lead { margin: -2px 0 8px; }
+    .abv2-cartao { width: min(100%, 640px); border-radius: 24px; }
+    .abv2-abas { padding: 0 10px; }
+    .abv2-painel { padding: 18px 20px 20px; }
+    .abv2-arte { margin-top: -56px; }
+    .abv2-arte img { aspect-ratio: 2 / 1; object-position: 78% 52%; }
+    .abv2-arte::after { background: linear-gradient(180deg, #f2f1ee 0%, rgb(242 241 238 / 0) 34%); }
   }
   @media (max-width: 400px) {
     .abv2-abas [role="tab"] { font-size: 14.5px; }
