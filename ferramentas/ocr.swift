@@ -2,7 +2,7 @@
 // Usado pela conferência das capas maquiadas (ferramentas/capas_pro.py): o texto da etiqueta
 // da peça tem que ser o MESMO na foto original e na maquiada.
 // compilar: swiftc -O ferramentas/ocr.swift -o ~/.local/bin/izzat-ocr
-// uso: izzat-ocr <foto> [<foto>...]  -> uma linha JSON por foto: {"a": caminho, "t": [[texto, confiança], ...]}
+// uso: izzat-ocr <foto> [<foto>...]  -> uma linha JSON por foto: {"a": caminho, "t": [[texto, confiança], ...], "c": nº de códigos de barras/QR}
 import Foundation
 import Vision
 import ImageIO
@@ -10,17 +10,20 @@ import ImageIO
 for caminho in CommandLine.arguments.dropFirst() {
   let url = URL(fileURLWithPath: caminho)
   var saida: [[Any]] = []
+  var barras = 0
   if let src = CGImageSourceCreateWithURL(url as CFURL, nil), let img = CGImageSourceCreateImageAtIndex(src, 0, nil) {
     let req = VNRecognizeTextRequest()
     req.recognitionLevel = .accurate
     req.usesLanguageCorrection = false
-    try? VNImageRequestHandler(cgImage: img, options: [:]).perform([req])
+    let bar = VNDetectBarcodesRequest()   // etiqueta com código de barras / QR / datamatrix
+    try? VNImageRequestHandler(cgImage: img, options: [:]).perform([req, bar])
+    barras = bar.results?.count ?? 0
     for o in req.results ?? [] {
       guard let c = o.topCandidates(1).first else { continue }
       saida.append([c.string, Double(c.confidence)])
     }
   }
-  let obj: [String: Any] = ["a": caminho, "t": saida]
+  let obj: [String: Any] = ["a": caminho, "t": saida, "c": barras]
   if let d = try? JSONSerialization.data(withJSONObject: obj, options: []), let s = String(data: d, encoding: .utf8) {
     print(s)
   }

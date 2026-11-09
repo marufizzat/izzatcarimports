@@ -78,7 +78,7 @@ def lista(n=300):
             break
     gravar_fila(fila)
     print(f"fila: {len(fila)} peças | " + ", ".join(f"{s}: {sum(1 for v in fila.values() if v['status'] == s)}"
-                                                      for s in ("fila", "pronta", "ok", "reprovada", "conferir")))
+                                                      for s in ("fila", "pronta", "ok", "reprovada", "conferir", "pulada")))
 
 
 def preparar(n=20):
@@ -115,6 +115,11 @@ def preparar(n=20):
             continue
         k, img = escolhida
         img.save(TRAB / "orig" / f"{i}.jpg", quality=95)
+        etq = tem_etiqueta(TRAB / "orig" / f"{i}.jpg")
+        if etq:   # não gasta ChatGPT: fica com a capa automática (que já é boa)
+            v["status"], v["motivo"], v["foto"] = "pulada", f"etiqueta impressa: {etq}", k
+            print(f"  {i}  pulada ({etq})")
+            continue
         v["status"], v["foto"] = "pronta", k
         feitos += 1
         print(f"  {i}  {v['n']} · {v['carro']}  <- {k}")
@@ -148,10 +153,26 @@ def iou(a, b):
     return float((x & y).sum() / max((x | y).sum(), 1))
 
 
-def textos(caminho):
+def ler_ocr(caminho):
     r = subprocess.run([OCR, str(caminho)], capture_output=True, text=True, timeout=120)
     linha = (r.stdout or "").strip().splitlines()
-    return json.loads(linha[0])["t"] if linha else []
+    return json.loads(linha[0]) if linha else {"t": [], "c": 0}
+
+
+def textos(caminho):
+    return ler_ocr(caminho)["t"]
+
+
+def tem_etiqueta(caminho):
+    """Etiqueta impressa = código de barras/QR ou código longo impresso. O ChatGPT sempre redesenha
+    esses textos (reprovou 5 de 8 na 1ª leva), então a peça fica com a capa automática."""
+    o = ler_ocr(caminho)
+    longos = [c for c in codigos(o["t"]) if len(c) >= 6]
+    if o.get("c", 0) > 0:
+        return "código de barras/QR na etiqueta"
+    if longos:
+        return f"código impresso ({', '.join(longos[:3])})"
+    return None
 
 
 def codigos(lidos):
@@ -254,7 +275,7 @@ def reprovar(i, motivo):
 
 def status():
     fila = ler_fila()
-    for s in ("fila", "pronta", "conferir", "ok", "reprovada"):
+    for s in ("fila", "pronta", "conferir", "ok", "reprovada", "pulada"):
         print(f"{s:10s} {sum(1 for v in fila.values() if v.get('status') == s)}")
 
 
