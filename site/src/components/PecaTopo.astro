@@ -3,6 +3,7 @@
 import type { Peca } from '../lib/dados';
 import { foto, brl, whatsUrl, capaEstudio, SITE } from '../lib/dados';
 import Icone from './Icone.astro';
+import SeloReputacao from './SeloReputacao.astro';
 import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
 import Compartilhar from './peca/Compartilhar.astro';
 interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
@@ -78,7 +79,7 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
       <li><img src="/arte/v2/selo-envio.webp" alt="" width="32" height="32" />Envio para todo o Brasil</li>
     </ul>
     {/* Lugar do selo de reputacao do Mercado Livre (outra equipe). Fica vazio e oculto ate ser preenchido. */}
-    <div id="selo-reputacao-ml" class="selo-reputacao" data-selo-reputacao />
+    <div id="selo-reputacao-ml" class="selo-reputacao" data-selo-reputacao><SeloReputacao variante="compacto" /></div>
   </div>
 </div>
 

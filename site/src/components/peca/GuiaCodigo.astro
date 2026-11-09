@@ -1,40 +1,50 @@
 ---
-// Mini-guia "Como achar o codigo na sua peca velha": 3 passos reais, com as artes da marca.
-const passos = [
-  { img: '/arte/v2/passo-1.webp', t: 'Ache o código gravado', d: 'Ele costuma estar estampado na carcaça ou numa etiqueta. Limpe a sujeira e leia com luz boa.' },
-  { img: '/arte/v2/passo-2.webp', t: 'Mande o código e o carro', d: 'Com o modelo e o ano do seu carro, a gente confere na peça e responde com foto.' },
-  { img: '/arte/v2/passo-3.webp', t: 'Feche a compra', d: 'No Mercado Livre ou direto pelo WhatsApp, com nota fiscal.' },
-];
+// "Como achar o código na sua peça velha": o código DESTA peça bem grande + onde procurar na peça velha
+// + atalho para mandar a foto do código no WhatsApp (a gente confere na peça).
+import Icone from '../Icone.astro';
+import { whatsUrl } from '../../lib/dados';
+interface Props { cod: string; titulo: string; url: string; }
+const { cod, titulo, url } = Astro.props;
+const msg = `Olá! Quero conferir se esta peça é igual à minha:\n${titulo}\n${url}\n\nVou mandar a foto do código da minha peça.`;
 ---
 <section class="secao guia-codigo" id="como-achar-codigo" aria-labelledby="guia-codigo-titulo">
   <div class="moldura">
-    <h2 class="titulo-secao" id="guia-codigo-titulo">Como achar o código na sua peça velha</h2>
-    <ol class="guia-passos">
-      {passos.map((s, i) => (
-        <li>
-          <img src={s.img} alt="" width="400" height="400" loading="lazy" decoding="async" />
-          <div>
-            <span class="guia-n num">Passo {i + 1}</span>
-            <h3>{s.t}</h3>
-            <p>{s.d}</p>
-          </div>
-        </li>
-      ))}
-    </ol>
+    <div class="gc-cartao">
+      <div class="gc-codigo">
+        <span class="gc-rot">Código desta peça</span>
+        <b class="gc-num oem">{cod}</b>
+        <p>Se a sua peça velha tem o mesmo código, é a mesma peça.</p>
+      </div>
+      <div class="gc-dicas">
+        <h2 class="gc-titulo" id="guia-codigo-titulo">Como achar o código na sua peça velha</h2>
+        <ol>
+          <li><b>Procure a etiqueta</b> colada na carcaça. O código costuma ser a sequência maior de letras e números.</li>
+          <li><b>Sem etiqueta?</b> Ele pode estar gravado em relevo no plástico ou estampado no metal. Limpe a sujeira e use a lanterna do celular.</li>
+          <li><b>Ficou em dúvida?</b> Mande uma foto do código. A gente confere na peça e te responde.</li>
+        </ol>
+        <a class="botao botao-linha gc-botao" href={whatsUrl(msg)}><Icone nome="whats" />Mandar foto do código</a>
+      </div>
+    </div>
   </div>
 </section>
 
 <style>
-  .guia-codigo { padding-top: 8px; }
-  .guia-passos { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 14px; }
-  .guia-passos li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1); }
-  .guia-passos img { width: 96px; height: 96px; border-radius: 14px; object-fit: cover; }
-  .guia-n { font-size: 12.5px; font-weight: 650; color: var(--ink-3); }
-  .guia-passos h3 { margin: 2px 0 4px; font-size: 17px; font-weight: 750; font-stretch: 88%; color: var(--ink); }
-  .guia-passos p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
-  @media (min-width: 720px) {
-    .guia-passos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .guia-passos li { grid-template-columns: 1fr; align-items: start; gap: 14px; padding: 16px 16px 20px; }
-    .guia-passos img { width: 100%; height: auto; aspect-ratio: 1; }
+  .guia-codigo { padding-top: 8px; scroll-margin-top: 90px; }
+  .gc-cartao { display: grid; gap: 0; border-radius: 22px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1); }
+  .gc-codigo { padding: 26px 24px; background: var(--surface-2); display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+  .gc-rot { font-size: 13.5px; font-weight: 650; color: var(--ink-2); }
+  .gc-num { font-size: clamp(30px, 6vw, 44px); font-weight: 700; letter-spacing: .02em; color: var(--ink); line-height: 1.05; overflow-wrap: anywhere; }
+  .gc-codigo p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); max-width: 30ch; }
+  .gc-dicas { padding: 26px 24px 28px; }
+  .gc-titulo { margin: 0 0 14px; font-size: clamp(22px, 2.6vw, 28px); font-weight: 820; font-stretch: 84%; line-height: 1.1; color: var(--ink); }
+  .gc-dicas ol { margin: 0 0 20px; padding-left: 1.3em; display: grid; gap: 10px; }
+  .gc-dicas li { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); padding-left: 4px; text-wrap: pretty; }
+  .gc-dicas li::marker { font-weight: 800; color: var(--accent-text); }
+  .gc-dicas li b { color: var(--ink); font-weight: 700; }
+  .gc-botao { display: inline-flex; gap: 8px; }
+  @media (min-width: 820px) {
+    .gc-cartao { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+    .gc-codigo { padding: 34px 34px; }
+    .gc-dicas { padding: 34px 38px 36px; }
   }
 </style>

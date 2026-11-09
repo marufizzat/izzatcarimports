@@ -91,7 +91,7 @@ const ld = {
 
   <AbasDetalhes p={p} serve={serve} />
 
-  {codigo && <GuiaCodigo />}
+  {codigo && <GuiaCodigo cod={codigo} titulo={p.t} url={url} />}
 
   {rel.length > 0 && (
     <DoMesmoCarro carro={carro ? `${carro.b} ${carro.m}` : marca ? `Outras peças ${marca.n}` : 'Outras peças'}
