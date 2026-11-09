@@ -1,0 +1,179 @@
+// Textos proprios das paginas de categoria, carro e marca. Tudo sai dos dados reais da pagina
+// (quantidade, familias, tipos de peca, marcas, modelos, anos). A frase escolhida e sempre a mesma
+// para a mesma pagina (escolha por hash do endereco), mas muda de uma pagina para outra.
+// Funcoes puras: nao lêem arquivo, para os testes rodarem sem o build.
+import type { Peca, Resumo } from './dados';
+
+type Carro = Resumo['carros'][number];
+type Marca = Resumo['marcas'][number];
+
+// Hash FNV-1a: mesma chave, mesma frase, em qualquer build.
+function hash(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+export function escolha<T>(chave: string, opcoes: readonly T[]): T {
+  return opcoes[hash(chave) % opcoes.length];
+}
+
+/** "A", "A e B", "A, B e C". */
+export function juntar(xs: string[]): string {
+  if (xs.length <= 1) return xs[0] ?? '';
+  return `${xs.slice(0, -1).join(', ')} e ${xs[xs.length - 1]}`;
+}
+
+const P = (n: number) => (n === 1 ? 'peça' : 'peças');
+const O = (n: number) => (n === 1 ? 'original' : 'originais');
+const M = (n: number) => (n === 1 ? 'modelo' : 'modelos');
+
+/** Subtipo de peca em minusculas (ex.: "Bielas" -> "bielas"), mantendo siglas (ABS) e codigos com numero. */
+export function minuscula(s: string): string {
+  return s
+    .split(' ')
+    .map((w) => (/\d/.test(w) || (w.length > 1 && w === w.toUpperCase()) ? w : w.toLowerCase()))
+    .join(' ');
+}
+
+/** Os 'n' mais frequentes (sem vazios e sem "Outros"); empate em ordem alfabetica. */
+export function contar(itens: (string | null | undefined)[], n = 3): string[] {
+  const m = new Map<string, number>();
+  for (const x of itens) {
+    const v = (x ?? '').trim();
+    if (!v || /^outros$/i.test(v)) continue;
+    m.set(v, (m.get(v) ?? 0) + 1);
+  }
+  return [...m.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
+    .slice(0, n)
+    .map((e) => e[0]);
+}
+
+/** Faixa de anos das pecas que tem ano lido (y). null se nenhuma tem. */
+export function faixaAnos(lista: Peca[]): [number, number] | null {
+  const ys = lista.map((p) => p.y).filter((y): y is [number, number] => !!y);
+  if (!ys.length) return null;
+  return [Math.min(...ys.map((y) => y[0])), Math.max(...ys.map((y) => y[1]))];
+}
+
+const anoTxt = (a: [number, number] | null | undefined) =>
+  !a ? '' : a[0] === a[1] ? `${a[0]}` : `${a[0]} a ${a[1]}`;
+
+export type Textos = { paragrafos: string[]; meta: string };
+
+/** Pagina de categoria (/categoria/<k>.html). */
+export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Textos {
+  const N = lista.length;
+  if (!N) return { paragrafos: [], meta: f.n };
+  const tema = f.n.replace(/^Peças de /i, '').toLowerCase();
+  const subs = contar(lista.map((p) => p.s), 3).map(minuscula);
+  const marcas = contar(lista.map((p) => p.b), 3);
+  const modelos = new Set(lista.filter((p) => p.m).map((p) => `${p.b} ${p.m}`)).size;
+  const a = faixaAnos(lista);
+  const anosFrase = a ? `, de carros de ${a[0] === a[1] ? a[0] : `${a[0]} a ${a[1]}`}` : '';
+  const k = `categoria:${f.k}`;
+
+  const p1 = escolha(`${k}:1`, [
+    `Temos ${N} ${P(N)} de ${tema} ${O(N)} no estoque.`,
+    `No estoque há ${N} ${P(N)} de ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
+    `Esta categoria reúne ${N} ${P(N)} ${O(N)} de ${tema}, retiradas de carros com baixa legal no Detran-RS.`,
+  ]);
+  const paragrafos = [p1];
+  if (subs.length) {
+    paragrafos.push(escolha(`${k}:2`, [
+      `As que mais aparecem são ${juntar(subs)}.`,
+      `Os tipos com mais anúncios são ${juntar(subs)}.`,
+      `Entre elas, as mais frequentes são ${juntar(subs)}.`,
+    ]));
+  }
+  if (marcas.length) {
+    const base = `${modelos} ${M(modelos)}`;
+    paragrafos.push(escolha(`${k}:3`, [
+      `As marcas com mais peças são ${juntar(marcas)}, e há peças para ${base}${anosFrase}.`,
+      `Há peças para ${base}${anosFrase}; a marca com mais peças é ${marcas[0]}.`,
+      `Escolha a marca do seu carro no atalho acima para ver só as peças de ${tema} dessa marca.`,
+    ]));
+  }
+  const meta = `${N} peças originais de ${tema}${subs.length ? `: ${juntar(subs.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  return { paragrafos, meta };
+}
+
+/** Pagina de carro (/carros/<marca-modelo>.html). */
+export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fams'>, lista: Peca[]): Textos {
+  const N = lista.length;
+  if (!N) return { paragrafos: [], meta: `${c.b} ${c.m}` };
+  const nome = `${c.b} ${c.m}`;
+  const a = c.anos ?? faixaAnos(lista);
+  const anos = a ? ` (${anoTxt(a)})` : '';
+  const k = `carro:${c.k}`;
+  const fams = (c.fams ?? []).filter(([n]) => n !== 'Outros').slice(0, 3).map(([n]) => n.toLowerCase());
+  const subs = contar(lista.map((p) => p.s), 3).map(minuscula);
+
+  const p1 = escolha(`${k}:1`, [
+    `Temos ${N} ${P(N)} ${O(N)} para ${nome}${anos}.`,
+    `No estoque há ${N} ${P(N)} para ${nome}${anos}, de carros com baixa legal no Detran-RS.`,
+    `Para ${nome}${anos} temos ${N} ${P(N)} ${O(N)} em estoque.`,
+  ]);
+  const paragrafos = [p1];
+  if (fams.length) {
+    paragrafos.push(escolha(`${k}:2`, [
+      `Em ${nome}, as que mais aparecem são ${juntar(fams)}.`,
+      `Os sistemas com mais peças para ${nome} são ${juntar(fams)}.`,
+      `Em ${nome} aparecem mais ${juntar(fams)}.`,
+    ]));
+  }
+  if (subs.length) {
+    paragrafos.push(escolha(`${k}:3`, [
+      `Para ${nome}, as peças mais frequentes são ${juntar(subs)}.`,
+      `Os tipos de peça que mais aparecem para ${nome} são ${juntar(subs)}.`,
+    ]));
+  } else {
+    paragrafos.push(`Confira o ano e o código gravado da peça para ${nome}; na dúvida, a gente confere pelo WhatsApp.`);
+  }
+  const meta = `${N} peças originais de ${nome}${anos}${fams.length ? `: ${juntar(fams.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  return { paragrafos, meta };
+}
+
+/** Pagina de marca (/marca/<marca>.html). */
+export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Textos {
+  const N = m.c || lista.length;
+  const modelos = m.m.length;
+  if (!N) return { paragrafos: [], meta: m.n };
+  const nomes = m.m.slice(0, 3).map((x) => x.n);
+  const fams = contar(lista.map((p) => p.c), 3).map((x) => x.toLowerCase());
+  const a = faixaAnos(lista);
+  const anosFrase = a ? `, com carros de ${anoTxt(a)}` : '';
+  const k = `marca:${m.n}`;
+
+  const paragrafos: string[] = [
+    escolha(`${k}:1`, [
+      `Temos ${N} ${P(N)} ${O(N)} de ${m.n} para ${modelos} ${M(modelos)}.`,
+      `Há ${N} ${P(N)} ${O(N)} de ${m.n} em estoque, para ${modelos} ${M(modelos)} diferentes.`,
+      `As peças de ${m.n} no estoque somam ${N}, de ${modelos} ${M(modelos)}.`,
+    ]),
+  ];
+  if (nomes.length) {
+    paragrafos.push(escolha(`${k}:2`, [
+      `Os modelos com mais peças são ${juntar(nomes)}.`,
+      `Entre os carros, ${juntar(nomes)} são os que mais aparecem.`,
+      `Os carros com mais anúncios são ${juntar(nomes)}.`,
+    ]));
+  }
+  if (fams.length) {
+    paragrafos.push(escolha(`${k}:3`, [
+      `As peças mais numerosas são de ${juntar(fams)}${anosFrase}.`,
+      `Os sistemas com mais peças são ${juntar(fams)}${anosFrase}.`,
+    ]));
+  }
+  const meta = `${N} peças originais de ${m.n} para ${modelos} ${M(modelos)}${nomes.length ? `: ${juntar(nomes.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  return { paragrafos, meta };
+}
+
+// Titulos (<title>) das paginas de lista: cada uma e unica, com a marca no fim.
+export const tituloCategoria = (n: string) => `${n}: peças originais | Izzat Car Imports`;
+export const tituloCarro = (b: string, m: string, anos: [number, number] | null) =>
+  `Peças ${b} ${m}${anos ? ` ${anos[0]} a ${anos[1]}` : ''} originais | Izzat Car Imports`;
+export const tituloMarca = (n: string) => `Peças ${n} originais | Izzat Car Imports`;
+
+/** Termos que nunca podem aparecer nos textos (regras da marca: nada nao confirmado). */
+export const PROIBIDOS = ['frete grátis', 'tem aqui', 'mais barato', '100% garantido', 'lacre', 'retirada no local', 'horário', 'endereço', '12x'];
