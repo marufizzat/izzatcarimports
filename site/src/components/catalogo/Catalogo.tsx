@@ -209,17 +209,6 @@ export default function Catalogo({ total: totalInicial, logos = {}, selo }: Prop
     }
   }, [f.q, busca]);
 
-  // carrega mais sozinho perto do fim da lista, só 2 vezes: depois vem o botão (o rodapé fica alcançável)
-  useEffect(() => {
-    const el = fimRef.current;
-    if (!el || !('IntersectionObserver' in window)) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && autos.current < 2) { autos.current += 1; setQtd((n) => n + LOTE); }
-    }, { rootMargin: '900px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [resultado.length]);
-
   // a banda da busca ganha linha e sombra só quando está grudada no topo (celular)
   useEffect(() => {
     const el = marcoBanda.current;
@@ -300,6 +289,20 @@ export default function Catalogo({ total: totalInicial, logos = {}, selo }: Prop
     const q = requestAnimationFrame(() => setPintados((n) => n + PEDACO));
     return () => cancelAnimationFrame(q);
   }, [pintados, lista.length]);
+  const pintouTudo = pintados >= lista.length;
+
+  // carrega mais sozinho perto do fim da lista, só 2 vezes: depois vem o botão (o rodapé fica alcançável).
+  // Só olha o fim depois que o lote inteiro foi pintado (com a lista ainda crescendo, o fim parece perto e
+  // puxaria um lote a mais de uma vez).
+  useEffect(() => {
+    const el = fimRef.current;
+    if (!el || !pintouTudo || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && autos.current < 2) { autos.current += 1; setQtd((n) => n + LOTE); }
+    }, { rootMargin: '900px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [resultado.length, pintouTudo]);
   const procuro = [f.q, f.marca, f.modelo, f.ano].filter(Boolean).join(' ');
   const pecas = (n: number) => (n === 1 ? 'peça' : 'peças');
 
