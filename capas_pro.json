@@ -521,13 +521,13 @@
   "foto": "687558-MLB112119369637_052026"
  },
  "MLB4704706893": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão alerta esc tração",
   "carro": "Fiat Strada",
   "foto": "632975-MLB112506738271_052026"
  },
  "MLB4704696365": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro elétrico passageiro",
   "carro": "Volvo S60",
   "foto": "921020-MLB112507058833_052026"
@@ -540,31 +540,32 @@
   "foto": "796366-MLB112379225613_052026"
  },
  "MLB6864988196": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Motor vidro elétrico tras esq",
   "carro": "Hyundai HB20",
-  "foto": "706017-MLB111453284702_052026"
+  "foto": "706017-MLB111453284702_052026",
+  "motivo": "etiqueta ilegível na original; ChatGPT inventou códigos"
  },
  "MLB4723082563": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão alerta desembacador",
   "carro": "Fiat Palio Weekend",
   "foto": "648721-MLB111453431844_052026"
  },
  "MLB6880442972": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Pedal acelerador",
   "carro": "Citroën C4 Pallas",
   "foto": "964015-MLB112573895339_062026"
  },
  "MLB4741274891": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Suporte coxim câmbio",
   "carro": "Renault Clio",
   "foto": "837956-MLB112819496429_062026"
  },
  "MLB6966834730": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Retrovisor elétrico diant esquerdo",
   "carro": "Audi A4",
   "foto": "920113-MLB112995901510_072026"
@@ -584,10 +585,11 @@
   "foto": "816184-MLB114212318411_072026"
  },
  "MLB4797307153": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Lanterna traseira direita",
   "carro": "Audi Q3",
-  "foto": "640462-MLB116765913940_092026"
+  "foto": "640462-MLB116765913940_092026",
+  "motivo": "etiqueta ilegível, não verificável"
  },
  "MLB4797277525": {
   "status": "pulada",
@@ -611,25 +613,26 @@
   "foto": "662117-MLB114212785441_072026"
  },
  "MLB7005570054": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Coluna direção",
   "carro": "Renault Duster",
   "foto": "828436-MLB112996285416_072026"
  },
  "MLB7013607382": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura elétrica diant esq",
   "carro": "Citroën C4",
-  "foto": "958013-MLB114212587363_072026"
+  "foto": "958013-MLB114212587363_072026",
+  "motivo": "haste completada / geometria mudou"
  },
  "MLB4807092427": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar esquerdo painel",
   "carro": "Volvo XC60",
   "foto": "921331-MLB114211220441_072026"
  },
  "MLB7039273368": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Suporte maçaneta externa",
   "carro": "Volvo XC60",
   "foto": "674817-MLB112624680004_062026"
