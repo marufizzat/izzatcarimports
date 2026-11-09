@@ -11,6 +11,6 @@ const { lista, total, linkTodas, rotulo } = Astro.props;
 <style>
   .grade-pecas { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   @media (min-width: 700px) { .grade-pecas { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
-  @media (min-width: 1100px) { .grade-pecas { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .grade-pecas { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
   .grade-mais { display: flex; justify-content: center; margin-top: 32px; }
 </style>
