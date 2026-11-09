@@ -1,6 +1,7 @@
 ---
 import Logo from './Logo.astro';
 import Icone from './Icone.astro';
+import MeuCarroEstilo from './ui/MeuCarroEstilo.astro';
 import { whatsUrl, resumo } from '../lib/dados';
 interface Props { escuro?: boolean; sobreposto?: boolean; }
 const { escuro = false, sobreposto = false } = Astro.props;
@@ -13,6 +14,7 @@ const ativo = (h: string) => atual === h || (h === '/catalogo.html' && atual.sta
   (h === '/carros.html' && atual.startsWith('/carros/'));
 const carros = resumo().carros.slice(0, 8);
 ---
+<MeuCarroEstilo />
 <header class:list={['cab', { 'cab-escuro': escuro, 'cab-sobre': sobreposto }]}>
   <div class="moldura cab-linha">
     <Logo escuro={escuro} altura={64} />
@@ -20,6 +22,10 @@ const carros = resumo().carros.slice(0, 8);
       {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
     </nav>
     <div class="cab-acoes">
+      <button class="cab-carro" type="button" data-abrir-carro aria-label="Meu carro: escolher o seu carro">
+        <Icone nome="carro" />
+        <span class="cab-carro-txt" data-carro-txt>Meu carro</span>
+      </button>
       <a class="cab-icone" href="/catalogo.html#busca" aria-label="Buscar peça"><Icone nome="busca" /></a>
       <a class="botao botao-laranja cab-whats" href={whatsUrl('Olá! Estou procurando uma peça.')} aria-label="Falar no WhatsApp">
         <Icone nome="whats" /><span>WhatsApp</span>
@@ -30,6 +36,19 @@ const carros = resumo().carros.slice(0, 8);
     </div>
   </div>
 </header>
+
+<dialog id="meu-carro-dialogo" class="mc-dialogo" aria-labelledby="mc-dlg-titulo">
+  <div class="mc-dlg-topo">
+    <div>
+      <h2 id="mc-dlg-titulo" class="mc-dlg-titulo">Seu carro</h2>
+      <p class="mc-dlg-sub">Escolha uma vez. O site passa a mostrar as peças do seu carro.</p>
+    </div>
+    <button class="mc-dlg-fechar" type="button" aria-label="Fechar" data-fechar-carro>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="mc-raiz" data-mc-raiz></div>
+</dialog>
 
 <dialog id="menu-movel" class="menu-movel" aria-label="Menu">
   <div class="menu-topo">
@@ -51,6 +70,46 @@ const carros = resumo().carros.slice(0, 8);
 </dialog>
 
 <script>
+  import { lerMeuCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
+
+  // chip do cabeçalho: mostra o carro salvo (sem carro: "Meu carro")
+  function pintarChip(c: MeuCarro | null) {
+    document.querySelectorAll<HTMLElement>('[data-abrir-carro]').forEach((b) => {
+      const txt = b.querySelector<HTMLElement>('[data-carro-txt]');
+      if (!txt) return;
+      txt.replaceChildren();
+      if (c) {
+        const marca = document.createElement('span');
+        marca.className = 'cab-carro-marca';
+        marca.textContent = c.b + ' ';
+        txt.append(marca, c.m + (c.y ? ' ' + c.y : ''));
+        b.classList.add('com-carro');
+        b.setAttribute('aria-label', 'Seu carro: ' + [c.b, c.m, c.y].filter(Boolean).join(' ') + '. Trocar ou tirar');
+        b.title = 'Trocar ou tirar o seu carro';
+      } else {
+        txt.textContent = 'Meu carro';
+        b.classList.remove('com-carro');
+        b.setAttribute('aria-label', 'Meu carro: escolher o seu carro');
+        b.removeAttribute('title');
+      }
+    });
+  }
+  pintarChip(lerMeuCarro());
+  window.addEventListener(EVENTO, (e) => pintarChip((e as CustomEvent<MeuCarro | null>).detail));
+
+  // caixa "Seu carro" (carregada so ao abrir)
+  const caixa = document.getElementById('meu-carro-dialogo') as HTMLDialogElement | null;
+  async function abrirCarro() {
+    if (!caixa || caixa.open) return;
+    const { montarPicker } = await import('./ui/meuCarroPicker');
+    montarPicker(caixa.querySelector<HTMLElement>('[data-mc-raiz]')!);
+    caixa.showModal();
+  }
+  window.addEventListener('abrir-meu-carro', abrirCarro);
+  document.querySelectorAll('[data-abrir-carro]').forEach((b) => b.addEventListener('click', abrirCarro));
+  caixa?.querySelector('[data-fechar-carro]')?.addEventListener('click', () => caixa.close());
+  caixa?.addEventListener('click', (e) => { if (e.target === caixa) caixa.close(); });
+
   const d = document.getElementById('menu-movel') as HTMLDialogElement | null;
   document.querySelectorAll('[data-abrir-menu]').forEach((b) => b.addEventListener('click', () => d?.showModal()));
   document.querySelectorAll('[data-fechar-menu]').forEach((b) => b.addEventListener('click', () => d?.close()));

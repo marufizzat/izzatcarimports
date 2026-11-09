@@ -4,6 +4,8 @@
 import { useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
 import { Busca, FAIXAS, capaItem, foto, type Filtros, type Indice, type Item } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
+import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
+import { serveNoMeuCarro } from '../../lib/meuCarro';
 
 const LOTE = 48;
 const WHATS = '5553991170950';
@@ -37,12 +39,12 @@ function escreverUrl(f: Filtros) {
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
 
-function Etiqueta({ it, eager }: { it: Item; eager?: boolean }) {
+function Etiqueta({ it, eager, meuModelo }: { it: Item; eager?: boolean; meuModelo?: string | null }) {
   const carro = [it.b, it.m].filter(Boolean).join(' ') + (it.y ? `, ${it.y[0]}–${it.y[1]}` : '');
   const [reais, cent] = brl(it.p).split(',');
   const cod = (it.o || '').split(' ')[0];
   return (
-    <a className="etiqueta" href={`/peca/${it.h}.html`}>
+    <a className="etiqueta" href={`/peca/${it.h}.html`} data-b={it.b || undefined} data-m={it.m || undefined} data-y={it.y ? `${it.y[0]}-${it.y[1]}` : undefined}>
       <div className="etiqueta-foto">
         <img src={capaItem(it)} srcSet={it.e !== '0' ? undefined : `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`}
              className={it.e !== '0' ? 'estudio' : undefined}
@@ -52,6 +54,7 @@ function Etiqueta({ it, eager }: { it: Item; eager?: boolean }) {
       </div>
       <div className="etiqueta-picote" aria-hidden="true" />
       <div className="etiqueta-dados">
+        <span className="etiqueta-serve" hidden={!meuModelo}>{meuModelo ? `Serve no seu ${meuModelo}` : ''}</span>
         {carro && <span className="etiqueta-carro">{carro}</span>}
         <span className="etiqueta-nome">{it.n}</span>
         <div className="etiqueta-rodape">
@@ -98,6 +101,7 @@ export default function Catalogo({ total: totalInicial }: { total: number }) {
   const [qtd, setQtd] = useState(LOTE);
   const [gaveta, setGaveta] = useState(false);
   const fimRef = useRef<HTMLDivElement>(null);
+  const meuCarro = useMeuCarro();
   const ultimoRastreio = useRef('');
 
   useEffect(() => {
@@ -221,6 +225,7 @@ export default function Catalogo({ total: totalInicial }: { total: number }) {
             </div>
           )}
 
+          <MeuCarroFiltro marca={f.marca} modelo={f.modelo} ano={f.ano} aoAplicar={(x) => muda(x)} />
           {carregando && <div className="cat-grade">{Array.from({ length: 8 }, (_, i) => <div key={i} className="cat-esqueleto" />)}</div>}
           {erro && <p className="cat-erro">Não deu para carregar o catálogo agora. Recarregue a página ou fale com a gente no WhatsApp.</p>}
 
@@ -250,7 +255,7 @@ export default function Catalogo({ total: totalInicial }: { total: number }) {
           )}
           {busca && resultado.length > 0 && (
             <>
-              <div className="cat-grade">{lista.map((it, i) => <Etiqueta key={it.id} it={it} eager={i < 4} />)}</div>
+              <div className="cat-grade">{lista.map((it, i) => <Etiqueta key={it.id} it={it} eager={i < 4} meuModelo={meuCarro && serveNoMeuCarro(it, meuCarro) === 'sim' ? meuCarro.m : null} />)}</div>
               <div ref={fimRef} />
               {qtd < resultado.length && (
                 <button type="button" className="botao botao-linha cat-ver-mais" onClick={() => setQtd(qtd + LOTE)}>

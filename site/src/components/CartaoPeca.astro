@@ -8,7 +8,7 @@ const cod = (p.oem || '').split(/[\s,;/|]+/)[0];
 const [reais, cent] = brl(p.p).split(',');
 const est = capaEstudio(p.id);
 ---
-<a class="etiqueta" href={`${base}${p.slug}.html`}>
+<a class="etiqueta" href={`${base}${p.slug}.html`} data-b={p.b || undefined} data-m={p.m || undefined} data-a0={p.y ? p.y[0] : undefined} data-a1={p.y ? p.y[1] : undefined}>
   <div class="etiqueta-foto">
     <img src={est ?? foto(p.fotos[0], 'O')} srcset={est ? undefined : fotoSrcset(p.fotos[0])}
          sizes="(min-width:1024px) 230px, (min-width:640px) 30vw, 46vw" class:list={[{ estudio: !!est }]}
@@ -17,7 +17,8 @@ const est = capaEstudio(p.id);
   </div>
   <div class="etiqueta-picote" aria-hidden="true"></div>
   <div class="etiqueta-dados">
-    {carro && <span class="etiqueta-carro">{carro}</span>}
+    <span class="etiqueta-serve" hidden></span>
+    {carro &&  <span class="etiqueta-carro">{carro}</span>}
     <span class="etiqueta-nome">{p.n}</span>
     <div class="etiqueta-rodape">
       <span class="etiqueta-preco num"><small>R$</small>{reais}<small style="margin:0 0 0 1px">,{cent}</small></span>
@@ -25,3 +26,22 @@ const est = capaEstudio(p.id);
     </div>
   </div>
 </a>
+
+<script>
+  // selo "Serve no seu ..." quando o carro salvo bate com a peça (regra do contrato meuCarro.ts)
+  import { lerMeuCarro, serveNoMeuCarro, EVENTO } from '../lib/meuCarro';
+  function marcar() {
+    const c = lerMeuCarro();
+    document.querySelectorAll<HTMLElement>('a.etiqueta[data-b]').forEach((el) => {
+      const d = el.dataset;
+      const y = d.a0 ? [Number(d.a0), Number(d.a1)] as [number, number] : null;
+      const serve = !!c && serveNoMeuCarro({ b: d.b, m: d.m, y }, c) === 'sim';
+      const selo = el.querySelector<HTMLElement>('.etiqueta-serve');
+      if (!selo) return;
+      selo.hidden = !serve;
+      if (serve) selo.textContent = `Serve no seu ${c!.m}`;
+    });
+  }
+  marcar();
+  window.addEventListener(EVENTO, marcar);
+</script>

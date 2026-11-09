@@ -8,12 +8,16 @@ const fams = resumo().familias.filter((f) => f.n !== 'Outros' && existsSync(join
 const NO_CELULAR = 8;
 ---
 <div class="cats" data-cats>
+  <p class="cats-carro" data-cats-carro hidden>
+    <span>Contando as peças do <b data-cats-nome></b>.</span>
+    <button type="button" data-cats-trocar>Trocar carro</button>
+  </p>
   <ul class="cats-grade">
     {fams.map((f, i) => (
       <li class:list={['cat', { 'cat-grande': i < 2, 'cat-extra': i >= NO_CELULAR }]}>
-        <a href={`/categoria/${f.k}.html`} aria-label={`${f.n}: ${f.c.toLocaleString('pt-BR')} peças`}>
+        <a href={`/categoria/${f.k}.html`} data-tipo={f.n} data-href-base={`/categoria/${f.k}.html`} data-base={f.c} aria-label={`${f.n}: ${f.c.toLocaleString('pt-BR')} peças`}>
           <img src={`/arte/v2/cat-${f.k}.webp`} alt="" width="800" height="800" loading={i < 4 ? 'eager' : 'lazy'} decoding="async" />
-          <span class="cat-qtd num">{f.c.toLocaleString('pt-BR')} peças</span>
+          <span class="cat-qtd num" data-qtd>{f.c.toLocaleString('pt-BR')} peças</span>
         </a>
       </li>
     ))}
@@ -23,11 +27,58 @@ const NO_CELULAR = 8;
   )}
 </div>
 <script>
-  document.querySelectorAll<HTMLElement>('[data-cats]').forEach((el) => {
-    el.querySelector<HTMLButtonElement>('[data-mais]')?.addEventListener('click', (e) => {
-      el.classList.add('aberto'); (e.currentTarget as HTMLElement).remove();
+  import { lerMeuCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';
+  // Com carro salvo, cada categoria mostra a contagem DELE (busca.json so e baixado nesse caso).
+  type Indice = { marcas: string[]; familias: string[]; id: string[]; b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[] };
+  let indice: Promise<Indice> | null = null;
+  const ler = () => (indice ??= fetch('/dados/busca.json').then((r) => r.json()));
+  const raiz = document.querySelector<HTMLElement>('[data-cats]');
+
+  function restaurar() {
+    raiz?.querySelectorAll<HTMLAnchorElement>('a[data-tipo]').forEach((a) => {
+      a.href = a.dataset.hrefBase!;
+      (a.closest('li') as HTMLElement).style.display = '';
+      const q = a.querySelector<HTMLElement>('[data-qtd]');
+      const base = Number(a.dataset.base);
+      if (q) { q.hidden = false; q.textContent = `${base.toLocaleString('pt-BR')} peças`; }
+      a.setAttribute('aria-label', `${a.dataset.tipo}: ${base.toLocaleString('pt-BR')} peças`);
     });
+    raiz?.querySelector<HTMLElement>('[data-cats-carro]')?.setAttribute('hidden', '');
+  }
+
+  async function aplicar(c: MeuCarro | null) {
+    if (!raiz) return;
+    if (!c) return restaurar();
+    const d = await ler();
+    const marca = d.marcas.indexOf(c.b);
+    const cont = new Map<string, number>();
+    for (let k = 0; k < d.id.length; k++) {
+      if (d.b[k] !== marca || d.m[k] !== c.m) continue;
+      if (c.y != null) { const y = d.y[k]; if (!y || c.y < y[0] || c.y > y[1]) continue; }
+      const fam = d.familias[d.c[k]];
+      cont.set(fam, (cont.get(fam) ?? 0) + 1);
+    }
+    const nome = [c.b, c.m, c.y].filter(Boolean).join(' ');
+    raiz.querySelectorAll<HTMLAnchorElement>('a[data-tipo]').forEach((a) => {
+      const n = cont.get(a.dataset.tipo!) ?? 0;
+      const u = new URLSearchParams({ tipo: a.dataset.tipo!, marca: c.b, modelo: c.m });
+      if (c.y) u.set('ano', String(c.y));
+      a.href = `/catalogo.html?${u.toString()}`;
+      const q = a.querySelector<HTMLElement>('[data-qtd]');
+      (a.closest('li') as HTMLElement).style.display = n === 0 ? 'none' : '';
+      if (q) q.textContent = `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça' : 'peças'}`;
+      a.setAttribute('aria-label', `${a.dataset.tipo}: ${n.toLocaleString('pt-BR')} peças para o seu ${nome}`);
+    });
+    const aviso = raiz.querySelector<HTMLElement>('[data-cats-carro]');
+    if (aviso) { aviso.hidden = false; aviso.querySelector('[data-cats-nome]')!.textContent = nome; }
+  }
+
+  raiz?.querySelector<HTMLButtonElement>('[data-cats-trocar]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('abrir-meu-carro')));
+  raiz?.querySelector<HTMLButtonElement>('[data-mais]')?.addEventListener('click', (e) => {
+    raiz.classList.add('aberto'); (e.currentTarget as HTMLElement).remove();
   });
+  aplicar(lerMeuCarro());
+  window.addEventListener(EVENTO, (e) => aplicar((e as CustomEvent<MeuCarro | null>).detail));
 </script>
 <style>
   .cats-grade { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; }
@@ -39,6 +90,7 @@ const NO_CELULAR = 8;
   .cat-extra { display: none; }
   .aberto .cat-extra { display: block; }
   .cats-mais { margin: 16px auto 0; display: flex; }
+  .cats-carro { margin: 0 0 16px; }
   @media (min-width: 700px) {
     .cats-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
     .cat-extra { display: block; } .cats-mais { display: none; }

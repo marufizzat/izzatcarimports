@@ -2,8 +2,11 @@
 // Abertura v2: arte criada (cenário limpo) em tela cheia + busca e seletor VIVOS
 // na zona reservada (esquerda no PC, em cima no celular).
 import SeletorCarro from '../SeletorCarro.astro';
+import { populares } from '../../lib/populares';
 interface Props { arte: string; arteCelular?: string; tom?: 'claro' | 'escuro'; }
 const { arte, arteCelular, tom = 'claro' } = Astro.props;
+const atalhos = populares(6);
+const confianca = ['CDV nº 01060 · Detran-RS', 'Nota fiscal em toda venda', '90 dias de garantia'];
 ---
 <section class:list={['abv2', 'tema-estudio', `abv2-${tom}`]}>
   <picture class="abv2-arte" aria-hidden="true">
@@ -12,8 +15,15 @@ const { arte, arteCelular, tom = 'claro' } = Astro.props;
   </picture>
   <div class="moldura abv2-conteudo">
     <h1 class="display abv2-h1">Qual peça o seu carro precisa?</h1>
-    <p class="abv2-lead">Peças originais de carros com baixa legal no Detran-RS. Nota fiscal e 90 dias de garantia em toda peça.</p>
+    <p class="abv2-lead">Peças originais de carros com baixa legal no Detran-RS. Ache pelo nome, pelo carro ou pelo código gravado.</p>
+    <ul class="abv2-confianca" aria-label="Garantias da Izzat Car">
+      {confianca.map((t) => <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7" /></svg>{t}</li>)}
+    </ul>
     <div class="abv2-busca"><slot name="busca" /></div>
+    <div class="abv2-pop">
+      <span>Peças que mais aparecem:</span>
+      <ul>{atalhos.map((a) => <li><a href={`/catalogo.html?q=${encodeURIComponent(a.q)}`}>{a.n}</a></li>)}</ul>
+    </div>
     <div class="abv2-seletor"><SeletorCarro /></div>
   </div>
 </section>
@@ -24,10 +34,19 @@ const { arte, arteCelular, tom = 'claro' } = Astro.props;
     -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 26%); mask-image: linear-gradient(90deg, transparent 0, #000 26%); }
   .abv2-arte img { width: 100%; height: 100%; object-fit: cover; object-position: 85% 45%; }
 
-  .abv2-conteudo { display: grid; gap: 18px; padding-block: 56px; max-width: 1240px; }
+  .abv2-conteudo { display: grid; gap: 16px; padding-block: 40px; max-width: 1240px; }
+  .abv2-confianca { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14.5px; color: var(--ink-2); font-weight: 560; }
+  .abv2-confianca li { display: inline-flex; align-items: center; gap: 7px; }
+  .abv2-confianca svg { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--accent-text); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .abv2-pop { display: grid; gap: 8px; }
+  .abv2-pop > span { font-size: 14px; font-weight: 600; color: var(--ink-3); }
+  .abv2-pop ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .abv2-pop a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 13px; border-radius: 99px; background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line-2); font-size: 14.5px; font-weight: 600; color: var(--ink); transition: box-shadow .2s, transform .12s; }
+  .abv2-pop a:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .abv2-pop a:active { transform: translateY(1px); }
+  .abv2-seletor { max-width: min(560px, 40vw); }
   .abv2-conteudo > * { max-width: min(560px, 40vw); }
-  .abv2-seletor :global(.seletor-carro) { grid-template-columns: 1fr 1fr; }
-  .abv2-seletor :global(.seletor-carro .botao) { grid-column: auto; }
   .abv2-h1 { margin: 0; font-size: clamp(44px, 5.6vw, 82px); color: #1d1d1f; }
   .abv2-lead { margin: 0; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.5; color: #4a4a50; max-width: 38ch; }
   /* celular: conteúdo em cima, arte inteira EMBAIXO (nunca atrás do formulário) */
@@ -40,4 +59,17 @@ const { arte, arteCelular, tom = 'claro' } = Astro.props;
     .abv2-arte::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, #f2f1ee 0%, rgb(242 241 238 / 0) 30%); }
   }
   @media (prefers-color-scheme: dark) { .abv2 { color-scheme: light; } }
+
+  /* o unico movimento da abertura: a arte "respira" de leve conforme a pessoa rola (CSS, sem JS).
+     Desligado em prefers-reduced-motion; so onde o navegador suporta linha de tempo de rolagem. */
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .abv2-arte img { animation: abv-respira linear both; animation-timeline: scroll(root block); animation-range: 0px 70vh; }
+    }
+  }
+  @keyframes abv-respira {
+    from { transform: translate3d(0, -14px, 0) scale(1.08); }
+    to { transform: translate3d(0, 12px, 0) scale(1.08); }
+  }
+  @media (max-width: 767px) { .abv2-confianca { font-size: 14px; } }
 </style>
