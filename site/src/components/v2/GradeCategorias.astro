@@ -1,20 +1,23 @@
 ---
-// Categorias: uma ARTE por família (peça em estúdio + nome desenhado na arte) + nº de peças vivo.
+// Categorias: um cartão por BLOCO de peças (preparar_dados.py: BLOCOS, na ordem do que mais se procura), com a ARTE
+// (peça em estúdio + nome desenhado) e o nº de peças vivo. Bloco cuja arte ainda não chegou: o nome num fundo de estúdio.
 // Referência de layout: Shop by Category Grid (ziegfiroyt/ecommerce4, 21st.dev #29288) em bento.
-// O último cartão (texto vivo) fecha a grade: "Ver o catálogo inteiro" (no celular e no tablet; no PC o bento já fecha
-// certo com as 19) e, com carro salvo, "Ver as N peças do seu carro" (em toda largura).
+// O bento fecha a grade sem buraco (lib/categorias.ts: bento): quantos cartões grandes e se o último cartão
+// ("Ver o catálogo inteiro", texto vivo) entra, no tablet (4 colunas) e no PC (5). Com carro salvo,
+// "Ver as N peças do seu carro" (sempre).
 // Com carro salvo: cada categoria mostra a contagem DELE (sem o bento; só as que têm peça). Se o ano salvo não tem
 // peça agora, conta o modelo em todos os anos; se o modelo saiu do site, a grade fica a normal. Sempre com um aviso.
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { resumo, whatsUrl } from '../../lib/dados';
-const fams = resumo().familias.filter((f) => f.n !== 'Outros' && existsSync(join(process.cwd(), 'public', 'arte', 'v2', `cat-${f.k}.webp`)));
+import { arteCartao, bento } from '../../lib/categorias';
+const fams = resumo().familias.filter((f) => f.k !== 'outros' && f.c > 0).map((f) => ({ ...f, arte: arteCartao(f.k) }));
 const total = resumo().total;
 const NO_CELULAR = 8;
 // número pequeno na vitrine passa a ideia de pátio vazio: abaixo disso a categoria aparece sem a contagem (sem carro salvo)
 const POUCAS = 30;
+const b4 = bento(fams.length, 4);
+const b5 = bento(fams.length, 5);
 ---
-<div class="cats" data-cats data-whats={whatsUrl('Olá! Procuro peça para o meu carro: ')}>
+<div class:list={['cats', { 'sem-todas-4': !b4.todas, 'sem-todas-5': !b5.todas }]} data-cats data-whats={whatsUrl('Olá! Procuro peça para o meu carro: ')}>
   <p class="cats-carro" data-cats-carro hidden>
     <span data-cats-msg></span>
     <span class="cats-carro-acoes">
@@ -25,9 +28,11 @@ const POUCAS = 30;
   </p>
   <ul class="cats-grade">
     {fams.map((f, i) => (
-      <li class:list={['cat', { 'cat-grande': i < 2, 'cat-extra': i >= NO_CELULAR }]}>
+      <li class:list={['cat', { 'cat-g4': i < b4.grandes, 'cat-g5': i < b5.grandes, 'cat-extra': i >= NO_CELULAR, 'cat-sem-arte': !f.arte }]}>
         <a href={`/categoria/${f.k}.html`} data-tipo={f.n} data-href-base={`/categoria/${f.k}.html`} data-base={f.c} aria-label={`${f.n}: ${f.c.toLocaleString('pt-BR')} peças`}>
-          <img src={`/arte/v2/cat-${f.k}.webp`} alt="" width="800" height="800" loading="lazy" decoding="async" />
+          {f.arte
+            ? <img src={f.arte} alt="" width="800" height="800" loading="lazy" decoding="async" />
+            : <span class="cat-estudio" aria-hidden="true"><span class="cat-nome">{f.n}</span></span>}
           <span class="cat-qtd num" data-qtd hidden={f.c < POUCAS}>{f.c.toLocaleString('pt-BR')} peças</span>
         </a>
       </li>
@@ -185,6 +190,15 @@ const POUCAS = 30;
   .cat-qtd { position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 99px; background: rgb(255 255 255 / .92);
     font-size: 12px; font-weight: 700; color: #1d1d1f; box-shadow: 0 2px 8px -4px rgb(0 0 0 / .25); }
   .cat-qtd[hidden] { display: none; }
+  /* bloco sem arte (ainda): o nome no mesmo estúdio das artes, com o pedestal e o filete laranja delas */
+  .cat-estudio { position: relative; display: grid; align-content: end; aspect-ratio: 1; padding: clamp(14px, 7%, 30px);
+    background: radial-gradient(80% 70% at 62% 34%, #fbfaf8 0%, #efeeeb 58%, #e4e2de 100%); color: #1d1d1f; }
+  .cat-estudio::before { content: ""; position: absolute; left: 22%; right: 22%; top: 40%; height: 13%; border-radius: 50%;
+    background: radial-gradient(closest-side, #4a4a4d 0%, #2a2a2c 70%, #1d1d1f 100%);
+    box-shadow: 0 3px 0 -1px var(--accent), 0 14px 24px -10px rgb(255 106 0 / .55), 0 26px 30px -20px rgb(0 0 0 / .5); }
+  .cat-nome { position: relative; font-stretch: 78%; font-weight: 820; font-size: clamp(19px, 5.4vw, 30px); line-height: .98;
+    letter-spacing: -.01em; text-wrap: balance; max-width: 92%; padding-bottom: 10px; }
+  .cat-nome::after { content: ""; position: absolute; left: 0; bottom: 0; width: 2.4em; height: 4px; border-radius: 4px; background: var(--accent); }
   /* o último cartão: texto vivo no mesmo estúdio das artes */
   .cat-todas a { aspect-ratio: 1; display: grid; align-content: end; gap: 10px; padding: clamp(14px, 6%, 26px);
     background: radial-gradient(90% 80% at 70% 30%, #fbfaf8 0%, #efeeeb 60%, #e6e4e0 100%); color: #1d1d1f; }
@@ -205,22 +219,30 @@ const POUCAS = 30;
   .cats-carro button, .cats-carro a { min-height: 32px; border: 0; background: none; padding: 0; font-size: 15px; font-weight: 650; color: var(--accent-text);
     text-decoration: underline; text-underline-offset: 3px; }
   .cats-carro [hidden] { display: none; }
+  /* tablet (4 colunas) e PC (5): bento com os primeiros grandes; sem carro, o último cartão só entra se fecha a grade */
   @media (min-width: 700px) {
     .cats-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
     .cat-extra { display: block; } .cats-mais { display: none !important; }
     .cat-todas-txt { font-size: clamp(22px, 2.6vw, 34px); }
+    .cat-nome { font-size: clamp(18px, 2.2vw, 28px); }
+  }
+  @media (min-width: 700px) and (max-width: 1079px) {
+    .cat-g4 { grid-column: span 2; grid-row: span 2; }
+    .cat-g4 .cat-nome { font-size: clamp(30px, 4.4vw, 48px); }
+    .cats.sem-todas-4:not([data-com-carro]) .cat-todas { display: none; }
   }
   @media (min-width: 1080px) {
     .cats-grade { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    .cat-grande { grid-column: span 2; grid-row: span 2; }
+    .cat-g5 { grid-column: span 2; grid-row: span 2; }
+    .cat-g5 .cat-nome { font-size: clamp(34px, 3.4vw, 52px); }
     .cat-qtd { top: 12px; right: 12px; font-size: 12.5px; }
-    .cat-grande .cat-qtd { top: 18px; right: 18px; font-size: 14px; padding: 7px 13px; }
-    /* sem carro, no PC as 19 fecham o bento certinho (2 grandes + 17): o último cartão sobraria sozinho */
-    .cats:not([data-com-carro]) .cat-todas { display: none; }
+    .cat-g5 .cat-qtd { top: 18px; right: 18px; font-size: 14px; padding: 7px 13px; }
+    .cats.sem-todas-5:not([data-com-carro]) .cat-todas { display: none; }
   }
   /* com carro: grade regular (o bento grande ao lado de um vazio parecia defeito) */
-  .cats[data-com-carro] .cat-grande { grid-column: auto; grid-row: auto; }
-  .cats[data-com-carro] .cat-grande .cat-qtd { top: 12px; right: 12px; font-size: 12.5px; padding: 5px 10px; }
+  .cats[data-com-carro] :is(.cat-g4, .cat-g5) { grid-column: auto; grid-row: auto; }
+  .cats[data-com-carro] :is(.cat-g4, .cat-g5) .cat-qtd { top: 12px; right: 12px; font-size: 12.5px; padding: 5px 10px; }
+  .cats[data-com-carro] :is(.cat-g4, .cat-g5) .cat-nome { font-size: clamp(18px, 2.2vw, 28px); }
   @media (hover: hover) {
     .cat a:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
     .cat a:hover img { transform: scale(1.03); }

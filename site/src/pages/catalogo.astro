@@ -24,11 +24,15 @@ const fotosTopo = iniciais.slice(0, 2).map((it) => (it.e !== '0' || !it.i ? { hr
   href: foto(it.i, 'O'), imagesrcset: `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`,
   imagesizes: '(min-width:1280px) 240px, (min-width:768px) 28vw, 46vw',
 }));
+// ?tipo= antigo (família do Mercado Livre, que o Google conhece: "Iluminação", "Peças de Interior") -> o bloco novo.
+// Com sub= junto ("Carroceria" + "Retrovisores Externos"), o tipo sai: o sub sozinho já filtra certo.
+const tiposAntigos = Object.fromEntries((r.antigas ?? []).map((a) => [a.n, r.familias.find((f) => f.k === a.para && f.c > 0)?.n ?? '']));
 // Antes da pintura (no <head>, sem esperar o CSS):
+// - ?tipo= antigo vira o novo (acima), antes de o catálogo ler o endereço;
 // - endereço com busca ou filtro: html.cat-url troca a vitrine padrão pelo esqueleto e o índice é pedido já;
 // - sem busca: as fotos dos 2 primeiros cartões são pedidas já, com prioridade;
 // - html.cat-url-filtro guarda o lugar das fichas; html.cat-carro, o do aviso "Seu carro".
-const scriptTopo = `(function(){var d=document.documentElement,h=document.head,u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},o=g('ordem'),a=Number(g('ano'))||0,fil=!!(g('marca')||g('modelo')||a||g('tipo')||g('sub')||g('preco'));function pre(x){var l=document.createElement('link');l.rel='preload';for(var k in x)l.setAttribute(k,x[k]);h.appendChild(l)}if(g('q')||fil||g('frete')==='1'||g('frete')==='true'||o==='asc'||o==='desc'){d.classList.add('cat-url');pre({as:'fetch',href:'/dados/busca.json',crossorigin:'anonymous'})}else ${JSON.stringify(fotosTopo)}.forEach(function(f){f.as='image';f.fetchpriority='high';pre(f)});if(fil)d.classList.add('cat-url-filtro');try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')||'null');if(c&&typeof c.b=='string'&&typeof c.m=='string')d.classList.add('cat-carro')}catch(e){}})();`;
+const scriptTopo = `(function(){var d=document.documentElement,h=document.head,u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},A=${JSON.stringify(tiposAntigos)},t0=g('tipo');if(t0&&A.hasOwnProperty(t0)){if(A[t0]&&!g('sub'))u.set('tipo',A[t0]);else u.delete('tipo');history.replaceState(history.state,'',location.pathname+'?'+u+location.hash)}var o=g('ordem'),a=Number(g('ano'))||0,fil=!!(g('marca')||g('modelo')||a||g('tipo')||g('sub')||g('preco'));function pre(x){var l=document.createElement('link');l.rel='preload';for(var k in x)l.setAttribute(k,x[k]);h.appendChild(l)}if(g('q')||fil||g('frete')==='1'||g('frete')==='true'||o==='asc'||o==='desc'){d.classList.add('cat-url');pre({as:'fetch',href:'/dados/busca.json',crossorigin:'anonymous'})}else ${JSON.stringify(fotosTopo)}.forEach(function(f){f.as='image';f.fetchpriority='high';pre(f)});if(fil)d.classList.add('cat-url-filtro');try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')||'null');if(c&&typeof c.b=='string'&&typeof c.m=='string')d.classList.add('cat-carro')}catch(e){}})();`;
 // Logos das marcas para os filtros (usados como estão, com as cores reais, num disco claro).
 const logos = Object.fromEntries(r.marcas.flatMap((m) => {
   const l = logoInfo(m.k, 26, 20);

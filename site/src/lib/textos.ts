@@ -23,6 +23,25 @@ export function juntar(xs: string[]): string {
   return `${xs.slice(0, -1).join(', ')} e ${xs[xs.length - 1]}`;
 }
 
+/** Blocos de peças na frase, com o "de" repetido: o nome do bloco já tem "e" ("faróis e lanternas"), e
+ *  "motor, faróis e lanternas e painel e console" não se lê. -> "de motor, de faróis e lanternas e de painel e console". */
+export function juntarDe(xs: string[]): string {
+  return juntar(xs.map((x) => `de ${x}`));
+}
+
+/** Como a frase chama o bloco: "peças de freios" (tema "freios") ou, quando o nome do bloco já é a peça,
+ *  "241 mangueiras do motor originais" (ehPeca). */
+const BLOCO_E_PECA: Record<string, string> = {
+  'botoes-e-chaves-de-seta': 'botões e chaves de seta',
+  'acabamentos-e-forros': 'acabamentos e forros',
+  'mangueiras-do-motor': 'mangueiras do motor',
+  'modulos-e-eletrica': 'módulos e peças elétricas',
+};
+export function temaCategoria(f: { n: string; k: string }): { tema: string; ehPeca: boolean } {
+  const peca = BLOCO_E_PECA[f.k];
+  return peca ? { tema: peca, ehPeca: true } : { tema: f.n.replace(/^Peças de /i, '').toLowerCase(), ehPeca: false };
+}
+
 const P = (n: number) => (n === 1 ? 'peça' : 'peças');
 /** Familia como sistema do carro, para a frase: "peças de interior" -> "interior". */
 const sistema = (n: string) => n.replace(/^peças de /i, '');
@@ -87,7 +106,7 @@ export type Textos = { paragrafos: string[]; meta: string };
 export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Textos {
   const N = lista.length;
   if (!N) return { paragrafos: [], meta: f.n };
-  const tema = f.n.replace(/^Peças de /i, '').toLowerCase();
+  const { tema, ehPeca } = temaCategoria(f);
   const subs = tiposFrase(lista.map((p) => p.s), 2);
   const marcas = contar(lista.map((p) => p.b), 3);
   const modelos = new Set(lista.flatMap((p) => (p.ms?.length ? p.ms : p.m ? [p.m] : []).map((m) => `${p.b} ${m}`))).size;
@@ -95,7 +114,11 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
   const anosFrase = a ? `, de carros de ${a[0] === a[1] ? a[0] : `${a[0]} a ${a[1]}`}` : '';
   const k = `categoria:${f.k}`;
 
-  const p1 = escolha(`${k}:1`, [
+  const p1 = escolha(`${k}:1`, ehPeca ? [
+    `Temos ${N} ${tema} ${O(N)} no estoque.`,
+    `No estoque há ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
+    `Esta categoria reúne ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
+  ] : [
     `Temos ${N} ${P(N)} de ${tema} ${O(N)} no estoque.`,
     `No estoque há ${N} ${P(N)} de ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
     `Esta categoria reúne ${N} ${P(N)} ${O(N)} de ${tema}, retiradas de carros com baixa legal no Detran-RS.`,
@@ -115,7 +138,7 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
       `Há peças para ${base}${anosFrase}; a marca com mais peças é ${marcas[0]}.`,
     ]) : `As marcas com mais peças são ${juntar(marcas)}${anosFrase}.`);
   }
-  const meta = `${N} peças originais de ${tema}${subs.length ? `: ${juntar(subs.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  const meta = `${ehPeca ? `${N} ${tema} ${O(N)}` : `${N} peças originais de ${tema}`}${subs.length ? `: ${juntar(subs.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
   return { paragrafos, meta };
 }
 
@@ -138,9 +161,9 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
   const paragrafos = [p1];
   if (fams.length) {
     paragrafos.push(escolha(`${k}:2`, [
-      `No ${nome}, a maioria é de ${juntar(fams)}.`,
-      `Para o ${nome}, aparecem mais peças de ${juntar(fams.map(sistema))}.`,
-      `Os sistemas com mais peças para o ${nome} são ${juntar(fams.map(sistema))}.`,
+      `No ${nome}, a maioria das peças é ${juntarDe(fams)}.`,
+      `Para o ${nome}, aparecem mais peças ${juntarDe(fams.map(sistema))}.`,
+      `No ${nome}, o que mais tem é peça ${juntarDe(fams.map(sistema))}.`,
     ]));
   }
   if (subs.length) {
@@ -151,7 +174,7 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
   } else {
     paragrafos.push(`Confira o ano e o código gravado da peça para ${nome}; na dúvida, a gente confere pelo WhatsApp.`);
   }
-  const meta = `${N} peças originais de ${nome}${anos}${fams.length ? `: ${juntar(fams.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  const meta = `${N} peças originais de ${nome}${anos}${fams.length ? `: ${fams.slice(0, 2).join(', ')}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
   return { paragrafos, meta };
 }
 
@@ -183,8 +206,8 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
   }
   if (fams.length) {
     paragrafos.push(escolha(`${k}:3`, [
-      `A maioria é de ${juntar(fams)}${anosFrase}.`,
-      `Os sistemas com mais peças são ${juntar(fams.map(sistema))}${anosFrase}.`,
+      `A maioria é ${juntarDe(fams)}${anosFrase}.`,
+      `O que mais tem é peça ${juntarDe(fams.map(sistema))}${anosFrase}.`,
     ]));
   }
   const meta = `${N} peças originais de ${m.n}${modelos ? ` para ${modelos} ${M(modelos)}` : ''}${nomes.length ? `: ${juntar(nomes.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;

@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import type { Peca, Resumo } from './dados';
 import {
-  juntar, minuscula, contar, faixaAnos, escolha, textosCategoria, textosCarro, textosMarca,
-  tituloCategoria, tituloCarro, tituloMarca, PROIBIDOS, raiz, tiposFrase,
+  juntar, juntarDe, minuscula, contar, faixaAnos, escolha, textosCategoria, textosCarro, textosMarca,
+  tituloCategoria, tituloCarro, tituloMarca, PROIBIDOS, raiz, tiposFrase, temaCategoria,
 } from './textos';
 import { serveNoModelo } from './meuCarro';
 
@@ -18,6 +18,19 @@ describe('textos: funcoes basicas', () => {
     expect(juntar(['A'])).toBe('A');
     expect(juntar(['A', 'B'])).toBe('A e B');
     expect(juntar(['A', 'B', 'C'])).toBe('A, B e C');
+  });
+  it('juntarDe: bloco com "e" no nome nao vira lista ambigua', () => {
+    expect(juntarDe(['motor', 'faróis e lanternas', 'painel e console'])).toBe('de motor, de faróis e lanternas e de painel e console');
+    expect(juntarDe(['freios'])).toBe('de freios');
+  });
+  it('temaCategoria: "peças de freios", mas "mangueiras do motor" (o nome ja e a peca)', () => {
+    expect(temaCategoria({ n: 'Freios', k: 'freios' })).toEqual({ tema: 'freios', ehPeca: false });
+    expect(temaCategoria({ n: 'Faróis e Lanternas', k: 'farois-e-lanternas' })).toEqual({ tema: 'faróis e lanternas', ehPeca: false });
+    expect(temaCategoria({ n: 'Mangueiras do Motor', k: 'mangueiras-do-motor' })).toEqual({ tema: 'mangueiras do motor', ehPeca: true });
+    expect(temaCategoria({ n: 'Módulos e Elétrica', k: 'modulos-e-eletrica' }).tema).toBe('módulos e peças elétricas');
+    const t = textosCategoria({ n: 'Mangueiras do Motor', k: 'mangueiras-do-motor' }, [peca({ c: 'Mangueiras do Motor' }), peca({ id: 'MLB2', c: 'Mangueiras do Motor' })]);
+    expect(t.paragrafos[0]).toMatch(/2 mangueiras do motor originais/);
+    expect(t.meta).toMatch(/^2 mangueiras do motor originais/);
   });
   it('minuscula preserva siglas e codigos', () => {
     expect(minuscula('Bielas')).toBe('bielas');
@@ -85,7 +98,7 @@ describe('textos: categoria, carro e marca (fixtures)', () => {
     expect(t.paragrafos[0]).toBe('Temos 34 peças originais de Mini no estoque.');
   });
   it('categoria nao repete a instrucao do topo ("Escolha a marca do seu carro")', () => {
-    for (const k of ['motor', 'iluminacao', 'freios', 'injecao', 'pecas-de-interior']) {
+    for (const k of ['motor', 'farois-e-lanternas', 'freios', 'injecao-e-combustivel', 'painel-e-console']) {
       const t = textosCategoria({ n: 'Motor', k }, [peca({}), peca({ id: 'MLB2', b: 'Fiat', m: 'Toro' })]);
       expect(t.paragrafos.join(' ')).not.toMatch(/Escolha a marca/);
     }

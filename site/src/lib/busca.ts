@@ -227,9 +227,10 @@ export class Busca {
       const mb = marcas.get(compacto(b));
       if (mb && !marcas.has(ap)) marcas.set(ap, mb);
     }
-    // sistema pelo nome inteiro ("iluminacao", "suspensaoedirecao") e pela 1ª palavra que diz o que é ("suspensao", "som")
+    // sistema pelo nome inteiro ("faroiselanternas", "suspensaoedirecao") e pela 1ª palavra que diz o que é ("farois",
+    // "suspensao", "som"); "Para-choques e Lataria" -> "choques", nunca "para"
     for (const [k, fm] of [...familias]) {
-      const w = palavras(fm.c).filter((x) => !['pecas', 'de', 'e', 'sistema'].includes(x))[0];
+      const w = palavras(fm.c).filter((x) => !['pecas', 'de', 'do', 'da', 'e', 'sistema', 'para'].includes(x))[0];
       if (w && w.length >= 3 && !familias.has(w)) familias.set(w, fm);
       if (k === 'outros') familias.delete(k);
     }

@@ -14,6 +14,11 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **Tipo da peça** (`s`, os cartões "Por tipo" da categoria): a árvore do ML vira o nome da loja em `TIPO_LOJA`
      (sinônimos num nome só; grupo do ML que mistura de tudo vira "Outros", sem cartão). Família/tipo errados do ML
      são corrigidos pelo nome da peça em `REGRAS_NOME` (chave de roda, módulo do câmbio, motor de vidro...).
+   - **Bloco** (`c`, as categorias da home e `/categoria/<k>.html`): os 25 `BLOCOS` do jeito que o cliente procura
+     (Retrovisores, Faróis e Lanternas, Maçanetas e Fechaduras…; nome, chave e ordem iguais aos da arte), nunca a
+     família do ML. Sai do tipo `s` (`_TIPOS_DO_BLOCO`); o nome manda quando o ML errou (`BLOCO_PELO_NOME`) ou quando o
+     tipo junta 2 blocos (`BLOCO_NO_TIPO`); o tipo "Outros" vai pelas palavras do nome. O que não cai em nada fica em
+     "Outros" (fora da grade). Tipo novo do ML sem bloco: o teste avisa.
    - **Peça de 2+ carros** (`ms`, e `ys` quando a faixa de anos muda de um carro para outro): "Volvo S60 Xc60" aparece
      na página, no filtro, na contagem e no Meu carro dos dois (`site/src/lib/meuCarro.ts`: `modelosDa`,
      `serveNoModelo`, `anosNoModelo`). A URL da peça não muda.
@@ -64,6 +69,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Novos: `/carros.html`, `/carros/<marca-modelo>.html`, `/marca/<marca>.html`, `/categoria/<tipo>.html`,
   `/como-comprar.html`, `/garantia.html`, `/envios.html`, `/sobre.html`, `/contato.html`, `/procuro-peca.html`.
 - `/veiculos.html` redireciona para `/carros.html`.
+- `/categoria/<família antiga do ML>.html` (pecas-de-interior, carroceria, iluminacao…) redireciona para o bloco mais
+  próximo (`FAMILIAS_ANTIGAS` em `preparar_dados.py` → `site/src/pages/categoria/[antiga].html.ts`); o `?tipo=` antigo
+  do catálogo vira o bloco novo no `<head>` de `catalogo.astro`.
 
 ## Onde mexer
 | Quero mudar… | Arquivo |
@@ -75,6 +83,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 | Leitura de marca/modelo/nome | `preparar_dados.py` |
 | GA4 / Meta Pixel | `site/public/rastreio.js` (só mede no domínio de verdade) |
 | Artes (v2: abertura, categorias, carros, selos, banners, passos, topos, história, 404) | `site/public/arte/v2/` — texto desenhado na arte; prompts em `site/SUPER-PLANEJAMENTO-v2.md` |
+| Artes dos blocos (`cat-<k>.webp` e o topo sem o nome) | `node scripts/instalar-cats.mjs [pasta dos PNG]` na pasta `site/` (bloco sem arte: o nome num fundo de estúdio) |
 | Logos das marcas | `site/public/marcas/` (simple-icons e car-logos-dataset; viewBox recortado) |
 
 ## Regras da marca (manual da vitrine)
