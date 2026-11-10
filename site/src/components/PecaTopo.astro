@@ -202,6 +202,14 @@ const perguntas = [
   atualizarWhats(lerMeuCarro());
   window.addEventListener(EVENTO, (e) => atualizarWhats((e as CustomEvent<MeuCarro | null>).detail ?? null));
 
+  // "Comprar no Mercado Livre": no computador (tela larga e mouse) abre noutra aba, e o site continua aberto atrás
+  // (cliente oculto, melhoria 4); no celular, na mesma aba (aba nova lá perde o "voltar"). O evento do GA4 não muda.
+  const ml = document.querySelector<HTMLAnchorElement>('[data-compra]');
+  const pc = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
+  const abaDoMl = () => { if (ml) { if (pc.matches) ml.target = '_blank'; else ml.removeAttribute('target'); } };
+  abaDoMl();
+  pc.addEventListener('change', abaDoMl);
+
   // Galeria em tela cheia: módulo pequeno e sem React (ui/GaleriaTelaCheia.ts). Pré-busca quando o navegador folga
   // e no 1º toque na foto; o HTML dela só é montado na 1ª vez que abre.
   let telaCheia: Promise<typeof import('./ui/GaleriaTelaCheia')> | null = null;
