@@ -89,7 +89,16 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.rembg
-          key: rembg-modelos-v1
+          key: rembg-modelos-v2   # v2: + o detector de carro da montagem (medir_fotos_ml.py, 29 MB)
+      # o detector baixado já aqui: o cache acima só grava na 1ª rodada da chave nova (rodada sem foto nova não o baixaria)
+      - name: Modelo do detector de carro da montagem
+        continue-on-error: true   # sem ele, medir_fotos_ml.py usa a regra das janelas
+        run: |
+          M="$HOME/.rembg/models/detector/ssd_mobilenet_v1_12.onnx"
+          test -f "$M" || (mkdir -p "$(dirname "$M")" && curl -fsSL -o "$M.tmp" \
+            "https://github.com/onnx/models/raw/main/validated/vision/object_detection_segmentation/ssd-mobilenetv1/model/ssd_mobilenet_v1_12.onnx" \
+            && mv "$M.tmp" "$M")
+          ls -la "$M" || true
       # filtro de etiqueta (texto na foto): se nao instalar, a capa segue sem o filtro
       - name: Filtro de etiqueta de texto (rapidocr)
         continue-on-error: true

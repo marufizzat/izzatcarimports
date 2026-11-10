@@ -181,6 +181,38 @@ def test_classe_carro_so_na_montagem():
     assert mf.classe_de(True, dict(base, c=0.9, b=255.0, k=0.9, l=27.0, t=0.14, x="algo escrito")) == "m"
 
 
+def test_classe_carro_pelo_detector():
+    """Rodada 8: a soleira do F-Pace sozinha virava carro nas janelas; a montagem panorâmica do S60 (carro colado na
+    peça), a do Discovery (carro cortado na borda) e a do XC60 (carro em cima do módulo) escapavam. Com o detector
+    ("d": [score, classe COCO, x0, y0, x1, y1]) o carrinho é achado onde está."""
+    base = {"t": 0.0, "x": "", "l": 190.0, "c": 0.0, "b": 255.0}
+    xc60 = [[0.903, 3, 0.434, 0.036, 0.829, 0.244]]
+    assert mf.classe_de(True, dict(base, k=0.653, i=0.395, n=1, d=xc60)) == "c"                     # janelas: não
+    assert mf.classe_de(True, dict(base, k=0.422, n=1, d=[[0.955, 3, 0.422, 0.05, 0.837, 0.419]])) == "c"  # S60
+    assert mf.classe_de(True, dict(base, k=0.752, i=0.528, n=1, d=[])) == "p"            # soleira: nenhum carro
+    # carro grande da montagem (caixa > 45%): fica pelas janelas, porque o detector viu um carro
+    toro = [[0.94, 3, 0.05, 0.0, 0.95, 0.5]]
+    assert mf.classe_de(True, dict(base, k=0.98, i=0.6, n=2, d=toro)) == "c"
+    # a peça grande que o detector chama de carro (porta, para-choque, lanterna): caixa grande, não é montagem
+    assert mf.classe_de(True, dict(base, k=0.1, n=1, d=[[0.71, 3, 0.02, 0.03, 0.97, 0.93]])) == "p"
+    # "caminhonete" pequena sem carro: módulo, válvula, trava (o detector erra nelas)
+    assert mf.classe_de(True, dict(base, k=0.02, n=1, d=[[0.86, 8, 0.2, 0.2, 0.8, 0.95]])) == "p"
+    assert mf.classe_de(True, dict(base, k=0.02, n=1, d=[[0.45, 3, 0.6, 0.0, 0.9, 0.2]])) == "p"   # score baixo
+    # foto de estúdio (fundo cinza): nunca carro, nem com o detector
+    assert mf.classe_de(True, dict(base, b=221.0, d=xc60)) == "p"
+    assert mf.carro_achado(xc60) and not mf.carro_achado([]) and not mf.carro_achado(None)
+
+
+def test_montagem_com_detector():
+    vistos = []
+
+    def det(img):
+        vistos.append(img.size)
+        return [[0.9, 3, 0.5, 0.1, 0.9, 0.4]]
+    assert mf.montagem(_foto(500, 400, (220, 220, 218)), None, det) == {"b": 218.0} and not vistos   # estúdio
+    assert mf.montagem(_foto(500, 400), None, det) == {"b": 255.0, "d": [[0.9, 3, 0.5, 0.1, 0.9, 0.4]]} and vistos
+
+
 def test_janelas_carro_cobrem_o_conteudo():
     for cw, ch in ((480, 460), (500, 200), (300, 480), (60, 40)):
         js = mf.janelas_carro(cw, ch)
@@ -215,7 +247,8 @@ def test_montagem_sinais():
 def test_montagem_aparece_inteira():
     h = "0123456789abcdef"
     assert mf.com_classe([1200, 900, 50, 40, 1150, 860], "c", h) == [1200, 900, 50, 40, 1150, 860, "c", h, mf.INCERTA]
-    assert mf.com_classe([1200, 1200, 50, 40, 1150, 860], "c", h) == [1200, 1200, 50, 40, 1150, 860, "c", h]  # quadrada
+    # quadrada também (rodada 8: MLB6491380758 e MLB6505927874 saíam sem a marca)
+    assert mf.com_classe([1200, 1200, 50, 40, 1150, 860], "c", h) == [1200, 1200, 50, 40, 1150, 860, "c", h, mf.INCERTA]
     assert mf.com_classe([1200, 900], "c", h) == [1200, 900, "c", h]
     assert mf.com_classe([1200, 900, 50, 40, 1150, 860], "p", h, False) == [1200, 900, 50, 40, 1150, 860, "p", h]
 

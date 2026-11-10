@@ -42,8 +42,9 @@ function carroCom(p: PecaNome, n: number): string {
  *  Corte com critério, sempre em partes inteiras (nunca no meio da palavra): o nome da peça vai sempre inteiro; sai
  *  primeiro o código, depois os anos (o carro vale mais que os anos), depois o sufixo; se ainda não couber, os carros
  *  saem um a um do fim ("Volvo S60 e XC60" -> "Volvo S60" -> "Volvo"). anos = os anos valem mais que o sufixo
- *  (desempate de títulos iguais). `extra` (código ou MLB) também desempata: entra depois dos anos e nunca sai.
- *  O H1 da página não muda (é o nome). */
+ *  (desempate de títulos iguais). `extra` (código ou MLB) também desempata: entra depois dos anos e nunca sai, e o
+ *  carro também não (no máximo os outros carros saem, ficam a marca e o 1º modelo): se não couber nem assim, o título
+ *  passa de 65 com o MLB no fim, onde o Google corta. O H1 da página não muda (é o nome). */
 export function tituloPeca(p: PecaNome, o: { max?: number; extra?: string; anos?: boolean } = {}): string {
   const max = o.max ?? TITULO_MAX;
   const cod = codigoDaPeca(p.oem);
@@ -61,19 +62,30 @@ export function tituloPeca(p: PecaNome, o: { max?: number; extra?: string; anos?
   if (o.anos && anos) por(junta(p.n, carro, anos, ex), false);
   por(junta(p.n, carro, ex));
   por(junta(p.n, carro, ex), false);
-  for (const c of carros.slice(1)) { por(junta(p.n, c, ex)); por(junta(p.n, c, ex), false); }
-  por(junta(p.n, ex));
-  return opcoes.find((t) => t.length <= max) ?? junta(p.n, ex);
+  // o menor carro que ainda é o carro: marca + 1º modelo (sem modelo, a marca); com `extra`, ele nunca sai
+  const minimo = carroCom(p, 1);
+  for (const c of carros.slice(1)) {
+    if (ex && c.length < minimo.length) break;
+    por(junta(p.n, c, ex)); por(junta(p.n, c, ex), false);
+  }
+  if (!ex) por(junta(p.n));
+  return opcoes.find((t) => t.length <= max) ?? junta(p.n, ex ? minimo : '', ex);
 }
 
 /** Os títulos de todas as peças, sem repetir. Título igual (o mesmo carro de outra geração, anúncios gêmeos,
  *  "Fechadura" sem carro) desempata por etapas, só nas repetidas: os anos de volta (no lugar do sufixo), depois o
- *  código, e por fim o MLB. Uma vez por build. */
+ *  código (só se couber com o carro inteiro: o carro vale mais que o código), e por fim o MLB. Uma vez por build. */
 export function titulosPecas<T extends PecaNome & { id: string }>(lista: T[]): Map<string, string> {
   const atual = new Map(lista.map((p) => [p.id, tituloPeca(p)]));
+  // o código só entra com o carro inteiro (o carro vale mais que o código); senão fica como estava, para o MLB
+  const comCodigo = (p: T) => {
+    const cod = codigoDaPeca(p.oem);
+    const t = cod ? tituloPeca(p, { anos: true, extra: cod }) : '';
+    return t && t.length <= TITULO_MAX && t.includes(nomeModelos(p)) ? t : atual.get(p.id)!;
+  };
   const etapas: ((p: T) => string)[] = [
     (p) => tituloPeca(p, { anos: true }),
-    (p) => tituloPeca(p, { anos: true, extra: codigoDaPeca(p.oem) }),
+    comCodigo,
     (p) => tituloPeca(p, { anos: true, extra: p.id }),
   ];
   for (const etapa of etapas) {

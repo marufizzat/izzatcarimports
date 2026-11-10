@@ -105,6 +105,11 @@ ORIGINAL_CORTADO = re.compile(r"\b(or|ori|orig|origi|origin|origina|original)\b"
 CODIGO_SEPARADO = re.compile(r"\b([A-Za-z]{1,3})[ -](\d{2,3})\b")
 
 
+# Modelo colado na cilindrada: "Bmw X32.0" (X3 2.0), "Audi Q52.0", "Volvo Xc602.0". So separa quando o pedaco da
+# frente e um carro conhecido no estoque (nunca parte um codigo de peca).
+MODELO_COLADO = re.compile(r"\b([A-Za-z]{1,3}\d{1,2})(\d[.,]\d)\b")
+
+
 def limpar_titulo(titulo, modelos_conhecidos):
     """Prepara o titulo SO pra leitura do carro (nunca pro texto exibido)."""
     t = ORIGINAL_CORTADO.sub(" ", titulo)
@@ -113,7 +118,10 @@ def limpar_titulo(titulo, modelos_conhecidos):
         junto = m.group(1) + m.group(2)
         return junto if gi.chave_modelo(junto) in modelos_conhecidos else m.group(0)
 
-    return CODIGO_SEPARADO.sub(juntar, t)
+    def separar(m):
+        return f"{m.group(1)} {m.group(2)}" if gi.chave_modelo(m.group(1)) in modelos_conhecidos else m.group(0)
+
+    return CODIGO_SEPARADO.sub(juntar, MODELO_COLADO.sub(separar, t))
 
 
 MODELOS_SOLTOS = {
@@ -311,7 +319,7 @@ ACENTOS.update({
     "hidraulicos": "hidráulicos", "mecanico": "mecânico", "metalicos": "metálicos", "estatico": "estático",
     "conexoes": "conexões", "vedacao": "vedação", "tracao": "tração", "aceleracao": "aceleração",
     "rele": "relé", "reles": "relés", "diagnostico": "diagnóstico", "planetaria": "planetária",
-    "secundaria": "secundária", "transferencia": "transferência",
+    "secundaria": "secundária", "transferencia": "transferência", "multimedia": "multimídia",
 })
 MOTOR_FORA = re.compile(r"^(\d{1,2}v|tfsi|fsi|tsi|tdi|thp|t\d?|turbo|flex|hibrido|híbrido|"
                         r"hybrid|sport|v6|v8|aut)$", re.I)
@@ -589,6 +597,59 @@ def _sem_repetidos(blocos):
     return saida
 
 
+# Texto do vendedor em outro idioma (anúncio copiado em espanhol: "La cámara de reversa ... es un accesorio"): não vai
+# para o site nem para o feed. Conta as palavras que só o espanhol usa contra as que só o português usa (PT e ES dividem
+# muitas: "para", "de", "que", "modelo"); a linha (ou a frase, numa linha misturada) com 3+ do espanhol e mais que o
+# dobro das do português sai. Conferido no estoque de nov/2026: só a descrição da câmera de ré do WR-V cai.
+_SO_ES = set("""el la los las lo del y con una es su sus muy pero sin más puede pueden hay nuevo nueva nuevos al en un
+cuenta además garantiza funcionamiento instalación seguridad conducir mejor mejorar quienes buscan diseñada diseño
+cámara vehículo vehículos lámparas visión condiciones sencilla manejar estacionamiento cuando donde desde hasta ese
+esa eso estos estas otro otra otros todos todas usted ustedes""".split())
+_SO_PT = set("""o os do da dos das no na nos nas um uma com em ao não é você pelo pela mais peça peças são também muito
+sem seu sua seus suas pra pro quando""".split())
+
+
+def _espanhol(texto):
+    # só palavras soltas: "AL4", "ES2", "EN590" (pedaço de código) não contam como "al", "es", "en"
+    ws = re.findall(r"(?<![0-9a-záéíóúñüâêôãõçà])[a-záéíóúñüâêôãõçà]+(?![0-9a-záéíóúñüâêôãõçà])", (texto or "").lower())
+    es = sum(1 for w in ws if w in _SO_ES or "ñ" in w or re.search(r"(ción|ciones|dad)$", w))
+    pt = sum(1 for w in ws if w in _SO_PT or re.search(r"(ção|ções|ões|ã|õ)", w))
+    return es >= 3 and es > 2 * pt
+
+
+def _sem_espanhol(linhas):
+    """As linhas sem o que está em espanhol (a linha inteira, ou só as frases dela)."""
+    saida = []
+    for linha in linhas:
+        if _espanhol(linha):
+            continue
+        frases = re.split(r"(?<=[.!?])\s+", linha)
+        if len(frases) > 1 and any(_espanhol(f) for f in frases):
+            linha = " ".join(f for f in frases if not _espanhol(f))
+        saida.append(linha)
+    return saida
+
+
+# "tu"/"teu" no texto do vendedor ("quando tu freia"): o site fala com "você" (o tom das páginas). Só a 2ª pessoa muda;
+# o verbo vai para a forma de "você" ("tu freias" -> "você freia", "tu tens" -> "você tem"). "te ajudar" -> "ajudar você".
+_POSSE_TU = {"teu": "seu", "tua": "sua", "teus": "seus", "tuas": "suas"}
+_VERBO_TU = {"tens": "tem", "és": "é", "vais": "vai", "queres": "quer", "estás": "está", "fazes": "faz",
+             "dizes": "diz", "trazes": "traz", "podes": "pode", "sabes": "sabe", "vês": "vê", "lês": "lê"}
+
+
+def sem_tu(texto):
+    def verbo(m):
+        v = m.group(2)
+        lv = v.lower()
+        novo = _VERBO_TU.get(lv) or (v[:-1] if re.fullmatch(r"[a-zçãõáéíóúâê]{3,}[ae]s", lv) else v)
+        return ("Você " if m.group(1)[0].isupper() else "você ") + novo
+    t = re.sub(r"\b([Tt]u) ([A-Za-zçãõáéíóúâêÇ]+)", verbo, texto or "")
+    t = re.sub(r"\b([Tt]u)\b", lambda m: "Você" if m.group(1)[0] == "T" else "você", t)
+    t = re.sub(r"\b([Tt])(eu|ua|eus|uas)\b",
+               lambda m: (lambda p: p.capitalize() if m.group(1) == "T" else p)(_POSSE_TU["t" + m.group(2)]), t)
+    return re.sub(r"\b([Tt]e) ([a-zçã]{2,}(?:ar|er|ir))\b", r"\2 você", t)
+
+
 def descricao(texto, nome=""):
     """Descricao do ML em HTML limpo: so secoes sobre a peca, titulos com acento,
     sem promessas nao confirmadas, sem CAIXA ALTA, com as listas em lista, sem o
@@ -597,7 +658,7 @@ def descricao(texto, nome=""):
     from html import escape
     blocos, par = [], []
     manter = True          # texto antes do 1o titulo: so se nao tiver promessa
-    linhas = (texto or "").splitlines()
+    linhas = [sem_tu(x) for x in _sem_espanhol((texto or "").splitlines())]
     if _dimensoes(texto) in _DIM_PADRAO:            # medida do modelo, nao da peca
         linhas = [x for x in linhas if not (_DIM_LINHA.match(x.strip()) or _PESO_LINHA.match(x.strip()))]
 
@@ -1003,10 +1064,31 @@ def _concordar_posicao(ws):
     return ws
 
 
+# Palavra cortada pelo limite de letras do titulo do ML, no FIM dele ("... Toro 15/21 Die" = diesel, "... Focus Sed" =
+# sedan): vira a palavra inteira; pedaco que serve em mais de uma sai. So no titulo cheio (58+ letras) e so com as
+# palavras desta lista ("Original" cortado ja sai em PALAVRAS_FORA; "Compl", "Dir", "Tras" sao abreviacoes).
+TITULO_CHEIO = 58
+PALAVRAS_INTEIRAS = ("diesel", "sedan", "hatch", "gasolina")
+
+
+def palavra_cortada(w):
+    """A palavra inteira de um pedaco cortado ("die" -> "diesel"), "" se o pedaco serve em mais de uma (sai) ou None
+    se nao e pedaco de nenhuma (fica como esta). Pedaco que ja e palavra ou abreviacao conhecida ("gas") nunca."""
+    k = _sem(w).strip(".,;-")
+    if len(k) < 3 or k in ACENTOS or k in _PALAVRAS or k in ABREV_ADJETIVO or k in ABREV_FIXA \
+            or k in ABREV_INVARIAVEL:
+        return None
+    cand = {x for x in PALAVRAS_INTEIRAS if _sem(x).startswith(k) and _sem(x) != k}
+    return None if not cand else cand.pop() if len(cand) == 1 else ""
+
+
 def nome_limpo(titulo, marca, modelo, outros=()):
     """'Lanterna Esquerda Tampa Traseira Volvo Xc 60 18/24 A045591'
     -> 'Lanterna esquerda tampa traseira'. Carro, ano e codigo aparecem a parte.
     outros = os outros carros em que a peca serve ("ms"): saem do nome como o modelo."""
+    ws = titulo.split()
+    if len(titulo) >= TITULO_CHEIO and len(ws) > 1 and palavra_cortada(ws[-1]) is not None:
+        titulo = " ".join(ws[:-1] + [palavra_cortada(ws[-1])]).strip()      # "... 15/21 Die" -> "... 15/21 diesel"
     t = CODIGO_SEPARADO.sub(lambda m: m.group(1) + m.group(2), titulo)   # "Xc 60" -> "Xc60"
     t = gi.ANOS_RE.sub(" ", t)
     t = re.sub(r"\b(19|20)\d{2}\s*(a|até|ate|/|-)\s*(19|20)\d{2}\b", " ", t, flags=re.I)
@@ -2245,6 +2327,33 @@ def chave_foto(url):
 
 
 # --------------------------------------------------------------------------
+# Ordem das fotos do anuncio: a MESMA de fotosGaleria() (site/src/lib/quadroFoto.ts), para o "i" do busca.json (a
+# foto do cartao quando a capa falha) ser a 1a foto da galeria: sem o marketing do vendedor (classe "m") e com a
+# montagem com o carro (classe "c") no fim. Classes em site/src/data/fotos-ml-caixas.json (ferramentas/medir_fotos_ml.py).
+# --------------------------------------------------------------------------
+CAIXAS_FOTOS = SAIDA_DADOS / "fotos-ml-caixas.json"
+
+
+def ler_classes_fotos(arq=CAIXAS_FOTOS):
+    """{chave da foto: classe (p|s|m|c)} pelo fotos-ml-caixas.json; sem o arquivo, {} (fotos na ordem do anuncio)."""
+    try:
+        dados = json.loads(Path(arq).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {k: c for k, e in dados.items()
+            for c in [next((v for v in e if isinstance(v, str) and len(v) == 1), None)] if c}
+
+
+def fotos_galeria(fotos, classes):
+    """As fotos na ordem da galeria (igual a fotosGaleria): sem "m" e com "c" no fim. Tudo marketing: a lista como veio
+    (nunca uma peca sem foto)."""
+    boas = [k for k in fotos if k and classes.get(k) != "m"]
+    if not boas:
+        return [k for k in fotos if k]
+    return [k for k in boas if classes.get(k) != "c"] + [k for k in boas if classes.get(k) == "c"]
+
+
+# --------------------------------------------------------------------------
 # Codigo gravado na peca (OEM). O campo do ML as vezes traz lixo: o titulo inteiro
 # ("Par Mola Valvula ..."), pedaco do codigo ("920 8K0920900"), anos, marca, "Nao
 # informado". Codigo de verdade: 5 a 16 letras/numeros, com letra E numero, ou so
@@ -3205,6 +3314,7 @@ def main():
     idx_fam = {f["n"]: i for i, f in enumerate(familias)}
     tipos = sorted({x["s"] for x in pecas if x["s"]})
     idx_tipo = {s: i for i, s in enumerate(tipos)}
+    classes_fotos = ler_classes_fotos()
     busca = {
         "v": 1,
         "updated": resumo["updated"],
@@ -3215,7 +3325,8 @@ def main():
         "t": [x["t"] for x in pecas],
         "n": [x["n"] for x in pecas],
         "p": [x["p"] for x in pecas],
-        "i": [x["fotos"][0] if x["fotos"] else "" for x in pecas],
+        # foto do cartao quando a capa falha: a 1a da galeria (sem marketing, montagem com o carro por ultimo)
+        "i": [(fotos_galeria(x["fotos"], classes_fotos) or [""])[0] for x in pecas],
         "h": [x["slug"] for x in pecas],
         "f": "".join("1" if x["f"] else "0" for x in pecas),
         "b": [idx_marca.get(x["b"], -1) for x in pecas],

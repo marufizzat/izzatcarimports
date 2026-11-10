@@ -176,7 +176,8 @@ describe('quadro das fotos do ML na galeria', () => {
       const m = e.filter((v): v is number => typeof v === 'number');
       const c = classeFoto(k, medidas);
       const outras = e.filter((v) => typeof v === 'string' && v.length !== 1 && v.length !== 16 && v !== INCERTA);
-      const inc = e.includes(INCERTA) && (m.length !== 6 || m[0] === m[1]);   // incerta só com caixa e foto não quadrada
+      // incerta só com caixa e foto não quadrada; a montagem com o carro (c) leva a marca também quadrada (aparece inteira)
+      const inc = e.includes(INCERTA) && (m.length !== 6 || (m[0] === m[1] && c !== 'c'));
       if (!(m.length === 2 || m.length === 6) || (c !== null && !'psmc'.includes(c)) || outras.length || inc || problema(e))
         ruins.push(`${k} ${JSON.stringify(e)} ${problema(e)}`);
     }

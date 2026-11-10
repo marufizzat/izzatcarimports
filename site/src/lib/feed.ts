@@ -1,7 +1,7 @@
 // Feed do Google Shopping (gratis): cada peca vira um item RSS 2.0 com o namespace g:.
 // Funcoes puras (recebem a capa de estudio e o dominio), para os testes rodarem sem o build.
 import { foto, type Peca } from './dados';
-import { fotosGaleria } from './quadroFoto';
+import { fotosGaleria, classeFoto, type Medida } from './quadroFoto';
 import { nomeCompleto } from './nomePeca';
 
 const CONTROLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g;
@@ -60,14 +60,21 @@ export type ItemFeed = {
   preco: string; marca: string | null; mpn: string | null; tipo: string;
 };
 
-/** Monta os campos do item. capa = capa de estudio (caminho relativo) ou null; site = dominio com https. */
-export function itemFeed(p: Peca, capa: string | null, site: string): ItemFeed | null {
+/** Monta os campos do item. capa = capa de estudio (caminho relativo) ou null; site = dominio com https.
+ *  limpa = a capa de estudio SEM o logo (public/estudio-limpa/<id>.webp, ESTUDIO_SAIDA_LIMPA) ou null: so entra como
+ *  imagem principal quando o anuncio so tem a montagem com o carro (classe "c"), para o Google nao receber o carro do
+ *  vendedor como foto do produto. Sem ela, a montagem mesmo (nunca uma imagem inventada).
+ *  tabela = as medidas/classes das fotos (os testes passam a sua; o build le src/data/fotos-ml-caixas.json). */
+export function itemFeed(p: Peca, capa: string | null, site: string, limpa: string | null = null,
+                         tabela?: Record<string, Medida>): ItemFeed | null {
   if (!(p.p > 0)) return null;
   // sem o marketing do vendedor e com o carro inteiro no fim (as mesmas fotos da galeria)
-  const fotosMl = fotosGaleria(p.fotos).map((k) => foto(k, 'F'));
-  const imagem = capa ? site + capa : fotosMl[0];
+  const chaves = fotosGaleria(p.fotos, tabela);
+  const fotosMl = chaves.map((k) => foto(k, 'F'));
+  const soMontagem = chaves.length > 0 && chaves.every((k) => classeFoto(k, tabela) === 'c');
+  const imagem = capa ? site + capa : soMontagem && limpa ? site + limpa : fotosMl[0];
   if (!imagem) return null;
-  const extras = (capa ? fotosMl : fotosMl.slice(1)).filter((u) => u && u !== imagem).slice(0, 5);
+  const extras = fotosMl.filter((u) => u && u !== imagem).slice(0, 5);
   const mpn = limparTexto((p.oem || '').split(/[\s,;/|]+/)[0] || '');
   return {
     id: p.id,
