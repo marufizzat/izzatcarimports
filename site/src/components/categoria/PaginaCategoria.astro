@@ -72,8 +72,8 @@ const tituloGrade = ehPeca ? `${tema.charAt(0).toUpperCase()}${tema.slice(1)} or
 // Arte do topo SEM a faixa do nome (o H1 já diz o nome), no tamanho real do recorte (muda de uma arte para outra).
 // Sem a arte (ainda): só o texto.
 const topo = arteTopo(f.k);
+// prévia do link (ogImagem): a arte de estúdio da categoria (o topo sem o nome); sem ela, a imagem padrão
 ---
-{/* prévia do link: a arte de estúdio da categoria (o topo sem o nome); sem ela, a imagem padrão */}
 <Pagina titulo={tituloCategoria(f.n)} descricao={texto.meta} ogImagem={topo?.src}>
   <TopoArte trilha={[['Início', '/'], ['Catálogo', '/catalogo.html'], [f.n, `/categoria/${f.k}.html`]]}
     titulo={f.n} arte={topo?.src} arteW={topo?.w} arteH={topo?.h} arteSizes={SIZES.topoCategoria} encaixe="contem" lead={lead}>
