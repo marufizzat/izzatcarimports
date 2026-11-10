@@ -7,6 +7,7 @@
 // tocado vai para o carro salvo (o cabeçalho e o "É o meu carro" acompanham).
 import type { Peca } from '../lib/dados';
 import { anosNoModelo } from '../lib/meuCarro';
+import { rolarFila } from '../lib/anosFila';
 interface Props { lista: Peca[]; b: string; m: string; base: string }
 const { lista, b, m, base } = Astro.props;
 const conta = new Map<number, number>();
@@ -16,23 +17,32 @@ for (const p of lista) {
 }
 const anos = [...conta].sort((x, z) => x[0] - z[0]);
 const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça' : 'peças'}`;
+// Antes da 1ª pintura (logo depois das fichas): a fila já abre nos anos com mais peças, ou no ano do carro salvo deste
+// modelo (lib/anosFila.ts, a mesma função do seletor "Seu carro"); o "Todos" fica fixo à esquerda.
+const abrirFila = `(function(){var r=document.currentScript.previousElementSibling,l=r.querySelector('.ac-lista'),t=l.parentElement,`
+  + `cs=[].slice.call(l.querySelectorAll('.ac-ano[data-c]')),alvo=null,n=function(s){return(s||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g,'')};`
+  + `try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')||'null');if(c&&c.y&&n(c.b)===n(r.dataset.b)&&n(c.m)===n(r.dataset.m))alvo=l.querySelector('.ac-ano[data-y="'+Number(c.y)+'"]')}catch(e){}`
+  + `(${rolarFila.toString()})(l,l.querySelector('.ac-ano[data-y=""]'),cs,cs.map(function(x){return+x.dataset.c}),alvo);`
+  + `var f=l.scrollWidth-l.clientWidth;if(l.scrollLeft>4)t.setAttribute('data-esq','');if(l.scrollLeft<f-4)t.setAttribute('data-dir','')})()`;
 ---
-{anos.length > 1 && (
+{anos.length > 1 && (<>
   <div class="anos-carro" data-anos-carro data-b={b} data-m={m} data-base={base} data-n={lista.length}>
     <span class="ac-rot" id="ac-rot">Ano do carro</span>
     <div class="ac-trilho">
       <div class="ac-lista" role="group" aria-labelledby="ac-rot">
-        <button type="button" class="ac-ano" data-y="" aria-pressed="true" aria-label={`Todos os anos, ${pecasTxt(lista.length)}`}>Todos</button>
+        <span class="ac-fixo"><button type="button" class="ac-ano" data-y="" aria-pressed="true" aria-label={`Todos os anos, ${pecasTxt(lista.length)}`}>Todos</button></span>
         {anos.map(([y, c]) => (
           <button type="button" class="ac-ano num" data-y={y} data-c={c} aria-pressed="false" aria-label={`${y}, ${pecasTxt(c)}`}>{y}<small aria-hidden="true">{c}</small></button>
         ))}
       </div>
     </div>
   </div>
-)}
+  <script is:inline set:html={abrirFila} />
+</>)}
 
 <script>
   import { lerMeuCarro, salvarMeuCarro, norm, anosNoModelo, serveNoModelo, lerModelos, EVENTO, type MeuCarro } from '../lib/meuCarro';
+  import { rolarFila } from '../lib/anosFila';
   import type { Item, Indice } from '../lib/busca';
 
   const raiz = document.querySelector<HTMLElement>('[data-anos-carro]');
@@ -42,6 +52,8 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
     const lista = raiz.querySelector<HTMLElement>('.ac-lista')!;
     const trilho = raiz.querySelector<HTMLElement>('.ac-trilho')!;
     const chips = [...raiz.querySelectorAll<HTMLButtonElement>('.ac-ano')];
+    const todos = chips.find((c) => !c.dataset.y) ?? null;
+    const anosChips = chips.filter((c) => c.dataset.y);
     const eh = (c: MeuCarro | null): c is MeuCarro => !!c && norm(c.b) === norm(B) && norm(c.m) === norm(M);
     // o que muda com o ano: a contagem do título da grade e o "Ver as N peças no catálogo" (carro com mais de 48)
     const num = secao.querySelector<HTMLElement>('.grade-cabeca .num');
@@ -174,12 +186,10 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
       trilho.toggleAttribute('data-esq', lista.scrollLeft > 4);
       trilho.toggleAttribute('data-dir', lista.scrollLeft < fim - 4);
     };
-    // a ficha escolhida vai para o meio da fila (nunca fica cortada na borda que esmaece)
+    // a ficha escolhida vai para o meio da parte da fila à direita do "Todos" (nunca fica cortada na borda que esmaece)
     const centrar = (y: number, suave = false) => {
-      const chip = chips.find((c) => c.dataset.y === String(y));
-      if (chip && lista.scrollWidth > lista.clientWidth) {
-        lista.scrollTo({ left: chip.offsetLeft - (lista.clientWidth - chip.offsetWidth) / 2, behavior: suave ? 'smooth' : 'auto' });
-      }
+      const chip = anosChips.find((c) => c.dataset.y === String(y));
+      if (chip) rolarFila(lista, todos, anosChips, anosChips.map((c) => Number(c.dataset.c)), chip, suave);
     };
     lista.addEventListener('scroll', bordas, { passive: true });
     window.addEventListener('resize', bordas, { passive: true });
@@ -219,9 +229,16 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
     scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .anos-carro .ac-lista::-webkit-scrollbar { display: none; }
   .anos-carro .ac-trilho[data-dir] .ac-lista { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); }
-  .anos-carro .ac-trilho[data-esq] .ac-lista { -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px); mask-image: linear-gradient(90deg, transparent, #000 40px); }
-  .anos-carro .ac-trilho[data-esq][data-dir] .ac-lista { -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+  /* o esmaecido da esquerda começa depois do "Todos" fixo (--fixo, lib/anosFila.ts) */
+  .anos-carro .ac-trilho[data-esq] .ac-lista { -webkit-mask-image: linear-gradient(90deg, #000 var(--fixo, 0px), transparent var(--fixo, 0px), #000 calc(var(--fixo, 0px) + 40px));
+    mask-image: linear-gradient(90deg, #000 var(--fixo, 0px), transparent var(--fixo, 0px), #000 calc(var(--fixo, 0px) + 40px)); }
+  .anos-carro .ac-trilho[data-esq][data-dir] .ac-lista { -webkit-mask-image: linear-gradient(90deg, #000 var(--fixo, 0px), transparent var(--fixo, 0px), #000 calc(var(--fixo, 0px) + 40px), #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(90deg, #000 var(--fixo, 0px), transparent var(--fixo, 0px), #000 calc(var(--fixo, 0px) + 40px), #000 calc(100% - 40px), transparent); }
+  /* "Todos" fixo à esquerda: a fila corre por baixo dele. O invólucro cobre também a folga de 5 px da fila (margem
+     negativa), e com a fila rolada ganha a cor da página: as fichas que passam por trás somem inteiras.
+     left: -5px: o sticky conta da borda do conteúdo da fila (dentro da folga), e a folga também fica coberta */
+  .anos-carro .ac-fixo { position: sticky; left: -5px; z-index: 1; flex: none; display: flex; margin: -5px; padding: 5px; }
+  .anos-carro .ac-trilho[data-esq] .ac-fixo { background: var(--bg); }
   .anos-carro .ac-ano { flex: none; min-width: 60px; height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; margin: 0;
     padding: 0 12px; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink-2);
     box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 15px; font-weight: 660; font-stretch: 94%; line-height: 1; cursor: pointer;
