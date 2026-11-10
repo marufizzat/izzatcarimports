@@ -36,7 +36,7 @@ const tiposAntigos = Object.fromEntries((r.antigas ?? []).map((a) => [a.n, r.fam
 // - endereço com busca ou filtro: html.cat-url troca a vitrine padrão pelo esqueleto e o índice é pedido já;
 // - sem busca: as fotos dos 2 primeiros cartões são pedidas já, com prioridade;
 // - html.cat-url-filtro guarda o lugar das fichas; html.cat-carro, o do aviso "Seu carro".
-const scriptTopo = `(function(){var d=document.documentElement,h=document.head,u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},A=${JSON.stringify(tiposAntigos)},t0=g('tipo');if(t0&&A.hasOwnProperty(t0)){if(A[t0]&&!g('sub'))u.set('tipo',A[t0]);else u.delete('tipo');history.replaceState(history.state,'',location.pathname+'?'+u+location.hash)}var o=g('ordem'),a=Number(g('ano'))||0,fil=!!(g('marca')||g('modelo')||a||g('tipo')||g('sub')||g('preco'));function pre(x){var l=document.createElement('link');l.rel='preload';for(var k in x)l.setAttribute(k,x[k]);h.appendChild(l)}if(g('q')||fil||g('frete')==='1'||g('frete')==='true'||o==='asc'||o==='desc'){d.classList.add('cat-url');pre({as:'fetch',href:'/dados/busca.json',crossorigin:'anonymous'})}else ${JSON.stringify(fotosTopo)}.forEach(function(f){f.as='image';f.fetchpriority='high';pre(f)});if(fil)d.classList.add('cat-url-filtro');try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')||'null');if(c&&typeof c.b=='string'&&typeof c.m=='string')d.classList.add('cat-carro')}catch(e){}})();`;
+const scriptTopo = `(function(){var d=document.documentElement,h=document.head,u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},A=${JSON.stringify(tiposAntigos)},t0=g('tipo');if(t0&&A.hasOwnProperty(t0)){if(A[t0]&&!g('sub'))u.set('tipo',A[t0]);else u.delete('tipo');history.replaceState(history.state,'',location.pathname+'?'+u+location.hash)}var o=g('ordem'),a=Number(g('ano'))||0,fil=!!(g('marca')||g('modelo')||a||g('tipo')||g('sub')||g('preco')||g('lado')||g('pos'));function pre(x){var l=document.createElement('link');l.rel='preload';for(var k in x)l.setAttribute(k,x[k]);h.appendChild(l)}if(g('q')||fil||g('frete')==='1'||g('frete')==='true'||o==='asc'||o==='desc'){d.classList.add('cat-url');pre({as:'fetch',href:'/dados/busca.json',crossorigin:'anonymous'})}else ${JSON.stringify(fotosTopo)}.forEach(function(f){f.as='image';f.fetchpriority='high';pre(f)});if(fil)d.classList.add('cat-url-filtro');try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')||'null');if(c&&typeof c.b=='string'&&typeof c.m=='string')d.classList.add('cat-carro')}catch(e){}})();`;
 // Logos das marcas para os filtros (usados como estão, com as cores reais, num disco claro).
 const logos = Object.fromEntries(r.marcas.flatMap((m) => {
   const l = logoInfo(m.k, 26, 20);
@@ -209,6 +209,17 @@ const confianca: [string, string][] = [
   .cat-logo img { display: block; max-width: 28px; max-height: 22px; width: auto; height: auto; object-fit: contain; }
   .cat-logo b { font-size: 13px; font-weight: 800; color: #1d1d1f; }
   .cat-opcao[aria-pressed="true"] .cat-logo { background: #fff; box-shadow: inset 0 0 0 1.5px var(--accent); }
+  /* lado e posição: duas fichas por linha, com o nome da linha em cima (Lado / Posição) */
+  .cat-lados { display: grid; gap: 12px; padding: 2px 8px 0; }
+  .cat-lado { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cat-lado-titulo { grid-column: 1 / -1; font-size: 12.5px; font-weight: 650; color: var(--ink-3); letter-spacing: .01em; }
+  .cat-lado-ficha { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; min-height: 44px; padding: 0 12px;
+    border: 0; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line-2); color: var(--ink); font-size: 14.5px; font-weight: 600;
+    text-align: left; transition: background-color .15s, box-shadow .15s; }
+  .cat-lado-ficha:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .cat-lado-nome { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cat-lado-ficha[aria-pressed="true"] { background: var(--accent-soft); font-weight: 720; box-shadow: inset 0 0 0 2px var(--accent); }
+  .cat-lado-ficha[aria-pressed="true"] .cat-opcao-qtd { color: var(--ink-2); font-weight: 600; }
   .cat-mais { display: inline-flex; align-items: center; gap: 4px; margin: 6px 0 0; padding: 8px; border: 0; background: none; font-weight: 650; font-size: 14px; color: var(--accent-text); }
   .cat-mais svg { width: 16px; height: 16px; }
   .cat-mais[aria-expanded="true"] svg { transform: rotate(180deg); }

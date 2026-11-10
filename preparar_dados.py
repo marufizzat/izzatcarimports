@@ -1203,6 +1203,28 @@ def _lado(w):
     return lados.pop() if partes and len(lados) == 1 and None not in lados else None
 
 
+# Lado e posição da peça: as fichas "Esquerdo · Direito" e "Dianteiro · Traseiro" do catálogo (colunas "l" e "pos" do
+# busca.json), lidos do NOME LIMPO. No Brasil o motorista vai à esquerda: "motorista" = esquerdo, "passageiro" = direito
+# (menos na luz do airbag do passageiro, que fica no meio do painel). Os dois lados no nome ("Acabamento trilho esquerdo
+# banco direito") = sem lado; as duas posições ("dianteira/traseira") = sem posição. "Tampa traseira" é a porta-malas:
+# o que vai nela fica atrás do carro ("Lanterna tampa traseira esquerda" = esquerda e traseira; "Amortecedor tampa
+# traseira" = traseiro, e na busca "amortecedor traseiro" o nome que diz "traseiro" vem antes: lib/busca.ts).
+_LADO_NOME = {"esquerdo": "E", "esquerda": "E", "esquerdos": "E", "esquerdas": "E", "motorista": "E",
+              "direito": "D", "direita": "D", "direitos": "D", "direitas": "D", "passageiro": "D"}
+_POS_NOME = {"dianteiro": "D", "dianteira": "D", "dianteiros": "D", "dianteiras": "D", "frontal": "D",
+             "traseiro": "T", "traseira": "T", "traseiros": "T", "traseiras": "T"}
+
+
+def lado_posicao(nome):
+    """('E' | 'D' | '', 'D' | 'T' | ''): o lado (esquerdo/direito) e a posição (dianteiro/traseiro) que o nome diz."""
+    ws = re.findall(r"[a-z0-9]+", _sem(nome or ""))
+    luz_airbag = "luz" in ws and "airbag" in ws
+    lados = {_LADO_NOME[w] for w in ws
+             if w in _LADO_NOME and not (luz_airbag and w in ("motorista", "passageiro"))}
+    posicoes = {_POS_NOME[w] for w in ws if w in _POS_NOME}
+    return (lados.pop() if len(lados) == 1 else ""), (posicoes.pop() if len(posicoes) == 1 else "")
+
+
 def _sem_lado_repetido(ws):
     """'Lanterna traseira esquerda esquerdo/motorista' -> 'Lanterna traseira esquerda';
     'Maçaneta interna esquerda cromada lado esquerdo (motorista)' -> 'Maçaneta interna esquerda cromada'.
@@ -3503,6 +3525,9 @@ def main():
         "ys": {str(i): x["ys"] for i, x in enumerate(pecas) if x.get("ys")},
         # mesma peca com preco diferente: a versao que o titulo diz ("T8", "2.0"), so nas que tem: {indice: "T8"}
         "dif": {str(i): x["dif"] for i, x in enumerate(pecas) if x.get("dif")},
+        # lado e posição pelo nome (lado_posicao): uma letra por peça, '0' quando o nome não diz (fichas do catálogo)
+        "l": "".join(lado_posicao(x["n"])[0] or "0" for x in pecas),
+        "pos": "".join(lado_posicao(x["n"])[1] or "0" for x in pecas),
     }
 
     marcar_datas(pecas, prods)

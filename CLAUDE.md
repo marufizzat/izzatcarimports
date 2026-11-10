@@ -22,6 +22,10 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **Peça de 2+ carros** (`ms`, e `ys` quando a faixa de anos muda de um carro para outro): "Volvo S60 Xc60" aparece
      na página, no filtro, na contagem e no Meu carro dos dois (`site/src/lib/meuCarro.ts`: `modelosDa`,
      `serveNoModelo`, `anosNoModelo`). A URL da peça não muda.
+   - **Lado e posição** (`l` e `pos` no busca.json, uma letra por peça, '0' sem; `lado_posicao()`): lidos do NOME LIMPO.
+     "motorista" = esquerdo e "passageiro" = direito (no Brasil); os dois lados (ou as duas posições) no nome = nenhum;
+     a luz do airbag do passageiro fica sem lado; o que vai na tampa traseira é traseiro ("Lanterna tampa traseira
+     esquerda" = esquerda e traseira). Nov/2026: 1.709 com lado, 1.355 com posição. Teste: `test_lado_e_posicao_pelo_nome`.
    - **Descrição**: só as seções sobre a peça; "chat do anúncio" vira WhatsApp; sai o dado repetido e a medida-padrão
      do modelo de anúncio (`DIM_PADRAO_MIN`); o que está em espanhol sai (`_espanhol`: tudo em espanhol = só a ficha) e
      o "tu/teu" do vendedor vira "você/seu" (`sem_tu`).
@@ -128,6 +132,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
+- `/catalogo.html?...&lado=esquerdo|direito&pos=dianteiro|traseiro` (nov/2026): as fichas de lado e posição; endereço sem
+  elas continua igual.
 - Novos: `/carros.html`, `/carros/<marca-modelo>.html`, `/marca/<marca>.html`, `/categoria/<tipo>.html`,
   `/como-comprar.html`, `/garantia.html`, `/envios.html`, `/sobre.html`, `/contato.html`, `/procuro-peca.html`.
 - `/veiculos.html` redireciona para `/carros.html`.
@@ -203,6 +209,12 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   ("de", "da"...); o plural vale sozinho ("faróis" = farol, só a palavra inteira). Cada linha aponta para um nome que
   EXISTE no estoque (`sinonimos.test.ts` confere); tipo novo no estoque = conferir a tabela. O "começa pela palavra" e o
   `bate()` (bloco "Não achou?") usam as mesmas formas.
+  **Lado e posição digitados viram filtro** ("retrovisor direito xc60": os DIREITOS do XC60, pela coluna `l`;
+  "motorista" = esquerdo; "dianteira", "traseira", "frontal", "esq", "dir", "tras"): saem do texto (`separarLadoPos`),
+  filtram e marcam a ficha; a peça cujo nome diz a mesma palavra sobe ("amortecedor traseiro" antes da "tampa
+  traseira"). Se o filtro não deixar nada, a busca volta ao texto de antes (nunca pior). As fichas "Lado e posição" do
+  catálogo (`Catalogo.tsx`, depois do Ano, só com peça na lista) contam sem o próprio filtro; tocar numa tira a palavra
+  da busca (`Busca.semLadoPos`).
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
   de anos com mais peças (na página do carro, num `<script is:inline>` antes da 1ª pintura); o "Todos" fica fixo à
   esquerda (`.ac-fixo`/`.mc-fixo`, sticky). Só o scrollLeft da fila, nunca a página.

@@ -1171,6 +1171,44 @@ def test_mesma_peca_precos_diferentes_dif():
             assert all(len(v) <= 24 for v in com.values())
 
 
+def test_lado_e_posicao_pelo_nome():
+    """Fichas "Esquerdo · Direito" e "Dianteiro · Traseiro" do catálogo: o lado e a posição que o nome limpo diz."""
+    from preparar_dados import lado_posicao
+    casos = {
+        "Retrovisor elétrico direito": ("D", ""),
+        "Lanterna traseira esquerda": ("E", "T"),
+        # a porta-malas fica atrás: o que vai nela é traseiro (e o lado continua valendo)
+        "Lanterna tampa traseira esquerda": ("E", "T"),
+        "Amortecedor tampa traseira": ("", "T"),
+        "Porta dianteira esquerda": ("E", "D"),
+        "Para-choque dianteiro": ("", "D"),
+        "Câmera frontal": ("", "D"),
+        # no Brasil o motorista vai à esquerda
+        "Airbag motorista": ("E", ""),
+        "Botão vidro elétrico passageiro": ("D", ""),
+        "Retrovisor lado motorista": ("E", ""),
+        # a luz do airbag do passageiro fica no meio do painel
+        "Painel luz airbag passageiro": ("", ""),
+        # os dois lados ou as duas posições: nenhum
+        "Acabamento trilho esquerdo banco direito": ("", ""),
+        "Maçaneta externa direita dianteira/traseira": ("D", ""),
+        "Módulo injeção": ("", ""),
+    }
+    for nome, esperado in casos.items():
+        assert lado_posicao(nome) == esperado, (nome, lado_posicao(nome))
+    # o dado gerado: uma letra por peça, igual ao que o nome diz
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    busca = ROOT / "site" / "public" / "dados" / "busca.json"
+    if pecas.exists() and busca.exists():
+        ix = json.loads(busca.read_text(encoding="utf-8"))
+        if "l" in ix:
+            assert len(ix["l"]) == len(ix["id"]) == len(ix["pos"])
+            assert set(ix["l"]) <= set("ED0") and set(ix["pos"]) <= set("DT0")
+            for n, l, p in zip(ix["n"], ix["l"], ix["pos"]):
+                assert lado_posicao(n) == (l.replace("0", ""), p.replace("0", "")), n
+            assert ix["l"].count("E") + ix["l"].count("D") > 1000
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):
