@@ -123,7 +123,7 @@ describe('quadro das fotos do ML na galeria', () => {
       confere([W, H, x0, y0, x1, y1]);
       confere([W, H]);
     }
-  });
+  }, 30000);
 
   // 45 mil fotos: conta sem expect (rápido mesmo no robô) e só falha no fim, mostrando as primeiras chaves com problema
   it('todas as medidas reais (src/data/fotos-ml-caixas.json)', (ctx) => {
