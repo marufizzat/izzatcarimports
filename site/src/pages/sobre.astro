@@ -25,11 +25,11 @@ const etapas = [
     arte: 'historia-registro', alt: 'Carro no estúdio com uma etiqueta de identificação laranja e um tablet com a ficha de registro' },
   { t: 'Desmontagem com cuidado', s: 'Peça por peça, sem força, para não danificar encaixes e conectores.',
     arte: 'historia-2', alt: 'Farol já removido, apoiado num carrinho de ferramentas, ao lado do carro' },
-  { t: 'Limpeza e conferência', s: 'A peça é limpa, testada quando dá (motores, módulos) e o código original é identificado.',
+  { t: 'Limpeza e conferência', s: 'A peça é limpa, testada sempre que possível (motores, módulos) e o código original é identificado.',
     arte: 'historia-conferencia', alt: 'Módulo eletrônico limpo, com o código gravado iluminado por uma lanterna' },
   { t: 'Foto e anúncio', s: 'Ela é fotografada de verdade e anunciada com o código, para você achar a peça certa.',
     arte: 'historia-3', alt: 'Alternador limpo sobre a bancada, com etiqueta laranja e uma lupa' },
-  { t: 'Embalagem e envio', s: 'Embalada com proteção. Envio para todo o Brasil com código de rastreio; o frete é combinado pelo WhatsApp ou é o do Mercado Livre.',
+  { t: 'Embalagem e envio', s: 'Embalada com proteção e enviada para todo o Brasil. O frete é combinado pelo WhatsApp ou calculado pelo Mercado Livre.',
     arte: 'historia-4', alt: 'Peça embalada em caixa de papelão, com fita laranja' },
 ];
 ---
@@ -39,9 +39,9 @@ const etapas = [
   canonical={canonical}
 >
   {/* topo com o Maruf atrás da bancada (arte sem texto; o título é vivo) */}
-  <TopoArte trilha={[['Início', '/index.html'], ['O pátio', canonicalPath]]}
+  <TopoArte trilha={[['Início', '/'], ['O pátio', canonicalPath]]}
     titulo="O pátio"
-    lead="Um desmanche credenciado pelo Detran-RS, na fronteira de Aceguá. Cada carro chega com baixa legal, e cada peça sai identificada."
+    lead="Um desmanche credenciado pelo Detran-RS. Cada carro chega com baixa legal, e cada peça sai identificada."
     arte="/arte/v2/topo-sobre.webp" arteFoco="100% 88%" />
 
   <div class="moldura">
@@ -81,13 +81,13 @@ const etapas = [
     <section class="sob-premio" class:list={[{ 'com-arte': temTrofeu }]} aria-labelledby="h-destaque">
       {temTrofeu && (
         <div class="sob-premio-arte">
-          <img src="/arte/v2/destaque-acegua.webp" alt="Troféu Destaque Aceguá 2025" width="1200" height="900" loading="lazy" decoding="async" />
+          <img src="/arte/v2/destaque-acegua.webp" alt="Troféu de vidro sobre um pedestal de estúdio" width="1200" height="900" loading="lazy" decoding="async" />
         </div>
       )}
       <div class="sob-premio-txt">
         <span class="sob-filete" aria-hidden="true"></span>
         <h2 class="sob-premio-titulo display" id="h-destaque">Destaque Aceguá 2025</h2>
-        <p>Prêmio Melhores do Ano de Aceguá · categoria desmanche de veículos</p>
+        <p>Prêmio Melhores do Ano · categoria desmanche de veículos</p>
       </div>
     </section>
 

@@ -87,7 +87,10 @@ const qtd = (c: number) => `${c.toLocaleString('pt-BR')} ${c === 1 ? 'peça' : '
   @media (min-width: 900px) { .av-lista { overflow: visible; flex-wrap: wrap; } }
 
   /* marca: ficha com logo */
-  .av-chip { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px 0 6px; border-radius: 16px; background: var(--surface);
+  /* position: relative segura o .sr-only (absoluto) das fichas DENTRO do trilho: sem isso ele escapava do overflow do trilho
+     e alargava a página inteira no celular (auditoria 4, 1.1: 24 das 25 categorias rolavam de lado) */
+  .av-lista > li { position: relative; }
+  .av-chip { position: relative; display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px 0 6px; border-radius: 16px; background: var(--surface);
     box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); transition: box-shadow .2s, transform .2s; }
   .av-disco { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .07); }
   .av-disco:empty { display: none; }
@@ -104,7 +107,7 @@ const qtd = (c: number) => `${c.toLocaleString('pt-BR')} ${c === 1 ? 'peça' : '
   /* arte da família (peça no pedestal): um pouco mais perto, centrada na peça */
   .av-foto-arte img { object-position: 50% 42%; transform: scale(1.18); }
   .av-txt { display: grid; gap: 2px; min-width: 0; }
-  .av-txt b { font-size: 15px; line-height: 1.22; font-weight: 650; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .av-txt b { font-size: 15px; line-height: 1.22; font-weight: 650; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .av-txt small { font-size: 13px; color: var(--ink-3); font-weight: 500; }
   @media (min-width: 900px) {
     .av-tipo .av-lista { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }

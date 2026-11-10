@@ -53,7 +53,9 @@ function fotoDoTipo(tipo: string): string | null {
   return achou ?? fotoVitrine(lista, (p) => p.s === tipo);
 }
 // Tipos: cartão baixo com a foto de estúdio de uma peça do grupo
-const tipos = conta((p) => p.s).filter(([n]) => n !== 'Outros').slice(0, 14).map(([n, q]) => ({
+// tipo com 1 ou 2 peças não vira cartão (expunha estoque fraco: "Faróis de Milha · 1 peça"); o filtro do catálogo
+// continua com todos (auditoria 4, 1.3)
+const tipos = conta((p) => p.s).filter(([n, q]) => n !== 'Outros' && q >= 3).slice(0, 14).map(([n, q]) => ({
   n, c: q,
   // o mesmo filtro do número do cartão (campo s), e não busca por texto: o catálogo abre com a mesma contagem
   h: `/catalogo.html?tipo=${encodeURIComponent(f.n)}&sub=${encodeURIComponent(n)}`,
@@ -70,11 +72,14 @@ const tituloGrade = ehPeca ? `${tema.charAt(0).toUpperCase()}${tema.slice(1)} or
 // Arte do topo SEM a faixa do nome (o H1 já diz o nome), no tamanho real do recorte (muda de uma arte para outra).
 // Sem a arte (ainda): só o texto.
 const topo = arteTopo(f.k);
+// prévia do link (ogImagem): a arte de estúdio da categoria (o topo sem o nome); sem ela, a imagem padrão
 ---
-<Pagina titulo={tituloCategoria(f.n)} descricao={texto.meta}>
-  <TopoArte trilha={[['Início', '/index.html'], ['Catálogo', '/catalogo.html'], [f.n, `/categoria/${f.k}.html`]]}
+<Pagina titulo={tituloCategoria(f.n)} descricao={texto.meta} ogImagem={topo?.src}>
+  <TopoArte trilha={[['Início', '/'], ['Catálogo', '/catalogo.html'], [f.n, `/categoria/${f.k}.html`]]}
     titulo={f.n} arte={topo?.src} arteW={topo?.w} arteH={topo?.h} arteSizes={SIZES.topoCategoria} encaixe="contem" lead={lead}>
-    <AtalhosVisuais titulo="Por marca do carro" modo="marca" itens={marcas} limite={10} limitePc={6} minimo={3} id="marcas" mais={`Ver as ${marcas.length} marcas`} />
+    {/* categoria pequena (menos de 30 peças): todas as marcas de cara, sem o botão (em Escapamento sobrava só "Volvo 6") */}
+    <AtalhosVisuais titulo="Por marca do carro" modo="marca" itens={marcas} limite={N < 30 ? marcas.length : 10} limitePc={N < 30 ? marcas.length : 6}
+      minimo={N < 30 ? 1 : 3} id="marcas" mais={`Ver as ${marcas.length} marcas`} />
     <AtalhosVisuais titulo="Por tipo" modo="tipo" itens={tipos} limite={9} limitePc={4} id="tipos" />
   </TopoArte>
   <div class="moldura">

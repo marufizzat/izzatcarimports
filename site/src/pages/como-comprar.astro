@@ -30,12 +30,13 @@ const passos = [
   descricao="Em 4 passos: ache a peça, confirme o seu carro, feche a compra pelo Mercado Livre ou pelo WhatsApp e receba em casa com nota fiscal."
   canonical={canonical}
 >
-  <TopoArte trilha={[['Início', '/index.html'], ['Como comprar', canonicalPath]]}
+  <TopoArte trilha={[['Início', '/'], ['Como comprar', canonicalPath]]}
     titulo="Como comprar"
     lead="Quatro passos, do pedido até a peça na sua casa. Se preferir, a gente fecha tudo pelo WhatsApp." />
 
   <section class="moldura passos-wrap" aria-label="Os 4 passos">
-    <ol class="passos">
+    {/* no celular a fila desliza de lado: ganha parada no Tab só quando rola, como na home (lib/trilhoFoco.ts) */}
+    <ol class="passos" aria-label="Como comprar, em 4 passos" data-rola>
       {passos.map((p, i) => (
         <li class="passo">
           <img src={p.src} alt={p.alt} width="800" height="800" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
@@ -86,25 +87,25 @@ const passos = [
           <ol class="inst-numeros cc-numeros">
             <li>
               <div>
-                <b>Pegue a peça velha</b>
-                <p>Procure o código gravado ou impresso nela. São letras e números, às vezes numa etiqueta ou em relevo.</p>
+                <b>Pega a peça velha</b>
+                <p>Procura o código gravado ou impresso nela. São letras e números, às vezes numa etiqueta ou em relevo.</p>
               </div>
             </li>
             <li>
               <div>
-                <b>Copie o código como está</b>
-                <p>Letras e números, na mesma ordem. Se estiver difícil de ler, tire uma foto de perto.</p>
+                <b>Copia o código como está</b>
+                <p>Letras e números, na mesma ordem. Se estiver difícil de ler, tira uma foto de perto.</p>
               </div>
             </li>
             <li>
               <div>
-                <b>Busque ou mande pelo WhatsApp</b>
-                <p>Pesquise o código no catálogo. Se não achar, manda a foto no WhatsApp e a gente confere.</p>
+                <b>Busca ou manda pelo WhatsApp</b>
+                <p>Pesquisa o código no catálogo. Se não achar, manda a foto no WhatsApp e a gente confere.</p>
               </div>
             </li>
           </ol>
         </div>
-        <BuscaCodigo id="h-codigo" titulo="Busque pelo código" texto="Digite o código da sua peça velha e veja as peças com o mesmo código." />
+        <BuscaCodigo id="h-codigo" titulo="Busca pelo código" texto="Digita o código da sua peça velha: aparecem as peças com o mesmo código." />
       </div>
     </section>
   </div>
@@ -116,6 +117,11 @@ const passos = [
     mensagem="Não sei qual peça eu preciso. Meu carro é: ____ (modelo e ano)"
   />
 </Pagina>
+
+<script>
+  import { paradaSeRolar } from '../lib/trilhoFoco';
+  paradaSeRolar('[data-rola]');
+</script>
 
 <style>
   .passos-wrap { padding-block: clamp(8px, 2vw, 24px) clamp(40px, 6vw, 80px); }

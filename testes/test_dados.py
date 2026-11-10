@@ -946,6 +946,30 @@ def test_codigo_de_enchimento():
         assert codigo_valido(bom), bom
 
 
+def test_descricao_acentos_e_perfeito_estado():
+    """Auditoria 4, 7.3: "botoes", "saidas", "Alem", "Genuino", "esteticos" saiam sem acento na descricao, e
+    "perfeito estado de funcionamento" e promessa sem olhar a peca (vira o texto neutro)."""
+    from preparar_dados import descricao, acentuar_texto, ESTADO_NEUTRO
+    assert acentuar_texto("Botoes de controle e saidas de ar") == "Botões de controle e saídas de ar"
+    assert acentuar_texto("Alem disso, peca Genuino com acabamentos esteticos") == "Além disso, peça Genuíno com acabamentos estéticos"
+    assert acentuar_texto("BOTOES") == "BOTÕES"
+    d = descricao("CONDICAO\nPeça usada original em perfeito estado de funcionamento.\nCom os botoes do painel.", "Painel")
+    txt = str(d)
+    assert "perfeito estado" not in txt
+    assert ESTADO_NEUTRO in txt
+    assert "botões" in txt and "botoes" not in txt
+
+
+def test_nome_sem_palavra_repetida():
+    """Auditoria 4, 3.3: a mesma palavra de novo no fim do nome sai; versao com a grafia da marca."""
+    from preparar_dados import _sem_palavra_repetida
+    assert _sem_palavra_repetida("Jogo bancos terracota interior xdrive kit terracota") == "Jogo bancos terracota interior xDrive kit"
+    assert _sem_palavra_repetida("Motor atuador termostato motor") == "Motor atuador termostato"
+    # palavra curta e lado ficam (sao outra informacao)
+    assert _sem_palavra_repetida("Par lanterna esquerda direita") == "Par lanterna esquerda direita"
+    assert _sem_palavra_repetida("Kit par de molas par") == "Kit par de molas par"
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

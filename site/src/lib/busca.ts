@@ -310,6 +310,22 @@ export class Busca {
       nota.set(it.k, x.score * (comeca ? 1.6 : 1));
     }
     let base = r.map((x) => this.itens[x.id as number]).sort((a, b) => nota.get(b.k)! - nota.get(a.k)!);
+    // Parecidas ("farol compass" sem farol do Compass): o NOME da peça é o que diz o que a pessoa procura. As categorias
+    // das peças com a palavra no nome ("farol" -> Faróis e Lanternas) passam na frente dentro de cada bloco abaixo:
+    // as peças do Compass dessa categoria antes das outras do Compass (antes eram fechaduras, em ordem qualquer).
+    let daPalavra: (it: Item) => boolean = () => false;
+    if (aproximado) {
+      const cats = new Map<string, number>();
+      for (const x of r) if (Object.values(x.match).some((f) => f.includes('n'))) {
+        const c = this.itens[x.id as number].c;
+        if (c) cats.set(c, (cats.get(c) ?? 0) + 1);
+      }
+      const max = Math.max(0, ...cats.values());
+      const fortes = new Set([...cats].filter(([, n]) => n >= max * 0.3).map(([c]) => c));
+      const nomeTem = new Set(r.filter((x) => Object.values(x.match).some((f) => f.includes('n'))).map((x) => x.id as number));
+      daPalavra = (it) => nomeTem.has(it.k) || fortes.has(it.c);
+    }
+    const frente = (xs: Item[]) => (aproximado ? [...xs.filter(daPalavra), ...xs.filter((x) => !daPalavra(x))] : xs);
     // o carro digitado primeiro; depois a marca digitada; depois o resto (a ordem dentro de cada bloco fica)
     if (ent.carros.length || ent.marcas.length) {
       const doCarroDig: Item[] = [], daMarca: Item[] = [], outras: Item[] = [];
@@ -318,8 +334,8 @@ export class Busca {
         else if (ent.marcas.includes(it.b)) daMarca.push(it);
         else outras.push(it);
       }
-      base = [...doCarroDig, ...daMarca, ...outras];
-    }
+      base = [...frente(doCarroDig), ...frente(daMarca), ...outras];
+    } else base = frente(base);
     m = { base, aproximado, carros: ent.carros };
     this._textos.set(chave, m);
     if (this._textos.size > 24) this._textos.delete(this._textos.keys().next().value!);

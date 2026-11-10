@@ -151,6 +151,11 @@ const atalhos = populares(4);
     .abv2-abas [role="tab"] { font-size: 14.5px; }
     .abv2-abas [role="tab"] :global(svg) { display: none; }
   }
+  /* 320 px: "Pelo nome ou código" encostava na borda do cartão (auditoria 4, 2.4) */
+  @media (max-width: 359px) {
+    .abv2-abas { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); }
+    .abv2-abas [role="tab"] { font-size: 14px; letter-spacing: -.01em; padding-inline: 4px; }
+  }
   
 
   /* o único movimento da abertura: a arte "respira" de leve conforme a pessoa rola (CSS, sem JS).

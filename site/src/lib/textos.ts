@@ -100,6 +100,27 @@ export function faixaAnos(lista: Peca[]): [number, number] | null {
 const anoTxt = (a: [number, number] | null | undefined) =>
   !a ? '' : a[0] === a[1] ? `${a[0]}` : `${a[0]} a ${a[1]}`;
 
+// Descrição (meta) com até 160 caracteres: o Google corta o resto (auditoria 4, 9.1).
+export const DESCRICAO_MAX = 160;
+
+/** A 1ª opção que cabe em `max`; se nenhuma couber, a última cortada no fim de uma palavra, com reticências. */
+export function caber(opcoes: string[], max = DESCRICAO_MAX): string {
+  const limpas = opcoes.map((o) => o.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const ok = limpas.find((o) => o.length <= max);
+  if (ok) return ok;
+  const ult = limpas[limpas.length - 1] ?? '';
+  const corte = ult.slice(0, max - 1);
+  const i = corte.lastIndexOf(' ');
+  return `${(i > max * 0.6 ? corte.slice(0, i) : corte).replace(/[\s,.;:·–-]+$/, '')}…`;
+}
+
+/** Corta no fim de uma palavra, com reticências, se passar de `max`. */
+export function encurtar(s: string, max: number): string {
+  if (s.length <= max) return s;
+  const i = s.lastIndexOf(' ', max - 1);
+  return `${s.slice(0, i > 0 ? i : max - 1).replace(/[\s,.;:·–-]+$/, '')}…`;
+}
+
 export type Textos = { paragrafos: string[]; meta: string };
 
 /** Pagina de categoria (/categoria/<k>.html). */
@@ -138,7 +159,12 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
       `Há peças para ${base}${anosFrase}; a marca com mais peças é ${marcas[0]}.`,
     ]) : `As marcas com mais peças são ${juntar(marcas)}${anosFrase}.`);
   }
-  const meta = `${ehPeca ? `${N} ${tema} ${O(N)}` : `${N} peças originais de ${tema}`}${subs.length ? `: ${juntar(subs.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  const qtd = ehPeca ? `${N} ${tema} ${O(N)}` : `${N} peças originais de ${tema}`;
+  const meta = caber([
+    `${qtd}${subs.length ? `: ${juntar(subs.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
+    `${qtd}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
+    `${qtd}. Nota fiscal e 90 dias de garantia.`,
+  ]);
   return { paragrafos, meta };
 }
 
@@ -159,7 +185,9 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
     `Para ${nome}${anos} temos ${N} ${P(N)} ${O(N)} em estoque.`,
   ]);
   const paragrafos = [p1];
-  if (fams.length) {
+  if (fams.length && N < 5) {
+    paragrafos.push(N === 1 ? `A peça do ${nome} é ${juntarDe(fams)}.` : `As peças do ${nome} são ${juntarDe(fams)}.`);
+  } else if (fams.length) {
     paragrafos.push(escolha(`${k}:2`, [
       `No ${nome}, a maioria das peças é ${juntarDe(fams)}.`,
       `Para o ${nome}, aparecem mais peças ${juntarDe(fams.map(sistema))}.`,
@@ -172,9 +200,13 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
       `Entre as peças do ${nome}, as mais comuns são ${juntar(subs)}.`,
     ]));
   } else {
-    paragrafos.push(`Confira o ano e o código gravado da peça para ${nome}; na dúvida, a gente confere pelo WhatsApp.`);
+    paragrafos.push(`Antes de pedir, olha o ano e o código gravado da peça para ${nome}; na dúvida, a gente confere pelo WhatsApp.`);
   }
-  const meta = `${N} peças originais de ${nome}${anos}${fams.length ? `: ${fams.slice(0, 2).join(', ')}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  const meta = caber([
+    `${N} ${P(N)} ${O(N)} de ${nome}${anos}${fams.length ? `: ${fams.slice(0, 2).join(', ')}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
+    `${N} ${P(N)} ${O(N)} de ${nome}${anos}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
+    `${N} ${P(N)} ${O(N)} de ${nome}${anos}. Nota fiscal e 90 dias de garantia.`,
+  ]);
   return { paragrafos, meta };
 }
 
@@ -205,12 +237,19 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
     ]));
   }
   if (fams.length) {
-    paragrafos.push(escolha(`${k}:3`, [
-      `A maioria é ${juntarDe(fams)}${anosFrase}.`,
-      `O que mais tem é peça ${juntarDe(fams.map(sistema))}${anosFrase}.`,
-    ]));
+    // "A maioria" só com 5+ peças (auditoria 4, 7.2: a Lifan tinha 1 peça e "A maioria é de faróis")
+    paragrafos.push(N === 1 ? `A peça é ${juntarDe(fams)}${a ? `, para carros de ${anoTxt(a)}` : ''}.`
+      : N < 5 ? `São peças ${juntarDe(fams)}${anosFrase}.`
+      : escolha(`${k}:3`, [
+        `A maioria é ${juntarDe(fams)}${anosFrase}.`,
+        `O que mais tem é peça ${juntarDe(fams.map(sistema))}${anosFrase}.`,
+      ]));
   }
-  const meta = `${N} peças originais de ${m.n}${modelos ? ` para ${modelos} ${M(modelos)}` : ''}${nomes.length ? `: ${juntar(nomes.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`;
+  const meta = caber([
+    `${N} ${P(N)} ${O(N)} de ${m.n}${modelos ? ` para ${modelos} ${M(modelos)}` : ''}${nomes.length ? `: ${juntar(nomes.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
+    `${N} ${P(N)} ${O(N)} de ${m.n}${modelos ? ` para ${modelos} ${M(modelos)}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
+    `${N} ${P(N)} ${O(N)} de ${m.n}. Nota fiscal e 90 dias de garantia.`,
+  ]);
   return { paragrafos, meta };
 }
 
