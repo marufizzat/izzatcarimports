@@ -53,7 +53,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   <div class="mc-dlg-topo">
     <div>
       <h2 id="mc-dlg-titulo" class="mc-dlg-titulo">Seu carro</h2>
-      <p class="mc-dlg-sub">Escolha uma vez. O site passa a mostrar as peças do seu carro.</p>
+      <p class="mc-dlg-sub">Escolhe uma vez: o site passa a mostrar as peças do seu carro.</p>
     </div>
     <button class="mc-dlg-fechar" type="button" aria-label="Fechar" data-fechar-carro>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
@@ -191,7 +191,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   :is(.cab, .menu-movel) .cab-icone { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: inherit; }
   :is(.cab, .menu-movel) .cab-icone:hover { background: color-mix(in oklab, currentColor, transparent 92%); }
   :is(.cab, .menu-movel) .cab-icone svg { width: 23px; height: 23px; }
-  .cab .cab-whats { --h: 44px; flex: none; padding: 0 12px; font-size: 15px; }
+  .cab .cab-whats { --h: var(--botao-p); flex: none; padding: 0 12px; font-size: 15px; }
   .cab .cab-whats span { display: none; }
   @media (max-width: 379px) { .cab .cab-linha > .logo img { height: 48px; } }
   @media (max-width: 339px) { .cab .cab-linha > .logo img { height: 44px; } }
@@ -220,7 +220,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   .menu-movel .menu-carros { display: flex; flex-wrap: wrap; gap: 8px; }
   .menu-movel .menu-carros a { padding: 9px 13px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 14.5px; font-weight: 560; }
   /* o pé do menu: fora da parte que rola, sempre à vista (um véu da cor do fundo por cima da lista) */
-  .menu-movel .menu-whats { flex: none; --h: 54px; width: 100%; box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), inset 0 -1px 0 rgb(0 0 0 / .12),
+  .menu-movel .menu-whats { flex: none; --h: var(--botao-g); width: 100%; box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), inset 0 -1px 0 rgb(0 0 0 / .12),
                             0 1px 2px rgb(140 50 0 / .25), 0 8px 20px -8px color-mix(in oklab, var(--accent), transparent 30%), 0 -14px 18px -6px var(--bg); }
   @media (max-width: 380px) { .menu-movel .menu-links a { font-size: 22px; padding-block: 11px; } }
 </style>
@@ -236,12 +236,11 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
     .cab .cab-busca { display: block; flex: 1 100 340px; min-width: 200px; max-width: 440px; margin-left: auto; }
     .cab .cab-busca ~ .cab-acoes { margin-left: 0; flex: 0 1 auto; }
     .cab .cab-busca ~ .cab-acoes > .cab-lupa { display: none; }
-    .cab .cab-busca .sb-busca:not(.sb-grande) { height: 46px; border-radius: 12px; padding: 0 4px 0 14px; gap: 6px; box-shadow: inset 0 0 0 1.5px var(--line-2); }
+    .cab .cab-busca .sb-busca:not(.sb-grande) { height: 56px; border-radius: 14px; padding: 0 4px 0 14px; gap: 6px; box-shadow: inset 0 0 0 1.5px var(--line-2); }
     .cab .cab-busca .sb-busca:not(.sb-grande):focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 82%); }
     .cab .cab-busca .sb-busca input { font-size: 16px; min-width: 0; }
     .cab .cab-busca .sb-lupa svg { width: 19px; height: 19px; }
     .cab .cab-busca .sb-limpar { width: 36px; height: 36px; }
-    .cab .cab-busca .sb-btn { --h: 38px; padding: 0 11px; border-radius: 9px; }
     .cab .cab-busca .sb-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .cab .cab-busca .sb-lista { right: auto; width: max(100%, 520px); }
   }

@@ -43,6 +43,8 @@
   .mc-raiz .mc-campo-ano select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0;
     appearance: none; font-size: 16px; cursor: pointer; }
   .mc-raiz .mc-campo-ano select:disabled { cursor: default; }
+  /* no Safari o texto das opções do <select> (invisível) vaza do campo e alargava a home em 320 px: o campo corta */
+  .mc-raiz .mc-campo-ano { overflow: hidden; }
   .mc-raiz .mc-campo-ano:has(select:focus-visible) { outline: 3px solid var(--accent-text); outline-offset: 3px; }
 
   .mc-raiz .mc-corpo { display: grid; gap: var(--vao-mais); align-content: start; min-width: 0; }
@@ -138,7 +140,7 @@
   .mc-raiz .mc-g-txt { position: relative; min-width: 0; max-width: 58%; display: grid; gap: 7px; }
   .mc-raiz .mc-garagem-sem .mc-g-txt { max-width: calc(100% - 140px); }
   .mc-raiz .mc-g-olho { margin: 0; display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 11.5px; font-weight: 720; letter-spacing: .09em;
-    text-transform: uppercase; color: #6a5d58; }
+    text-transform: uppercase; color: #5c504b; white-space: nowrap; }
   .mc-raiz .mc-g-logo { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #fff;
     box-shadow: inset 0 0 0 1px rgb(0 0 0 / .05), 0 2px 6px -2px rgb(70 40 30 / .3); }
   .mc-raiz .mc-g-logo img { display: block; width: auto; height: auto; max-width: 21px; max-height: 15px; }
@@ -213,25 +215,44 @@
     .mc-raiz .mc-modelo { min-height: 50px; }
     .mc-raiz .mc-pe { gap: 0 10px; }
     .mc-raiz .mc-pe .mc-link { font-size: 13px; white-space: nowrap; }
+    /* Cartão do carro no celular (auditoria 4, 2.1): o carro nunca fica atrás do nome nem da contagem.
+       - arte menor (até 80% da altura), presa embaixo à direita; a borda de cima e a da esquerda somem no estúdio;
+       - atrás do texto, um véu com o MESMO degradê do cartão, que some para a direita: o contraste do texto (≥ 4,5:1)
+         não depende de nenhuma arte (o bico do carro, quando chega perto, passa por baixo do véu);
+       - a marca em cima, pequena; o modelo grande (o que a pessoa procura); a contagem pode quebrar em 2 linhas. */
     .mc-raiz .mc-garagem { padding: 12px 14px; border-radius: 16px; }
-    .mc-raiz .mc-g-arte { top: -6%; right: -6%; height: 114%; }
-    /* no celular a marca vai numa linha e o modelo na outra: o nome nunca encosta no carro */
-    .mc-raiz .mc-g-txt { max-width: 47%; gap: 5px; }
-    .mc-raiz .mc-g-nome > span { display: block; }
-    .mc-raiz .mc-g-olho { min-height: 28px; gap: 7px; font-size: 11px; }
-    .mc-raiz .mc-g-logo { width: 28px; height: 28px; }
+    .mc-raiz .mc-g-arte { top: auto; bottom: -3%; right: -5%; height: min(80%, 46cqw);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24%), linear-gradient(180deg, transparent 0, #000 22%);
+      -webkit-mask-composite: source-in;
+      mask-image: linear-gradient(90deg, transparent 0, #000 24%), linear-gradient(180deg, transparent 0, #000 22%);
+      mask-composite: intersect; }
+    .mc-raiz .mc-garagem::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: inherit;
+      -webkit-mask-image: linear-gradient(90deg, #000 0, #000 var(--veu, 50%), transparent calc(var(--veu, 50%) + 16%));
+      mask-image: linear-gradient(90deg, #000 0, #000 var(--veu, 50%), transparent calc(var(--veu, 50%) + 16%)); }
+    .mc-raiz .mc-garagem-sem::after { content: none; }
+    .mc-raiz .mc-g-txt { max-width: 56%; gap: 4px; }
+    .mc-raiz .mc-g-olho { min-height: 26px; gap: 7px; font-size: 11px; letter-spacing: .06em; }
+    .mc-raiz .mc-g-logo { width: 26px; height: 26px; }
     .mc-raiz .mc-garagem-sem .mc-g-txt { max-width: calc(100% - 104px); }
     .mc-raiz .mc-g-marca { right: 16px; }
     .mc-raiz .mc-g-marca .mc-disco { --disco: 78px; }
     .mc-raiz .mc-g-marca .mc-disco img { transform: scale(1.2); }
-    .mc-raiz .mc-g-nome { font-size: 26px; line-height: .96; }
-    .mc-raiz .mc-g-nome.mc-longo { font-size: 22px; }
-    .mc-raiz .mc-g-conta { font-size: 13.5px; }
+    .mc-raiz .mc-g-nome, .mc-raiz .mc-g-nome.mc-longo { font-size: 26px; line-height: .98; }
+    .mc-raiz .mc-g-nome > span { display: block; margin-bottom: 2px; font-size: 16px; line-height: 1.1; font-stretch: 86%; font-weight: 620; letter-spacing: 0; }
+    .mc-raiz .mc-g-nome.mc-modelo-longo { font-size: 22px; }
+    .mc-raiz .mc-g-conta { font-size: 13.5px; line-height: 1.25; white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; }
     .mc-raiz .mc-g-conta b { font-size: 14.5px; }
     .mc-raiz .mc-anos { gap: 10px; }
-    .mc-raiz .mc-ver { --h: 52px; }
   }
   @container mc (max-width: 340px) {
+    .mc-raiz .mc-garagem { padding: 12px; --veu: 52%; }
+    .mc-raiz .mc-g-arte { height: min(80%, 42cqw); }
+    .mc-raiz .mc-g-nome, .mc-raiz .mc-g-nome.mc-longo { font-size: 24px; }
+    .mc-raiz .mc-g-nome.mc-modelo-longo { font-size: 20px; }
+    .mc-raiz .mc-g-nome > span { font-size: 15px; }
+    .mc-raiz .mc-g-olho { gap: 6px; font-size: 10.5px; letter-spacing: .05em; }
+    .mc-raiz .mc-g-conta { font-size: 13px; }
+    .mc-raiz .mc-g-conta b { font-size: 14px; }
     .mc-raiz .mc-pe .mc-link { font-size: 12.5px; }
     /* celular estreito (iPhone SE): o rodapé do cartão do carro numa linha só, sem cortar o "Salvo neste aparelho" */
     .mc-raiz .mc-nota { gap: 0 6px; font-size: 12px; }
@@ -243,6 +264,16 @@
     .mc-raiz .mc-campo .mc-seta { right: 4px; width: 13px; height: 13px; }
     .mc-raiz .mc-campo b { font-size: 14.5px; }
     .mc-raiz .mc-modelo { padding: 7px 9px; }
+  }
+  /* celular de 320 px (cartão de 260): o texto fica na metade da esquerda (a contagem quebra: "501 peças / para o 2019");
+     no rodapé, "Trocar carro" vira "Trocar" para o "Salvo neste aparelho" caber inteiro */
+  @container mc (max-width: 300px) {
+    .mc-raiz .mc-garagem { --veu: 48%; }
+    .mc-raiz .mc-g-txt { max-width: 50%; }
+    .mc-raiz .mc-nota { gap: 0 4px; }
+    .mc-raiz .mc-nota button { padding: 0 4px; }
+    .mc-raiz .mc-nota-acoes { margin-right: -4px; }
+    .mc-raiz .mc-so-largo { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .mc-raiz .mc-disco, .mc-raiz .mc-esqueleto .mc-disco, .mc-raiz .mc-esq, .mc-raiz .mc-g-arte, .mc-raiz .mc-ano { animation: none; transition: none; }
@@ -274,7 +305,7 @@
      Modelo e ano em partes separadas: o modelo leva as reticências e o ano nunca some.
      Celular: com carro, modelo em cima e ano embaixo; abaixo de 360 px, só o ícone (com um ponto laranja se há carro).
      PC: uma linha; a marca aparece onde sobra lugar (560–959 e 1280+). */
-  .cab-carro { position: relative; flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; min-width: 44px; height: 44px; max-width: 280px;
+  .cab-carro { position: relative; flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; min-width: 48px; height: var(--botao-p); max-width: 280px;
     padding: 0 10px; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-2);
     font-size: 13.5px; font-weight: 650; white-space: nowrap; }
   .cab-carro:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
@@ -290,14 +321,14 @@
     .cab-carro.com-carro .cab-carro-ano { font-size: 11.5px; font-weight: 620; color: var(--ink-2); }
   }
   @media (max-width: 359px) {
-    .cab-carro { width: 44px; padding: 0; justify-content: center; }
+    .cab-carro { width: 48px; padding: 0; justify-content: center; }
     .cab-carro .cab-carro-txt { display: none !important; }
     .cab-carro.com-carro::after { content: ""; position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
       box-shadow: 0 0 0 2px var(--accent-soft); }
   }
   @media (min-width: 560px) { .cab-carro-marca { display: inline; } }
   @media (min-width: 960px) {
-    .cab-carro { height: 46px; padding: 0 12px; gap: 7px; font-size: 14.5px; max-width: 170px; }
+    .cab-carro { padding: 0 12px; gap: 7px; font-size: 14.5px; max-width: 170px; }
     .cab-carro-marca { display: none; }
   }
   @media (min-width: 1280px) { .cab-carro { max-width: 260px; } .cab-carro-marca { display: inline; } }
@@ -314,7 +345,7 @@
   .cat-meu-txt > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cat-meu-txt button { padding: 0; border: 0; background: none; font: inherit; font-weight: 650; color: var(--accent-text); text-decoration: underline;
     text-underline-offset: 2px; }
-  .cat-meu .botao { --h: 44px; flex: none; padding: 0 16px; font-size: 15px; }
+  .cat-meu .botao { --h: var(--botao-p); flex: none; padding: 0 16px; font-size: 15px; }
   .cat-meu a.cat-meu-whats { flex: none; }
   .cat-meu .so-cel { display: none; }
   @media (max-width: 559px) { .cat-meu .so-pc { display: none; } .cat-meu .so-cel { display: inline; } }

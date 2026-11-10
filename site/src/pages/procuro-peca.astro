@@ -12,7 +12,7 @@ import { linkAviso } from '../lib/aviso';
 const canonical = `${SITE}/procuro-peca.html`;
 const marcas = resumo().marcas;
 const modelosPorMarca = Object.fromEntries(marcas.map((m) => [m.n, m.m.map((x) => x.n)]));
-const trilha: [string, string][] = [['Início', '/index.html'], ['Não achou a peça?', '/procuro-peca.html']];
+const trilha: [string, string][] = [['Início', '/'], ['Não achou a peça?', '/procuro-peca.html']];
 const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
 ---
 <Pagina
@@ -24,7 +24,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 
   <div class="moldura pc-pagina">
     <nav class="pc-trilha" aria-label="Você está em">
-      <a href="/index.html">Início</a><span aria-hidden="true">/</span><span aria-current="page">Não achou a peça?</span>
+      <a href="/">Início</a><span aria-hidden="true">/</span><span aria-current="page">Não achou a peça?</span>
     </nav>
 
     <div class="pc-grade">
@@ -72,7 +72,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
             </div>
             <div class="campo">
               <label for="f-codigo">Código gravado <span class="opc">(opcional)</span></label>
-              <input id="f-codigo" name="codigo" type="text" autocomplete="off" placeholder="Se tiver, copie da peça" />
+              <input id="f-codigo" name="codigo" type="text" autocomplete="off" placeholder="Se tiver, copia da peça" />
             </div>
             <div class="campo">
               <label for="f-cidade">Cidade e estado <span class="opc">(opcional)</span></label>
@@ -93,9 +93,9 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
         <div class="pc-aviso">
           <p>Quer saber quando chegar peça do seu carro no pátio?</p>
           <a class="botao botao-linha pc-aviso-botao" href={linkAviso(WHATS, 'carro')} rel="noopener" data-aviso>
-            <Icone nome="whats" /><span data-aviso-txt>Avise-me quando chegar peça para o meu carro</span>
+            <Icone nome="whats" /><span data-aviso-txt>Me avisa quando chegar peça para o meu carro</span>
           </a>
-          <p class="pc-aviso-erro" id="pc-aviso-erro" role="status" aria-live="polite" hidden>Preencha a marca e o modelo do carro para a gente saber qual é.</p>
+          <p class="pc-aviso-erro" id="pc-aviso-erro" role="status" aria-live="polite" hidden>Preenche a marca e o modelo do carro para a gente saber qual é.</p>
         </div>
       </form>
 
@@ -133,7 +133,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       },
       msg: 'Use o ano com 4 números, por exemplo 2015 ou 2015/2018.',
     },
-    peca: { ok: (v) => v.trim().length >= 3, msg: 'Diga qual peça você procura.' },
+    peca: { ok: (v) => v.trim().length >= 3, msg: 'Escreve qual peça você procura.' },
   };
 
   if (form && status) {
@@ -178,7 +178,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       if (!aviso) return;
       const c = carroDoForm();
       aviso.href = linkAviso(form.dataset.whats || '', c ? c.nome : 'carro', c ? c.ano : null);
-      if (avisoTxt) avisoTxt.textContent = `Avise-me quando chegar peça para o meu ${c ? c.nome : 'carro'}`;
+      if (avisoTxt) avisoTxt.textContent = `Me avisa quando chegar peça para o meu ${c ? c.nome : 'carro'}`;
       if (c && avisoErro) avisoErro.hidden = true;
     };
     ['marca', 'modelo', 'ano'].forEach((n) => { campo(n).addEventListener('input', pintarAviso); campo(n).addEventListener('change', pintarAviso); });
@@ -258,7 +258,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       link.href = url;
       link.target = '_blank';
       link.rel = 'noopener';
-      link.textContent = 'toque aqui';
+      link.textContent = 'toca aqui';
       status.appendChild(link);
       status.appendChild(document.createTextNode('.'));
     });
@@ -307,7 +307,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   /* campos: estilo comum no global.css (.campo), com o foco visível também no campo com erro */
 
   .pc-acao { display: grid; gap: 12px; justify-items: start; }
-  .pc-enviar { min-height: 56px; height: auto; padding: 14px 26px; font-size: 17px; }
+  .pc-enviar { min-height: var(--h); height: auto; padding: 14px 26px; font-size: 17px; }
   @media (max-width: 600px) { .pc-enviar { width: 100%; } }
   .pc-nota { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-3); max-width: 46ch; }
   .pc-status { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
