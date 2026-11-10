@@ -6,7 +6,10 @@ O capas_estudio.py (ESTUDIO_VERSAO=2) anota em <pasta>/_revisar.json as capas su
   - montagem sem separar ...... montagem em que não deu para separar (tentou a próxima foto);
   - capa de foto montagem ..... nenhuma outra foto serviu: a capa saiu da montagem;
   - carro colado na foto ...... a foto tinha o carrinho do anúncio grudado na peça: usou outra foto;
-  - peça cortada na foto ...... a peça encosta na borda da foto (falta pedaço) e não havia foto melhor;
+  - cortada na capa ........... a peça veio cortada da foto (encosta na borda ou acaba na reta do recorte do
+                                vendedor) e nenhuma foto do anúncio a mostra inteira: a capa saiu menor, com margem;
+                                ou a peça chegou perto demais da borda da capa;
+  - peça cortada na foto ...... (nome antigo do motivo acima, em _revisar.json de antes de 10/11);
   - N pedaços grandes ......... a capa tem mais de um pedaço grande (par, kit, duas vistas coladas...);
   - sem foto limpa (reserva) .. só sobrou a foto com carro/sujeira.
 Esta ferramenta junta tudo numa página para o olho humano (capa | foto original do anúncio | motivos)
@@ -28,6 +31,7 @@ GRUPOS = [
     ("montagem sem separar", "Montagem: não deu para separar nesta foto"),
     ("capa de foto montagem", "Montagem: a capa saiu da montagem (nenhuma outra foto serviu)"),
     ("carro colado", "Carro do anúncio colado na peça: pulou essa foto (conferir a escolhida)"),
+    ("cortada na capa", "Cortada na capa: peça cortada na foto e nenhuma foto inteira (saiu menor, com margem)"),
     ("peça cortada", "Peça cortada na foto (encosta na borda; não havia foto melhor)"),
     ("pedaços grandes", "Mais de um pedaço grande na capa"),
     ("reserva", "Sem foto limpa (reserva)"),

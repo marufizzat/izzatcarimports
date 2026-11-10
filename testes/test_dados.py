@@ -325,6 +325,29 @@ def test_enquadramento_v2_regra():
     assert r["torta"][1] < (L - r["torta"][3]) // 2        # centro de massa à direita puxa a peça para a esquerda
 
 
+def test_enquadramento_v2_peca_cortada():
+    """Peça cortada na foto (nenhuma foto a mostra inteira): menor que a capa normal, margem >= 8% dos lados, mesmo
+    piso. O peso visual nunca empurra a peça para fora da zona nem a faz maior que no enquadramento normal."""
+    from capas_estudio import enquadrar, REGRA, REGRA_CORTADA, MARGEM_CORTADA, BORDA_CAPA
+    L = 1000
+    piso = round(REGRA["PISO"] * L)
+    assert REGRA_CORTADA["PISO"] == REGRA["PISO"] and REGRA_CORTADA["UP"] < REGRA["UP"]
+    assert REGRA_CORTADA["XMIN"] >= MARGEM_CORTADA and 1 - REGRA_CORTADA["XMAX"] >= MARGEM_CORTADA
+    assert REGRA_CORTADA["T"] < REGRA["T"] and min(REGRA["XMIN"], 1 - REGRA["XMAX"]) >= BORDA_CAPA
+    casos = {
+        "larga": (1100, 400, {"casco": 380000, "cx": 550}),     # a tampa do porta-malas cortada dos dois lados
+        "compacta": (500, 500, {"casco": 250000, "cx": 250}),
+        "alta": (300, 1100, {"casco": 300000, "cx": 150}),
+        "pequena": (120, 90, {"casco": 9000, "cx": 60}),        # foto pequena: nunca amplia
+    }
+    for k, (w, h, med) in casos.items():
+        s0, x0, y0, nw0, nh0 = enquadrar(w, h, med, L)
+        s, x, y, nw, nh = enquadrar(w, h, med, L, REGRA_CORTADA)
+        assert s <= REGRA_CORTADA["UP"] and s <= s0, k                   # nunca maior que a capa normal
+        assert x >= MARGEM_CORTADA * L and x + nw <= (1 - MARGEM_CORTADA) * L, (k, x, nw)
+        assert y >= REGRA_CORTADA["TOPO"] * L and y + nh == piso, k      # mesmo piso das outras capas
+
+
 def test_subtipo_com_a_mae():
     """Problema 4: subtipo solto ("De Vidros", "Elétrico", "Com Tela") vira nome inteiro, no estilo do ML."""
     from preparar_dados import subtipo
