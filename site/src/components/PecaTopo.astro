@@ -8,7 +8,7 @@
 import type { Peca } from '../lib/dados';
 import { foto, brl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
 import { quadroFoto, fotosGaleria } from '../lib/quadroFoto';
-import { linkWhats, cabecaPeca, caudaPeca, linhaMeuCarro, precoWhats, DESCONTO_WHATS } from '../lib/whats';
+import { linkWhats, cabecaPeca, caudaPeca, linhaMeuCarro, conviteCarro, precoWhats, DESCONTO_WHATS } from '../lib/whats';
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
 import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
@@ -31,7 +31,7 @@ const cod = codigoDaPeca(p.oem);
 // Sem carro salvo vai "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
 const cabeca = cabecaPeca({ nome: p.n, carro, anos, cod, linha: nomeMensagem(p), preco: brl(p.p), url });
 // peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
-const semCarro = !p.b ? '' : linhaMeuCarro(modelosDa(p).length > 1 ? `${p.b} ____, ano ____` : `${carro}, ano ____`);
+const semCarro = linhaMeuCarro(conviteCarro(p.b, p.m, modelosDa(p).length > 1 ? '|' : ''));
 const cauda = caudaPeca(url);
 // 10% de desconto em toda peça pedida pelo WhatsApp (decisão do dono, 10/11): "de X por Y", calculado do preço do anúncio
 const precoW = brl(precoWhats(p.p));
@@ -190,7 +190,7 @@ const perguntas = [
 <script>
   import { lerMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
   import { ligarCampoCep, cepCompleto, formatarCep, salvarCep } from '../lib/cep';
-  import { linkWhats, mensagemFrete, blocoDaCabeca, urlDaCauda, linhaMeuCarro, abrirWhats } from '../lib/whats';
+  import { linkWhats, mensagemFrete, blocoDaCabeca, urlDaCauda, linhaMeuCarro, carroSalvoTxt, abrirWhats } from '../lib/whats';
 
   // WhatsApp leva o carro salvo na mensagem (troca só a linha "Meu carro é ...").
   // [data-whats-espelho] (o botão da barra fixa do celular) recebe o mesmo link do botão principal.
@@ -203,7 +203,7 @@ const perguntas = [
   const atualizarWhats = (c: MeuCarro | null) => {
     pedidos.forEach((a) => {
       const base = a.getAttribute('href')!.split('?')[0];
-      const linha = c ? linhaMeuCarro(nomeCarro(c)) : (a.dataset.sem || '');
+      const linha = c ? linhaMeuCarro(carroSalvoTxt(c)) : (a.dataset.sem || '');
       a.href = `${base}?text=${encodeURIComponent((a.dataset.cabeca || '') + linha + (a.dataset.cauda || ''))}`;
     });
     if (principal) espelhos.forEach((a) => { a.href = principal.href; });
@@ -606,25 +606,35 @@ const perguntas = [
   .estoque-unica i { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 78%); }
   .estoque-txt { margin: -2px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
   .compra-botoes { position: relative; display: grid; gap: 10px; margin-top: 6px; }
-  /* "No WhatsApp: de R$ X por R$ Y  −10%": faixa clara logo acima do botão laranja (os dois são um bloco só: mesma largura,
-     cantos de cima da faixa e de baixo do botão). Letra grafite sempre; o preço cheio riscado, o do WhatsApp em destaque. */
-  .compra-de-por { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 -4px; padding: 9px 12px 9px 13px; border-radius: 14px;
-                   background: var(--accent-soft); color: #1d1d1f; font-size: 14.5px; line-height: 1.25;
-                   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
-  .compra-de-por .cdp-onde { display: inline-flex; align-items: center; gap: 6px; font-weight: 750; font-stretch: 94%; white-space: nowrap; }
+  /* "No WhatsApp: de R$ X por R$ Y  −10%" (10% em toda peça pelo WhatsApp). Um elemento só, dois desenhos:
+     - celular e tablet (uma coluna): selo claro preso no canto de cima do botão laranja (metade fora dele), SEM ocupar
+       altura: o botão continua na 1ª tela (revisão 11, P1: a faixa empurrava o botão e a barra fixa passava por cima);
+     - PC (duas colunas): faixa clara logo acima do botão, e cada botão diz o preço do seu caminho.
+     Letra grafite sempre; o preço cheio riscado, o do WhatsApp em destaque. Nunca quebra de linha (sem salto quando a
+     fonte chega). */
+  .compra-de-por { position: absolute; z-index: 1; top: 0; right: 12px; transform: translateY(-50%); margin: 0; display: inline-flex; align-items: center; gap: 7px;
+                   height: 28px; padding: 0 11px 0 4px; border-radius: 999px; background: #fff; color: #1d1d1f; font-size: 13px; line-height: 1; white-space: nowrap;
+                   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%), 0 4px 12px -6px rgb(140 50 0 / .45); pointer-events: none; }
+  .compra-de-por .cdp-onde { display: none; align-items: center; gap: 6px; font-weight: 750; font-stretch: 94%; }
   .compra-de-por .cdp-onde svg { width: 16px; height: 16px; flex: none; color: var(--accent-text); }
-  .compra-de-por .cdp-precos { white-space: nowrap; }
   .compra-de-por s { color: var(--ink-2); text-decoration-thickness: 1.5px; }
   .compra-de-por .cdp-por { color: var(--ink-2); }
-  .compra-de-por b { font-size: 17px; font-weight: 850; font-stretch: 88%; }
-  .compra-de-por .cdp-selo { margin-left: auto; padding: 4px 8px; border-radius: 999px; background: #fff; color: #1d1d1f; font-size: 12.5px; font-weight: 800;
-                             line-height: 1; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%); }
-  /* cada botão diz o preço do seu caminho (WhatsApp com o desconto; Mercado Livre o do anúncio) */
-  .compra-botoes .botao-preco { font-weight: 750; white-space: nowrap; }
+  .compra-de-por b { font-size: 14.5px; font-weight: 850; font-stretch: 88%; }
+  .compra-de-por .cdp-selo { order: -1; padding: 4px 7px; border-radius: 999px; background: var(--accent-soft); color: #1d1d1f; font-size: 12px; font-weight: 800; }
+  .compra-botoes .botao-preco { display: none; font-weight: 750; white-space: nowrap; }
   .compra-botoes .botao-linha .botao-preco { color: var(--ink-2); }
-  /* celular: sem o selo (ele caía sozinho na 2ª linha; o "de/por" já diz o desconto) */
-  @media (max-width: 479px) { .compra-de-por .cdp-selo { display: none; } }
-  @media (max-width: 359px) { .compra-botoes .botao-linha .botao-preco { display: none; } .compra-de-por { font-size: 13.5px; } }
+  @media (min-width: 960px) {
+    .compra-de-por { position: static; transform: none; display: flex; gap: 10px; height: auto; margin: 0 0 -4px; padding: 10px 12px 10px 13px; border-radius: 14px;
+                     background: var(--accent-soft); font-size: 14.5px; pointer-events: auto;
+                     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
+    .compra-de-por .cdp-onde { display: inline-flex; }
+    .compra-de-por b { font-size: 17px; }
+    .compra-de-por .cdp-selo { order: 0; margin-left: auto; background: #fff; font-size: 12.5px; padding: 4px 8px;
+                               box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%); }
+    .compra-botoes .botao-preco { display: inline; }
+  }
+  /* PC estreito (coluna de ~400 px): sem o selo, para a faixa caber numa linha também com preço de 5 dígitos */
+  @media (min-width: 960px) and (max-width: 1199px) { .compra-de-por .cdp-selo { display: none; } }
   .compra-botoes .botao { --h: var(--botao-g); font-size: 16.5px; }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .compra-facil b { font-weight: 650; color: var(--ink-2); }

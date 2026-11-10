@@ -40,7 +40,8 @@ export function blocoPeca(x: PecaMsg): string {
 export const DESCONTO_WHATS = 10;
 /** O preço de quem pede pelo WhatsApp, em centavos inteiros (244,64 -> 220,18). */
 export function precoWhats(v: number): number {
-  return Math.round(v * (100 - DESCONTO_WHATS)) / 100;
+  // em centavos inteiros do começo ao fim (685,55 -> 617,00; a conta em ponto flutuante dava 616,99)
+  return Math.round((Math.round(v * 100) * (100 - DESCONTO_WHATS)) / 100) / 100;
 }
 const paraNumero = (s: string) => Number(s.replace(/\./g, '').replace(',', '.'));
 const paraBrl = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -109,6 +110,23 @@ export function urlDaCauda(cauda: string): string {
 /** "Meu carro: Volvo XC60 2019" (o carro salvo, ou o convite com a lacuna: "Chevrolet Cruze, ano ____"). */
 export function linhaMeuCarro(carro: string): string {
   return carro ? `Meu carro: ${carro}\n` : '';
+}
+/** O carro salvo na mensagem: "Volvo XC60 2019"; salvo sem ano, o ano fica em branco para a pessoa escrever. */
+export function carroSalvoTxt(c: { b: string; m: string; y?: number | null }): string {
+  return c.y ? `${c.b} ${c.m} ${c.y}` : `${c.b} ${c.m}, ano ____`;
+}
+/** Sem carro salvo: o convite com o carro da peça e o ano em branco (peça de 2+ carros: o modelo também em branco;
+ *  peça sem marca: tudo em branco). `ms` = o data-ms do cartão ("S60|XC60") ou qualquer texto com "|" para 2+ carros. */
+export function conviteCarro(b?: string | null, m?: string | null, ms?: string | null): string {
+  if (!b) return '____ (modelo), ano ____';
+  return ms && ms.includes('|') ? `${b} ____, ano ____` : `${b} ${m || '____'}, ano ____`;
+}
+/** Põe (ou troca) a linha "Meu carro: …" numa mensagem de peça já pronta (o link dos cartões nasce sem ela: entra no
+ *  clique, com o carro salvo de agora). Mensagem que não é de peça volta igual. */
+export function comMeuCarro(msg: string, carro: string): string {
+  const sem = msg.replace(/^Meu carro: .*\n/m, '');
+  const i = sem.lastIndexOf(CAUDA_PECA);
+  return i < 0 || !carro ? sem : sem.slice(0, i) + linhaMeuCarro(carro) + sem.slice(i);
 }
 export function mensagemPeca(x: PecaMsg, meuCarro = ''): string {
   return cabecaPeca(x) + meuCarro + caudaPeca(x.url);

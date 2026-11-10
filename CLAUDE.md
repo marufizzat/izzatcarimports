@@ -117,9 +117,12 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    salvo ("Procuro uma peça para Volvo XC60 2019.") via `data-whats-carro`.
 
 9. **10% no WhatsApp em toda peça (decisão do dono, 10/11)**: `DESCONTO_WHATS`, `precoWhats()` e `precoWhatsTxt()` em
-   `site/src/lib/whats.ts` (sempre calculado do preço do anúncio; nunca em arte). Na página da peça: a faixa "No WhatsApp
-   de R$ X por R$ Y" acima do botão laranja, o preço de cada caminho dentro do botão (WhatsApp com o desconto; Mercado
-   Livre o do anúncio) e a barra fixa do celular com o preço do WhatsApp. A mensagem do "Pedir no WhatsApp" (página,
+   `site/src/lib/whats.ts` (sempre calculado do preço do anúncio; nunca em arte). Na página da peça, UM elemento
+   (`.compra-de-por`) com dois desenhos: no celular e no tablet (< 960 px) um selo "−10% de R$ X por R$ Y" preso no
+   canto de cima do botão laranja, sem ocupar altura (o botão tem de caber na 1ª tela: revisão 11); no PC, a faixa "No
+   WhatsApp de/por" acima do botão e o preço de cada caminho dentro dos dois botões. A barra fixa do celular mostra o
+   preço do WhatsApp e o do anúncio riscado. Nos cartões, a linha "Meu carro: …" entra na mensagem no clique
+   (`comMeuCarro`, ouvinte único no `Cabecalho.astro`). A mensagem do "Pedir no WhatsApp" (página,
    cartões, barra) é um pedido organizado: `*PEDIDO DE PEÇA*`, nome em negrito, carro · anos, código, anúncio (MLB),
    "Preço no site" + "No WhatsApp (10% de desconto)", "Meu carro: …", "Serve e ainda tem?" e o link por último
    (`cabecaPeca` + `linhaMeuCarro` + `caudaPeca`; o frete pelo CEP usa a mesma ficha: `*COTAÇÃO DE FRETE*`). Só Brasil

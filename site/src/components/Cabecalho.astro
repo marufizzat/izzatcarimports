@@ -88,7 +88,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
 <script>
   import { lerMeuCarro, EVENTO, ABRIR, ESCOLHIDO, type MeuCarro } from '../lib/meuCarro';
   import { nomeCarro } from '../lib/meuCarro';
-  import { whatsUrl } from '../lib/whats';
+  import { whatsUrl, comMeuCarro, carroSalvoTxt, conviteCarro } from '../lib/whats';
 
   // WhatsApp do topo e do menu: com carro salvo, a mensagem já leva o carro ("Procuro uma peça para Volvo XC60 2019.")
   function whatsComCarro() {
@@ -98,6 +98,24 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   }
   whatsComCarro();
   window.addEventListener(EVENTO, whatsComCarro);
+
+  // "Pedir no WhatsApp" dos cartões (os do build, os do catálogo e os montados por script): a linha "Meu carro: …" entra
+  // no clique, com o carro salvo de agora ou o convite com o carro da peça. É a MESMA mensagem da página da peça
+  // (revisão 11, P1: o cartão mandava sem a linha). Um ouvinte só, na página inteira.
+  const comCarroNoCartao = (e: Event) => {
+    const a = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a.etiqueta-acao');
+    const href = a?.getAttribute('href') || '';
+    const corte = href.indexOf('?text=');
+    if (!a || corte < 0) return;
+    const d = a.parentElement?.querySelector<HTMLElement>('a.etiqueta')?.dataset;
+    const c = lerMeuCarro();
+    try {
+      const msg = comMeuCarro(decodeURIComponent(href.slice(corte + 6)), c ? carroSalvoTxt(c) : conviteCarro(d?.b, d?.m, d?.ms));
+      a.setAttribute('href', `${href.slice(0, corte)}?text=${encodeURIComponent(msg)}`);
+    } catch { /* link malformado: segue como está */ }
+  };
+  document.addEventListener('click', comCarroNoCartao, true);
+  document.addEventListener('auxclick', comCarroNoCartao, true);
 
   // chip do cabeçalho: mostra o carro salvo (sem carro: "Meu carro"). O mesmo desenho do script do HTML (logo acima).
   // Modelo e ano em partes separadas: no aperto, o modelo ganha reticências e o ano nunca some.

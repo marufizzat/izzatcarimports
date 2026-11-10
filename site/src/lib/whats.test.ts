@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, blocoPeca, cabecaPeca, caudaPeca, fichaPeca, blocoDaCabeca, urlDaCauda, linhaMeuCarro, precoWhats, precoWhatsTxt, mensagemFrete, WHATS } from './whats';
+import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, blocoPeca, cabecaPeca, caudaPeca, fichaPeca, blocoDaCabeca, urlDaCauda, linhaMeuCarro, comMeuCarro, carroSalvoTxt, conviteCarro, precoWhats, precoWhatsTxt, mensagemFrete, WHATS } from './whats';
 import { formatarCep, cepCompleto, digitosCep } from './cep';
 import { msgWhats } from '../components/catalogo/etiqueta';
 
@@ -38,6 +38,24 @@ describe('WhatsApp: uma abertura só ("Olá! Vim pelo site da Izzat Car.")', () 
     expect(precoWhatsTxt('3.785,77')).toBe('3.407,19');
     expect(precoWhatsTxt('149,33')).toBe('134,40');
     expect(precoWhatsTxt('x')).toBe('');
+    // preço terminado em 5 centavos: a conta em centavos inteiros (o ponto flutuante dava 616,99)
+    expect(precoWhats(685.55)).toBe(617);
+    expect(precoWhatsTxt('685,55')).toBe('617,00');
+    expect(precoWhats(0.05)).toBe(0.05);
+  });
+  it('"Meu carro:" — o salvo (com e sem ano), o convite e a linha que entra na mensagem do cartão', () => {
+    expect(carroSalvoTxt({ b: 'Volvo', m: 'XC60', y: 2019 })).toBe('Volvo XC60 2019');
+    expect(carroSalvoTxt({ b: 'Volvo', m: 'XC60', y: null })).toBe('Volvo XC60, ano ____');
+    expect(conviteCarro('Chevrolet', 'Cruze')).toBe('Chevrolet Cruze, ano ____');
+    expect(conviteCarro('Volvo', 'S60', 'S60|XC60')).toBe('Volvo ____, ano ____');
+    expect(conviteCarro('', '')).toBe('____ (modelo), ano ____');
+    const x = { nome: 'Fechadura', preco: '89,90', url: 'https://izzatcarimports.com.br/peca/f-MLB2.html' };
+    const semLinha = mensagemPeca(x);
+    const comLinha = mensagemPeca(x, linhaMeuCarro('Volvo XC60 2019'));
+    expect(comMeuCarro(semLinha, 'Volvo XC60 2019')).toBe(comLinha);
+    expect(comMeuCarro(comLinha, 'Renault Logan 2012')).toBe(mensagemPeca(x, linhaMeuCarro('Renault Logan 2012')));   // troca, não repete
+    expect(comMeuCarro(comLinha, '')).toBe(semLinha);
+    expect(comMeuCarro('outra mensagem', 'Volvo XC60 2019')).toBe('outra mensagem');
   });
   it('o cartão manda a MESMA mensagem da peça (nunca o título cru), com o de/por', () => {
     const m = msgWhats({ n: 'Retrovisor elétrico esquerdo', b: 'Volvo', m: 'XC60', y: [2018, 2024], o: 'a044297', p: 3785.77 }, 'https://izzatcarimports.com.br/peca/y-MLB3.html');
