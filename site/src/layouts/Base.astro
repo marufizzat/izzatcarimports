@@ -3,9 +3,12 @@ import '../styles/global.css';
 interface Props {
   titulo: string; descricao?: string; direcao?: 'a' | 'b' | 'c'; canonical?: string;
   ogImagem?: string; noindex?: boolean; ogTipo?: 'website' | 'product';
+  /** prévia do link (WhatsApp, Facebook) diferente do <title>/description do Google (a peça: o preço primeiro) */
+  ogTitulo?: string; ogDescricao?: string;
 }
 const { titulo, descricao = 'Peças originais de carros com baixa legal no Detran-RS. Nota fiscal e 90 dias de garantia em toda peça. Envio para todo o Brasil.',
         direcao = 'a', canonical, ogImagem = '/identidade/og.jpg', noindex = false, ogTipo = 'website' } = Astro.props;
+const { ogTitulo = titulo, ogDescricao = descricao } = Astro.props;
 const canon = canonical ?? new URL(Astro.url.pathname, Astro.site).href;
 // prévia pública (Cloudflare): o Google não indexa a cópia congelada do catálogo
 const previa = process.env.PREVIA === '1';
@@ -40,9 +43,9 @@ const previa = process.env.PREVIA === '1';
   <meta property="og:type" content={ogTipo} />
   <meta property="og:locale" content="pt_BR" />
   <meta property="og:site_name" content="Izzat Car Imports" />
-  <meta property="og:title" content={titulo} />
+  <meta property="og:title" content={ogTitulo} />
   <meta property="og:url" content={canon} />
-  <meta property="og:description" content={descricao} />
+  <meta property="og:description" content={ogDescricao} />
   <meta property="og:image" content={new URL(ogImagem, Astro.site).href} />
   {/* X/Twitter (e quem lê o mesmo cartão): a imagem grande, com o título e a descrição de cima */}
   <meta name="twitter:card" content="summary_large_image" />
