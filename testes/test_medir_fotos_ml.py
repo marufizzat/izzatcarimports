@@ -112,6 +112,15 @@ def test_gravar_e_juntar_com_o_robo():
         final = json.loads(arq.read_text(encoding="utf-8"))
         assert final == {"a": [1200, 900, 1, 2, 3, 4], "b": [10, 10], "c": [5, 5]}, final
         assert json.loads(extra.read_text(encoding="utf-8")) == final
+        # rodada sem tempo (--so-juntar): nada é medido, mas as medidas do robô entram no JSON do build
+        mf.gravar({"a": [1200, 900, 1, 2, 3, 4]}, arq)
+        pecas.write_text(json.dumps([{"id": "MLB1", "fotos": ["a", "c", "nova"]}]), encoding="utf-8")
+        try:
+            mf.ARQ, mf.PECAS = arq, pecas
+            mf.main(["--extra", str(extra), "--podar", "--so-juntar"])
+        finally:
+            mf.ARQ, mf.PECAS = antes
+        assert json.loads(arq.read_text(encoding="utf-8")) == {"a": [1200, 900, 1, 2, 3, 4], "c": [5, 5]}
 
 
 if __name__ == "__main__":

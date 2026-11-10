@@ -64,7 +64,7 @@ describe('quadro das fotos do ML na galeria', () => {
 
   it('peça no meio de uma foto quadrada: centrada ocupando ~84%', () => {
     const r = noQuadro([1200, 1200, 400, 400, 800, 800])!;
-    // 400 px de peça: ampliar a 84% exigiria um corte de 476 px, abaixo do mínimo (560): fica 560 e a peça no centro
+    // 400 px de peça: ampliar a 84% exigiria um corte de 476 px, abaixo do mínimo (800 px): fica 800 e a peça no centro
     expect(Math.abs((r.peca![0] + r.peca![2]) / 2 - 0.5)).toBeLessThan(0.01);
     const grande = noQuadro([1200, 1200, 100, 150, 1100, 1050])!;
     expect(grande.peca![2] - grande.peca![0]).toBeCloseTo(1 - 2 * MARGEM, 2);
@@ -104,6 +104,17 @@ describe('quadro das fotos do ML na galeria', () => {
       expect(r.w).toBeLessThanOrEqual(m[0] / 560 + 0.001);       // largura da foto em lados do quadro (+ arredondamento)
       confere(m);
     }
+  });
+
+  it('foto grande nunca ampliada além de 800 px no quadro (nitidez no retina)', () => {
+    for (const m of [[1200, 1200, 500, 500, 700, 700], [1200, 900, 30, 600, 230, 880], [900, 1200, 400, 50, 600, 300]]) {
+      const r = noQuadro(m)!;
+      expect(m[0] / r.w).toBeGreaterThanOrEqual(800 - 2);   // px da foto num lado do quadro
+      confere(m);
+    }
+    const baixa = noQuadro([1200, 700, 500, 300, 700, 500])!;   // lado curto < 800: a altura inteira da foto, sem borda
+    expect(baixa.borda).toBe(false);
+    expect(1200 / baixa.w).toBeCloseTo(700, -1);
   });
 
   it('style curto: sem zeros nem valores repetidos', () => {

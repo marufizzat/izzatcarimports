@@ -128,9 +128,14 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          # até 4 min, e só se ainda sobram 10 min para o build e a publicação
+          # até 4 min, e só se ainda sobram 10 min para o build e a publicação. Sem tempo: só junta as medidas que o
+          # robô já fez (senão a página voltava ao jeito antigo nesta rodada e mudava de novo na próxima)
           SOBRA=$(( 30 * 60 - ( $(date +%s) - INICIO ) ))
-          if [ "$SOBRA" -lt 60 ]; then echo "sem tempo nesta rodada"; exit 0; fi
+          if [ "$SOBRA" -lt 60 ]; then
+            echo "sem tempo para medir nesta rodada: só junta"
+            python -u ferramentas/medir_fotos_ml.py --extra .cache-caixas/fotos-ml-caixas.json --podar --so-juntar
+            exit 0
+          fi
           export MEDIR_TEMPO_MAX=$(( SOBRA < 240 ? SOBRA : 240 ))
           pip install "rembg[cpu]==2.0.*" scipy || echo "rembg indisponível: só junta as medidas já feitas"
           python -u ferramentas/medir_fotos_ml.py --extra .cache-caixas/fotos-ml-caixas.json --podar

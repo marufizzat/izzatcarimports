@@ -18,6 +18,7 @@ Variáveis: MEDIR_PARALELO (8), MEDIR_TEMPO_MAX (s, 0 = sem limite), MEDIR_IDS (
 MEDIR_LIMITE (fotos por rodada, 0 = todas).
 Opções: --extra ARQ   junta o JSON do robô (cache entre rodadas) e grava o resultado nele também
         --podar       tira do JSON as fotos que não estão mais em nenhum anúncio
+        --so-juntar   não mede nada: só junta o JSON do robô e grava (rodada sem tempo)
 Teste: python testes/test_medir_fotos_ml.py
 """
 import io
@@ -224,6 +225,8 @@ def main(argv):
     limite = int(os.getenv("MEDIR_LIMITE", "0") or 0)
     if limite:
         fila = fila[:limite]
+    if "--so-juntar" in argv:
+        fila = []
     print(f"fotos da galeria: {len(dados)} medidas | {len(fila)} nesta rodada", flush=True)
     motor = os.getenv("MEDIR_MOTOR") or ("vision" if sys.platform == "darwin" else "rembg")
     try:

@@ -14,6 +14,9 @@ import { join } from 'node:path';
 export const MARGEM = 0.08;
 /** nunca mostra menos que 55% do lado menor da foto (foto real ampliada demais fica mole) */
 export const ZOOM_MIN = 0.55;
+/** nem menos que 800 px da foto no quadro quando ela tem isso: no Mac retina o palco tem ~1280 px de tela, e com
+ *  560 px a foto ficava 2,3× ampliada, bem mais mole que a capa (1000 px, 1,3×); com 800, 1,6× */
+export const LADO_ZOOM = 800;
 /** nem menos que 560 px da foto no quadro (o palco tem ~640 px no computador): foto pequena do ML não é esticada
  *  além de ~1,1× (ficava borrada); fica no meio do quadro, com as bordas se desfazendo no fundo */
 export const LADO_MIN = 560;
@@ -43,7 +46,7 @@ export function quadro(m?: Medida | null): Quadro | null {
   if (maior > 0) {
     cx = (m[2] + m[4]) / 2;
     cy = (m[3] + m[5]) / 2;
-    const quer = Math.max(maior / (1 - 2 * MARGEM), curto * ZOOM_MIN, LADO_MIN);
+    const quer = Math.max(maior / (1 - 2 * MARGEM), curto * ZOOM_MIN, Math.min(LADO_ZOOM, curto), LADO_MIN);
     // cabe num quadrado da foto: ela cobre o quadro todo (peça grande: o respiro diminui, a peça nunca sai)
     if (maior <= curto && curto >= LADO_MIN) L = Math.min(quer, curto);
     // não cabe (ou a foto é pequena): o quadrado passa da foto, nunca com a peça menor que antes
