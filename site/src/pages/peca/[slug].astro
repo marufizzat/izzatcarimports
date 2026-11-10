@@ -11,7 +11,7 @@ import { blocoPeca, DESCONTO_WHATS } from '../../lib/whats';
 import { modelosDa } from '../../lib/meuCarro';
 import { doMesmoCarro } from '../../lib/relacionadas';
 import { nomeModelos } from '../../lib/meuCarro';
-import { nomeCompleto, nomeMensagem } from '../../lib/nomePeca';
+import { nomeCompleto, nomeMensagem, titulosPecas } from '../../lib/nomePeca';
 import { descricaoPeca } from '../../lib/descricao';
 import type { Peca } from '../../lib/dados';
 import { fotosGaleria } from '../../lib/quadroFoto';
@@ -42,6 +42,8 @@ const anosDe = (y: Peca['y'], sep: string) => (y ? (y[0] === y[1] ? String(y[0])
 function tituloBase(x: Peca): string {
   return nomeCompleto(x);
 }
+let _abas: Map<string, string> | null = null;
+const titulosDasPecas = () => (_abas ??= titulosPecas(pecas()));
 let _titulos: Map<string, number> | null = null;
 function tituloRepetido(t: string): boolean {
   if (!_titulos) {
@@ -87,8 +89,9 @@ const codigo = codigoDaPeca(p.oem);
 const base = tituloBase(p);
 // o nome da peça fora da página (aba, schema, GA4/Pixel): o mesmo do título, nunca o título cru do ML (lib/nomePeca.ts)
 const nomeFora = `${base}${tituloRepetido(base) ? ` ${p.id}` : ''}`;
-// " | Izzat Car" só se o título inteiro couber em 65 caracteres (o Google corta o resto: auditoria 3/4, item 9.4)
-const titulo = `${nomeFora} | Izzat Car`.length <= 65 ? `${nomeFora} | Izzat Car` : nomeFora;
+// <title> em até 65 caracteres (o Google corta o resto): nome inteiro + carro + anos (+ código) + " | Izzat Car",
+// cortado em partes inteiras e sem repetir entre as peças (lib/nomePeca.ts: tituloPeca/titulosPecas)
+const titulo = titulosDasPecas().get(p.id) ?? nomeFora;
 // a linha da peça nas mensagens do WhatsApp: "Nome · Carro anos · Cód. X" (o link leva o MLB para achar o anúncio)
 const linhaPeca = nomeMensagem(p);
 // descrição (Google e prévia do link): o nome limpo + carro + anos, nunca o título cru do anúncio; até 160 caracteres
