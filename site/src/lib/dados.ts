@@ -16,6 +16,9 @@ export type Peca = {
   ys?: [number, number][];
   /** Dia da última mudança do anúncio no ML (AAAA-MM-DD): o <lastmod> da peça no sitemap. */
   u?: string;
+  /** Mesma peça (código e carro) com outro preço: a versão que o título diz ("T8", "2.0", "G5/G6"), para a pílula
+   *  .etiqueta-dif ao lado do carro (preparar_dados.py: diferencas). Ausente = nada a separar. */
+  dif?: string;
 };
 export type Resumo = {
   updated: string; total: number;

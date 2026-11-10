@@ -2961,6 +2961,103 @@ def codigos_busca(p):
     return " ".join(dict.fromkeys(_cod_chave(c) for c in codigos_peca(p)))[:120]
 
 
+# ---- Mesma peca, precos diferentes (cliente oculto 10/11, atrito 7) ----
+# "Retrovisor eletrico esquerdo · Volvo XC60 · Cod. A044297" aparecia 2 vezes, por R$ 2.799 e R$ 3.785, e o "T8" do
+# mais caro so estava na ficha. O que separa 2 anuncios da mesma peca (mesmo codigo, ou mesmo nome, no mesmo carro)
+# com precos diferentes e a VERSAO que o TITULO do anuncio diz: "T8", "2.0", "B6", "G5/G6", "3.6 V6". Vai no campo
+# "dif" (pilula ao lado do carro no cartao). Atributo do ML nao entra: ele erra lado e modelo (o retrovisor ESQUERDO
+# A044297 vem com "Direito/Passageiro"; uma roda do C200 com MODEL "Gla 200"). Ano diferente ja aparece no cartao;
+# lado ja esta no nome. Sem diferenca no titulo, sem pilula (nunca inventar).
+_DIF_T = re.compile(r"^t[2-8]$")                                                   # Volvo T5, T6, T8
+_DIF_VERSAO = re.compile(r"^(?:v(?:6|8|10|12)|r-?design|inscription|momentum|polestar|recharge|hibrido|hybrid)$")
+_DIF_GERACAO = re.compile(r"^(?:b[5-8]|g[3-8]|mk[1-8]|w\d{3}|e\d{2}|f\d{2})$")   # Passat B6, Gol G5, C200 W204, X6 E71
+_DIF_MOTOR = re.compile(r"^\d\.\d$")                                                # 1.0, 2.0, 3.6
+_DIF_VALVULAS = re.compile(r"^(?:8|16|20)v$")                                       # 16v (12v/24v e voltagem)
+_DIF_CORES = ("preto", "branco", "prata", "cinza", "vermelho", "azul", "bege", "grafite", "marrom", "verde",
+              "amarelo", "dourado", "cromado", "chumbo", "vinho")
+_DIF_GRAFIA = {"rdesign": "R-Design", "r-design": "R-Design", "inscription": "Inscription", "momentum": "Momentum",
+               "polestar": "Polestar", "recharge": "Recharge", "hibrido": "Híbrido", "hybrid": "Híbrido"}
+
+
+def versao_do_titulo(titulo):
+    """O que o titulo diz da versao do carro, na ordem: [("t", "T5"), ("m", "2.0")]. t = Volvo T5/T6/T8,
+    v = V6/V8 e acabamento, g = geracao/chassi, m = cilindrada, v16 = valvulas."""
+    out = []
+    for w in re.split(r"[\s/]+", titulo or ""):
+        k = gi.strip_accents(w.strip(".,;:()[]\"'")).lower()
+        if _DIF_T.match(k):
+            par = ("t", k.upper())
+        elif _DIF_VERSAO.match(k):
+            par = ("v", _DIF_GRAFIA.get(k, k.upper()))
+        elif _DIF_GERACAO.match(k):
+            par = ("g", "Mk" + k[2:] if k.startswith("mk") else k.upper())
+        elif _DIF_MOTOR.match(k):
+            par = ("m", k)
+        elif _DIF_VALVULAS.match(k):
+            par = ("v16", k.upper())
+        else:
+            continue
+        if par not in out:
+            out.append(par)
+    return out
+
+
+_DIF_ORDEM = ("t", "g", "m", "v16", "v")
+
+
+def _texto_versao(partes):
+    """[("m","2.0"), ("t","T8")] -> "T8 2.0": versao Volvo, geracao, cilindrada, valvulas e o resto ("3.6 V6",
+    "T8 Híbrido"); varias do mesmo tipo com barra ("T5/T6 2.0", "G5/G6", "1.6/1.8 16V")."""
+    por = {}
+    for tipo, t in partes:
+        por.setdefault(tipo, []).append(t)
+    return " ".join(("/" if tp != "v" else " ").join(por[tp]) for tp in _DIF_ORDEM if tp in por)
+
+
+def cores_do_titulo(titulo):
+    """As cores que o titulo diz, na ordem dele ("Cinza Preto" -> ["cinza", "preto"])."""
+    ws = [gi.strip_accents(w).lower() for w in re.split(r"[\s/]+", titulo or "")]
+    return list(dict.fromkeys(w for w in ws if w in _DIF_CORES))
+
+
+def grupos_mesma_peca(pecas):
+    """Grupos de 2+ pecas do mesmo carro (marca e modelo) com precos diferentes: pelo codigo gravado do cartao (o 1o);
+    sem codigo, pelo nome limpo (com codigos diferentes o cartao ja mostra a diferenca: "Cod. ...")."""
+    por = defaultdict(list)
+    for x in pecas:
+        if not x.get("m"):
+            continue
+        cod = (x.get("o") or "").split(" ")[0]
+        por[("cod", cod, x["b"], x["m"]) if cod else ("nome", x["n"], x["b"], x["m"])].append(x)
+    return [g for g in por.values() if len(g) > 1 and len({x["p"] for x in g}) > 1]
+
+
+def diferencas(pecas):
+    """Grava "dif" (pilula curta) nas pecas que o titulo separa das outras do mesmo grupo (grupos_mesma_peca).
+    - versao/geracao diferente (T5 x T8, B6 x nada): a versao inteira da peca ("T5 2.0", "3.6 V6", "T5/T6 2.0");
+    - mesma versao em todas (T8 e T8; T5 e "T5 2.0"): nada;
+    - sem versao em nenhuma, motor diferente (1.0/1.4 x 1.0; 2.0 x nada): o motor;
+    - sem nada disso, cores diferentes nos titulos: "Cor: cinza e preto".
+    Devolve quantas pecas ganharam "dif"."""
+    for g in grupos_mesma_peca(pecas):
+        partes = [versao_do_titulo(x["t"]) for x in g]
+        prim = [frozenset(t for tp, t in ps if tp in ("t", "v", "g")) for ps in partes]
+        sec = [frozenset(t for tp, t in ps if tp in ("m", "v16")) for ps in partes]
+        if len(set(prim)) > 1:
+            marcar = [(x, _texto_versao(ps)) for x, ps in zip(g, partes) if ps]
+        elif not any(prim) and len(set(sec)) > 1:
+            marcar = [(x, _texto_versao(ps)) for x, ps in zip(g, partes) if ps]
+        elif not any(prim) and not any(sec):
+            cores = [cores_do_titulo(x["t"]) for x in g]
+            distintas = {tuple(c) for c in cores if c}
+            marcar = ([(x, "Cor: " + " e ".join(c)) for x, c in zip(g, cores) if c] if len(distintas) > 1 else [])
+        else:
+            marcar = []
+        for x, t in marcar:
+            x["dif"] = t[:24]
+    return sum(1 for x in pecas if x.get("dif"))
+
+
 # Reputacao do Mercado Livre (reputation.json, gravado por atualizar_catalogo.py).
 # Termometro: level_id -> (cor, barras acesas de 1 a 5). Lider: MercadoLider.
 NIVEIS_REPUTACAO = {"1_red": ("vermelho", 1), "2_orange": ("laranja", 2), "3_yellow": ("amarelo", 3),
@@ -3213,6 +3310,10 @@ def main():
         x["_seg"] = x["fotos"][1] if len(x["fotos"]) > 1 else None
     fotos_limpas.ordenar_fotos(pecas)
 
+    # 3c) Mesma peca (codigo e carro) com precos diferentes: a versao que o titulo diz vira a pilula "dif" do cartao.
+    n_dif = diferencas(pecas)
+    print(f"dif: {n_dif} pecas com a versao na pilula ({len(grupos_mesma_peca(pecas))} grupos de mesma peca, preco diferente)")
+
     # 4) Blocos (campo "c"): a lista fixa de BLOCOS, na ordem dela; "Outros" (fora da grade) no fim.
     fam_cnt = Counter(x["c"] for x in pecas)
     sobra = sorted(x["n"] for x in pecas if x["c"] == BLOCO_OUTROS)
@@ -3339,6 +3440,8 @@ def main():
         # muda de um carro para outro, {indice: [[ano0, ano1] de cada carro]}
         "ms": {str(i): x["ms"] for i, x in enumerate(pecas) if x.get("ms")},
         "ys": {str(i): x["ys"] for i, x in enumerate(pecas) if x.get("ys")},
+        # mesma peca com preco diferente: a versao que o titulo diz ("T8", "2.0"), so nas que tem: {indice: "T8"}
+        "dif": {str(i): x["dif"] for i, x in enumerate(pecas) if x.get("dif")},
     }
 
     marcar_datas(pecas, prods)

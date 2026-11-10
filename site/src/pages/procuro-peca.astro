@@ -191,18 +191,55 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       (regras.marca.ok(campo('marca').value) ? campo('modelo') : campo('marca')).focus();
     });
 
+    // vindo da busca do catálogo ("Não achou? A gente procura no pátio"): ?q=retrovisor+direito&carro=Volvo+XC60+2019
+    // preenche a peça (ou o código gravado) e o carro. O endereço vale mais que o carro salvo.
+    const u = new URLSearchParams(location.search);
+    const qUrl = (u.get('q') || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    const carroUrl = (u.get('carro') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    let daBusca = '';
+    if (qUrl) {
+      // código gravado ("8200 328 856", "A044297"): vai no campo do código; o resto, no da peça
+      const codigo = /^[a-z0-9][a-z0-9 .\-\/]{4,}$/i.test(qUrl) && (qUrl.match(/\d/g) ?? []).length >= 5 && !/[a-z]{4,}/i.test(qUrl);
+      campo(codigo ? 'codigo' : 'peca').value = codigo ? qUrl.toUpperCase() : qUrl;
+      daBusca = codigo ? `o código ${qUrl.toUpperCase()}` : `“${qUrl}”`;
+    }
+    if (carroUrl) {
+      const ano = carroUrl.match(/\s((?:19[5-9]|20[0-3])\d)$/)?.[1];
+      const ws = (ano ? carroUrl.slice(0, -ano.length) : carroUrl).trim().split(' ');
+      // a marca: o começo mais longo que é o nome de uma marca do site ("Land Rover Discovery" -> Land Rover)
+      let k = 1;
+      let marca = ws[0];
+      for (let n = Math.min(3, ws.length - 1); n >= 1; n--) {
+        const m = marcaDe(ws.slice(0, n).join(' '));
+        if (m && norm(m) === norm(ws.slice(0, n).join(' '))) { k = n; marca = m; break; }
+      }
+      campo('marca').value = marca;
+      campo('modelo').value = ws.slice(k).join(' ');
+      const salvo = lerMeuCarro();
+      const anoSalvo = salvo && norm(salvo.b) === norm(marca) && norm(salvo.m) === norm(campo('modelo').value) ? salvo.y : null;
+      if (ano || anoSalvo) campo('ano').value = String(ano || anoSalvo);
+      sugerirModelos();
+    }
+
     // quem já salvou o "Meu carro" não precisa digitar de novo
     const c = lerMeuCarro();
+    let carroTexto = carroUrl;
+    let doSalvo = false;
     if (c && !campo('marca').value && !campo('modelo').value) {
       campo('marca').value = c.b;
       campo('modelo').value = c.m;
       if (c.y) campo('ano').value = String(c.y);
       sugerirModelos();
-      const salvo = document.getElementById('pc-salvo');
-      if (salvo) {
-        salvo.textContent = `Já preenchemos com o seu carro: ${c.b} ${c.m}${c.y ? ' ' + c.y : ''}. Se for outro, é só trocar.`;
-        salvo.hidden = false;
-      }
+      carroTexto = `${c.b} ${c.m}${c.y ? ' ' + c.y : ''}`;
+      doSalvo = true;
+    }
+    const nota = document.getElementById('pc-salvo');
+    if (nota && (daBusca || carroUrl)) {
+      nota.textContent = `Já preenchemos com a sua busca: ${[daBusca, carroTexto && `para ${carroTexto}`].filter(Boolean).join(' ')}. Se precisar, é só trocar.`;
+      nota.hidden = false;
+    } else if (nota && doSalvo) {
+      nota.textContent = `Já preenchemos com o seu carro: ${carroTexto}. Se for outro, é só trocar.`;
+      nota.hidden = false;
     }
     pintarAviso();
 

@@ -37,7 +37,8 @@
     gtag('event', 'search', { search_term: termo });
   };
   /* Contact = qualquer link de WhatsApp. InitiateCheckout = SO botao de compra
-     no Mercado Livre (data-compra), nao o link do perfil da loja. */
+     no Mercado Livre (data-compra), nao o link do perfil da loja.
+     O botao do evento: data-botao quando o link tem (ex.: "procurar-patio" no catalogo), senao o texto dele. */
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (!a) return;
@@ -46,7 +47,7 @@
     if (prod && prod.id) { base.content_ids = [prod.id]; base.value = prod.price; base.currency = 'BRL'; }
     if (href.indexOf('wa.me') > -1 || href.indexOf('api.whatsapp') > -1) {
       fbq('track', 'Contact', base);
-      gtag('event', 'contato_whatsapp', { pagina: location.pathname, botao: (a.textContent || '').trim().slice(0, 40) || 'icone' });
+      gtag('event', 'contato_whatsapp', { pagina: location.pathname, botao: a.getAttribute('data-botao') || (a.textContent || '').trim().slice(0, 40) || 'icone' });
     } else if (a.hasAttribute('data-compra')) {
       fbq('track', 'InitiateCheckout', base); gtag('event', 'saida_mercado_livre', { pagina: location.pathname });
     }
