@@ -154,9 +154,18 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy2.outputs.page_url }}
     steps:
       - id: deploy
         uses: actions/deploy-pages@v4
         with:
-          timeout: 1800000   # 30 min: o site tem ~5 mil capas e o GitHub às vezes demora para sincronizar
+          timeout: 600000   # 10 min é o máximo que a ação aceita; se estourar, o passo abaixo tenta de novo
+          error_count: 10
+        continue-on-error: true
+      - name: Publicar (2ª tentativa, se a 1ª estourou o tempo)
+        if: steps.deploy.outcome == 'failure'
+        id: deploy2
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+          error_count: 10
