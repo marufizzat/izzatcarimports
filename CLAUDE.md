@@ -97,6 +97,10 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      A montagem leva a marca de incerta (aparece inteira, também a foto quadrada). `fotosGaleria()` (lib/quadroFoto.ts) tira `m` e põe `c` no
      fim na galeria, miniaturas, tela cheia, JSON-LD, og:image e feed. Muito texto sozinho não é marketing: é a
      etiqueta da peça (mostra o código). Mudou uma regra: `medir_fotos_ml.py --reclassificar` (sinais em cache local).
+     **Foto do código** (`"#"` no fim da entrada, só em foto `p`/`s`, depois da classe): a foto em que o OCR leu o código
+     que a página mostra (`codigo_da_peca` = `codigoDaPeca`), inteiro e começando num pedaço do texto (`codigo_no_texto`),
+     com 4%+ de texto (`TEXTO_CODIGO`); várias = a de mais texto. `marcar_codigos` roda no fim de toda rodada, só nas fotos
+     com o texto no cache. Na página, a caixa do código ganha "Ver o código na foto" (`fotoDoCodigo`, lib/quadroFoto.ts).
      Testes: `python testes/test_medir_fotos_ml.py` e `site/testes/quadroFoto.test.ts`.
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
 
@@ -144,6 +148,23 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    costumam ser trocadas com a vista, pela regra `GRUPOS`/`JUNTO` de `lib/relacionadas.ts` (`vaiJunto`: lado e
    frente/trás pelo nome, nunca o outro lado nem a outra ponta, nunca a mesma peça repetida); sem peça que combine, o
    bloco não aparece. As peças dele saem do "Do mesmo carro". Teste do estoque real em `relacionadas.test.ts`.
+
+11. **A home que conhece o cliente (rodada 13, nov/2026)** — tudo só no navegador, sem ilha React, e nada aparece (nem se
+   mexe) para quem não tem histórico: cada bloco decide antes da 1ª pintura num script mínimo (função pura testada,
+   copiada por `toString()` e minificada por `lib/scriptCurto.ts`) que marca o `<html>` (`data-continuar`,
+   `data-chegou`, `data-vistos`) e põe o esqueleto dos cartões; os cartões (`cartaoHtml`) chegam depois do load.
+   - **Vistos** (`lib/vistos.ts`, `localStorage['izzatcar.vistos']`, 12 peças): gravados pela peça
+     (`components/peca/vistosPeca.ts`, com o que a página já mostra); "Você viu" na home (2+, `v2/VoceViu.astro`, com
+     "Limpar") e "Você também viu" no fim da peça (até 6, nasce quando o navegador folga, só abaixo da tela). A peça que
+     vendeu sai pelo `/dados/ativas.json` (id, preço, capa: `pages/dados/ativas.json.ts`, ~34 KB comprimido).
+   - **"Chegou para o seu <carro>"** (`v2/ChegouCarro.astro`, `lib/chegouCarro.ts`): as 10 mais novas do carro salvo
+     (ano salvo incluído) pela MESMA busca do catálogo sobre `/dados/carro/<k>.json` (agora um por modelo da garagem;
+     `chaveCarro` = o slugify do Python); sem peça: "Me avise quando chegar peça para o <carro>" (`data-botao="avise-carro"`).
+   - **"Continuar de onde parou"** (`v2/Continuar.astro`, `lib/continuar.ts`): a lista (total no WhatsApp em centavos) ou a
+     última busca (`localStorage['izzatcar.busca']`, gravada pelo `catalogo.astro`, 14 dias); × lembrado em
+     `izzatcar.continuar`.
+   - **Tela cheia da peça (celular)**: a conta do toque em `components/ui/zoomToque.ts` (pinça em volta dos dedos, toque
+     duplo 2,5×, limite pela foto desenhada, elástico); o mouse continua como era.
 
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
@@ -218,7 +239,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
   de anos com mais peças (na página do carro, num `<script is:inline>` antes da 1ª pintura); o "Todos" fica fixo à
   esquerda (`.ac-fixo`/`.mc-fixo`, sticky). Só o scrollLeft da fila, nunca a página.
-- Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (só as peças do carro, feito no
+- Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (um por modelo da garagem; só as peças do carro, feito no
   build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entra em partes (12 cartões, o resto, a lista completa em
   fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`.
 - Catálogo: a 1ª tela (24 cartões e os filtros) vem pronta no HTML, feita no build com o MESMO `busca.json`; o índice só
