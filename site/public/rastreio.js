@@ -24,6 +24,9 @@
   function carregarGA() { var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID; document.head.appendChild(s); }
   if ('requestIdleCallback' in window) requestIdleCallback(carregarGA, { timeout: 2500 }); else setTimeout(carregarGA, 1200);
 
+  /* Peca vendida: o link velho de uma peca que saiu do site (a 404 de /peca/<slug>-<MLB>.html guarda o MLB) */
+  if (window.IZZAT_VENDIDA) gtag('event', 'peca_vendida', { mlb: window.IZZAT_VENDIDA, pagina: location.pathname });
+
   var prod = window.IZZAT_PRODUCT;
   if (prod && prod.id) {
     fbq('track', 'ViewContent', { content_ids: [prod.id], content_name: prod.name, content_type: 'product',
@@ -37,7 +40,8 @@
     gtag('event', 'search', { search_term: termo });
   };
   /* Contact = qualquer link de WhatsApp. InitiateCheckout = SO botao de compra
-     no Mercado Livre (data-compra), nao o link do perfil da loja. */
+     no Mercado Livre (data-compra), nao o link do perfil da loja.
+     O botao do evento: data-botao quando o link tem (ex.: "procurar-patio" no catalogo), senao o texto dele. */
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (!a) return;
@@ -46,7 +50,7 @@
     if (prod && prod.id) { base.content_ids = [prod.id]; base.value = prod.price; base.currency = 'BRL'; }
     if (href.indexOf('wa.me') > -1 || href.indexOf('api.whatsapp') > -1) {
       fbq('track', 'Contact', base);
-      gtag('event', 'contato_whatsapp', { pagina: location.pathname, botao: (a.textContent || '').trim().slice(0, 40) || 'icone' });
+      gtag('event', 'contato_whatsapp', { pagina: location.pathname, botao: a.getAttribute('data-botao') || (a.textContent || '').trim().slice(0, 40) || 'icone' });
     } else if (a.hasAttribute('data-compra')) {
       fbq('track', 'InitiateCheckout', base); gtag('event', 'saida_mercado_livre', { pagina: location.pathname });
     }

@@ -26,7 +26,7 @@ const grupos = [...porTipo.entries()]
     <summary>{titulo}</summary>
     {grupos.map((g) => (
       <div class="todas-pecas-grupo">
-        {g.n && <h3>{g.n} <span class="todas-pecas-n">({fmt(g.ps.length)})</span></h3>}
+        {g.n && <h3>{g.n}{' '}<span class="todas-pecas-n">({fmt(g.ps.length)})</span></h3>}
         <ul>{g.ps.map((p) => <li><a href={`/peca/${p.slug}.html`}>{rotulo(p)}</a></li>)}</ul>
       </div>
     ))}

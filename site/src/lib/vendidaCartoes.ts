@@ -1,0 +1,52 @@
+// Os cartões "Parecidas à venda" da 404 da peça vendida. Só no navegador e só quando o endereço é de uma peça (a 404
+// importa este arquivo sob demanda: a 404 comum não baixa a busca). Sem ilha React: o HTML do cartão é o MESMO do
+// cartão do catálogo (Etiqueta, em catalogo/Catalogo.tsx) e do CartaoPeca.astro, montado aqui.
+import { Busca, capaItem, foto, type Indice, type Item } from './busca';
+import { parecidas, type Vendida } from './vendida';
+import {
+  CLASSE_CARTAO, linhaCarro, precoPartes, codigoPeca, dadosCarro, msgWhats, urlPeca, icone, linkWhats,
+} from '../components/catalogo/etiqueta';
+
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const atributos = (o: Record<string, string | number | undefined>) =>
+  Object.entries(o).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => ` ${k}="${esc(String(v))}"`).join('');
+
+/** O cartão da peça (o desenho do catálogo), com o "Pedir no WhatsApp" de quem usa mouse. */
+export function cartaoHtml(it: Item): string {
+  const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
+  const [reais, cent] = precoPartes(it.p);
+  const cod = codigoPeca(it.o);
+  const estudio = it.e !== '0';
+  const src = estudio ? capaItem(it) : foto(it.i, 'O');
+  const img = estudio
+    ? `<img src="${esc(src)}" class="estudio" data-ml="${esc(it.i ? foto(it.i, 'O') : '')}" alt="" width="800" height="800" loading="lazy" decoding="async">`
+    : `<img src="${esc(src)}" srcset="${esc(`${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`)}" sizes="(min-width:1280px) 200px, (min-width:1024px) 30vw, 208px" alt="" width="800" height="800" loading="lazy" decoding="async">`;
+  const linha = carro ? `<span class="etiqueta-carro"><span class="etiqueta-modelo">${esc(carro)}${it.dif ? ` <span class="etiqueta-dif">${esc(it.dif)}</span>` : ''}</span>${anos ? `<span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>${esc(anos)}</span>` : ''}</span>` : '';
+  return `<div class="${CLASSE_CARTAO}"><a class="etiqueta" href="/peca/${esc(it.h)}.html"${atributos(dadosCarro(it.b, it.m, it.y, it.ms, it.ys))}>`
+    + `<div class="etiqueta-foto">${img}</div><div class="etiqueta-dados">${linha}<h3 class="etiqueta-nome">${esc(it.n)}</h3>`
+    + (cod ? `<span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">${esc(cod)}</span></span>` : '')
+    + `<span class="sr-only">R$ ${reais},${cent}</span><span class="etiqueta-preco num" aria-hidden="true"><small>R$</small>${reais}<small>${cent}</small></span>`
+    + `<span class="etiqueta-confia"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('garantia')}"></use></svg><span><span class="etiqueta-confia-longo">Original · </span>90 dias de garantia</span></span>`
+    + `</div></a><a class="etiqueta-acao" href="${esc(linkWhats(msgWhats(it, urlPeca(it.h))))}" target="_blank" rel="noopener" aria-label="${esc(`Pedir no WhatsApp: ${it.n}`)}">`
+    + `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('whats')}"></use></svg>Pedir no WhatsApp</a></div>`;
+}
+
+/** Foto que não carregou: a capa de estúdio dá lugar à foto do ML; se essa também falhar, fica a placa clara. */
+export function vigiarFotos(raiz: HTMLElement) {
+  raiz.addEventListener('error', (e) => {
+    const img = e.target;
+    if (!(img instanceof HTMLImageElement)) return;
+    const ml = img.dataset.ml;
+    if (ml && img.getAttribute('src') !== ml) { img.classList.remove('estudio'); img.src = ml; delete img.dataset.ml; }
+    else img.classList.add('sem-capa');
+  }, true);
+}
+
+/** Baixa o índice (o mesmo endereço do catálogo: quem já navegou tem em cache) e acha as parecidas. */
+export async function carregarParecidas(v: Vendida) {
+  const r = await fetch('/dados/busca.json');
+  if (!r.ok) throw new Error(String(r.status));
+  const busca = new Busca((await r.json()) as Indice);
+  await busca.prepararIndice();
+  return parecidas(busca, v);
+}

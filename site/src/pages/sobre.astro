@@ -7,6 +7,7 @@ import SeloCDV from '../components/SeloCDV.astro';
 import SeloReputacao from '../components/SeloReputacao.astro';
 import BannerV2 from '../components/v2/BannerV2.astro';
 import { SITE } from '../lib/dados';
+import { lojaLd } from '../lib/loja';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -38,6 +39,8 @@ const etapas = [
   descricao="Desmanche credenciado pelo Detran-RS, CDV nº 01060, em Aceguá-RS. Carros com baixa legal, cada peça identificada e rastreável, com código original."
   canonical={canonical}
 >
+  {/* a loja para o Google (o mesmo bloco da home e do Contato: lib/loja.ts) */}
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', ...lojaLd() })} />
   {/* topo com o Maruf atrás da bancada (arte sem texto; o título é vivo) */}
   <TopoArte trilha={[['Início', '/'], ['O pátio', canonicalPath]]}
     titulo="O pátio"

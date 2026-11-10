@@ -14,6 +14,11 @@ export type Peca = {
   ms?: string[];
   /** Anos de cada carro do ms, quando a faixa muda de um para outro (o período de venda corta). */
   ys?: [number, number][];
+  /** Dia da última mudança do anúncio no ML (AAAA-MM-DD): o <lastmod> da peça no sitemap. */
+  u?: string;
+  /** Mesma peça (código e carro) com outro preço: a versão que o título diz ("T8", "2.0", "G5/G6"), para a pílula
+   *  .etiqueta-dif ao lado do carro (preparar_dados.py: diferencas). Ausente = nada a separar. */
+  dif?: string;
 };
 export type Resumo = {
   updated: string; total: number;
@@ -71,6 +76,9 @@ export function fotoSrcset(chave: string): string {
 export const brl = (v: number) =>
   v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const SITE = 'https://izzatcarimports.com.br';
+/** Lista oficial dos CDVs credenciados (Peça Legal RS, do Detran-RS): "IZZAT CAR IMPORTS · CDV01060", com o mesmo
+ *  WhatsApp do site (conferido em 10/11/2026, 1ª página, sem escolher cidade). Prova de fora (cliente oculto, atrito 6). */
+export const DETRAN_CDV = 'https://pecalegal.detran.rs.gov.br/cdv-portal/mod-consulta/credenciados.xhtml';
 // WhatsApp: número, abertura única e links em lib/whats.ts (whatsUrl recebe SÓ o contexto da mensagem)
 export { WHATS, whatsUrl } from './whats';
 

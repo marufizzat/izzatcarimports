@@ -20,6 +20,6 @@ export function GET({ props }: { props: { para: string; titulo: string } }) {
   const { para, titulo } = props;
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)} | Izzat Car Imports</title>` +
     `<link rel="canonical" href="${esc(SITE + para)}"><meta http-equiv="refresh" content="0; url=${esc(para)}">` +
-    `<meta name="robots" content="noindex, follow"></head><body><p><a href="${esc(para)}">${esc(titulo)}</a></p></body></html>\n`;
+    `</head><body><p><a href="${esc(para)}">${esc(titulo)}</a></p></body></html>\n`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }

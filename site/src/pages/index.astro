@@ -1,4 +1,5 @@
 ---
+import { lojaLd } from '../lib/loja';
 import Pagina from '../layouts/Pagina.astro';
 import AberturaV2 from '../components/v2/AberturaV2.astro';
 import SelosV2 from '../components/v2/SelosV2.astro';
@@ -31,12 +32,8 @@ const perguntas = [
 const ld = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'AutoPartsStore', '@id': `${SITE}/#loja`, name: 'Izzat Car Imports', url: `${SITE}/`,
-      logo: `${SITE}/identidade/logo.png`, image: `${SITE}/identidade/og.jpg`, telephone: '+55 53 99117-0950',
-      description: 'Desmanche credenciado pelo Detran-RS (CDV nº 01060). Peças originais de carros com baixa legal, nota fiscal e 90 dias de garantia.',
-      address: { '@type': 'PostalAddress', addressLocality: 'Aceguá', addressRegion: 'RS', addressCountry: 'BR' },
-      sameAs: ['https://instagram.com/cdvizzatcarimports', 'https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS'] },
-    { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: 'Izzat Car Imports', alternateName: ['IzzatCar', 'Izzat Car'], inLanguage: 'pt-BR',
+    lojaLd(),
+    { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: 'Izzat Car Imports', alternateName: ['IzzatCar Imports'], inLanguage: 'pt-BR',
       potentialAction: { '@type': 'SearchAction', target: `${SITE}/catalogo.html?q={busca}`, 'query-input': 'required name=busca' } },
   ],
 };

@@ -1083,6 +1083,59 @@ def test_descricao_sem_espanhol_e_sem_tu():
             print(f"AVISO: descrição com cara de espanhol {es[:5]} | com 'tu' {tu[:5]}")
 
 
+def test_mesma_peca_precos_diferentes_dif():
+    """Cliente oculto 10/11 (atrito 7): mesmo codigo, mesmo carro e precos diferentes. A pilula "dif" diz a versao que o
+    TITULO traz ("T8" no retrovisor A044297 de R$ 3.785); sem diferenca no titulo, sem pilula (nunca inventar)."""
+    import preparar_dados as pd
+    assert pd._texto_versao(pd.versao_do_titulo("Retrovisor Eletrico Esquerdo Volvo Xc60 T8 18/24 A044297 Ori")) == "T8"
+    assert pd._texto_versao(pd.versao_do_titulo("Coxim Inferior Volvo Xc60 Xc90 T5 T6 2.0 18/24 31359890")) == "T5/T6 2.0"
+    assert pd._texto_versao(pd.versao_do_titulo("Corpo Borboleta Tbi Dodge Journey 3.6 V6 11/19 05184349ac")) == "3.6 V6"
+    assert pd._texto_versao(pd.versao_do_titulo("Corpo Borboleta Tbi Fiat Strada 1.6 1.8 16v 12/21 55254306")) == "1.6/1.8 16V"
+    assert pd._texto_versao(pd.versao_do_titulo("Porta Luvas Volkswagen Gol Voyage G5 G6 09/12 5u1857097")) == "G5/G6"
+    assert pd._texto_versao(pd.versao_do_titulo("Roda Aro 17 Mercedes C 200 W204 08/14 A2044017502 Preto")) == "W204"
+    # nada de modelo, ano, codigo, voltagem ou palavra cortada como versao
+    assert pd.versao_do_titulo("Lanterna Volvo S60 V60 Xc60 18/24 31655925 12v Ori") == []
+    assert pd.versao_do_titulo("Peugeot 2008 208 C3 Hb20 S10 Q3 X6 A200 Gla200") == []
+
+    def peca(i, t, p, o="a044297", m="XC60", n="Retrovisor elétrico esquerdo"):
+        return {"id": f"MLB{i}", "t": t, "p": p, "o": o, "b": "Volvo", "m": m, "n": n}
+    # o caso do relatorio: so o mais caro diz T8
+    g = [peca(1, "Retrovisor Eletrico Esquerdo Volvo Xc60 18/24 A044297 Origi", 2799.77),
+         peca(2, "Retrovisor Eletrico Esquerdo Volvo Xc60 T8 18/24 A044297 Ori", 3785.77)]
+    assert pd.diferencas(g) == 1 and "dif" not in g[0] and g[1]["dif"] == "T8"
+    # mesma versao nas duas (T8 e T8; T5 e "T5 2.0"): sem pilula
+    g = [peca(1, "Mangueira Ar Condicionado Volvo Xc60 T8 18/24 31389351", 286.44, "31389351"),
+         peca(2, "Mangueira Ar Condicionado Volvo Xc60 T8 18/24 31389351", 365.44, "31389351")]
+    g += [peca(3, "Tampa Bomba Combustivel Volvo Xc60 T5 18/25 31395822 Preto 2018", 174.44, "31395822"),
+          peca(4, "Tampa Bomba Combustivel Volvo Xc60 T5 2.0 18/24 31395822 Preto 2018", 229.98, "31395822")]
+    assert pd.diferencas(g) == 0
+    # so o ano muda (o cartao ja mostra): sem pilula
+    g = [peca(1, "Motor Vidro Eletrico Diant Dir Ford Focus 13/15 0130822214", 243.77, "0130822214", "Focus"),
+         peca(2, "Motor Vidro Eletrico Diant Dir Ford Focus 09/13 0130822214", 379.77, "0130822214", "Focus")]
+    assert pd.diferencas(g) == 0
+    # mesmo preco: nao e grupo; outro carro: outro grupo
+    g = [peca(1, "Retrovisor Volvo Xc60 18/24 A044297", 100.0), peca(2, "Retrovisor Volvo Xc60 T8 18/24 A044297", 100.0),
+         peca(3, "Retrovisor Volvo S60 T8 18/24 A044297", 300.0, m="S60")]
+    assert pd.diferencas(g) == 0
+    # sem versao em nenhuma: o motor; sem motor: a cor que o titulo diz, na ordem dele
+    g = [peca(1, "Sensor Fluxo Ar Onix Prisma 1.0 1.4 12/16 15865791", 148.33, "15865791", "Onix"),
+         peca(2, "Sensor Fluxo Ar Chevrolet Onix Prisma 1.0 12/16 15865791", 264.64, "15865791", "Onix")]
+    g += [peca(3, "Antena Teto Shark Volvo S60 18/24 31346765 Cinza Preto", 741.77, "31346765", "S60"),
+          peca(4, "Antena Teto Shark Volvo S60 Xc60 V60 18/24 31346765 Preto", 843.77, "31346765", "S60")]
+    pd.diferencas(g)
+    assert [x.get("dif") for x in g] == ["1.0/1.4", "1.0", "Cor: cinza e preto", "Cor: preto"]
+    # o dado gerado: "dif" so nas pecas de um grupo, e o busca.json leva o mapa esparso
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    busca = ROOT / "site" / "public" / "dados" / "busca.json"
+    if pecas.exists() and busca.exists():
+        por = json.loads(pecas.read_text(encoding="utf-8"))
+        ix = json.loads(busca.read_text(encoding="utf-8"))
+        com = {x["id"]: x["dif"] for x in por if x.get("dif")}
+        if com:
+            assert {ix["id"][int(k)]: v for k, v in (ix.get("dif") or {}).items()} == com
+            assert all(len(v) <= 24 for v in com.values())
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

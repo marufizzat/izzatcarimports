@@ -1,7 +1,15 @@
 ---
+// 404. O GitHub Pages devolve esta página (com o status 404) para todo endereço que não existe.
+// Peça vendida (cliente oculto, atrito 3): o site só tem as peças ativas, então o link de uma peça que vendeu (no
+// Google, no WhatsApp, no Instagram) cai aqui. Quando o endereço é /peca/<slug>-<MLB>.html, a página vira "Essa peça
+// já foi vendida": o nome e o carro lidos do endereço (lib/vendida.ts, com o dicionário do estoque que vai abaixo),
+// "Me avise se chegar outra" no WhatsApp, "Ver parecidas" no catálogo e até 6 cartões parecidos. O script do <head>
+// marca html.nf-peca antes do 1º desenho (o "Página não encontrada" nunca pisca) e deixa o GA4 mandar peca_vendida.
+// Qualquer outro endereço: a 404 de sempre.
 import Pagina from '../layouts/Pagina.astro';
 import Icone from '../components/Icone.astro';
-import { whatsUrl, SITE } from '../lib/dados';
+import { whatsUrl, SITE, pecas } from '../lib/dados';
+import { montarDicionario, RE_VENDIDA } from '../lib/vendida';
 
 const canonical = `${SITE}/404.html`;
 const ld = {
@@ -12,6 +20,13 @@ const ld = {
     { '@type': 'ListItem', position: 2, name: 'Página não encontrada', item: canonical },
   ],
 };
+// marcas, modelos e a grafia das palavras do estoque (~7 KB; só a 404 leva)
+const dic = JSON.stringify(montarDicionario(pecas())).replace(/</g, '\\u003c');
+// antes do 1º desenho: é peça? (a MESMA regra de lib/vendida.ts) -> html.nf-peca, o título da aba, o MLB para o GA4
+// e o índice da busca já descendo (os cartões parecidos)
+const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)}).exec(location.pathname);if(!m)return;`
+  + `document.documentElement.classList.add('nf-peca');window.IZZAT_VENDIDA=m[2];document.title='Essa peça já foi vendida | Izzat Car Imports';`
+  + `var l=document.createElement('link');l.rel='preload';l.as='fetch';l.href='/dados/busca.json';l.crossOrigin='anonymous';document.head.appendChild(l)})();`;
 ---
 <Pagina
   titulo="Página não encontrada | Izzat Car Imports"
@@ -20,6 +35,7 @@ const ld = {
   noindex
 >
   <Fragment slot="head">
+    <script is:inline set:html={topo} />
     <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
   </Fragment>
 
@@ -27,7 +43,9 @@ const ld = {
   <nav class="moldura nf-trilha-wrap" aria-label="Você está em">
     <ol class="nf-trilha">
       <li><a href="/">Início</a></li>
-      <li><span aria-current="page">Página não encontrada</span></li>
+      <li class="nf-geral"><span aria-current="page">Página não encontrada</span></li>
+      <li class="nf-vendida"><a href="/catalogo.html">Peças</a></li>
+      <li class="nf-vendida"><span aria-current="page">Peça vendida</span></li>
     </ol>
   </nav>
   <div class="moldura nf">
@@ -35,7 +53,7 @@ const ld = {
       <img src="/arte/v2/404.webp" alt="Um parafuso sobre um pedestal de estúdio: essa página não está aqui. Procure a peça ou fale com a gente." width="800" height="800" decoding="async" />
     </figure>
 
-    <div class="nf-texto">
+    <div class="nf-texto nf-geral">
       <h1 class="display nf-h1">Página não encontrada</h1>
       <p class="lead nf-lead">O link pode estar errado ou a página mudou de lugar. Busque a peça ou fale com a gente.</p>
 
@@ -53,10 +71,81 @@ const ld = {
         </a>
       </div>
     </div>
+
+    {/* peça vendida: o texto do nome e do carro entra pelo script (lido do endereço) */}
+    <div class="nf-texto nf-vendida" data-vendida>
+      <h1 class="display nf-h1">Essa peça já foi vendida</h1>
+      <div class="nf-v-peca">
+        <span class="nf-v-selo">Vendida</span>
+        <b class="nf-v-nome" data-v-nome></b>
+        <span class="nf-v-carro num" data-v-carro></span>
+      </div>
+      <p class="lead nf-lead">Peça usada é única: quando vende, acabou. Veja as parecidas ou peça para a gente avisar se chegar outra.</p>
+      <div class="nf-links">
+        <a class="botao botao-laranja nf-botao" href={whatsUrl('Uma peça que eu vi no site já vendeu. Me avisa se chegar outra?')} rel="noopener" data-v-avise>
+          <Icone nome="whats" />Me avise se chegar outra
+        </a>
+        <a class="botao botao-linha nf-botao" href="/catalogo.html" data-v-ver>Ver parecidas</a>
+      </div>
+    </div>
   </div>
+
+  <section class="nf-vendida nf-v-grade" aria-labelledby="h-parecidas" data-v-grade>
+    <div class="moldura">
+      <div class="nf-v-cabeca">
+        <h2 class="titulo-secao" id="h-parecidas" data-v-titulo>Parecidas à venda</h2>
+        <a class="botao botao-linha" href="/catalogo.html" data-v-todas>Ver todas</a>
+      </div>
+      <div class="trilho nf-v-cartoes" data-v-cartoes></div>
+    </div>
+  </section>
+  <script is:inline type="application/json" id="nf-dic" set:html={dic} />
 </Pagina>
 
+<script>
+  import { RE_VENDIDA, lerSlug, mensagemVendida, filtrosIniciais, linkFiltros, anosCurto, type Dicionario } from '../lib/vendida';
+  import { linkWhats } from '../lib/whats';
+
+  const m = RE_VENDIDA.exec(location.pathname);
+  const raiz = document.querySelector<HTMLElement>('[data-vendida]');
+  const json = document.getElementById('nf-dic')?.textContent;
+  if (m && raiz && json) {
+    const v = lerSlug(m[1], m[2], JSON.parse(json) as Dicionario);
+    const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s);
+    // o nome e o carro só aparecem quando o carro foi reconhecido (texto inventado no endereço nunca vira texto do site)
+    const nome = $('[data-v-nome]'), carro = $('[data-v-carro]');
+    if (nome) nome.textContent = v.nome || (v.carro ? 'Peça' : `Anúncio ${v.mlb}`);
+    if (carro) carro.textContent = v.carro ? [v.carro, anosCurto(v.anos)].filter(Boolean).join(' · ') : 'Anúncio do Mercado Livre';
+    if (v.nome) document.title = `Vendida: ${[v.nome, v.carro].filter(Boolean).join(' ')} | Izzat Car Imports`;
+    // a arte é só enfeite aqui (o texto dela fala da página que não existe)
+    document.querySelector('.nf-arte img')?.setAttribute('alt', '');
+    const avise = $<HTMLAnchorElement>('[data-v-avise]');
+    if (avise) avise.href = linkWhats(mensagemVendida(v));
+    const ver = $<HTMLAnchorElement>('[data-v-ver]'), todas = $<HTMLAnchorElement>('[data-v-todas]');
+    const link = (href: string) => { if (ver) ver.href = href; if (todas) todas.href = href; };
+    link(linkFiltros(filtrosIniciais(v)));
+    if (!v.carro && ver) ver.textContent = 'Ver o catálogo';
+
+    // as parecidas: com o índice da busca (o mesmo do catálogo), sem travar a página
+    const grade = $('[data-v-grade]'), cartoes = $('[data-v-cartoes]'), titulo = $('[data-v-titulo]');
+    if (v.carro && grade && cartoes) {
+      import('../lib/vendidaCartoes').then(async ({ carregarParecidas, cartaoHtml, vigiarFotos }) => {
+        const r = await carregarParecidas(v);
+        link(linkFiltros(r.filtros));
+        if (!r.itens.length) { grade.classList.add('nf-v-fora'); return; }
+        if (titulo && r.doCarro) titulo.textContent = `Mais peças ${r.filtros.modelo ? `do ${r.filtros.marca} ${r.filtros.modelo}` : r.filtros.marca}`;
+        vigiarFotos(cartoes);
+        cartoes.innerHTML = r.itens.map(cartaoHtml).join('');
+        grade.classList.add('nf-v-pronta');
+      }).catch(() => { grade.classList.add('nf-v-fora'); /* sem o índice: ficam os botões, que já levam ao catálogo */ });
+    } else grade?.classList.add('nf-v-fora');
+  }
+</script>
+
 <style>
+  /* peça vendida x 404 comum: o script do <head> marca html.nf-peca antes do 1º desenho */
+  :global(html.nf-peca) .nf-geral, :global(html:not(.nf-peca)) .nf-vendida { display: none !important; }
+
   .nf-trilha-wrap { padding-top: 14px; }
   .nf { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(32px, 5vw, 72px); align-items: center; padding-block: clamp(8px, 3vw, 40px) clamp(56px, 8vw, 112px); }
   @media (min-width: 900px) { .nf { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
@@ -79,4 +168,33 @@ const ld = {
   .nf-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
   .nf-botao { white-space: normal; height: auto; min-height: var(--h); padding-block: 12px; text-align: center; line-height: 1.2; max-width: 100%; }
   @media (max-width: 600px) { .nf-botao { width: 100%; } }
+
+  /* peça vendida: a ficha da peça (nome e carro), os botões e as parecidas; no celular, sem a arte (as parecidas sobem) */
+  :global(html.nf-peca) .nf { padding-block-end: clamp(32px, 5vw, 64px); }
+  @media (max-width: 899px) { :global(html.nf-peca) .nf-arte { display: none; } }
+  @media (min-width: 900px) { :global(html.nf-peca) .nf-arte { max-width: 440px; } }
+  .nf-v-peca { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; width: 100%; max-width: 520px;
+    margin-top: clamp(18px, 2.4vw, 26px); padding: 14px 18px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1);
+    min-height: 74px; }
+  .nf-v-selo { grid-row: 1 / 3; align-self: center; padding: 6px 10px; border-radius: 999px; background: var(--ink); color: var(--bg);
+    font-size: 12.5px; font-weight: 750; letter-spacing: .02em; text-transform: uppercase; }
+  .nf-v-nome { font-stretch: 88%; font-weight: 800; font-size: 18px; line-height: 1.2; color: var(--ink); text-wrap: balance; min-height: 1.2em; }
+  .nf-v-carro { font-size: 14.5px; line-height: 1.35; color: var(--ink-2); min-height: 1.35em; }
+  .nf-vendida .nf-lead { margin-top: 16px; }
+
+  .nf-v-grade { padding-block: clamp(36px, 5vw, 64px) clamp(56px, 8vw, 96px); background: var(--bg-2); }
+  .nf-v-cabeca { display: grid; gap: 14px; margin-bottom: 18px; align-items: end; }
+  /* o lugar das parecidas fica guardado desde o 1º desenho (html.nf-peca vem do <head>): quando os cartões chegam, o rodapé
+     não desce (CLS 0,15 no celular lento). Sem carro reconhecido ou sem parecidas, o script tira a seção (.nf-v-fora). */
+  .nf-v-grade:not(.nf-v-pronta) { visibility: hidden; }   /* sem o atributo hidden: o do Tailwind é display:none !important numa camada, não dá para reservar o lugar */
+  .nf-v-grade.nf-v-fora { display: none !important; }
+  .nf-v-cartoes:empty { min-height: 435px; }
+  @media (min-width: 1024px) { .nf-v-cartoes:empty { min-height: 985px; } }
+  @media (min-width: 1280px) { .nf-v-cartoes:empty { min-height: 419px; } }
+  @media (min-width: 768px) { .nf-v-cabeca { grid-template-columns: 1fr auto; } }
+  .nf-v-cabeca .titulo-secao { margin: 0; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.05; }
+  @media (max-width: 767px) { .nf-v-cabeca .botao { justify-self: start; } }
+  /* como o "Do mesmo carro" da peça: trilho no celular; no PC, 3 por fila e 6 numa fila só no PC largo */
+  @media (min-width: 1024px) { .nf-v-cartoes { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; scroll-snap-type: none; } }
+  @media (min-width: 1280px) { .nf-v-cartoes { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 </style>

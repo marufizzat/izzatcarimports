@@ -2,10 +2,10 @@
 import '../styles/global.css';
 interface Props {
   titulo: string; descricao?: string; direcao?: 'a' | 'b' | 'c'; canonical?: string;
-  ogImagem?: string; noindex?: boolean;
+  ogImagem?: string; noindex?: boolean; ogTipo?: 'website' | 'product';
 }
 const { titulo, descricao = 'Peças originais de carros com baixa legal no Detran-RS. Nota fiscal e 90 dias de garantia em toda peça. Envio para todo o Brasil.',
-        direcao = 'a', canonical, ogImagem = '/identidade/og.jpg', noindex = false } = Astro.props;
+        direcao = 'a', canonical, ogImagem = '/identidade/og.jpg', noindex = false, ogTipo = 'website' } = Astro.props;
 const canon = canonical ?? new URL(Astro.url.pathname, Astro.site).href;
 // prévia pública (Cloudflare): o Google não indexa a cópia congelada do catálogo
 const previa = process.env.PREVIA === '1';
@@ -18,7 +18,11 @@ const previa = process.env.PREVIA === '1';
   <title>{titulo}</title>
   <meta name="description" content={descricao} />
   <link rel="canonical" href={canon} />
-  {(noindex || previa) && <meta name="robots" content="noindex, nofollow" />}
+  {/* página fora do índice (404, aviso): "noindex, follow" (os links dela continuam valendo); a prévia não segue nada.
+      As outras: a foto grande nos resultados do Google (sem isso ele pode mostrar só a miniatura). */}
+  {previa ? <meta name="robots" content="noindex, nofollow" />
+    : noindex ? <meta name="robots" content="noindex, follow" />
+    : <meta name="robots" content="max-image-preview:large" />}
   {/* aparelho fraco (até 2 núcleos, até 4 GB de memória ou economia de dados): html.leve tira o vidro desfocado, o 3D
       e as animações de altura (cada componente diz o que muda). Antes do 1º desenho, para nada trocar na frente da
       pessoa. Núcleos só abaixo de 3: o Safari (iPhone, iPad, Mac) informa 4 ou 8 de propósito, nunca menos; a memória
@@ -28,11 +32,12 @@ const previa = process.env.PREVIA === '1';
   {/* ícone quadrado (o Google exige quadrado, múltiplo de 48 px; o carro.svg é retangular e virava o globo cinza) */}
   <link rel="icon" href="/favicon.ico" sizes="48x48" />
   <link rel="icon" href="/favicon-96.png" sizes="96x96" type="image/png" />
+  <link rel="icon" href="/icone-192.png" sizes="192x192" type="image/png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
   {/* fotos do ML são <img> (sem CORS): o preconnect sem crossorigin é o que elas reaproveitam */}
   <link rel="preconnect" href="https://http2.mlstatic.com" />
-  <meta property="og:type" content="website" />
+  <meta property="og:type" content={ogTipo} />
   <meta property="og:locale" content="pt_BR" />
   <meta property="og:site_name" content="Izzat Car Imports" />
   <meta property="og:title" content={titulo} />
