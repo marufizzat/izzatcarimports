@@ -140,7 +140,7 @@ const ld = {
       {unica && <span class="barra-unica"><i aria-hidden="true"></i>Peça única</span>}
     </div>
     {/* o link (com a mensagem pronta e o carro salvo) é o mesmo do botão principal: o script do PecaTopo copia */}
-    <a class="botao botao-laranja" data-whats-espelho tabindex="-1"><Icone nome="whats" /><span><span class="barra-pedir">Pedir no </span>WhatsApp</span><span class="barra-desc"><span class="sr-only">, desconto de </span>−{DESCONTO_WHATS}%</span></a>
+    <a class="botao botao-laranja" data-whats-espelho tabindex="-1"><Icone nome="whats" /><span><span class="barra-pedir">Pedir no </span>WhatsApp</span><span class="sr-only">, {DESCONTO_WHATS}% de desconto</span><span class="barra-desc" aria-hidden="true">−{DESCONTO_WHATS}%</span></a>
   </div>
 
   <AbasDetalhes p={p} serve={serve} serveRotulo={serveRotulo} />

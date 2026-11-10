@@ -28,7 +28,7 @@ const cod = codigoDaPeca(p.oem);
 // Mensagem do WhatsApp (lib/whats.ts, a mesma do cartão): a abertura do site, a peça pelo nome limpo + carro + anos +
 // código (nomeMensagem, lib/nomePeca.ts; nunca o título cru do ML), o preço e o link (que leva o MLB).
 // Sem carro salvo vai "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
-const cabeca = cabecaPeca({ linha: nomeMensagem(p), preco: brl(p.p), url });
+const cabeca = cabecaPeca({ linha: nomeMensagem(p), preco: brl(p.p), url }, { desconto: true });
 // peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
 const semCarro = !p.b ? '' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____. ` : `Meu carro é ${carro} ano ____. `;
 const cauda = CAUDA_PECA;
@@ -125,7 +125,7 @@ const perguntas = [
       <div class="compra-botoes" data-compra-botoes>
         {/* desconto pelo WhatsApp (pedido do dono): selo claro colado no canto do botão laranja, sem ocupar altura
             (a 1ª tela do celular continua com o botão à vista). Só no WhatsApp, nunca no Mercado Livre. */}
-        <p class="compra-desconto"><Icone nome="etiqueta" />{DESCONTO_WHATS}% de desconto pelo WhatsApp</p>
+        <p class="compra-desconto"><Icone nome="etiqueta" />{DESCONTO_WHATS}% de desconto<span class="compra-desconto-onde">&nbsp;pelo WhatsApp</span></p>
         <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir no WhatsApp</a>
         <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
       </div>
@@ -457,6 +457,9 @@ const perguntas = [
                      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%), 0 4px 12px -6px rgb(140 50 0 / .45);
                      pointer-events: none; }
   .compra-desconto svg { width: 15px; height: 15px; flex: none; color: var(--accent-text); }
+  /* celular estreito: só "10% de desconto" (o botão logo abaixo já diz WhatsApp), longe do "Peça única" que quebra
+     para a 2ª linha nos preços de 5 dígitos */
+  @media (max-width: 379px) { .compra-desconto-onde { display: none; } }
   .compra-botoes .botao { --h: 56px; font-size: 16.5px; }
   .compra-botoes .botao-linha { --h: 52px; }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }

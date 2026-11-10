@@ -40,13 +40,15 @@ export const DESCONTO_WHATS = 10;
 export const FRASE_DESCONTO = `Vi que tem ${DESCONTO_WHATS}% de desconto pedindo por aqui.`;
 
 /** "Pedir no WhatsApp" (página da peça, cartão do build e do catálogo, barra fixa): a MESMA mensagem em todo lugar.
- *  `meuCarro` = "Meu carro é Volvo XC60 2019. " (o carro salvo) ou o convite com lacuna ("… ano ____. "). */
-export function cabecaPeca(x: PecaMsg): string {
-  return `${mensagem(`Tenho interesse nesta peça:\n\n${blocoPeca(x)}`)}\n\n${FRASE_DESCONTO}\n`;
+ *  `meuCarro` = "Meu carro é Volvo XC60 2019. " (o carro salvo) ou o convite com lacuna ("… ano ____. ").
+ *  `desconto`: só na página da peça, onde o selo do desconto aparece (o cartão não mostra o selo: a pessoa não
+ *  mandaria uma frase sobre algo que não viu). */
+export function cabecaPeca(x: PecaMsg, { desconto = false } = {}): string {
+  return `${mensagem(`Tenho interesse nesta peça:\n\n${blocoPeca(x)}`)}\n\n${desconto ? `${FRASE_DESCONTO}\n` : ''}`;
 }
 export const CAUDA_PECA = 'Serve e ainda tem?';
-export function mensagemPeca(x: PecaMsg, meuCarro = ''): string {
-  return cabecaPeca(x) + meuCarro + CAUDA_PECA;
+export function mensagemPeca(x: PecaMsg, meuCarro = '', opcoes: { desconto?: boolean } = {}): string {
+  return cabecaPeca(x, opcoes) + meuCarro + CAUDA_PECA;
 }
 
 /** Anos para a mensagem: "2018 a 2024" (ou "2019"). */

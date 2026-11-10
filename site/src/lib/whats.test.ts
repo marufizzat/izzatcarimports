@@ -20,7 +20,7 @@ describe('WhatsApp: uma abertura só ("Olá! Vim pelo site da Izzat Car.")', () 
   });
   it('a peça vai pelo nome limpo, carro, anos, código, preço e link', () => {
     const m = mensagemPeca({ nome: 'Lanterna esquerda tampa traseira', carro: 'Volvo XC60', anos: '2018 a 2024', cod: 'A045591', preco: '670,44',
-      url: 'https://izzatcarimports.com.br/peca/x-MLB1.html' }, 'Meu carro é Volvo XC60 ano ____. ');
+      url: 'https://izzatcarimports.com.br/peca/x-MLB1.html' }, 'Meu carro é Volvo XC60 ano ____. ', { desconto: true });
     expect(m).toBe('Olá! Vim pelo site da Izzat Car. Tenho interesse nesta peça:\n\nLanterna esquerda tampa traseira · Volvo XC60 2018 a 2024 · Cód. A045591\n'
       + 'R$ 670,44\nhttps://izzatcarimports.com.br/peca/x-MLB1.html\n\nVi que tem 10% de desconto pedindo por aqui.\nMeu carro é Volvo XC60 ano ____. Serve e ainda tem?');
     expect(blocoPeca({ nome: 'Fechadura', url: 'u' })).toBe('Fechadura\nu');
@@ -30,6 +30,7 @@ describe('WhatsApp: uma abertura só ("Olá! Vim pelo site da Izzat Car.")', () 
     const m = msgWhats({ n: 'Retrovisor elétrico esquerdo', b: 'Volvo', m: 'XC60', y: [2018, 2024], o: 'a044297', p: 3785.77 }, 'https://izzatcarimports.com.br/peca/y.html');
     expect(m).toContain('Retrovisor elétrico esquerdo · Volvo XC60 2018 a 2024 · Cód. A044297\nR$ 3.785,77\n');
     expect(m.startsWith(ABERTURA)).toBe(true);
+    expect(m).not.toContain('desconto');   // o cartão não mostra o selo do desconto
   });
   it('nenhum arquivo do site escreve a abertura à mão (todos passam pelo lib/whats.ts)', () => {
     const raiz = join(process.cwd(), 'src');
