@@ -4,6 +4,7 @@
 // html[data-vistos] (o CSS mostra a seção) e põe o esqueleto dos cartões com a altura deles; quem não tem histórico não
 // vê nada e nada se mexe. Quando a página carregou e o navegador folgou: confere em /dados/ativas.json (a peça que
 // vendeu some e sai da lista guardada; preço e capa de hoje) e troca o esqueleto pelos cartões. "Limpar" apaga o histórico.
+import { scriptCurto } from '../../lib/scriptCurto';
 import { contarVistos, MIN_HOME, CHAVE_VISTOS } from '../../lib/vistos';
 import { ESQ_CARTAO, SETAS_HTML } from './trilhoPessoal';
 import './trilhoPessoal.css';
@@ -26,7 +27,7 @@ const antes = `(function(){try{var n=(${contarVistos.toString()})(localStorage.g
     <div class="trilho tp-trilho" data-tp-trilho aria-busy="true" aria-label="Peças que você viu"></div>
   </div>
 </section>
-<script is:inline set:html={antes} />
+<script is:inline set:html={scriptCurto(antes)} />
 
 <script>
   import { lerVistos, salvarVistos, carregarAtivas, paraMostrar, itemDoVisto, MIN_HOME } from '../../lib/vistos';
@@ -60,8 +61,11 @@ const antes = `(function(){try{var n=(${contarVistos.toString()})(localStorage.g
       salvarVistos([]);
       esconder();
       avisar('Pronto: as peças que você viu foram apagadas deste aparelho.');
-      const proximo = secao.nextElementSibling?.querySelector<HTMLElement>('h2');
-      if (proximo) { proximo.tabIndex = -1; proximo.focus({ preventScroll: true }); }
+      // o próximo bloco com título (o irmão logo depois é o script de antes da pintura)
+      let prox = secao.nextElementSibling;
+      while (prox && !prox.querySelector('h2')) prox = prox.nextElementSibling;
+      const titulo = prox?.querySelector<HTMLElement>('h2');
+      if (titulo) { titulo.tabIndex = -1; titulo.focus({ preventScroll: true }); }
     });
   }
 </script>

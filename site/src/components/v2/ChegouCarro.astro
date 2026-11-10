@@ -9,6 +9,7 @@
 // carro não existe mais): o convite "Me avise quando chegar peça para o <carro>" (WhatsApp, data-botao="avise-carro",
 // a mensagem de lib/aviso.ts), com o atalho para os outros anos quando o modelo tem peça. Trocou o carro na abertura:
 // o trilho acompanha.
+import { scriptCurto } from '../../lib/scriptCurto';
 import Icone from '../Icone.astro';
 import { chegouAntes } from '../../lib/chegouCarro';
 import { linkAviso } from '../../lib/aviso';
@@ -52,7 +53,7 @@ const antes = `(function(){try{var r=document.currentScript.previousElementSibli
     </div>
   </div>
 </section>
-<script is:inline set:html={antes} />
+<script is:inline set:html={scriptCurto(antes)} />
 
 <script>
   import { lerMeuCarro, linkCatalogo, nomeCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';

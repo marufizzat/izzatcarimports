@@ -4,6 +4,7 @@
 // busca: “farol xc60” → Ver as peças"). Desenhada ANTES da 1ª pintura pelo script logo abaixo (faixaAntes, sem nada de
 // fora): sem lista nem busca, ela nem existe para o CSS (html sem data-continuar) e nada se mexe. O × dispensa e lembra
 // (só volta quando a lista muda de peças ou a busca é outra).
+import { scriptCurto } from '../../lib/scriptCurto';
 import Icone from '../Icone.astro';
 import { faixaAntes, CHAVE_BUSCA, CHAVE_FECHADO } from '../../lib/continuar';
 import { CHAVE_LISTA } from '../../lib/lista';
@@ -26,7 +27,7 @@ const antes = `(function(){try{var f=(${faixaAntes.toString()})(${ls(CHAVE_LISTA
   </a>
   <button type="button" class="ct-fechar" data-ct-fechar aria-label="Dispensar este aviso"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
 </div>
-<script is:inline set:html={antes} />
+<script is:inline set:html={scriptCurto(antes)} />
 
 <script>
   import { CHAVE_FECHADO } from '../../lib/continuar';
@@ -42,7 +43,8 @@ const antes = `(function(){try{var f=(${faixaAntes.toString()})(${ls(CHAVE_LISTA
 
 <style>
   /* pointer-events: a caixa do conteúdo da abertura não pega clique (só o que ela marca com o escopo dela) */
-  .ct { display: none; pointer-events: auto; justify-self: start; align-items: stretch; max-width: 100%; border-radius: 18px; background: rgb(255 255 255 / .92);
+  /* a largura do cartão de busca logo abaixo (não a do texto): a fonte que chega depois não mexe no × */
+  .ct { display: none; pointer-events: auto; justify-self: start; align-items: stretch; width: 100%; max-width: 100%; border-radius: 18px; background: rgb(255 255 255 / .92);
     box-shadow: 0 0 0 1px rgb(16 16 20 / .06), 0 8px 24px -14px rgb(16 16 20 / .35); }
   :global(html[data-continuar]) .ct { display: flex; }
   .ct-link { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 9px 4px 9px 10px; border-radius: 18px 0 0 18px; color: #1d1d1f; }
@@ -64,6 +66,9 @@ const antes = `(function(){try{var f=(${faixaAntes.toString()})(${ls(CHAVE_LISTA
     border-radius: 0 18px 18px 0; background: none; color: #65656b; cursor: pointer; }
   .ct-fechar:hover { color: #1d1d1f; background: rgb(16 16 20 / .04); }
   .ct-fechar svg { width: 18px; height: 18px; }
+  .ct-link { flex: 1; }
+  @media (min-width: 1024px) { .ct { max-width: min(568px, 44vw); } }
+  @media (min-width: 768px) and (max-width: 1023px) { .ct { max-width: 640px; } }
   /* celular estreito: o "Ver lista" na linha dele (sem o ponto pendurado no fim da linha de cima) */
   @media (max-width: 359px) { .ct-sep { display: none; } .ct-ir { flex-basis: 100%; } }
   @media (prefers-reduced-motion: reduce) { .ct-seta { transition: none; } }
