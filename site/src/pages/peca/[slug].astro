@@ -9,6 +9,7 @@ import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
 import { doMesmoCarro } from '../../lib/relacionadas';
 import { nomeModelos } from '../../lib/meuCarro';
+import { nomeCompleto, nomeMensagem } from '../../lib/nomePeca';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
@@ -35,9 +36,7 @@ function porCarro(): Map<string, Peca[]> {
 // "Fechadura" sem marca, por exemplo); contado uma vez por build.
 const anosDe = (y: Peca['y'], sep: string) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}${sep}${y[1]}`) : '');
 function tituloBase(x: Peca): string {
-  const nome = nomeModelos(x);
-  const cod = codigoDaPeca(x.oem);
-  return [x.n, nome, anosDe(x.y, '–'), cod].filter(Boolean).join(' ');
+  return nomeCompleto(x);
 }
 let _titulos: Map<string, number> | null = null;
 function tituloRepetido(t: string): boolean {
@@ -82,7 +81,11 @@ const unica = p.q === 1;
 // código só quando parece código de verdade (5+ com letra e número, ou 6+ dígitos), em maiúsculas
 const codigo = codigoDaPeca(p.oem);
 const base = tituloBase(p);
-const titulo = `${base}${tituloRepetido(base) ? ` ${p.id}` : ''} | Izzat Car`;
+// o nome da peça fora da página (aba, schema, GA4/Pixel): o mesmo do título, nunca o título cru do ML (lib/nomePeca.ts)
+const nomeFora = `${base}${tituloRepetido(base) ? ` ${p.id}` : ''}`;
+const titulo = `${nomeFora} | Izzat Car`;
+// a linha da peça nas mensagens do WhatsApp: "Nome · Carro anos · Cód. X" (o link leva o MLB para achar o anúncio)
+const linhaPeca = nomeMensagem(p);
 // descrição (Google e prévia do link): o nome limpo + carro + anos, nunca o título cru do anúncio
 const sobre = `${p.n} original${carros ? ` ${p.m ? 'do' : 'de'} ${carros}` : ''}${anosTxt ? `, ${anosTxt}` : ''}${codigo ? `, código ${codigo}` : ''}`;
 const descricao = `${sobre}. Peça usada, de carro com baixa legal no Detran-RS. R$ ${brl(p.p)}, nota fiscal e 90 dias de garantia.`;
@@ -95,9 +98,9 @@ const capa = capaEstudio(p.id);
 const ld = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'Product', name: p.t, image: [...(capa ? [SITE + capa] : []), ...p.fotos.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
+    { '@type': 'Product', name: nomeFora, image: [...(capa ? [SITE + capa] : []), ...p.fotos.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
       mpn: codigo || p.id,
-      description: `${p.t}. Peça original com procedência legal, nota fiscal e 90 dias de garantia. Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
+      description: `${descricao} Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
       brand: { '@type': 'Brand', name: p.b || 'Original' },
       category: p.s || p.c,
       offers: { '@type': 'Offer', url, price: p.p.toFixed(2), priceCurrency: 'BRL', availability: 'https://schema.org/InStock',
@@ -109,7 +112,7 @@ const ld = {
 };
 ---
 <Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(p.fotos[0], 'F') || undefined}
-        produto={{ id: p.id, name: p.t, price: p.p, category: p.c }} rodapeSelos={false}>
+        produto={{ id: p.id, name: nomeFora, price: p.p, category: p.c }} rodapeSelos={false}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   {/* prévia do link (WhatsApp, Facebook): a capa de estúdio tem sempre 1000×1000 (capas_estudio.py) */}
   {capa && <meta slot="head" property="og:image:width" content="1000" />}
@@ -136,7 +139,7 @@ const ld = {
 
   <AbasDetalhes p={p} serve={serve} serveRotulo={serveRotulo} />
 
-  {codigo && <GuiaCodigo cod={codigo} titulo={p.t} url={url} />}
+  {codigo && <GuiaCodigo cod={codigo} titulo={linhaPeca} url={url} />}
 
   {temCarro && (
     <DoMesmoCarro carro={nomeCarro} modelo={p.m} anos={anosTxt}
@@ -152,7 +155,7 @@ const ld = {
 
   <section class="secao">
     <div class="moldura">
-      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Quero confirmar se esta peça serve no meu carro:\n${p.t}\n${url}\n\nMeu carro é ____ (modelo) ____ (ano).`)}
+      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Quero confirmar se esta peça serve no meu carro:\n${linhaPeca}\n${url}\n\nMeu carro é ____ (modelo) ____ (ano).`)}
         texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
     </div>
   </section>

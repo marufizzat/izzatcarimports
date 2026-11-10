@@ -31,9 +31,19 @@ describe('feed: limpeza de texto', () => {
     expect(d).toMatch(/Nota fiscal e 90 dias/);
   });
   it('titulo corta em 150 caracteres sem quebrar palavra', () => {
-    const t = tituloFeed(base({ t: 'palavra '.repeat(40) }));
+    const t = tituloFeed(base({ n: 'palavra '.repeat(40).trim() }));
     expect(t.length).toBeLessThanOrEqual(150);
     expect(t.endsWith('palavra')).toBe(true);
+  });
+  it('titulo = nome limpo + carro + anos + codigo, nunca o titulo cru do ML (auditoria 3, 9.2)', () => {
+    expect(tituloFeed(base({}))).toBe('Biela motor Chevrolet Captiva 2008–2017 12608432');
+    const t = tituloFeed(base({ t: 'Sensor Posicao Nivel Altura Dian Dir Volvo Xc 60 Gm', n: 'Sensor nível altura dianteiro direito',
+      b: 'Volvo', m: 'XC60', ms: ['XC60', 'S60'], y: [2018, 2024], oem: '' }));
+    expect(t).toBe('Sensor nível altura dianteiro direito Volvo XC60 e S60 2018–2024');
+    expect(t).not.toMatch(/Xc 60|Gm|Posicao/);
+  });
+  it('descricao padrao (sem texto do vendedor) tambem pelo nome limpo', () => {
+    expect(descricaoFeed(base({ desc: '' }))).toMatch(/^Biela motor Chevrolet Captiva 2008–2017 12608432\. /);
   });
   it('escapa XML', () => {
     expect(escXml('a & <b> "c" \'d\'')).toBe('a &amp; &lt;b&gt; &quot;c&quot; &apos;d&apos;');

@@ -418,7 +418,8 @@ def test_descricao_em_lista_sem_lixo():
     h = descricao(texto)
     assert "<ul><li>Peça: Pedal Acelerador</li><li>Cor predominante: Preto</li></ul>" in h, h
     assert "0 cm" not in h and "Conforme" not in h
-    assert "<ol><li>Conferir o código OEM;</li><li>Comparar com fotos reais do anúncio;</li></ol>" in h, h
+    # o site nao tem "anuncio": as fotos sao as da peca (auditoria 3, 2.1)
+    assert "<ol><li>Conferir o código OEM;</li><li>Comparar com fotos reais da peça;</li></ol>" in h, h
     assert "multiplas" not in h and "múltiplas" not in h            # resto da linha com promessa
     assert "<li>Volvo XC60 - 2018 a 2021</li>" in h                 # anos seguidos viram faixa
     assert "<li>Volvo XC60 T8 - 2018, 2020</li>" in h               # com buraco, ficam como estao
@@ -601,7 +602,7 @@ def test_blocos_do_jeito_que_o_cliente_procura():
         (("Retrovisor interno", "Peças de Interior", "Retrovisores Internos"), "retrovisores"),
         (("Botão retrovisor", "Peças de Interior", "Botões do Retrovisor"), "retrovisores"),
         (("Farol esquerdo", "Iluminação", "Faróis"), "farois-e-lanternas"),
-        (("Luz teto", "Peças de Interior", "Luzes Internas"), "farois-e-lanternas"),
+        (("Luz teto", "Peças de Interior", "Luzes Internas"), "acabamentos-e-forros"),     # auditoria 3: luz do forro
         (("Maçaneta externa", "Carroceria", "Maçanetas das Portas"), "macanetas-e-fechaduras"),
         (("Botão trava portas", "Peças de Interior", "Botões da Trava Elétrica"), "macanetas-e-fechaduras"),
         (("Botão vidro", "Peças de Interior", "Botões do Vidro Elétrico"), "vidro-eletrico"),
@@ -660,6 +661,117 @@ def test_blocos_do_jeito_que_o_cliente_procura():
             print(f"AVISO: bloco sem peca agora (a pagina sai do ar e o endereco antigo vai pro catalogo): {vazios}")
         if cont["Outros"] >= 30:
             print(f"AVISO: {cont['Outros']} pecas em Outros (meta: menos de 30)")
+
+
+def test_tipo_e_do_bloco():
+    """Auditoria 3, 3.1/3.2: a peca mudava de bloco pelo nome e levava o tipo antigo ("Caixas do Filtro de Ar" em
+    Maçanetas, "Sondas Lambda" em Airbag, "Buzinas" em Pedais); "Faróis e Lanternas" tinha as luzes de teto e o tipo
+    "Faróis" tinha esguicho e modulo. Agora o tipo "s" e SEMPRE um tipo do bloco "c" (ou "Outros", sem cartao)."""
+    from preparar_dados import (BLOCO_NOME, BLOCO_POR_TIPO, TIPO_NO_BLOCO, classificar, bloco, tipo_no_bloco)
+
+    def bt(nome, fam, tipo):
+        f, t = classificar(nome, fam, tipo)
+        b = bloco(nome, f, t)
+        return b, tipo_no_bloco(nome, t, b)
+    casos = [
+        # (nome limpo, familia do ML, tipo da loja) -> (bloco, tipo)
+        (("Luz teto cortesia", "Peças de Interior", "Luzes Internas"), ("acabamentos-e-forros", "Luzes Internas")),
+        (("Lanterna luz teto cortesia", "Peças de Interior", "Luzes Internas"), ("acabamentos-e-forros", "Luzes Internas")),
+        (("Luz do forro de porta traseiro direito", "Iluminação", "Refletores"), ("acabamentos-e-forros", "Luzes Internas")),
+        (("Luz de placa traseira", "Iluminação", "Luzes de Placa"), ("farois-e-lanternas", "Luzes de Placa")),
+        (("Farol direito bi xenon", "Iluminação", "Faróis"), ("farois-e-lanternas", "Faróis")),
+        (("Esguicho farol direito", "Iluminação", "Faróis"), ("limpador-e-lavador", "Bombas e Esguichos do Lavador")),
+        (("Módulo alcance farol", "Iluminação", "Faróis"), ("farois-e-lanternas", "Módulos e Reatores do Farol")),
+        (("Brake light (luz de freio)", "Iluminação", "Lanternas Traseiras"), ("farois-e-lanternas", "Brake Light")),
+        (("Alça teto traseira esquerda", "Iluminação", "Luzes de Placa"), ("acabamentos-e-forros", "Alças e Puxadores")),
+        # o nome muda o bloco: o tipo passa a ser um do bloco novo (ou "Outros")
+        (("Fechadura", "Filtros", "Caixas do Filtro de Ar"), ("macanetas-e-fechaduras", "Outros")),
+        (("Sensor impacto", "Injeção", "Sondas Lambda"), ("airbag-e-seguranca", "Airbags, Módulos e Sensores")),
+        (("Sensor detonação impacto SRS", "Injeção", "Sensores de Detonação"),
+         ("airbag-e-seguranca", "Airbags, Módulos e Sensores")),
+        (("Tampa acionador buzina", "Sistema Elétrico", "Buzinas"), ("pedais-e-volante", "Volantes")),
+        (("Caixa ar condicionado", "Transmissão", "Câmbios e Peças Internas"), ("ar-condicionado", "Evaporadores")),
+        (("Botão freio estacionamento", "Peças de Interior", "Outros Botões"), ("freios", "Botões do Freio de Mão")),
+        (("Suporte módulo injeção", "Carroceria", "Suportes da Carroceria"), ("injecao-e-combustivel", "Módulos de Injeção")),
+        (("Suporte bobina ignição", "Carroceria", "Suportes da Carroceria"), ("ignicao-e-partida", "Bobinas de Ignição")),
+        (("Display multimídia", "Peças de Interior", "Displays e Telas"), ("som-e-multimidia", "Centrais Multimídia")),
+        # peca no tipo errado do ML: o nome leva ao sistema certo
+        (("Motor limpador traseiro", "Janelas e Vedações", "Máquinas e Motores de Vidro Elétrico"),
+         ("limpador-e-lavador", "Motores do Limpador")),
+        (("Terminal polo positivo", "Suspensão e Direção", "Terminais de Direção"),
+         ("modulos-e-eletrica", "Cabos e Terminais de Bateria")),
+        (("Sensor pressão combustível", "Suspensão e Direção", "Sensores da Direção"),
+         ("injecao-e-combustivel", "Sensores de Pressão")),
+        (("Sensor keyless antena", "Injeção", "Sensores de Posição"), ("modulos-e-eletrica", "Antenas e Módulos Keyless")),
+        (("Acabamento inferior coluna direção", "Suspensão e Direção", "Colunas de Direção"),
+         ("painel-e-console", "Capas da Coluna de Direção")),
+        (("Módulo bluetooth", "Sistema Elétrico", "Módulos Eletrônicos"), ("som-e-multimidia", "Interfaces de Som")),
+        (("Módulo ESP", "Sistema Elétrico", "Módulos Eletrônicos"), ("freios", "Módulos ABS")),
+        (("Motor ventilador interno", "Arrefecimento", "Motores de Ventilador"), ("ar-condicionado", "Atuadores e Motores do Ar")),
+        # o que ja estava certo nao muda
+        (("Coluna direção elétrica", "Suspensão e Direção", "Colunas de Direção"), ("suspensao-e-direcao", "Colunas de Direção")),
+        (("Módulo câmbio automático", "Transmissão", "Módulos do Câmbio e da Tração"),
+         ("cambio-e-transmissao", "Módulos do Câmbio e da Tração")),
+        (("Módulo BSI", "Sistema Elétrico", "Módulos de Injeção"), ("modulos-e-eletrica", "Módulos de Conforto (BCM)")),
+        (("Sonda lambda", "Injeção", "Sondas Lambda"), ("injecao-e-combustivel", "Sondas Lambda")),
+        (("Fechadura banco traseiro", "Iluminação", "Outros"), ("macanetas-e-fechaduras", "Outros")),
+    ]
+    for (nome, fam, tipo), esperado in casos:
+        assert bt(nome, fam, tipo) == esperado, (nome, tipo, bt(nome, fam, tipo), esperado)
+    # tipo que o mapa nao conhece fica (o teste dos blocos avisa); tipo do proprio bloco fica
+    assert tipo_no_bloco("Peça nova", "Tipo Novo do ML", "motor") == "Tipo Novo do ML"
+    assert tipo_no_bloco("Coxim motor", "Coxins do Motor", "motor") == "Coxins do Motor"
+    # as regras de cada bloco so dao tipos daquele bloco
+    fora = [(b, t) for b, rs in TIPO_NO_BLOCO.items() for _, t in rs if BLOCO_POR_TIPO.get(t) != b]
+    assert not fora, fora
+    assert set(TIPO_NO_BLOCO) <= set(BLOCO_NOME), set(TIPO_NO_BLOCO) - set(BLOCO_NOME)
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        lista = json.loads(pecas.read_text(encoding="utf-8"))
+        # garantido pelo codigo (tipo_no_bloco), vale para qualquer estoque: nenhum tipo conhecido fora do bloco dele
+        ruins = sorted({(x["c"], x["s"]) for x in lista
+                        if x["s"] in BLOCO_POR_TIPO and BLOCO_NOME[BLOCO_POR_TIPO[x["s"]]] != x["c"]})
+        assert not ruins, ruins
+        assert not any(x["s"] == "Luzes Internas" and x["c"] == "Faróis e Lanternas" for x in lista)
+
+
+def test_descricao_sem_promessa():
+    """Auditoria 3, 2.1: o modelo de anuncio promete "encaixe perfeito" (2.313), "excelente estado" (3.025), "100%
+    testado", "garantida", "testada e aprovada pela nossa equipe técnica" e "semi nova". Vira o fato neutro ou sai."""
+    import re
+    import preparar_dados as pd
+    texto = ("IDENTIFICACAO DA PECA\n====\n+ Peca: Tampa cobertura motor\n+ Material: Plastico\n"
+             "+ Condicao: usado em excelente estado de conservacao (semi nova / seminova)\n\n"
+             "APLICACAO E COMPATIBILIDADE\n====\nEsta peca foi removida diretamente de um veiculo Volvo XC60 ano "
+             "modelo 2018 a 2024. Mesmo OEM = encaixe perfeito, sem adaptacoes, sem furadeira.\n"
+             "1) Comparar com fotos reais do anuncio (mostramos a peca, nao foto generica);\n\n"
+             "CONDICAO REAL DA PECA\n====\nPeca em excelente estado de conservacao, testada e aprovada pela nossa "
+             "equipe tecnica. Funcionamento 100% testado. Removida de veiculo nacional com baixa quilometragem. "
+             "Com cinco furos, sua compatibilidade e garantida para modelos selecionados. Estado: Testada e em "
+             "perfeito funcionamento. Inspecionada visualmente antes da postagem. Testado - motor gira.\n")
+    h = pd.descricao(texto)
+    proibido = re.compile(r"encaixe perfeito|excelente|100\s*%|garantid|perfeito funcionamento|sem adapta|furadeira|"
+                          r"semi ?nova|seminova|aprovada pela nossa equipe|an[uú]ncio", re.I)
+    assert not proibido.search(h), proibido.search(h).group(0)
+    assert "Mesmo código do original." in h, h
+    assert "<li>Condição: Peça usada conferida; o estado aparece nas fotos</li>" in h, h
+    assert h.count("Peça usada conferida") == 1, h                      # o neutro uma vez so
+    assert "Removida de veículo nacional com baixa quilometragem." in h, h   # o fato que estava junto fica
+    assert "Testado - motor gira." in h, h                                 # nota da propria peca fica
+    assert "fotos reais da peça" in h, h
+    # frases sem promessa nao mudam
+    assert pd._sem_promessa("Sem trincas estruturais.") == "Sem trincas estruturais."
+    assert pd._sem_promessa("Material: Plástico") == "Material: Plástico"
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        lista = json.loads(pecas.read_text(encoding="utf-8"))
+        # no gerado so AVISA: texto novo do vendedor nao pode travar a publicacao
+        ruins = [x["id"] for x in lista if proibido.search(x["desc"])]
+        if ruins:
+            print(f"AVISO: {len(ruins)} descricoes ainda com promessa ou 'anuncio': {ruins[:5]}")
+        dobrado = [x["id"] for x in lista if x["desc"].count(pd.ESTADO_NEUTRO) > 1]
+        if dobrado:
+            print(f"AVISO: {len(dobrado)} descricoes com o texto neutro do estado repetido: {dobrado[:5]}")
 
 
 def test_peca_em_dois_carros():
@@ -745,12 +857,13 @@ def test_descricao_sem_lixo_do_ml():
         pd._DIM_PADRAO.update(antes)
     assert "chat" not in h and "gíria" not in h and "giria" not in h, h
     assert "<li>Em dúvida, chame a gente no WhatsApp.</li>" in h, h
-    assert "sem adaptações, sem furadeira." in h, h
+    # auditoria 3, 2.1: a promessa pronta do modelo vira o fato ("mesmo codigo do original"), sem "encaixe perfeito"
+    assert "Mesmo código do original." in h and "encaixe" not in h and "furadeira" not in h and "adaptações" not in h, h
     assert "ORIGINAL DE FABRICA" not in h.upper() or "original de fábrica - OEM" not in h, h       # a manchete sai
     assert h.count("Sem trincas") == 1, h                                   # o paragrafo da condicao, uma vez
     assert h.count("Material: Plástico") == 1 and h.count("Preto") == 1, h  # o mesmo dado nas duas listas
     assert "Código OEM: 8200733848" in h and "Part Number" not in h, h
-    assert "Em excelente estado</li>" not in h, h                           # so encurta o de cima: sai
+    assert "excelente" not in h and h.count("Peça usada conferida; o estado aparece nas fotos") == 1, h  # o neutro, 1 vez
     assert "25 cm" not in h and "1500 g" not in h, h                        # medida-padrao do modelo
     assert "Anos:" not in h and "sem código" not in h.lower(), h
     assert "função correspondente" not in h and "Substituição recomendada quando houver desgaste." in h, h
