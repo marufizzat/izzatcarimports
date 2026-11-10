@@ -135,7 +135,7 @@ function htmlModelos(e: Estado): string {
   const m = e.marca!;
   const todas = `/catalogo.html?${new URLSearchParams({ marca: m.n }).toString()}`;
   // links curtos (a marca já está no campo): os dois cabem numa linha, e a grade de modelos tem a altura da de marcas
-  const procura = `<a class="mc-link" href="${whats(`Olá! Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}" aria-label="Não achou o modelo? A gente procura no pátio pelo WhatsApp">Não achou? A gente procura</a>`;
+  const procura = `<a class="mc-link" href="${whats(`Olá! Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}" aria-label="Não achou? A gente procura o modelo no pátio, pelo WhatsApp">Não achou? A gente procura</a>`;
   if (!m.modelos.length)
     // marca sem modelo lido nos anúncios (ex.: Mini): vai direto para as peças dela
     return `
