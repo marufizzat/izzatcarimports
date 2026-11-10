@@ -31,7 +31,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
       </div>
     )}
     <div class="cab-acoes">
-      <button class="cab-carro" type="button" data-abrir-carro aria-label="Meu carro: escolher o seu carro">
+      <button class="cab-carro" type="button" data-abrir-carro aria-haspopup="dialog" aria-label="Meu carro: escolher o seu carro">
         <Icone nome="carro" />
         <span class="cab-carro-txt" data-carro-txt>Meu carro</span>
       </button>
@@ -39,10 +39,10 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
           Mesmo desenho de pintarChip(); marca também html[data-carro] para quem reserva lugar ao carro (catálogo). */}
       <script is:inline>try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')),b=document.currentScript.previousElementSibling,t=b.lastElementChild,s=(k,x)=>{var e=document.createElement('span');e.className='cab-carro-'+k;e.append(x);return e},m;c.m&&(document.documentElement.dataset.carro='',b.className+=' com-carro',m=s('modelo',s('marca',c.b+' ')),m.append(c.m),t.replaceChildren(m),c.y&&t.append(s('ano',''+c.y)))}catch(e){}</script>
       <a class="cab-icone cab-lupa" href="/catalogo.html#busca" aria-label="Buscar peça"><Icone nome="busca" /></a>
-      <a class="botao botao-laranja cab-whats" href={whatsUrl('Olá! Estou procurando uma peça.')} aria-label="Chamar no WhatsApp">
+      <a class="botao botao-laranja cab-whats" href={whatsUrl('Estou procurando uma peça.')} aria-label="Chamar no WhatsApp">
         <Icone nome="whats" /><span>WhatsApp</span>
       </a>
-      <button class="cab-icone cab-menu" type="button" aria-label="Abrir menu" aria-controls="menu-movel" data-abrir-menu>
+      <button class="cab-icone cab-menu" type="button" aria-label="Abrir menu" aria-haspopup="dialog" aria-controls="menu-movel" data-abrir-menu>
         <Icone nome="menu" />
       </button>
     </div>
@@ -81,7 +81,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
       {carros.map((c) => <a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a>)}
     </div>
   </div>
-  <a class="botao botao-laranja menu-whats" href={whatsUrl('Olá! Estou procurando uma peça.')}><Icone nome="whats" />Chamar no WhatsApp</a>
+  <a class="botao botao-laranja menu-whats" href={whatsUrl('Estou procurando uma peça.')}><Icone nome="whats" />Chamar no WhatsApp</a>
 </dialog>
 
 <script>
@@ -238,7 +238,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
     .cab .cab-busca ~ .cab-acoes > .cab-lupa { display: none; }
     .cab .cab-busca .sb-busca:not(.sb-grande) { height: 46px; border-radius: 12px; padding: 0 4px 0 14px; gap: 6px; box-shadow: inset 0 0 0 1.5px var(--line-2); }
     .cab .cab-busca .sb-busca:not(.sb-grande):focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 82%); }
-    .cab .cab-busca .sb-busca input { font-size: 15.5px; min-width: 0; }
+    .cab .cab-busca .sb-busca input { font-size: 16px; min-width: 0; }
     .cab .cab-busca .sb-lupa svg { width: 19px; height: 19px; }
     .cab .cab-busca .sb-limpar { width: 36px; height: 36px; }
     .cab .cab-busca .sb-btn { --h: 38px; padding: 0 11px; border-radius: 9px; }

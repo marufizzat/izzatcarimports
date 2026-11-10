@@ -1,0 +1,48 @@
+---
+// "Todas as N peças": lista em texto (só nome, carro e anos, com o link) de TODAS as peças do grupo, fechada num
+// <details> no fim da página. A grade mostra 48 cartões; o resto só existia no sitemap e o Google não chegava por
+// link (auditoria 3, item 9.1: 170 peças sem nenhum link interno). Agrupada por tipo, na ordem dos cartões "Por tipo".
+// Peso: ~150 bytes por peça, só nas 25 páginas de categoria e no pé do catálogo — nunca na página da peça.
+import type { Peca } from '../../lib/dados';
+import { nomeModelos } from '../../lib/meuCarro';
+import { anosDaPeca } from '../../lib/nomePeca';
+interface Props { lista: Peca[]; titulo: string; agrupar?: boolean; id?: string }
+const { lista, titulo, agrupar = true, id = 'todas-as-pecas' } = Astro.props;
+const fmt = (n: number) => n.toLocaleString('pt-BR');
+const rotulo = (p: Peca) => [p.n, [nomeModelos(p), anosDaPeca(p.y, ' a ')].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+const ordenar = (ps: Peca[]) => [...ps].sort((a, b) => rotulo(a).localeCompare(rotulo(b), 'pt-BR'));
+// grupos: os tipos com mais peças primeiro; "Outros" (e peça sem tipo) por último, como "Outras peças"
+const porTipo = new Map<string, Peca[]>();
+for (const p of lista) {
+  const k = agrupar && p.s && p.s !== 'Outros' ? p.s : '';
+  porTipo.set(k, [...(porTipo.get(k) ?? []), p]);
+}
+const grupos = [...porTipo.entries()]
+  .sort((a, b) => (a[0] === '' ? 1 : 0) - (b[0] === '' ? 1 : 0) || b[1].length - a[1].length || a[0].localeCompare(b[0], 'pt-BR'))
+  .map(([n, ps]) => ({ n: n || (agrupar && porTipo.size > 1 ? 'Outras peças' : ''), ps: ordenar(ps) }));
+---
+{lista.length > 0 && (
+  <details class="todas-pecas" id={id}>
+    <summary>{titulo}</summary>
+    {grupos.map((g) => (
+      <div class="todas-pecas-grupo">
+        {g.n && <h3>{g.n} <span class="todas-pecas-n">({fmt(g.ps.length)})</span></h3>}
+        <ul>{g.ps.map((p) => <li><a href={`/peca/${p.slug}.html`}>{rotulo(p)}</a></li>)}</ul>
+      </div>
+    ))}
+  </details>
+)}
+<style>
+  .todas-pecas { margin-top: clamp(32px, 4vw, 48px); padding-top: 20px; border-top: 1px solid var(--line); }
+  .todas-pecas summary { display: list-item; padding-block: 11px; cursor: pointer; font-stretch: 86%; font-weight: 800; font-size: 18px; line-height: 1.3; color: var(--ink); }
+  .todas-pecas summary:hover { color: var(--accent-text); }
+  .todas-pecas-n { margin-left: 4px; font-weight: 500; color: var(--ink-3); }
+  .todas-pecas-grupo { margin-top: 18px; }
+  .todas-pecas h3 { margin: 0 0 6px; font-size: 15.5px; font-weight: 750; color: var(--ink); }
+  .todas-pecas ul { list-style: none; margin: 0; padding: 0; columns: 1; column-gap: 28px; }
+  @media (min-width: 700px) { .todas-pecas ul { columns: 2; } }
+  @media (min-width: 1100px) { .todas-pecas ul { columns: 3; } }
+  .todas-pecas li { break-inside: avoid; }
+  .todas-pecas a { display: inline-block; padding: 5px 0; font-size: 14px; line-height: 1.35; color: var(--ink-2); }
+  .todas-pecas a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+</style>

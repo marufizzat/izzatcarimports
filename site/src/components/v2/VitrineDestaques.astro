@@ -38,6 +38,9 @@ const abas = abasVitrine(POR_ABA)
 )}
 
 <script>
+  import { focoNoTrilho } from '../../lib/trilhoFoco';
+  // cartão focado pelo teclado no trilho de 2 linhas do celular: entra inteiro na tela (antes ficava 77% de fora)
+  focoNoTrilho('.vit-grade', '.etiqueta-cx');
   // Abas acessíveis (setas, Home e End); a aba escolhida rola para dentro da fileira no celular.
   document.querySelectorAll<HTMLElement>('[data-vitrine]').forEach((raiz) => {
     const fileira = raiz.querySelector<HTMLElement>('.vit-abas');

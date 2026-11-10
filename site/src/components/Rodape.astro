@@ -15,7 +15,7 @@ const reputacao = !!r.reputacao && !COM_REPUTACAO.has(caminho);
 <footer class:list={['rodape faixa-escura', { 'rodape-sem-selos': !selos }]}>
   {selos && <ul class:list={['moldura rodape-selos', { 'com-rep': reputacao }]} aria-label="Garantias">
     {[['garantia', '90 dias de garantia', 'Em toda peça'], ['nota-fiscal', 'Nota fiscal', 'Em toda venda'],
-      ['cdv', 'Desmanche credenciado', 'Detran-RS\u00a0· CDV\u00a0nº\u00a001060'], ['envio', 'Envio para todo o Brasil', 'Com código de rastreio']].map(([k, t, s]) => (
+      ['cdv', 'Desmanche credenciado', 'Detran-RS\u00a0· CDV\u00a0nº\u00a001060'], ['envio', 'Envio para todo o Brasil', 'Frete pelo seu CEP']].map(([k, t, s]) => (
       <li><img src={`/arte/v2/selo-${k}.webp`} alt="" width="56" height="56" loading="lazy" decoding="async" /><span><b>{t}</b><small>{s}</small></span></li>
     ))}
     {reputacao && <SeloReputacao variante="rodape" />}
@@ -24,7 +24,7 @@ const reputacao = !!r.reputacao && !COM_REPUTACAO.has(caminho);
     <div class="rodape-marca">
       <img src="/identidade/logo-dark.png" alt="Izzat Car Imports" width="99" height="72" loading="lazy" />
       <p>Desmanche credenciado pelo Detran-RS, CDV&nbsp;nº&nbsp;01060. Peças originais de carros com baixa legal, com nota fiscal e 90 dias de garantia em toda peça.</p>
-      <a class="botao botao-laranja" href={whatsUrl('Olá! Vim pelo site e estou procurando uma peça.')} rel="noopener"><Icone nome="whats" />Chamar no WhatsApp</a>
+      <a class="botao botao-laranja" href={whatsUrl('Estou procurando uma peça.')} rel="noopener"><Icone nome="whats" />Chamar no WhatsApp</a>
       <span class="rodape-fone num">WhatsApp (53) 99117-0950</span>
     </div>
     <nav class="rodape-pecas" aria-label="Peças"><b>Peças</b>

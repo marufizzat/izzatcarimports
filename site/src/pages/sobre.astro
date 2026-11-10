@@ -5,6 +5,7 @@ import Chamada from '../components/inst/Chamada.astro';
 import IconeInst from '../components/inst/IconeInst.astro';
 import SeloCDV from '../components/SeloCDV.astro';
 import SeloReputacao from '../components/SeloReputacao.astro';
+import BannerV2 from '../components/v2/BannerV2.astro';
 import { SITE } from '../lib/dados';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,11 +15,22 @@ const temTrofeu = existsSync(join(process.cwd(), 'public', 'arte', 'v2', 'destaq
 
 const canonical = `${SITE}/sobre.html`;
 const canonicalPath = '/sobre.html';
-const historia = [
-  { n: 1, t: 'Chega com baixa legal', s: 'O carro entra com a baixa feita, dentro da lei.', alt: 'Carro chegando ao pátio, com a documentação de baixa sobre um pedestal' },
-  { n: 2, t: 'É desmontado com calma', s: 'Peça por peça, com cuidado.', alt: 'Farol já removido, apoiado num carrinho de ferramentas, ao lado do carro' },
-  { n: 3, t: 'Cada peça é conferida', s: 'Ela é fotografada e anunciada com o código original, para você achar a peça certa.', alt: 'Alternador limpo sobre a bancada, com etiqueta laranja' },
-  { n: 4, t: 'Embalada e enviada', s: 'Cada peça é embalada com cuidado, e todo envio vai com código de rastreio.', alt: 'Peça embalada em caixa de papelão, com fita laranja' },
+// linha do tempo "Do carro à peça": 6 etapas, cada uma com a sua arte de estúdio (sem texto na arte).
+// Só fatos que o site já afirma (baixa no Detran-RS, CDV nº 01060, Lei do Desmanche, código original, rastreio).
+// `arte` = nome em /arte/v2/ (cada uma tem a versão de 600 px, -600.webp, para o celular).
+const etapas = [
+  { t: 'Carro com baixa legal', s: 'O carro chega com a baixa feita no Detran-RS. A Izzat Car é desmanche credenciado (CDV nº 01060) e segue a Lei do Desmanche.',
+    arte: 'historia-1', alt: 'Carro chegando ao pátio, com a documentação de baixa sobre um pedestal' },
+  { t: 'Registro e rastreio', s: 'Cada carro é registrado, e as peças dele ficam ligadas a esse registro. Assim, a origem de cada peça é comprovada.',
+    arte: 'historia-registro', alt: 'Carro no estúdio com uma etiqueta de identificação laranja e um tablet com a ficha de registro' },
+  { t: 'Desmontagem com cuidado', s: 'Peça por peça, sem força, para não danificar encaixes e conectores.',
+    arte: 'historia-2', alt: 'Farol já removido, apoiado num carrinho de ferramentas, ao lado do carro' },
+  { t: 'Limpeza e conferência', s: 'A peça é limpa, testada quando dá (motores, módulos) e o código original é identificado.',
+    arte: 'historia-conferencia', alt: 'Módulo eletrônico limpo, com o código gravado iluminado por uma lanterna' },
+  { t: 'Foto e anúncio', s: 'Ela é fotografada de verdade e anunciada com o código, para você achar a peça certa.',
+    arte: 'historia-3', alt: 'Alternador limpo sobre a bancada, com etiqueta laranja e uma lupa' },
+  { t: 'Embalagem e envio', s: 'Embalada com proteção. Envio para todo o Brasil com código de rastreio; o frete é combinado pelo WhatsApp ou é o do Mercado Livre.',
+    arte: 'historia-4', alt: 'Peça embalada em caixa de papelão, com fita laranja' },
 ];
 ---
 <Pagina
@@ -26,22 +38,29 @@ const historia = [
   descricao="Desmanche credenciado pelo Detran-RS, CDV nº 01060, em Aceguá-RS. Carros com baixa legal, cada peça identificada e rastreável, com código original."
   canonical={canonical}
 >
+  {/* topo com o Maruf atrás da bancada (arte sem texto; o título é vivo) */}
   <TopoArte trilha={[['Início', '/index.html'], ['O pátio', canonicalPath]]}
     titulo="O pátio"
     lead="Um desmanche credenciado pelo Detran-RS, na fronteira de Aceguá. Cada carro chega com baixa legal, e cada peça sai identificada."
-    arte="/arte/v2/topo-patio.webp" />
+    arte="/arte/v2/topo-sobre.webp" arteFoco="100% 88%" />
 
   <div class="moldura">
+    {/* linha do tempo: número em disco laranja (letra grafite) num fio laranja; no PC a arte alterna de lado */}
     <section class="inst-sec sob-historia" aria-labelledby="h-processo">
       <h2 class="titulo-secao inst-h2" id="h-processo">Do carro à peça</h2>
       <p class="sob-intro">Cada carro segue o mesmo caminho, do começo ao fim, dentro da lei.</p>
-      <ol class="sob-passos">
-        {historia.map((h) => (
-          <li class="sob-passo">
-            <figure>
-              <img src={`/arte/v2/historia-${h.n}.webp`} alt={h.alt} width="1200" height="800" loading="lazy" decoding="async" />
-              <figcaption><span class="sob-num num">{h.n}</span><span><b>{h.t}</b>{h.s}</span></figcaption>
-            </figure>
+      <ol class="sob-linha">
+        {etapas.map((e, i) => (
+          <li class="sob-etapa">
+            <div class="sob-etapa-arte">
+              <img src={`/arte/v2/${e.arte}.webp`} srcset={`/arte/v2/${e.arte}-600.webp 600w, /arte/v2/${e.arte}.webp 1200w`}
+                sizes="(min-width: 900px) min(560px, 44vw), calc(100vw - 92px)" alt={e.alt} width="1200" height="800" loading="lazy" decoding="async" />
+            </div>
+            <span class="sob-etapa-num num" aria-hidden="true">{i + 1}</span>
+            <div class="sob-etapa-txt">
+              <h3>{e.t}</h3>
+              <p>{e.s}</p>
+            </div>
           </li>
         ))}
       </ol>
@@ -58,97 +77,134 @@ const historia = [
       </div>
     </section>
 
-    <section class="inst-sec sob-premio-sec" aria-labelledby="h-destaque">
-      <div class="sob-premio" class:list={[{ 'com-arte': temTrofeu }]}>
-        {temTrofeu && (
-          <div class="sob-premio-arte">
-            <img src="/arte/v2/destaque-acegua.webp" alt="Troféu Destaque Aceguá 2025" width="1200" height="800" loading="lazy" decoding="async" />
+    {/* reconhecimento: o troféu com respiro e UMA hierarquia (título + linha de apoio), filete laranja como assinatura */}
+    <section class="sob-premio" class:list={[{ 'com-arte': temTrofeu }]} aria-labelledby="h-destaque">
+      {temTrofeu && (
+        <div class="sob-premio-arte">
+          <img src="/arte/v2/destaque-acegua.webp" alt="Troféu Destaque Aceguá 2025" width="1200" height="900" loading="lazy" decoding="async" />
+        </div>
+      )}
+      <div class="sob-premio-txt">
+        <span class="sob-filete" aria-hidden="true"></span>
+        <h2 class="sob-premio-titulo display" id="h-destaque">Destaque Aceguá 2025</h2>
+        <p>Prêmio Melhores do Ano de Aceguá · categoria desmanche de veículos</p>
+      </div>
+    </section>
+
+    {/* onde a gente está: um painel só, de fundo claro quente; à direita, a loja no Mercado Livre (mesma altura) */}
+    <section class="inst-sec sob-onde-sec" aria-labelledby="h-onde">
+      <div class="sob-onde">
+        <div class="sob-onde-txt">
+          <h2 class="titulo-secao inst-h2" id="h-onde">Onde a gente está</h2>
+          <p>Aceguá-RS, na fronteira com o Uruguai. A gente atende pelo WhatsApp e pelo Instagram <b class="inst-quebra">@cdvizzatcarimports</b>.</p>
+          <div class="sob-acoes">
+            <a class="botao botao-linha inst-botao" href="/catalogo.html">Ver o catálogo</a>
+            <a class="botao botao-linha inst-botao" href="https://instagram.com/cdvizzatcarimports" target="_blank" rel="noopener">Instagram</a>
           </div>
-        )}
-        <div class="sob-premio-txt">
-          <span class="sob-premio-selo" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5.5" /><path d="M8.6 13.4 7.4 21l4.6-2.4 4.6 2.4-1.2-7.6" /></svg></span>
-          <h2 class="titulo-secao inst-h2" id="h-destaque">Reconhecido na cidade</h2>
-          <p>Prêmio do Melhores do Ano Aceguá, na categoria desmanche de veículos.</p>
-          <p class="sob-destaque display"><span>Destaque</span> Aceguá 2025</p>
+        </div>
+        <div class="inst-loja sob-loja">
+          <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
+          <p class="inst-loja-nome"><small>Também no Mercado Livre</small><b>IZZAT_CAR_IMPORTS</b></p>
+          <SeloReputacao variante="compacto" />
+          <a class="botao botao-linha inst-botao" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Ver a loja no Mercado Livre</a>
         </div>
       </div>
     </section>
 
-    {/* sem linha divisória aqui: o cartão do prêmio logo acima já separa (a linha ficava colada nele) */}
-    <section class="inst-sec inst-duas sob-onde" aria-labelledby="h-onde">
-      <div class="inst-texto">
-        <h2 class="titulo-secao inst-h2" id="h-onde">Onde a gente está</h2>
-        <p>Aceguá-RS, na fronteira com o Uruguai. A gente atende pelo WhatsApp e pelo Instagram <b class="inst-quebra">@cdvizzatcarimports</b>.</p>
-        <div class="sob-acoes">
-          <a class="botao botao-linha inst-botao" href="/catalogo.html">Ver o catálogo</a>
-          <a class="botao botao-linha inst-botao" href="https://instagram.com/cdvizzatcarimports" target="_blank" rel="noopener">Instagram</a>
-        </div>
-      </div>
-      {/* no lugar do cartão só com o alfinete: a loja no Mercado Livre com a reputação (prova, não enfeite) */}
-      <div class="inst-loja sob-loja">
-        <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
-        <p class="inst-loja-nome"><small>Também no Mercado Livre</small><b>IZZAT_CAR_IMPORTS</b></p>
-        <SeloReputacao variante="compacto" />
-        <a class="botao botao-linha inst-botao" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Ver a loja no Mercado Livre</a>
-      </div>
-    </section>
+    {/* o Maruf (arte sem botão: só imagem) logo antes do fechamento da página */}
+    <div class="sob-banner">
+      <BannerV2 formato="arte" nome="banner-origem"
+        texto="Desmanche credenciado. Peças com origem. Carros com baixa legal no Detran-RS · CDV nº 01060." />
+    </div>
   </div>
 
   <Chamada
     id="h-chamada"
     titulo="Quer ver uma peça do pátio?"
     texto="Manda o modelo do carro ou o código gravado da peça. A gente responde pelo WhatsApp."
-    mensagem="Olá! Vim pelo site, vi o pátio e quero saber sobre uma peça."
+    mensagem="Vi o pátio e quero saber sobre uma peça."
   />
 </Pagina>
 
 <style>
-  .sob-historia { padding-bottom: clamp(24px, 4vw, 48px); }
+  .sob-historia { padding-bottom: clamp(32px, 5vw, 64px); }
   .sob-historia .inst-h2 { margin-bottom: 8px; }
-  .sob-intro { margin: 0 0 clamp(24px, 3.4vw, 40px); font-size: 17px; line-height: 1.6; color: var(--ink-2); max-width: 60ch; }
-  .sob-passos { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(28px, 4vw, 44px); grid-template-columns: 1fr; }
-  @media (min-width: 760px) { .sob-passos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 32px; } }
-  .sob-passo figure { margin: 0; display: grid; gap: 16px; }
-  .sob-passo img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 24px; background: #efeeeb; box-shadow: var(--shadow-1); }
-  .sob-passo figcaption { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
-  .sob-passo figcaption b { display: block; margin-bottom: 4px; font-stretch: 86%; font-weight: 800; font-size: clamp(20px, 2vw, 24px); line-height: 1.1; color: var(--ink); }
-  .sob-num { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 17px;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 6px 14px -6px rgb(255 106 0 / .7); }
-  /* o selo no meio da coluna (antes encostado à esquerda, com ~420 px vazios ao lado) */
+  .sob-intro { margin: 0 0 clamp(28px, 4vw, 56px); font-size: 17px; line-height: 1.6; color: var(--ink-2); max-width: 60ch; }
+
+  /* ---- linha do tempo ----
+     celular: o fio e os discos na coluna da esquerda; o texto e a arte na da direita.
+     PC (900+): o fio no meio; a arte de um lado e o texto do outro, trocando de lado a cada etapa. */
+  .sob-linha { --disco: 44px; list-style: none; margin: 0; padding: 0; display: grid; }
+  .sob-etapa { position: relative; display: grid; grid-template-columns: var(--disco) minmax(0, 1fr); column-gap: 16px;
+    grid-template-areas: "num txt" ". arte"; padding-bottom: clamp(32px, 6vw, 44px); }
+  .sob-etapa:last-child { padding-bottom: 0; }
+  /* o fio: de um disco ao próximo (o último não continua) */
+  .sob-etapa::before { content: ""; position: absolute; z-index: 0; top: calc(var(--disco) / 2); bottom: calc(var(--disco) / -2);
+    left: calc(var(--disco) / 2 - 1.5px); width: 3px; border-radius: 3px;
+    background: linear-gradient(180deg, var(--accent), color-mix(in oklab, var(--accent), #fff 35%)); }
+  .sob-etapa:last-child::before { display: none; }
+  .sob-etapa-num { grid-area: num; position: relative; z-index: 1; display: grid; place-items: center; width: var(--disco); height: var(--disco);
+    border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 820; font-size: 18px; line-height: 1;
+    box-shadow: 0 0 0 6px var(--bg), inset 0 1px 0 rgb(255 255 255 / .4), 0 8px 16px -6px rgb(255 106 0 / .6); }
+  .sob-etapa-txt { grid-area: txt; padding-top: 6px; }
+  .sob-etapa-txt h3 { margin: 0; font-stretch: 84%; font-weight: 820; font-size: clamp(22px, 2.3vw, 30px); line-height: 1.05; letter-spacing: -.01em; color: var(--ink); text-wrap: balance; }
+  .sob-etapa-txt p { margin: 8px 0 0; max-width: 44ch; font-size: 16.5px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+  .sob-etapa-arte { grid-area: arte; margin-top: 16px; }
+  .sob-etapa-arte img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 22px; background: #efeeeb; box-shadow: var(--shadow-1); }
+
+  @media (min-width: 900px) {
+    .sob-linha { --disco: 56px; }
+    .sob-etapa { --pb: clamp(40px, 5vw, 64px); grid-template-columns: minmax(0, 1fr) var(--disco) minmax(0, 1fr); column-gap: clamp(28px, 4vw, 56px);
+      grid-template-areas: "arte num txt"; align-items: center; padding-bottom: var(--pb); }
+    .sob-etapa:last-child { --pb: 0px; }
+    .sob-etapa:nth-child(even) { grid-template-areas: "txt num arte"; }
+    .sob-etapa:nth-child(even) .sob-etapa-txt { text-align: right; justify-self: end; }
+    .sob-etapa:nth-child(even) .sob-etapa-txt p { margin-left: auto; }
+    /* o fio no meio, contínuo: cada etapa pinta a sua altura toda; a 1ª começa no centro do disco e a última
+       termina nele (o disco fica no meio da etapa, fora o respiro de baixo, --pb) */
+    .sob-etapa::before { left: calc(50% - 1.5px); top: 0; bottom: 0; }
+    .sob-etapa:first-child::before { top: calc((100% - var(--pb)) / 2); }
+    .sob-etapa:last-child::before { display: block; bottom: 50%; }
+    .sob-etapa:only-child::before { display: none; }
+    .sob-etapa-num { font-size: 22px; }
+    .sob-etapa-txt { padding-top: 0; }
+    .sob-etapa-arte { margin-top: 0; }
+  }
+
+  /* ---- legal ---- */
   .sob-selo { display: grid; place-items: center; }
   .sob-selo :global(.selo-cdv) { width: clamp(150px, 18vw, 210px); height: auto; filter: drop-shadow(0 18px 28px rgb(200 70 0 / .22)); }
+
+  /* ---- prêmio: cartão branco; o troféu inteiro, com respiro, se desfaz no branco ---- */
+  .sob-premio { position: relative; overflow: hidden; display: grid; align-items: center; margin-top: clamp(8px, 2vw, 16px);
+    border-radius: 32px; background: var(--surface); box-shadow: var(--shadow-1); }
+  .sob-premio-arte { position: relative; display: grid; place-items: center; padding: clamp(16px, 2.4vw, 32px) clamp(16px, 2.4vw, 32px) 0; }
+  /* o troféu inteiro (sem corte em cima), com a borda da arte se desfazendo no branco por todos os lados */
+  .sob-premio-arte img { display: block; width: 100%; max-width: 520px; height: auto; aspect-ratio: 4 / 3; object-fit: cover;
+    -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 58%, transparent 100%);
+    mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 58%, transparent 100%); }
+  .sob-premio-txt { display: grid; gap: 16px; justify-items: start; padding: 0 var(--pad-cartao) var(--pad-cartao); }
+  .sob-filete { display: block; width: 56px; height: 4px; border-radius: 4px; background: var(--accent); }
+  .sob-premio-titulo { margin: 0; font-size: clamp(42px, 5.6vw, 76px); color: var(--ink); }
+  .sob-premio-txt p { margin: 0; max-width: 40ch; font-size: clamp(16.5px, 1.4vw, 19px); line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+  @media (min-width: 900px) {
+    .sob-premio.com-arte { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
+    .sob-premio-arte { padding: clamp(20px, 2.6vw, 36px); }
+    .sob-premio-txt { padding: var(--pad-cartao) var(--pad-cartao) var(--pad-cartao) clamp(8px, 1.6vw, 24px); }
+  }
+
+  /* ---- onde a gente está: painel claro quente, texto à esquerda e a loja à direita, mesma altura e mesmo raio ---- */
+  .sob-onde-sec { padding-bottom: clamp(32px, 5vw, 56px); }
+  .sob-onde { display: grid; gap: 12px; padding: 12px; border-radius: 32px; background: #f6f4f0;
+    box-shadow: inset 0 0 0 1px rgb(60 40 20 / .05); }
+  .sob-onde-txt { display: grid; align-content: center; justify-items: start; padding: clamp(18px, 3vw, 40px); }
+  .sob-onde-txt .inst-h2 { margin-bottom: 14px; }
+  .sob-onde-txt p { margin: 0; max-width: 46ch; font-size: 17px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty; }
+  .sob-onde-txt b { color: var(--ink); font-weight: 650; }
   .sob-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-  .sob-loja { width: 100%; max-width: 460px; justify-self: center; }
-  @media (min-width: 900px) { .sob-loja { justify-self: end; } }
-  @media (max-width: 600px) { .sob-loja .botao { width: 100%; } }
-  .sob-premio-sec { padding-block: clamp(8px, 2vw, 16px); }
-  .sob-premio {
-    position: relative; overflow: hidden; display: grid; gap: clamp(20px, 3vw, 36px); align-items: center;
-    padding: clamp(26px, 4.4vw, 56px); border-radius: 32px; background: var(--surface); box-shadow: var(--shadow-1);
-    isolation: isolate;
-  }
-  /* fio laranja em degradê na borda superior: a marca do prêmio, sem enfeite */
-  .sob-premio::before {
-    content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; z-index: 1;
-    background: linear-gradient(90deg, transparent, var(--accent) 22%, var(--accent) 78%, transparent);
-  }
-  .sob-premio::after {
-    content: ""; position: absolute; right: -90px; top: -90px; width: 260px; height: 260px; border-radius: 50%; z-index: -1;
-    background: radial-gradient(closest-side, var(--accent-soft), transparent);
-  }
-  @media (min-width: 900px) { .sob-premio.com-arte { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); } }
-  .sob-premio-arte { border-radius: 24px; overflow: hidden; background: #efeeeb; }
-  .sob-premio-arte img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
-  .sob-premio-txt { display: grid; gap: 14px; justify-items: start; }
-  .sob-premio-selo {
-    display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px;
-    background: var(--accent); color: var(--on-accent);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 8px 16px -8px rgb(255 106 0 / .7);
-  }
-  .sob-premio-selo svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .sob-premio-txt .inst-h2 { margin: 0; }
-  .sob-premio-txt p:not(.sob-destaque) { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink-2); max-width: 52ch; }
-  .sob-destaque { margin: 8px 0 0; font-size: clamp(44px, 6.4vw, 84px); color: var(--ink); line-height: .92; }
-  .sob-destaque span { display: block; font-size: .42em; font-weight: 700; color: var(--accent-text); letter-spacing: 0; text-transform: none; }
-  @media (prefers-reduced-motion: no-preference) { .sob-premio-selo { transition: transform .4s ease; } }
+  .sob-onde .sob-loja { border-radius: 24px; align-content: center; padding: clamp(22px, 3vw, 40px); box-shadow: 0 1px 2px rgb(16 16 20 / .05), 0 10px 24px -14px rgb(60 40 20 / .25); }
+  @media (min-width: 900px) { .sob-onde { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  @media (max-width: 600px) { .sob-onde .botao { width: 100%; } .sob-acoes { width: 100%; } }
+
+  .sob-banner { padding-bottom: clamp(16px, 2.4vw, 32px); }
 </style>

@@ -5,10 +5,16 @@
 // Volvo" bate com o catálogo filtrado pela marca. A contagem por ano usa a regra do catálogo
 // (ano dentro da faixa da peça). Marca sem modelo lido no título (ex.: Mini) vem com modelos = [].
 // A peça que serve em 2+ carros ("Volvo S60 Xc60") conta em cada um, com a faixa de anos daquele carro.
-import { pecas, marcasVisiveis, logoInfo } from './dados';
+// Arte do carro (o "cartão do seu carro" da abertura): a mesma public/arte/v2/carro-<k>.webp do /carros, com o k do
+// resumo; `as` = as larguras do srcset (só se as variantes foram feitas da arte atual, lib/variantes.ts).
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { pecas, marcasVisiveis, logoInfo, resumo } from './dados';
 import { modelosDa, anosNoModelo } from './meuCarro';
+import { srcsetArte } from './variantes';
 
-export type ModeloG = { n: string; c: number; ya: [number, number][] };
+/** a = chave da arte (/arte/v2/carro-<a>.webp), as = larguras do srcset ([600, 900, 1200]: -600, -900 e a inteira). */
+export type ModeloG = { n: string; c: number; ya: [number, number][]; a?: string; as?: number[] };
 /** logo = arquivo com as cores da marca; lw/lh = tamanho de exibição dentro do disco. */
 export type MarcaG = { n: string; k: string; logo: string | null; lw: number; lh: number; c: number; modelos: ModeloG[] };
 export type GaragemG = { v: number; total: number; marcas: MarcaG[] };
@@ -17,6 +23,15 @@ export type GaragemG = { v: number; total: number; marcas: MarcaG[] };
 export const LOGO_CAIXA: [number, number] = [46, 34];
 
 let memo: GaragemG | null = null;
+
+/** Arte do carro (marca + modelo exatamente como nos dados), se existir. */
+function arteDo(b: string, m: string): Pick<ModeloG, 'a' | 'as'> {
+  const k = resumo().carros.find((c) => c.b === b && c.m === m)?.k;
+  if (!k || !existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`))) return {};
+  const ss = srcsetArte(`/arte/v2/carro-${k}.webp`);
+  const as = ss ? [...ss.matchAll(/ (\d+)w/g)].map((x) => Number(x[1])) : [];
+  return as.length ? { a: k, as } : { a: k };
+}
 
 export function garagem(): GaragemG {
   if (memo) return memo;
@@ -44,9 +59,9 @@ export function garagem(): GaragemG {
       c: m.c,
       modelos: [...modelos.get(m.n)!.values()]
         .sort((a, b) => b.c - a.c || a.n.localeCompare(b.n, 'pt-BR'))
-        .map((mo) => ({ n: mo.n, c: mo.c, ya: [...mo.ya.entries()].sort((a, b) => b[0] - a[0]) })),
+        .map((mo) => ({ n: mo.n, c: mo.c, ya: [...mo.ya.entries()].sort((a, b) => b[0] - a[0]), ...arteDo(m.n, mo.n) })),
     };
   });
-  memo = { v: 2, total: pecas().length, marcas };
+  memo = { v: 3, total: pecas().length, marcas };
   return memo;
 }

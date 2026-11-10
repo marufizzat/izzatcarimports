@@ -4,10 +4,13 @@ import { join } from 'node:path';
 import Pagina from '../layouts/Pagina.astro';
 import Catalogo from '../components/catalogo/Catalogo';
 import SeloReputacao from '../components/SeloReputacao.astro';
-import { resumo, logoInfo, SITE } from '../lib/dados';
+import { resumo, logoInfo, SITE, pecas } from '../lib/dados';
+import TodasAsPecas from '../components/categoria/TodasAsPecas.astro';
 import { Busca, capaItem, foto, type Indice } from '../lib/busca';
 import { idsMaisNovos } from '../components/catalogo/etiqueta';
 const r = resumo();
+// peças do bloco "Outros" (sem página de categoria): o único link delas fica no pé do catálogo
+const foraDasCategorias = pecas().filter((p) => p.c === 'Outros');
 // A 1ª tela vem pronta no HTML (no 4G, sem esperar o índice de ~360 KB): as 24 primeiras da ordem padrão e os
 // filtros, feitos com o MESMO public/dados/busca.json que o navegador baixa depois (os cartões não mudam quando ele chega).
 // Sem JS, é isto que aparece (e o Google lê), com os atalhos do pé.
@@ -61,9 +64,9 @@ const confianca: [string, string][] = [
         <div class="cat-cabeca-linha">
           <h1 class="display" data-cat-titulo>Catálogo de peças</h1>
           {/* título com os filtros do endereço, antes da pintura (a MESMA regra de tituloCatalogo em Catalogo.tsx) */}
-          <script is:inline>(function(){var u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},a=Number(g('ano'))||0,t=g('tipo'),sb=g('sub'),carro=[g('marca'),g('modelo')].filter(Boolean).join(' '),base=sb?sb:t?(t==='Outros'?'Outras peças':/^peças/i.test(t)?t:'Peças de '+t.toLowerCase()):'Peças',h=carro?base+' para '+carro+(a?' '+a:''):a?base+' para carro ano '+a:t||sb?base:'';if(h){var e=document.querySelector('[data-cat-titulo]');if(e)e.textContent=h;document.title=h+' | Izzat Car Imports'}})();</script>
+          <script is:inline>(function(){var u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},a=Number(g('ano'))||0,t=g('tipo'),sb=g('sub'),carro=[g('marca'),g('modelo')].filter(Boolean).join(' '),q=g('q'),base=sb?sb:t?(t==='Outros'?'Outras peças':/^peças/i.test(t)?t:'Peças de '+t.toLowerCase()):'Peças',h=q&&!carro&&!a&&!t&&!sb?'Resultados para “'+q+'”':carro?base+' para '+carro+(a?' '+a:''):a?base+' para carro ano '+a:t||sb?base:'';if(h){var e=document.querySelector('[data-cat-titulo]');if(e)e.textContent=h;document.title=h+' | Izzat Car Imports'}})();</script>
           <p class="cat-lead">Peças originais de desmanche legal <span class="cat-nowrap">(CDV Detran-RS nº 01060)</span>.<span class="cat-lead-extra"> Ache pelo nome, pelo carro ou pelo código gravado na peça.</span></p>
-          <ul class="cat-confianca" aria-label="Em toda peça">
+          <ul class="cat-confianca" aria-label="Em toda peça" data-rola>
             {confianca.map(([t, d]) => (
               <li><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={d} />{t}</li>
             ))}
@@ -75,7 +78,7 @@ const confianca: [string, string][] = [
       </Catalogo>
       <nav class="cat-atalhos" aria-label="Atalhos do catálogo">
         <div>
-          <h2>Por sistema do carro</h2>
+          <h2>Por categoria</h2>
           <ul>{r.familias.filter((f) => f.n !== 'Outros').map((f) => <li><a href={`/categoria/${f.k}.html`}>{f.n}</a></li>)}</ul>
         </div>
         <div>
@@ -83,9 +86,16 @@ const confianca: [string, string][] = [
           <ul>{r.carros.slice(0, 24).map((c) => <li><a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a></li>)}<li><a class="cat-atalhos-todos" href="/carros.html">Todos os carros</a></li></ul>
         </div>
       </nav>
+      {/* as peças fora das categorias ("Outros" não tem página): o link delas mora aqui (auditoria 3, 9.1) */}
+      <TodasAsPecas lista={foraDasCategorias} titulo={`Outras peças, fora das categorias (${foraDasCategorias.length})`} agrupar={false} id="outras-pecas" />
     </div>
   </div>
 </Pagina>
+
+<script>
+  import { paradaSeRolar } from '../lib/trilhoFoco';
+  paradaSeRolar('[data-rola]');
+</script>
 
 <style is:global>
   /* ===== Catálogo (vitrine) ===== */
@@ -95,7 +105,7 @@ const confianca: [string, string][] = [
   /* topo compacto: a vitrine aparece já na primeira tela (também em notebook 1366×768 e no celular) */
   .cat-cabeca { padding-block: 10px 16px; }
   .cat-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 6px; font-size: 13.5px; color: var(--ink-3); }
-  .cat-trilha a { color: var(--ink-2); padding-block: 6px; }
+  .cat-trilha a { color: var(--ink-2); padding: 12px 6px; margin: -6px -6px; }
   .cat-trilha a:hover { color: var(--ink); text-decoration: underline; }
   @media (max-width: 639px) { .cat-trilha { display: none; } .cat-cabeca { padding-top: 16px; } }
   .cat-cabeca-linha { display: grid; gap: 8px; grid-template-areas: "titulo" "lead" "confianca"; }
@@ -112,9 +122,12 @@ const confianca: [string, string][] = [
     box-shadow: inset 0 0 0 1px var(--line); font-size: 13.5px; font-weight: 620; line-height: 1.25; color: var(--ink); white-space: nowrap; }
   @media (max-width: 639px) {
     .cat-lead-extra { display: none; }
-    .cat-confianca { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 2px 16px;
+    /* a fila desliza de lado (a 1ª tela fica para os cartões); a lista tem parada no Tab (tabindex) para quem usa
+       teclado chegar ao "Envio para todo o Brasil" (WCAG 2.1.1) */
+    .cat-confianca { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: -3px -16px; padding: 5px 16px;
       -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
     .cat-confianca::-webkit-scrollbar { display: none; }
+    .cat-confianca:focus-visible { outline-offset: -2px; -webkit-mask-image: none; mask-image: none; }
     .cat-confianca li { padding: 8px 12px 8px 10px; font-size: 13px; }
   }
   .cat-nowrap { white-space: nowrap; }
@@ -136,7 +149,7 @@ const confianca: [string, string][] = [
   @media (min-width: 1024px) { .cat-busca { height: 58px; padding-left: 18px; } .cat-busca input { font-size: 17px; } .cat-busca .botao { --h: 44px; } }
   .cat-buscar { display: none; }
   @media (min-width: 1024px) { .cat-buscar { display: inline-flex; } }
-  .cat-limpar-texto { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ink-3); }
+  .cat-limpar-texto { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ink-3); }
   .cat-limpar-texto:hover { color: var(--ink); background: var(--surface-2); }
   .cat-limpar-texto svg { width: 18px; height: 18px; }
   .cat-abrir-filtros { position: relative; flex: none; display: inline-flex; align-items: center; gap: 8px; height: 54px; padding: 0 16px 0 14px; border: 0; border-radius: 14px;
@@ -227,7 +240,7 @@ const confianca: [string, string][] = [
     background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 14px; color: var(--ink-3); cursor: pointer; }
   .cat-ordem:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
   .cat-ordem:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 80%); }
-  .cat-ordem select { appearance: none; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 680; cursor: pointer; }
+  .cat-ordem select { appearance: none; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 16px; font-weight: 680; cursor: pointer; }
   .cat-ordem select:focus-visible { outline: none; box-shadow: none; }
   .cat-ordem svg { position: absolute; right: 12px; top: 50%; width: 16px; height: 16px; margin-top: -8px; color: var(--ink-3); pointer-events: none; }
   @media (max-width: 560px) { .cat-ordem > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
@@ -240,7 +253,7 @@ const confianca: [string, string][] = [
   .cat-ficha:hover svg { color: var(--ink); }
   .cat-ficha-logo { width: 30px; height: 26px; margin-left: -8px; flex: none; display: grid; place-items: center; border-radius: 99px; background: #f3f2ef; }
   .cat-ficha-logo img { display: block; max-width: 20px; max-height: 15px; width: auto; height: auto; }
-  .cat-limpar { flex: none; min-height: 40px; padding: 0 8px; border: 0; background: none; font-weight: 650; font-size: 14px; color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+  .cat-limpar { flex: none; min-height: 44px; padding: 0 8px; border: 0; background: none; font-weight: 650; font-size: 14px; color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
   /* celular: as fichas numa linha só que rola de lado (altura fixa: o lugar delas é guardado antes da pintura) */
   @media (max-width: 639px) {
     .cat-ativos { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 2px 16px;
@@ -331,7 +344,7 @@ const confianca: [string, string][] = [
   .cat-atalhos ul { list-style: none; margin: 0; padding: 0; columns: 2 150px; column-gap: 24px; }
   @media (min-width: 900px) { .cat-atalhos div + div ul { columns: 3 150px; } }
   .cat-atalhos li { break-inside: avoid; }
-  .cat-atalhos a { display: inline-block; padding: 6px 0; font-size: 14.5px; line-height: 1.35; color: var(--ink-2); }
+  .cat-atalhos a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0; font-size: 14.5px; line-height: 1.3; color: var(--ink-2); }
   .cat-atalhos a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
   .cat-atalhos .cat-atalhos-todos { font-weight: 650; color: var(--accent-text); }
 </style>

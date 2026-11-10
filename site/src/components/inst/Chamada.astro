@@ -7,7 +7,7 @@ import Icone from '../Icone.astro';
 import CartaoWhats from './CartaoWhats.astro';
 import { whatsUrl } from '../../lib/dados';
 interface Props { titulo: string; texto: string; mensagem?: string; rotulo?: string; id?: string; arte?: string; arteAlt?: string; }
-const { titulo, texto, mensagem = 'Olá! Vim pelo site e estou procurando uma peça.', rotulo = 'Chamar no WhatsApp', id, arte, arteAlt = '' } = Astro.props;
+const { titulo, texto, mensagem = 'Estou procurando uma peça.', rotulo = 'Chamar no WhatsApp', id, arte, arteAlt = '' } = Astro.props;
 const url = whatsUrl(mensagem);
 ---
 <div class="moldura inst-sec inst-sec-fim">

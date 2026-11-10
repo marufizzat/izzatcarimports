@@ -5,9 +5,10 @@
 // Estilos globais presos a .guia-codigo (sem o atributo de escopo em cada tag).
 import Icone from '../Icone.astro';
 import { whatsUrl } from '../../lib/dados';
-interface Props { cod: string; titulo: string; url: string; }
-const { cod, titulo, url } = Astro.props;
-const msg = `Olá! Quero conferir se esta peça é igual à minha:\n${titulo}\n${url}\n\nVou mandar a foto do código da minha peça.`;
+// peca: o bloco da peça para a mensagem (lib/whats.ts: nome limpo, carro, anos, código e link)
+interface Props { cod: string; peca: string; }
+const { cod, peca } = Astro.props;
+const msg = `Quero conferir se esta peça é igual à minha:\n\n${peca}\n\nVou mandar a foto do código da minha peça.`;
 ---
 <section class="secao guia-codigo" id="como-achar-codigo" aria-labelledby="guia-codigo-titulo">
   <div class="moldura">

@@ -39,7 +39,8 @@ const sub = subPronto
         <h2 class="titulo-secao">{titulo}</h2>
         <p class="dmc-sub">{sub}</p>
       </div>
-      <a class="botao botao-linha" href={link}>Ver as {total} peças</a>
+      {/* o link abre o carro em todos os anos: o rótulo diz isso ("do Cruze"), sem prometer a geração desta peça */}
+      <a class="botao botao-linha" href={link}>Ver as {total} peças{modelo ? ` do ${modelo}` : ''}</a>
     </div>
     {pecas.length > 0 && <div class="trilho dmc-grade">{pecas.map((x) => <CartaoPeca p={x} />)}</div>}
     {outras.length > 0 && (

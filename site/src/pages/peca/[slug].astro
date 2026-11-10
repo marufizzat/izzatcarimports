@@ -7,8 +7,11 @@ import AbasDetalhes from '../../components/peca/AbasDetalhes.astro';
 import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
+import { blocoPeca, DESCONTO_WHATS } from '../../lib/whats';
+import { modelosDa } from '../../lib/meuCarro';
 import { doMesmoCarro } from '../../lib/relacionadas';
 import { nomeModelos } from '../../lib/meuCarro';
+import { nomeCompleto, nomeMensagem } from '../../lib/nomePeca';
 import type { Peca } from '../../lib/dados';
 
 export function getStaticPaths() {
@@ -35,9 +38,7 @@ function porCarro(): Map<string, Peca[]> {
 // "Fechadura" sem marca, por exemplo); contado uma vez por build.
 const anosDe = (y: Peca['y'], sep: string) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}${sep}${y[1]}`) : '');
 function tituloBase(x: Peca): string {
-  const nome = nomeModelos(x);
-  const cod = codigoDaPeca(x.oem);
-  return [x.n, nome, anosDe(x.y, '–'), cod].filter(Boolean).join(' ');
+  return nomeCompleto(x);
 }
 let _titulos: Map<string, number> | null = null;
 function tituloRepetido(t: string): boolean {
@@ -82,7 +83,11 @@ const unica = p.q === 1;
 // código só quando parece código de verdade (5+ com letra e número, ou 6+ dígitos), em maiúsculas
 const codigo = codigoDaPeca(p.oem);
 const base = tituloBase(p);
-const titulo = `${base}${tituloRepetido(base) ? ` ${p.id}` : ''} | Izzat Car`;
+// o nome da peça fora da página (aba, schema, GA4/Pixel): o mesmo do título, nunca o título cru do ML (lib/nomePeca.ts)
+const nomeFora = `${base}${tituloRepetido(base) ? ` ${p.id}` : ''}`;
+const titulo = `${nomeFora} | Izzat Car`;
+// a linha da peça nas mensagens do WhatsApp: "Nome · Carro anos · Cód. X" (o link leva o MLB para achar o anúncio)
+const linhaPeca = nomeMensagem(p);
 // descrição (Google e prévia do link): o nome limpo + carro + anos, nunca o título cru do anúncio
 const sobre = `${p.n} original${carros ? ` ${p.m ? 'do' : 'de'} ${carros}` : ''}${anosTxt ? `, ${anosTxt}` : ''}${codigo ? `, código ${codigo}` : ''}`;
 const descricao = `${sobre}. Peça usada, de carro com baixa legal no Detran-RS. R$ ${brl(p.p)}, nota fiscal e 90 dias de garantia.`;
@@ -91,13 +96,17 @@ if (fam && fam.n !== 'Outros') trilha.push([fam.n, `/categoria/${fam.k}.html`]);
 if (carro) trilha.push([`${carro.b} ${carro.m}`, `/carros/${carro.k}.html`]);
 else if (marca) trilha.push([marca.n, `/marca/${marca.k}.html`]);
 const capa = capaEstudio(p.id);
+// WhatsApp (lib/whats.ts): a peça pelo nome limpo, carro, anos e código (nunca o título cru do anúncio); o carro da
+// pessoa já vem com a marca e o modelo da peça (só o ano em branco), como no botão "Pedir no WhatsApp".
+const pecaMsg = blocoPeca({ linha: linhaPeca, url });
+const meuCarroMsg = !p.b ? 'Meu carro é ____ (modelo) ____ (ano).' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____.` : `Meu carro é ${carros} ano ____.`;
 
 const ld = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'Product', name: p.t, image: [...(capa ? [SITE + capa] : []), ...p.fotos.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
+    { '@type': 'Product', name: nomeFora, image: [...(capa ? [SITE + capa] : []), ...p.fotos.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
       mpn: codigo || p.id,
-      description: `${p.t}. Peça original com procedência legal, nota fiscal e 90 dias de garantia. Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
+      description: `${descricao} Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
       brand: { '@type': 'Brand', name: p.b || 'Original' },
       category: p.s || p.c,
       offers: { '@type': 'Offer', url, price: p.p.toFixed(2), priceCurrency: 'BRL', availability: 'https://schema.org/InStock',
@@ -109,7 +118,7 @@ const ld = {
 };
 ---
 <Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(p.fotos[0], 'F') || undefined}
-        produto={{ id: p.id, name: p.t, price: p.p, category: p.c }} rodapeSelos={false}>
+        produto={{ id: p.id, name: nomeFora, price: p.p, category: p.c }} rodapeSelos={false}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   {/* prévia do link (WhatsApp, Facebook): a capa de estúdio tem sempre 1000×1000 (capas_estudio.py) */}
   {capa && <meta slot="head" property="og:image:width" content="1000" />}
@@ -131,12 +140,12 @@ const ld = {
       {unica && <span class="barra-unica"><i aria-hidden="true"></i>Peça única</span>}
     </div>
     {/* o link (com a mensagem pronta e o carro salvo) é o mesmo do botão principal: o script do PecaTopo copia */}
-    <a class="botao botao-laranja" data-whats-espelho tabindex="-1"><Icone nome="whats" /><span><span class="barra-pedir">Pedir no </span>WhatsApp</span></a>
+    <a class="botao botao-laranja" data-whats-espelho tabindex="-1"><Icone nome="whats" /><span><span class="barra-pedir">Pedir no </span>WhatsApp</span><span class="sr-only">, {DESCONTO_WHATS}% de desconto</span><span class="barra-desc" aria-hidden="true">−{DESCONTO_WHATS}%</span></a>
   </div>
 
   <AbasDetalhes p={p} serve={serve} serveRotulo={serveRotulo} />
 
-  {codigo && <GuiaCodigo cod={codigo} titulo={p.t} url={url} />}
+  {codigo && <GuiaCodigo cod={codigo} peca={pecaMsg} />}
 
   {temCarro && (
     <DoMesmoCarro carro={nomeCarro} modelo={p.m} anos={anosTxt}
@@ -152,47 +161,63 @@ const ld = {
 
   <section class="secao">
     <div class="moldura">
-      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Quero confirmar se esta peça serve no meu carro:\n${p.t}\n${url}\n\nMeu carro é ____ (modelo) ____ (ano).`)}
+      <BannerV2 nome="banner-serve" href={whatsUrl(`Quero confirmar se esta peça serve no meu carro:\n\n${pecaMsg}\n\n${meuCarroMsg}`)}
         texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
     </div>
   </section>
 </Pagina>
 
 <script>
-  // Barra fixa do celular: aparece só quando o preço grande E os botões saíram da tela (para cima ou para baixo).
-  // Assim nunca há dois preços nem dois botões iguais à vista, e a barra nunca cobre o preço (antes ela abria por
-  // cima do "670" na 1ª tela do celular de 360 px). Em celular baixinho, com tudo abaixo da dobra, ela aparece já na
-  // 1ª tela; aberta já rolada (#como-achar-codigo), também. O cabeçalho fixo cobre o topo da tela: não conta.
+  // Barra fixa do celular. Regra: a 1ª tela SEMPRE tem um botão de compra. Ela aparece sempre que o botão laranja
+  // ("Pedir no WhatsApp") não está INTEIRO à vista: abaixo da dobra no celular baixinho (já na carga), atrás do cabeçalho
+  // ou fora da tela depois de rolar. Enquanto o preço grande está inteiro à vista (acima da barra), ela vem só com o
+  // botão (.so-botao): nunca dois preços na tela e nunca a barra por cima do preço. O cabeçalho fixo cobre o topo: não conta.
   const barra = document.querySelector<HTMLElement>('[data-barra-compra]');
-  const alvos = [...document.querySelectorAll<HTMLElement>('.compra-preco-linha, [data-compra-botoes]')];
-  if (barra && alvos.length && 'IntersectionObserver' in window) {
+  const botao = document.querySelector<HTMLElement>('[data-compra-botoes] [data-whats]');
+  const preco = document.querySelector<HTMLElement>('.compra-preco-linha');
+  if (barra && botao && preco && 'IntersectionObserver' in window) {
     const topo = Math.round(document.querySelector('header.cab')?.getBoundingClientRect().height ?? 0);
-    const aVista = new Map<Element, boolean>();
+    // altura que a barra ocupa no pé da tela (com a folga de baixo e a área segura do iPhone)
+    const zona = Math.round(barra.offsetHeight + (parseFloat(getComputedStyle(barra).bottom) || 0) + 8);
     const link = barra.querySelector('a');
-    const io = new IntersectionObserver((es) => {
-      es.forEach((e) => aVista.set(e.target, e.isIntersecting));
-      const mostrar = alvos.every((a) => aVista.get(a) === false);
+    let botaoInteiro = true, precoAVista = true, precoNaTela = true;
+    const pintar = () => {
+      const mostrar = !botaoInteiro;
+      barra.classList.toggle('so-botao', precoAVista);
+      // celular muito baixo (320×480): o preço grande ficaria pela metade atrás da barra, que já mostra o preço:
+      // ele some enquanto estiver ali (volta assim que sobe para cima da barra)
+      preco.classList.toggle('sob-barra', mostrar && !precoAVista && precoNaTela);
       if (barra.classList.contains('visivel') === mostrar) return;
       barra.classList.toggle('visivel', mostrar);
       barra.setAttribute('aria-hidden', String(!mostrar));
       link?.setAttribute('tabindex', mostrar ? '0' : '-1');
-    }, { rootMargin: `-${topo}px 0px 0px 0px` });
-    alvos.forEach((a) => io.observe(a));
+    };
+    const inteiro = (e: IntersectionObserverEntry) => e.isIntersecting && e.intersectionRatio > 0.97;
+    new IntersectionObserver(([e]) => { botaoInteiro = inteiro(e); pintar(); },
+      { rootMargin: `-${topo}px 0px 0px 0px`, threshold: [0, 0.5, 0.98, 1] }).observe(botao);
+    new IntersectionObserver(([e]) => { precoAVista = inteiro(e); pintar(); },
+      { rootMargin: `-${topo}px 0px -${zona}px 0px`, threshold: [0, 0.5, 0.98, 1] }).observe(preco);
+    new IntersectionObserver(([e]) => { precoNaTela = e.isIntersecting; pintar(); },
+      { rootMargin: `-${topo}px 0px 0px 0px` }).observe(preco);
   }
 </script>
 
 <style>
   .trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding-block: 18px 14px; font-size: 13.5px; color: var(--ink-3); }
-  .trilha a { color: var(--ink-2); }
+  /* alvo de toque de 44 px (padding) sem crescer a linha (a margem negativa devolve o espaço) */
+  .trilha a { color: var(--ink-2); padding: 12px 6px; margin: -12px -6px; }
   .trilha a:hover { color: var(--ink); text-decoration: underline; }
   .trilha [aria-current] { color: var(--ink-3); max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topo { padding-bottom: 32px; }
-  /* celular: trilha numa linha só (desliza de lado), para a foto e a compra subirem */
+  /* celular: trilha numa linha só, para a foto e a compra subirem. Sem o nome desta peça (o título logo abaixo já
+     mostra; antes a linha era cortada no meio da palavra: "… / Fiat Toro / Ga"); se o carro e a categoria não
+     couberem, eles terminam em "…" (Início e Catálogo ficam inteiros) */
   @media (max-width: 959px) {
-    .trilha { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; scrollbar-width: none; padding-block: 12px 12px;
-              -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
-    .trilha::-webkit-scrollbar { display: none; }
-    .trilha > * { flex: none; }
+    .trilha { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; padding: 12px 6px; margin-inline: -6px; }
+    .trilha > * { flex: 0 0 auto; }
+    .trilha > a { flex-shrink: 1; min-width: 4ch; overflow: hidden; text-overflow: ellipsis; }
+    .trilha > a:nth-of-type(-n+2) { flex-shrink: 0; }
+    .trilha [aria-current], .trilha > span[aria-hidden]:nth-last-child(2) { display: none; }
   }
 
   .barra-compra { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 40;
@@ -210,6 +235,15 @@ const ld = {
   .barra-unica { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; line-height: 1.2; color: var(--accent-text); white-space: nowrap; }
   .barra-unica i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
   .barra-compra .botao { --h: 48px; flex: 0 1 auto; min-width: 0; height: var(--h); padding: 0 16px; font-size: 15px; white-space: nowrap; }
+  /* desconto pelo WhatsApp: "−10%" pequeno, claro e com letra grafite, dentro do botão laranja */
+  .barra-desc { flex: none; margin-left: -2px; padding: 3px 7px; border-radius: 999px; background: #fff; color: #1d1d1f;
+                font-size: 12.5px; font-weight: 800; font-stretch: 90%; line-height: 1.1; box-shadow: 0 1px 2px rgb(140 50 0 / .25); }
+  /* preço grande ainda à vista (1ª tela do celular baixinho): a barra vem só com o botão, largo */
+  .barra-compra.so-botao { padding-left: 9px; }
+  .barra-compra.so-botao .barra-info { display: none; }
+  .barra-compra.so-botao .botao { flex: 1 1 auto; font-size: 16px; }
+  .barra-compra.so-botao .barra-pedir { display: inline; }
+  :global(.compra-preco-linha.sob-barra) { visibility: hidden; }
   /* celular estreito: o botão diz só "WhatsApp" (com o ícone) */
   @media (max-width: 379px) {
     .barra-compra { gap: 8px; padding-left: 14px; }
@@ -217,6 +251,10 @@ const ld = {
     .barra-pedir { display: none; }
   }
   @media (min-width: 960px) { .barra-compra { display: none; } }
-  @media (max-width: 959px) { :global(body:has(.barra-compra)) { padding-bottom: 84px; } }
+  @media (max-width: 959px) {
+    :global(body:has(.barra-compra)) { padding-bottom: 84px; }
+    /* teclado: com a barra à vista, o elemento focado para acima dela (WCAG 2.4.11, foco não encoberto) */
+    :global(html:has(.barra-compra.visivel)) { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  }
   @media (prefers-reduced-motion: reduce) { .barra-compra, .barra-compra.visivel { transition: none; } }
 </style>

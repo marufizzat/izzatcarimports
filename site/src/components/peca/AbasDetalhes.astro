@@ -45,7 +45,7 @@ const dims = med ? ([['Comprimento', med.c], ['Largura', med.l], ['Altura', med.
       <button type="button" role="tab" id="aba-desc" aria-controls="painel-desc" aria-selected="false" tabindex="-1" data-aba="desc">Descrição</button>
     </div>
     <div class="detalhes-grade">
-      <div class="painel" id="painel-ficha" role="tabpanel" aria-labelledby="aba-ficha" data-painel="ficha">
+      <div class="painel" id="painel-ficha" data-painel="ficha">
         <h2 class="subtitulo">Ficha da peça</h2>
         <dl class="ficha">
           {ficha.map((l) => (
@@ -53,14 +53,14 @@ const dims = med ? ([['Comprimento', med.c], ['Largura', med.l], ['Altura', med.
               {l.chave === 'serve' && logo ? <dt><img class="fl-logo" src={logo.src} alt="" width={logo.w} height={logo.h} loading="lazy" />{l.rotulo}</dt> : <dt data-i={l.icone}>{l.rotulo}</dt>}
               <dd>
                 {l.html ? <Fragment set:html={l.valor} /> : l.valor.includes('\n') ? linhas(l.valor).map((x) => <span class="ficha-linha">{x.b && <b>{x.b}:</b>} {x.r}</span>) : l.valor}
-                {l.chave === 'codigo' && cod && <button type="button" class="fl-copiar" data-copiar={cod} aria-label="Copiar o código"><Icone nome="copiar" /><span>Copiar</span></button>}
+                {l.chave === 'codigo' && cod && <button type="button" class="fl-copiar" data-copiar={cod}><Icone nome="copiar" /><span>Copiar</span><span class="sr-only"> o código</span></button>}
               </dd>
             </div>
           ))}
         </dl>
         <p class="ficha-nota" data-i="anuncio"><span>No anúncio do Mercado Livre: {p.t}</span></p>
       </div>
-      <div class="painel" id="painel-desc" role="tabpanel" aria-labelledby="aba-desc" data-painel="desc">
+      <div class="painel" id="painel-desc" data-painel="desc">
         <h2 class="subtitulo">Descrição</h2>
         <div class="descricao">
           {(d.abertura.length ? d.abertura : [{ tag: 'p', itens: [] }]).map((b) => b.tag === 'p'
@@ -112,7 +112,12 @@ const dims = med ? ([['Comprimento', med.c], ['Largura', med.l], ['Altura', med.
         b.setAttribute('aria-selected', String(on));
         b.tabIndex = on ? 0 : -1;
       });
-      paineis.forEach((p) => { p.hidden = celular.matches && p.dataset.painel !== atual; });
+      // no PC as abas somem e os dois painéis ficam lado a lado: lá eles são só seções com título (sem "painel de aba")
+      paineis.forEach((p) => {
+        p.hidden = celular.matches && p.dataset.painel !== atual;
+        if (celular.matches) { p.setAttribute('role', 'tabpanel'); p.setAttribute('aria-labelledby', `aba-${p.dataset.painel}`); }
+        else { p.removeAttribute('role'); p.removeAttribute('aria-labelledby'); }
+      });
     };
     abas.forEach((b, i) => {
       b.addEventListener('click', () => { atual = b.dataset.aba!; aplicar(); });
@@ -192,9 +197,9 @@ const dims = med ? ([['Comprimento', med.c], ['Largura', med.l], ['Altura', med.
   .detalhes .fl dd { margin: 0; min-width: 0; font-size: 15.5px; font-weight: 560; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
   /* o código: o dado-chave, em mono e com o "Copiar" do lado */
   .detalhes .fl-cod dd { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-family: var(--font-mono); font-size: 16px; font-weight: 600; letter-spacing: .03em; }
-  .detalhes .fl-copiar { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 11px; border: 0; border-radius: 9px; background: var(--surface-2);
-    box-shadow: inset 0 0 0 1px var(--line-2); font-family: var(--font-sans); font-size: 13px; font-weight: 650; letter-spacing: 0; color: var(--ink); cursor: pointer; }
-  .detalhes .fl-copiar svg { width: 16px; height: 16px; }
+  .detalhes .fl-copiar { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--surface);
+    box-shadow: inset 0 0 0 1.5px var(--line-2), 0 1px 2px rgb(0 0 0 / .04); font-family: var(--font-sans); font-size: 14px; font-weight: 650; letter-spacing: 0; color: var(--ink); cursor: pointer; }
+  .detalhes .fl-copiar svg { width: 18px; height: 18px; }
   .detalhes .fl-copiar:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
   .detalhes .ficha-linha { display: block; }
   .detalhes .ficha-linha + .ficha-linha { margin-top: 6px; }

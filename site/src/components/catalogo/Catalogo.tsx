@@ -22,6 +22,7 @@ import {
   linhaCarro, codigoPeca, precoPartes, msgWhats, linkWhats, urlPeca, dadosCarro,
   CLASSE_CARTAO, VITRINE_CLARA, icone,
 } from './etiqueta';
+import { whatsUrl } from '../../lib/whats';
 
 /** Logo da marca (calculado no build por logoInfo em catalogo.astro). */
 export type Logo = { src: string; w: number; h: number };
@@ -45,7 +46,9 @@ function lerUrl(): Filtros {
   return {
     q: u.get('q') || '', marca: u.get('marca') || undefined, modelo: u.get('modelo') || undefined,
     ano, tipo: u.get('tipo') || undefined, sub: u.get('sub') || undefined, preco: u.get('preco') || undefined,
-    frete: u.get('frete') === '1' || u.get('frete') === 'true', ordem,
+    // "frete" dos links antigos: aceito no endereço, mas não filtra mais (filtrava calado: "492 peças para xc60",
+    // contra 515, sem ficha nem aviso)
+    frete: undefined, ordem,
   };
 }
 function escreverUrl(f: Filtros) {
@@ -69,7 +72,9 @@ const ehPadrao = (f: Filtros) =>
 
 /** Título da página com os filtros ("Peças para Volvo XC60 2020"). A busca de texto fica na linha do total
  *  (o título mudando a cada letra faria a página pular). A MESMA regra está no script de catalogo.astro. */
-export function tituloCatalogo(f: Filtros): string | null {
+export function tituloCatalogo(f: Filtros, busca = ''): string | null {
+  const q = busca.trim();
+  if (q && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.sub) return `Resultados para “${q}”`;
   const carro = [f.marca, f.modelo].filter(Boolean).join(' ');
   const t = f.tipo;
   const base = f.sub ? f.sub : t ? (t === 'Outros' ? 'Outras peças' : /^peças/i.test(t) ? t : `Peças de ${t.toLowerCase()}`) : 'Peças';
@@ -114,23 +119,24 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
         <div className="etiqueta-foto">
           <img ref={img} src={estudio ? capaItem(it) : foto(it.i, 'O')} srcSet={estudio ? undefined : `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`}
                sizes={estudio ? undefined : '(min-width:1280px) 240px, (min-width:768px) 28vw, 46vw'}
-               className={estudio ? 'estudio' : falha === 2 ? 'sem-capa' : undefined} alt={it.t} width={800} height={800}
+               className={estudio ? 'estudio' : falha === 2 ? 'sem-capa' : undefined} alt="" width={800} height={800}
                loading={eager ? 'eager' : 'lazy'} fetchPriority={alta ? 'high' : undefined} decoding="async" onError={falhou} />
           {novo && <span className="etiqueta-novo">Chegou agora</span>}
         </div>
         <div className="etiqueta-dados">
           <span className="etiqueta-serve" hidden={!meuModelo}>{meuModelo ? `Serve no seu ${meuModelo}` : ''}</span>
           {carro && <span className="etiqueta-carro"><span className="etiqueta-modelo">{carro}</span>{anos && <span className="etiqueta-anos"><span className="etiqueta-sep"> · </span>{anos}</span>}</span>}
-          <span className="etiqueta-nome">{it.n}</span>
+          <h3 className="etiqueta-nome">{it.n}</h3>
           {cod && <span className="etiqueta-cod" title="Código gravado na peça">Cód. <span className="oem">{cod}</span></span>}
-          <span className="etiqueta-preco num"><small>R$</small>{reais}<small><span className="sr-only">,</span>{cent}</small></span>
+          <span className="sr-only">R$ {reais},{cent}</span>
+          <span className="etiqueta-preco num" aria-hidden="true"><small>R$</small>{reais}<small>{cent}</small></span>
           <span className="etiqueta-confia">
             <svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone('garantia')} /></svg>
             <span><span className="etiqueta-confia-longo">Original · </span>90 dias de garantia</span>
           </span>
         </div>
       </a>
-      <a className="etiqueta-acao" href={linkWhats(msgWhats(it.t, it.p, urlPeca(it.h)))} target="_blank" rel="noopener"
+      <a className="etiqueta-acao" href={linkWhats(msgWhats(it, urlPeca(it.h)))} target="_blank" rel="noopener"
          aria-label={`Pedir no WhatsApp: ${it.n}`}><Whats />Pedir no WhatsApp</a>
     </div>
   );
@@ -172,7 +178,7 @@ function Opcoes({ itens, ativo, aoEscolher, limite = 8, logos, mais }: {
                   ? <span className="cat-logo" aria-hidden="true">{l ? <img src={l.src} alt="" width={l.w} height={l.h} loading="lazy" decoding="async" /> : <b>{o.rot.slice(0, 1)}</b>}</span>
                   : <span className="cat-marca" aria-hidden="true" />}
                 <span className="cat-opcao-nome">{o.rot}</span>
-                <span className="cat-opcao-qtd num">{n2(o.c)}</span>
+                <span className="cat-opcao-qtd num"><span className="sr-only">, </span>{n2(o.c)}<span className="sr-only"> {pecas(o.c)}</span></span>
               </button>
             </li>
           );
@@ -219,7 +225,7 @@ const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo
         <Grupo titulo="Ano do carro" escolhido={ano ? String(ano) : undefined}>
           <label className="seletor cat-ano"><span>Ano</span>
             <select value={ano || ''} onChange={(e) => mudar({ ano: Number(e.target.value) || undefined })}>
-              <option value="">Qualquer ano</option>
+              <option value="">Todos os anos</option>
               {anos.map(([a, c]) => <option key={a} value={a}>{c ? `${a} · ${n2(c)} ${pecas(c)}` : String(a)}</option>)}
             </select>
           </label>
@@ -231,8 +237,8 @@ const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo
         </Grupo>
       )}
       {tipos.length > 0 && (
-        <Grupo titulo="Sistema do carro" escolhido={tipo}>
-          <Opcoes itens={tipos} ativo={tipo} limite={8} mais="Ver todos os sistemas" aoEscolher={(v) => mudar({ tipo: v, sub: undefined })} />
+        <Grupo titulo="Categoria" escolhido={tipo}>
+          <Opcoes itens={tipos} ativo={tipo} limite={8} mais="Ver todas as categorias" aoEscolher={(v) => mudar({ tipo: v, sub: undefined })} />
         </Grupo>
       )}
       {tipo && subs.length > 0 && (
@@ -304,6 +310,9 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   const [erro, setErro] = useState(false);
   const [f, setF] = useState<Filtros>({});
   const [urlLida, setUrlLida] = useState(false);
+  // busca no título ("Resultados para “farol compass”"): a que veio no endereço ou a enviada com Enter; enquanto a
+  // pessoa digita, o título não muda a cada letra (a página pularia)
+  const [qTitulo, setQTitulo] = useState('');
   const [qtd, setQtd] = useState(LOTE);
   const [gaveta, setGaveta] = useState(false);
   const banda = useRef<HTMLDivElement>(null);
@@ -340,7 +349,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   useEffect(() => {
     tituloPadrao.current = document.title;
     const ini = lerUrl();
-    setF(ini); setUrlLida(true);
+    setF(ini); setQTitulo(ini.q || ''); setUrlLida(true);
     if (!ehPadrao(ini) || !iniciais.length) { carregar(); return; }
     // a 1ª tela já veio no HTML: o índice espera as fotos dela (load) e o navegador folgar
     const ir = () => ('requestIdleCallback' in window ? requestIdleCallback(() => carregar(), { timeout: 1200 }) : setTimeout(carregar, 300));
@@ -377,12 +386,12 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   // título da página com os filtros (o script de catalogo.astro já pôs o do endereço antes da pintura)
   useEffect(() => {
     if (!urlLida) return;
-    const t = tituloCatalogo(f);
+    const t = tituloCatalogo(f, qTitulo);
     const h1 = document.querySelector<HTMLElement>('[data-cat-titulo]');
     const novo = t ?? 'Catálogo de peças';
     if (h1 && h1.textContent !== novo) h1.textContent = novo;
     document.title = t ? `${t} | Izzat Car Imports` : tituloPadrao.current;
-  }, [urlLida, f.marca, f.modelo, f.ano, f.tipo]);
+  }, [urlLida, f.marca, f.modelo, f.ano, f.tipo, f.sub, qTitulo]);
 
   // a banda da busca ganha linha e sombra só quando está grudada no topo (celular)
   useEffect(() => {
@@ -406,8 +415,8 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   }), []);
   const muda = useCallback((parcial: Partial<Filtros>) => { setF((o) => ({ ...o, ...parcial })); carregar(); }, [carregar]);
   const mudaFiltro = useCallback((parcial: Partial<Filtros>) => { muda(parcial); voltaAoTopo(); }, [muda, voltaAoTopo]);
-  const mudaTexto = useCallback((q: string) => { muda({ q }); voltaAoTopo('auto'); }, [muda, voltaAoTopo]);
-  const enviaTexto = useCallback((q: string) => { muda({ q }); voltaAoTopo(); }, [muda, voltaAoTopo]);
+  const mudaTexto = useCallback((q: string) => { muda({ q }); setQTitulo(''); voltaAoTopo('auto'); }, [muda, voltaAoTopo]);
+  const enviaTexto = useCallback((q: string) => { muda({ q }); setQTitulo(q); voltaAoTopo(); }, [muda, voltaAoTopo]);
 
   // fichas do que está escolhido (a busca de texto já aparece no campo, com o "×" dele; o parâmetro antigo
   // "frete" dos links continua filtrando, sem ficha)
@@ -419,7 +428,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   if (f.sub) ativos.push({ k: 'sub', rot: f.sub, tirar: () => mudaFiltro({ sub: undefined }) });
   if (f.preco) ativos.push({ k: 'preco', rot: FAIXAS.find((x) => x[0] === f.preco)?.[1] || f.preco, tirar: () => mudaFiltro({ preco: undefined }) });
   const nFiltros = ativos.length;
-  const limpar = () => { setF({ ordem: f.ordem }); voltaAoTopo(); };
+  const limpar = () => { setF({ ordem: f.ordem }); setQTitulo(''); voltaAoTopo(); };
   const limparFiltros = () => { setF({ q: f.q, ordem: f.ordem }); };
 
   const filtros = facetas
@@ -480,7 +489,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   // "Avise-me quando chegar": com carro no filtro, na busca ou salvo no Meu carro (só fatos, sem prazo)
   const carroAviso = carroFiltro ? `${carroFiltro}${ano ? ` ${ano}` : ''}` : meuCarro ? nomeCarro(meuCarro) : '';
   const avise = carroAviso
-    ? linkWhats(`Olá! Procuro ${oQue === 'peça' ? 'peças' : oQue} para ${carroAviso}. Quero ser avisado quando chegar no pátio.`)
+    ? whatsUrl(`Procuro ${oQue === 'peça' ? 'peças' : oQue} para ${carroAviso}. Quero ser avisado quando chegar no pátio.`)
     : '';
   const botaoAvise = avise ? (
     <a className="botao botao-linha cat-avise" href={avise} target="_blank" rel="noopener"><Sino />Avise-me quando chegar</a>
@@ -511,12 +520,13 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
 
         <section className="cat-resultados" ref={resultadosRef} aria-busy={carregando} aria-labelledby="cat-total">
           <div className="cat-barra">
-            <p className="cat-total" id="cat-total" aria-live="polite">
+            {/* o total é o título da lista (h2): os cartões são h3 */}
+            <h2 className="cat-total" id="cat-total" aria-live="polite">
               {erro && !busca ? null
                 : total === null ? <span className="cat-total-espera">Buscando peças…</span>
                 : aproximado ? <span className="cat-total-aprox">Nenhuma peça com “{f.q}” · {n2(total)} parecidas</span>
                 : <><b className="num">{n2(total)}</b> {pecas(total)}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
-            </p>
+            </h2>
             <div data-selo-reputacao>{selo}</div>
             {!vazio && (
               <label className="cat-ordem">
@@ -554,7 +564,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
               </div>
               <div className="cat-erro-botoes">
                 <button type="button" className="botao botao-laranja" onClick={carregar}>Tentar de novo</button>
-                <a className="botao botao-linha" href={linkWhats(`Olá! Procuro ${procuro}. Tem no pátio?`)} target="_blank" rel="noopener"><Whats />Chamar no WhatsApp</a>
+                <a className="botao botao-linha" href={whatsUrl(`Procuro ${procuro}. Tem no pátio?`)} target="_blank" rel="noopener"><Whats />Chamar no WhatsApp</a>
               </div>
             </div>
           )}
@@ -565,7 +575,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
               <h2>Nada {f.q ? <>com “{f.q}”</> : 'com esses filtros'} no site.</h2>
               <p>Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp que a gente procura no pátio.</p>
               <div className="cat-vazio-botoes">
-                <a className="botao botao-laranja" href={linkWhats(`Olá! Procuro ${procuro}. Tem no pátio?`)} target="_blank" rel="noopener"><Whats /><span>Procurar no pátio<span className="cat-so-largo"> pelo WhatsApp</span></span></a>
+                <a className="botao botao-laranja" href={whatsUrl(`Procuro ${procuro}. Tem no pátio?`)} target="_blank" rel="noopener"><Whats /><span>Procurar no pátio<span className="cat-so-largo"> pelo WhatsApp</span></span></a>
                 {botaoAvise}
                 {(nFiltros > 0 || !!f.q) && <button type="button" className="botao botao-linha" onClick={limpar}>{nFiltros > 0 ? 'Limpar filtros' : 'Limpar a busca'}</button>}
               </div>
@@ -580,7 +590,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
                 <span>A gente procura no pátio pelo WhatsApp. Abaixo, as parecidas{blocos && carroDaBusca ? <>: primeiro as do {carroDaBusca.b} {carroDaBusca.m}</> : null}.</span>
               </div>
               <div className="cat-aviso-botoes">
-                <a className="botao botao-laranja" href={linkWhats(`Olá! Procuro ${procuro}. Não achei no site, tem no pátio?`)} target="_blank" rel="noopener"><Whats />Procurar no pátio</a>
+                <a className="botao botao-laranja" href={whatsUrl(`Procuro ${procuro}. Não achei no site, tem no pátio?`)} target="_blank" rel="noopener"><Whats />Procurar no pátio</a>
                 {botaoAvise}
               </div>
             </div>

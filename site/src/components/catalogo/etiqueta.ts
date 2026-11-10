@@ -1,6 +1,7 @@
 // Regras do cartão da peça, as MESMAS no build (CartaoPeca.astro) e no navegador (Catalogo.tsx).
 // Sem node:fs: este arquivo roda nos dois lados.
-import { atributosModelos } from '../../lib/meuCarro';
+import { atributosModelos, nomeModelos } from '../../lib/meuCarro';
+import { mensagemPeca, anosTexto } from '../../lib/whats';
 
 /** INTERRUPTOR DA VITRINE (um só, vale para o site inteiro):
  *  true  = B "vitrine clara": o cartão da peça é sempre claro (tema de estúdio), também no modo escuro;
@@ -11,7 +12,8 @@ export const VITRINE_CLARA = true;
 export const CLASSE_CARTAO = VITRINE_CLARA ? 'etiqueta-cx tema-estudio' : 'etiqueta-cx';
 
 export const SITE = 'https://izzatcarimports.com.br';
-export const WHATS = '5553991170950';
+// número e links do WhatsApp: um lugar só (lib/whats.ts)
+export { WHATS, linkWhats } from '../../lib/whats';
 /** Quantas peças mais novas levam o selo "Chegou agora" (o mesmo número de resumo().chegou). */
 export const QTD_CHEGOU = 24;
 
@@ -38,16 +40,11 @@ export function codigoPeca(o?: string | null): string {
   return t ? t.toUpperCase() : '';
 }
 
-/** Mesma mensagem do botão da página da peça. */
-export function msgWhats(titulo: string, preco: number, url: string) {
-  return msgWhatsTexto(titulo, brl(preco), url);
-}
-/** A mesma mensagem com o preço já escrito ("1.234,56"): o cartão do build lê o preço do próprio cartão. */
-export function msgWhatsTexto(titulo: string, precoBRL: string, url: string) {
-  return `Olá! Vi no site esta peça:\n\n${titulo}\nR$ ${precoBRL}\n${url}\n\nServe e ainda tem?`;
-}
-export function linkWhats(texto: string) {
-  return `https://wa.me/${WHATS}?text=${encodeURIComponent(texto)}`;
+/** "Pedir no WhatsApp" do cartão: a MESMA mensagem do botão da página da peça (lib/whats.ts: nome limpo, carro, anos,
+ *  código, preço e link; nunca o título cru do anúncio). */
+export function msgWhats(x: { n: string; b?: string | null; m?: string | null; y?: [number, number] | null; ms?: string[] | null;
+                              o?: string | null; p: number }, url: string) {
+  return mensagemPeca({ nome: x.n, carro: nomeModelos({ b: x.b || '', m: x.m || '', ms: x.ms || undefined }), anos: anosTexto(x.y), cod: codigoPeca(x.o), preco: brl(x.p), url });
 }
 export function urlPeca(slug: string, base = '/peca/') {
   return `${SITE}${base}${slug}.html`;

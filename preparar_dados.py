@@ -421,15 +421,44 @@ _TROCAS = [
     (re.compile(r"\b(pelo|no) chat\b", re.I), r"\1 WhatsApp"),
     (re.compile(r"\bC[oó]digo OEM \(Original Equipment Manufacturer\)"), "Código OEM"),
     (re.compile(r"(?<=[a-zà-ÿ,] )Ou(?= [a-zà-ÿ])"), "ou"),
+    # Promessa pronta do modelo de anuncio (auditoria 3, item 2.1): "Mesmo OEM = encaixe perfeito, sem adaptacoes,
+    # sem furadeira" vira o fato ("mesmo codigo do original"); "sem adaptacoes"/"sem furadeira" saem em qualquer frase.
+    (re.compile(r",?\s*sem adapta[cç][oõ]es\b", re.I), ""),
+    (re.compile(r",?\s*sem furadeira\b", re.I), ""),
+    (re.compile(r"\bMesmo OEM\s*=\s*encaixe perfeito\b", re.I), "Mesmo código do original"),
+    # o site nao tem "anuncio": as fotos sao as da peca (a mesma foto do ML)
+    (re.compile(r"\b(fotos?|imagens?) (reais )?do an[uú]ncio\b", re.I), r"\1 \2da peça"),
 ]
+# Estado prometido sem olhar a peca ("Em excelente estado de conservação", "semi nova", "perfeito funcionamento"):
+# a frase vira o fato neutro. O rotulo fica ("Condição: Peça usada conferida; ...").
+ESTADO_NEUTRO = "Peça usada conferida; o estado aparece nas fotos"
+_PROMESSA_ESTADO = re.compile(r"\b(excelente estado|estado excelente|[oó]timo estado|perfeito funcionamento|"
+                              r"funcionamento perfeito|funcionando perfeitamente|semi ?nov[ao]|seminov[ao]|"
+                              r"sem defeitos?|zero defeitos?|nenhum defeito)\b", re.I)
+# Promessa que sai com a frase: "100% testado", "garantido/a", "encaixe perfeito" fora do modelo, o "testada e
+# aprovada pela nossa equipe tecnica" (ninguem confirmou que vale para toda peca).
+_PROMESSA_FORA = re.compile(r"\b100\s*%|\bgarantid[ao]s?\b|\bencaixe perfeito\b|\btestad[ao]s? e aprovad[ao]s?\b|"
+                            r"\baprovad[ao]s? pela nossa equipe\b", re.I)
+_ROTULO_FRASE = re.compile(r"^([A-Za-zÀ-ÿ][^:]{0,38}):\s+")
+
+
+def _sem_promessa(f):
+    """Uma frase: promessa de estado vira o texto neutro (com o rotulo, se tiver); outra promessa tira a frase."""
+    if _PROMESSA_ESTADO.search(f):
+        m = _ROTULO_FRASE.match(f)
+        fim = f.rstrip()[-1:]
+        return (m.group(0) if m else "") + ESTADO_NEUTRO + (fim if fim in ".;!" else "" if m else ".")
+    if _PROMESSA_FORA.search(f):
+        return ""
+    return f
 
 
 def _limpar_frases(t):
-    """Troca o "chat do anuncio" pelo WhatsApp, tira "sem giria" e as frases sem dado."""
+    """Troca o "chat do anuncio" pelo WhatsApp, tira "sem giria", as frases sem dado e as promessas prontas."""
     for rx, novo in _TROCAS:
         t = rx.sub(novo, t)
     frases = re.split(r"(?<=[.!?;])\s+(?=[A-ZÀ-Ý0-9])", t.strip())
-    return " ".join(f for f in frases if not _FRASE_FORA.search(f)).strip()
+    return " ".join(f for f in (_sem_promessa(f) for f in frases if not _FRASE_FORA.search(f)) if f).strip()
 
 
 def _anos_em_faixa(t):
@@ -593,6 +622,30 @@ def descricao(texto, nome=""):
             par.append(linha)
     fechar()
     blocos = _sem_repetidos(blocos)
+    # o texto neutro do estado so uma vez (o modelo dizia "excelente estado" na lista E no paragrafo)
+    viu, limpos = False, []
+    for tag, ts in blocos:
+        if tag in ("ul", "ol"):
+            novos = []
+            for t in ts:
+                if ESTADO_NEUTRO in t:
+                    if viu:
+                        continue
+                    viu = True
+                novos.append(t)
+            ts = novos
+        elif tag == "p" and ESTADO_NEUTRO in ts[0]:
+            frases = []
+            for f in re.split(r"(?<=[.!?])\s+", ts[0]):
+                if ESTADO_NEUTRO in f:
+                    if viu:
+                        continue
+                    viu = True
+                frases.append(f)
+            ts = [" ".join(frases)] if frases else []
+        if ts:
+            limpos.append([tag, ts])
+    blocos = limpos
     if nome:   # "Peça: Maçaneta Interna Esq" (o titulo abreviado de novo) -> o nome limpo, se for a mesma peca
         primeira = _sem(nome.split()[0]) if nome.split() else ""
         for tag, ts in blocos:
@@ -1430,6 +1483,7 @@ TIPO_LOJA = {
     "Corpo de Borboleta": "Corpos de Borboleta", "Kits de Engrenagens Borboleta": "Corpos de Borboleta",
     "Módulo de Injeção": "Módulos de Injeção",
     "Válvulas Canister": "Válvulas e Filtros Canister", "Vapor de Gasolina": "Válvulas e Filtros Canister",
+    "Válvulas de Purga": "Válvulas e Filtros Canister",      # a purga e a valvula do canister
     "Flauta do Bico Injetor": "Flautas de Combustível",
     "Sensor MAP": "Sensores MAP", "Sensor MAF": "Sensores MAF",
     "Sensor de Posição": "Sensores de Posição", "Sensor de Detonação": "Sensores de Detonação",
@@ -1484,6 +1538,7 @@ TIPO_LOJA = {
     "Árvores Comandos de Válvulas": "Comandos de Válvulas",
     "Radiadores de Água": "Radiadores", "Radiadores Intercooler": "Intercoolers",
     "Carcaças de Ventilador": "Motores de Ventilador",
+    "Motores Ventiladores": "Motores de Ventilador",           # o mesmo tipo com 2 nomes no Arrefecimento
     "Cabo Acelerador": "Cabos do Acelerador", "Cabo Afogador": "Outros", "Outros Componentes": "Outros",
     # Peças de Exterior
     "Motor Limpador Para-brisas": "Motores do Limpador", "Elos e Transmissões": "Motores do Limpador",
@@ -1492,7 +1547,7 @@ TIPO_LOJA = {
     "Braços de Limpa Para-brisas": "Braços do Limpador", "Braços Limpavidros Traseiros": "Braços do Limpador",
     "Molduras e Acabamentos": "Molduras Externas",
     "Reservatório de Para-brisas": "Reservatórios do Lavador",
-    "Bombas de Lavagem": "Bombas do Lavador",
+    "Bombas de Lavagem": "Bombas e Esguichos do Lavador",
     "Limpadores e Lavadores": "Sensores de Chuva",
     "Antenas de Conectividade": "Antenas",
     "Espelhos Padrão": "Retrovisores Externos",
@@ -1611,8 +1666,9 @@ def tipo_loja(s, familia=""):
 # Peca na familia (ou no tipo) errada: o vendedor escolheu a categoria do ML errada
 # ("Chave roda" em Fechaduras, "Módulo câmbio" em Ignição, "Motor vidro" em Motor, "Botão
 # vidro" em Ignição). O NOME da peca manda mais que a categoria. Lista curta e auditavel:
-# (regex no nome sem acento, familias de onde tira (None = todas), familia nova, tipo novo).
-# Familia nova None = fica na mesma. A 1a regra que casa vale.
+# (regex no nome sem acento, familias OU tipos de onde tira (None = todas), familia nova, tipo novo).
+# Familia nova None = fica na mesma. A 1a regra que casa vale. O BLOCO sai do tipo novo (o "Faróis" com esguicho
+# e modulo, a "Luz teto" no Faróis e Lanternas, o "Motor limpador" no Vidro: auditoria 3, item 3.1/3.2).
 REGRAS_NOME = [
     # macaco e chave de roda: o kit do carro, junto do "Kit macaco chave roda triângulo" que o ML ja poe em Segurança
     (r"^(kit macaco|chave (de )?roda|isopor estepe|macaco)\b", None, "Segurança", "Macacos e Chaves de Roda"),
@@ -1633,6 +1689,84 @@ REGRAS_NOME = [
      "Módulos de Conforto (BCM)"),
     (r"^painel (de )?instrumentos?\b", {"Peças de Interior"}, None, "Painéis de Instrumentos"),
     (r"^luz\b", {"Peças de Interior"}, None, "Luzes Internas"),
+    # --- auditoria 3: o nome leva a peca ao tipo (e ao bloco) certo. Depois das de cima (mais especificas).
+    # Iluminacao: luz de dentro (teto, cortesia, porta) e do forro; o farol fica so com farol (auditoria 3, 3.2)
+    (r"^(lanterna |moldura (base )?)?luz\b(?!.*\b(placa|freio|re|neblina|milha|farol)\b)"
+     r".*\b(teto|cortesia|interna|interior|leitura|porta|forro|console)\b", None, None, "Luzes Internas"),
+    (r"^(moldura (capa )?(do )?)?brake light\b|^luz (de )?freio\b", None, None, "Brake Light"),
+    (r"^(modulo|reator)\b.*\b(farol|farois|xenon)\b|^reator\b", None, "Iluminação", "Módulos e Reatores do Farol"),
+    (r"^lanterna\b", {"Refletores"}, None, "Lanternas Traseiras"),
+    (r"^esguicho\b|^(motor )?bomba\b.*\b(lavador|limpador|para-brisa)\b", None, None, "Bombas e Esguichos do Lavador"),
+    (r"^motor (do )?limpador\b", None, None, "Motores do Limpador"),
+    # interior: alca, trilho do banco, alto-falante, soleira, tampao, coluna
+    (r"^alca\b", None, None, "Alças e Puxadores"),
+    (r"^acabamento trilho\b", None, None, "Peças de Banco"),
+    (r"^(acabamento|grade|tela|moldura|tampa)\b.*\b(tweeter|alto-falante|falante)\b", None, None, "Grades de Alto-falante"),
+    (r"^soleira\b", None, None, "Soleiras"),
+    (r"^cortina retratil\b|^tampao\b", None, None, "Tampões do Porta-malas"),
+    (r"^(acabamento|moldura|capa|tampa)\b", {"Colunas de Direção"}, "Peças de Interior", "Capas da Coluna de Direção"),
+    (r"^(acabamento|moldura|capa|tampa)\b(?=.*\bdirecao\b)(?=.*\b(coluna|inferior|superior)\b)", None, "Peças de Interior",
+     "Capas da Coluna de Direção"),
+    (r"^(acabamento|forro|moldura)\b.*\bcoluna\b", {"Forros"}, None, "Acabamentos de Coluna"),
+    (r"^(acabamento|moldura|capa|triangulo)\b", {"Retrovisores Internos", "Retrovisores Externos"}, None,
+     "Capas e Molduras do Retrovisor"),
+    (r"^macaneta interna\b", {"Maçanetas das Portas"}, None, "Maçanetas Internas"),
+    (r"^moldura (do )?botao\b", {"Molduras das Janelas"}, None, "Botões do Vidro Elétrico"),
+    (r"^(moldura |acabamento |grade )?churrasqueira\b", None, "Carroceria", "Grades do Para-choque"),
+    # vidro: guia, canaleta e pestana sao do vidro; o friso de fora vai para os acabamentos
+    (r"\b(vidros?|canaletas?|pestanas?|guias?)\b", {"Guias e Frisos dos Vidros", "Borrachas de Vedação"}, None,
+     "Guias e Canaletas do Vidro"),
+    (r"\bporta\b", {"Guias e Frisos dos Vidros"}, None, "Frisos das Portas"),
+    (r".", {"Guias e Frisos dos Vidros"}, None, "Molduras Externas"),
+    # eletrica: chave presenca, imobilizador, bateria, camera, cabo terra
+    (r"^(antena|sensor|modulo|receptor)\b.*\b(keyless|presenca|peps)\b", None, "Sistema Elétrico", "Antenas e Módulos Keyless"),
+    (r"^antena\b.*\b(i?mobilizador|ignicao)\b|^imobilizador antena\b", None, "Sistema Elétrico",
+     "Módulos de Ignição e Imobilizador"),
+    (r"\bpolo (positivo|negativo)\b|^(sensor polo|terminal) (terminal |positivo|negativo|bateria)", None,
+     "Sistema Elétrico", "Cabos e Terminais de Bateria"),
+    (r"^camera\b.*\bre\b", None, "Sistema Elétrico", "Câmeras de Ré"),
+    (r"^cabo terra\b", None, "Sistema Elétrico", "Chicotes Elétricos"),
+    (r"^tomada usb\b|^chicote (cabo )?usb\b", None, "Peças de Interior", "Tomadas USB e Acendedores"),
+    (r"^modulo (da |de )?portas?\b(?!-)", None, "Sistema Elétrico", "Módulos de Conforto (BCM)"),
+    (r"^(moldura )?botao\b.*\b(start|partida)\b", None, "Ignição", "Botões de Partida"),
+    # modulo no sistema certo (o ML junta em "Unidades de Controle" e "Módulo de Injeção")
+    (r"^modulo\b.*\bamplificador\b.*\bantena\b", None, "Som e Multimídia", "Antenas"),
+    (r"^modulo\b.*\b(amplificador|audio)\b", None, "Som e Multimídia", "Amplificadores"),
+    (r"^modulo\b.*\b(bluetooth|apim|sync|mmi|multimidia)\b|^modulo (receptor |de )?(som )?radio\b",
+     {"Módulos Eletrônicos", "Módulos de Injeção", "Módulos de Conforto (BCM)"}, "Som e Multimídia", "Interfaces de Som"),
+    (r"^(modulo|rele)\b.*\bventoinha\b", None, "Arrefecimento", "Relés da Ventoinha"),
+    (r"^modulo\b.*\b(esp|esc|estabilidade)\b", None, "Freios", "Módulos ABS"),
+    (r"^sensor\b.*\b(esp|esc|estabilidade)\b", None, "Freios", "Sensores do Freio"),
+    (r"^botao\b.*\bfreio\b", {"Outros Botões"}, "Freios", "Botões do Freio de Mão"),
+    (r"^modulo (de )?controle (da )?transmissao\b", None, "Transmissão", "Módulos do Câmbio e da Tração"),
+    (r"^modulo\b(?!.*\batuador\b).*\bar condicionado\b", None, "Climatização", "Comandos de Ar Condicionado"),
+    (r"^resistencia\b.*\bventilador\b", None, "Climatização", "Resistências e Relés do Ar"),
+    (r"^sensor\b.*\b(qualidade (do )?ar|temperatura (interna|interior)|pressostato|ar condicionado)\b", None,
+     "Climatização", "Sensores do Ar-condicionado"),
+    (r"^(motor|ventilador)\b.*\b(interno|ar|ventilacao)\b|^motor ventilacao\b", {"Motores de Ventilador"}, "Climatização",
+     "Atuadores e Motores do Ar"),
+    (r"^defletor\b.*\bradiador\b", None, "Arrefecimento", "Defletores"),
+    (r"^(defletor|espelho)\b.*\bdisco\b", None, "Freios", "Espelhos e Defletores do Disco"),
+    (r"^defletor\b.*\bcatalisador\b", None, "Escapamentos", "Catalisadores"),
+    (r"^defletor\b.*\bescapamento\b|^atuador (da )?valvula (de )?escape\b", None, "Escapamentos", "Escapamentos"),
+    (r"^defletor\b.*\bturbina\b", None, "Filtros", "Turbinas"),
+    (r"\b(transmissao|cambio)\b", {"Capas e Protetores do Motor"}, "Transmissão", "Câmbios e Peças Internas"),
+    (r"^modulo\b(?!.*\b(injecao|motor|ecu)\b)", {"Módulos de Injeção"}, "Sistema Elétrico", "Módulos Eletrônicos"),
+    # combustivel, suspensao, direcao, airbag
+    (r"^sensor (de )?pressao (do )?combustivel\b", None, "Injeção", "Sensores de Pressão"),
+    (r"^(anel|trava)\b.*\bbomba (de )?combustivel\b|^modulo (da )?bomba (de )?combustivel\b", None, "Injeção",
+     "Bombas de Combustível"),
+    (r"^gargalo\b.*\b(tanque|combustivel)\b", None, "Injeção", "Tanques de Combustível"),
+    (r"^sensor (de )?(nivel|posicao)\b.*\b(suspensao|altura)\b", None, "Suspensão e Direção",
+     "Suspensão a Ar e Nivelamento"),
+    (r"^suporte (da )?bomba (de )?direcao\b", None, "Suspensão e Direção", "Bombas de Direção e Suportes"),
+    (r"^sensor (de )?(detonacao )?impacto\b|\bimpacto srs\b", None, "Segurança", "Airbags, Módulos e Sensores"),
+    (r"^(display|tela)\b.*\bmultimidia\b|^multimidia display\b", None, "Som e Multimídia", "Centrais Multimídia"),
+    (r"^tampa\b.*\bbuzina\b|\bacionador (da )?buzina\b", {"Buzinas"}, "Peças de Interior", "Volantes"),
+    (r"^(roda )?estepe\b", {"Suportes do Estepe"}, None, "Rodas"),
+    (r"^suporte (do )?compressor\b", {"Suportes do Alternador"}, "Climatização", "Suportes do Compressor"),
+    (r"^botao\b(?!.*\b(farol|farois|luz|luzes|lanterna|milha|neblina|reostato|seta|iluminacao|altura|regulagem)\b)",
+     {"Chaves de Seta e Luz"}, None, "Outros Botões"),
 ]
 _REGRAS_NOME = [(re.compile(rx), origem, fam, tipo) for rx, origem, fam, tipo in REGRAS_NOME]
 # Grupo do ML que mistura de tudo ("Painéis Completos" -> "Outros"): o que o nome diz com certeza
@@ -1659,7 +1793,7 @@ def classificar(nome, familia, tipo):
     escolheu a categoria errada (REGRAS_NOME) ou quando o grupo do ML mistura botoes."""
     k = gi.strip_accents(nome or "").lower()
     for rx, origem, fam_nova, tipo_novo in _REGRAS_NOME:
-        if (origem is None or familia in origem) and rx.search(k):
+        if (origem is None or familia in origem or tipo in origem) and rx.search(k):
             return fam_nova or familia, tipo_novo
     if tipo in TIPO_FAMILIA:
         return TIPO_FAMILIA[tipo], tipo
@@ -1738,7 +1872,7 @@ _TIPOS_DO_BLOCO = {
     "retrovisores": """Retrovisores Externos | Retrovisores Internos | Capas e Molduras do Retrovisor |
         Molduras de Retrovisores | Botões do Retrovisor""",
     "farois-e-lanternas": """Faróis | Faróis Dianteiros | Lanternas Traseiras | Brake Light | Luzes de Placa | Faróis de Milha |
-        Refletores | Frisos dos Faróis | Luzes Internas | Reatores e Lâmpadas | Suportes do Farol""",
+        Refletores | Frisos dos Faróis | Módulos e Reatores do Farol | Reatores e Lâmpadas | Suportes do Farol""",
     "macanetas-e-fechaduras": """Maçanetas das Portas | Maçanetas Internas | Fechaduras das Portas | Fechaduras do Porta-malas |
         Fechaduras do Capô | Cilindros e Comutadores de Ignição | Chaves do Carro | Cabos e Alavancas de Abertura |
         Botões da Trava Elétrica""",
@@ -1746,13 +1880,14 @@ _TIPOS_DO_BLOCO = {
         Peças da Máquina de Vidro | Botões do Vidro Elétrico | Vidros Laterais | Guias e Canaletas do Vidro |
         Guias e Frisos dos Vidros | Molduras das Janelas | Motores do Teto Solar | Motor Teto Solar | Botões do Teto Solar""",
     "painel-e-console": """Acabamentos do Painel | Consoles | Painéis de Instrumentos | Difusores de Ar | Porta-luvas |
-        Porta-copos | Cinzeiros | Displays e Telas | Tomadas USB e Acendedores | Tampas da Caixa de Fusíveis""",
+        Porta-copos | Cinzeiros | Displays e Telas | Tomadas USB e Acendedores | Tampas da Caixa de Fusíveis |
+        Capas da Coluna de Direção""",
     "botoes-e-chaves-de-seta": """Chaves de Seta e Luz | Chaves do Limpador | Botões do Pisca-alerta | Outros Botões |
         Botões do Desembaçador | Botões de Partida""",
     "acabamentos-e-forros": """Forros | Acabamentos de Coluna | Soleiras | Molduras das Portas | Molduras Laterais |
         Molduras do Para-lama | Molduras Externas | Frisos das Portas | Tampões do Porta-malas | Quebra-sóis |
         Tapetes e Protetores | Alças e Puxadores | Puxadores das Portas | Alças de Liberação | Apoios de Braço |
-        Peças de Banco | Encostos de Cabeça | Acabamentos da Tampa Traseira | Grades de Alto-falante""",
+        Peças de Banco | Encostos de Cabeça | Acabamentos da Tampa Traseira | Grades de Alto-falante | Luzes Internas""",
     "motor": """Coxins do Motor | Coletores de Admissão | Coletores de Escapamento | Capas e Protetores do Motor |
         Tampas de Válvulas | Tampas do Motor | Tampas de Óleo | Cárteres | Cabeçotes | Blocos do Motor | Virabrequins |
         Bielas | Pistões | Bronzinas | Retentores | Parafusos do Cabeçote | Comandos de Válvulas | Peças da Distribuição |
@@ -1761,28 +1896,28 @@ _TIPOS_DO_BLOCO = {
     "mangueiras-do-motor": """Mangueiras de Arrefecimento | Mangueiras de Admissão | Mangueiras do Turbo e Intercooler |
         Mangueiras e Linhas do Motor | Linhas do Motor | Mangueiras de Calefação""",
     "filtro-de-ar-e-turbo": """Caixas do Filtro de Ar | Turbinas | Intercoolers""",
-    "injecao-e-combustivel": """Corpos de Borboleta | Módulos de Injeção | Válvulas e Filtros Canister | Válvulas de Purga |
+    "injecao-e-combustivel": """Corpos de Borboleta | Módulos de Injeção | Válvulas e Filtros Canister |
         Flautas de Combustível | Sensores MAP | Sensores MAF | Sondas Lambda | Sensores de Detonação |
         Sensores de Posição | Sensores de Rotação | Sensores de Velocidade | Sensores de Pressão | Bicos Injetores |
         Canos dos Injetores | Reguladores de Pressão | Válvulas EGR | Bombas de Combustível | Bombas de Alta Pressão |
         Tanques de Combustível | Boias de Combustível | Portinholas e Tampas do Tanque""",
     "arrefecimento": """Radiadores | Bombas de Água | Reservatórios de Água | Válvulas Termostáticas | Eletroventiladores |
-        Motores Ventiladores | Motores de Ventilador | Defletores | Sensores de Temperatura | Suportes do Radiador |
+        Motores de Ventilador | Defletores | Sensores de Temperatura | Suportes do Radiador |
         Relés da Ventoinha | Interruptores de Eletroventilador""",
     "ar-condicionado": """Comandos de Ar Condicionado | Botões de Climatização | Interruptores de Ar Condicionado |
         Atuadores e Motores do Ar | Mangueiras de Ar Condicionado | Suportes do Compressor | Suportes de Ar Condicionado |
         Resistências e Relés do Ar | Evaporadores | Compressores | Válvulas de Expansão | Radiadores do Ar Quente |
-        Condensadores | Kits de Ar Condicionado | Válvulas da Calefação""",
+        Condensadores | Kits de Ar Condicionado | Válvulas da Calefação | Sensores do Ar-condicionado""",
     "modulos-e-eletrica": """Módulos de Conforto (BCM) | Módulos Eletrônicos | Unidades de Controle | Chicotes Elétricos |
         Caixas de Fusíveis | Cabos e Terminais de Bateria | Caixas e Suportes da Bateria | Conversores e Módulos de Bateria |
         Relés | Relés de Partida | Sensores de Estacionamento | Câmeras de Ré | Câmeras ADAS | Câmeras |
         Módulos de Ignição e Imobilizador | Alarmes e Sirenes | Kits de Alarme | Controles de Alarme | Tomadas Elétricas |
-        Chicotes de Chassi | Outros Sensores | Buzinas""",
+        Chicotes de Chassi | Outros Sensores | Buzinas | Antenas e Módulos Keyless""",
     "ignicao-e-partida": """Bobinas de Ignição | Motores de Arranque | Alternadores | Suportes do Alternador |
         Velas Aquecedoras | Reguladores de Voltagem | Sensores de Vácuo""",
     "freios": """Hidrovácuos | Módulos ABS | Cilindros Mestres | Pinças de Freio | Sensores do Freio | Sensores ABS |
         Mangueiras e Flexíveis do Freio | Reservatórios de Fluido | Alavancas do Freio de Mão | Cabo do Freio de Mão |
-        Botões do Freio de Mão""",
+        Botões do Freio de Mão | Espelhos e Defletores do Disco""",
     "suspensao-e-direcao": """Colunas de Direção | Braços da Suspensão | Bandejas da Suspensão | Mangas de Eixo |
         Bombas de Direção e Suportes | Mangueiras da Direção | Amortecedores | Molas | Bieletas e Barras Estabilizadoras |
         Coxins do Amortecedor | Terminais de Direção | Caixas de Direção | Cubos de Roda | Buchas de Suspensão |
@@ -1797,7 +1932,7 @@ _TIPOS_DO_BLOCO = {
         Dobradiças do Capô | Dobradiças da Tampa Traseira | Amortecedores da Tampa e do Capô | Aerofólios | Spoilers |
         Para-barros | Assoalhos | Suportes da Carroceria | Vigas de Reforço | Emblemas | Grades | Tomadas de Ar |
         Isolamentos do Capô | Suportes da Placa | Ganchos de Reboque | Grampos e Presilhas | Borrachas de Vedação""",
-    "limpador-e-lavador": """Motores do Limpador | Braços do Limpador | Reservatórios do Lavador | Bombas do Lavador |
+    "limpador-e-lavador": """Motores do Limpador | Braços do Limpador | Reservatórios do Lavador | Bombas e Esguichos do Lavador |
         Sensores de Chuva""",
     "airbag-e-seguranca": """Airbags, Módulos e Sensores | Cintos de Segurança | Triângulos de Segurança""",
     "som-e-multimidia": """Centrais Multimídia | Rádios | Amplificadores | Interfaces de Som | Alto-falantes |
@@ -1907,6 +2042,95 @@ def bloco(nome, familia, tipo):
         if rx.search(k):
             return b
     return ""
+
+
+# O TIPO tem que ser do BLOCO (auditoria 3, item 3.1). Quando o nome muda o bloco (BLOCO_PELO_NOME, BLOCO_NO_TIPO),
+# a peca levava o tipo antigo: "Caixas do Filtro de Ar" em Maçanetas, "Sondas Lambda" em Airbag, "Buzinas" em Pedais.
+# Aqui o nome escolhe um tipo DO BLOCO (a 1a regra que casa); sem regra, "Outros" (sem cartao, a peca fica no bloco).
+# As mesmas regras dao tipo ao "Outros" do bloco. Lista auditavel; o teste confere que todo tipo daqui e do bloco.
+TIPO_NO_BLOCO = {
+    "retrovisores": [(r"^motor\b", "Retrovisores Externos"), (r"^(botao|comando|interruptor)\b", "Botões do Retrovisor"),
+                     (r"^(acabamento|moldura|capa|triangulo)\b", "Capas e Molduras do Retrovisor")],
+    "farois-e-lanternas": [(r"brake light|^luz (de )?freio\b", "Brake Light"), (r"\blanterna\b", "Lanternas Traseiras"),
+                           (r"^farol\b", "Faróis")],
+    "macanetas-e-fechaduras": [(r"^(tampa )?fechadura\b.*\bcapo\b", "Fechaduras do Capô"),
+                               (r"^(tampa )?fechadura\b.*\b(porta-malas|tampa traseira|mala|portao|bagag)", "Fechaduras do Porta-malas"),
+                               (r"^(tampa )?fechadura\b(?!.*\bbanco\b).*\b(porta|dianteir[ao]|traseir[ao])\b", "Fechaduras das Portas"),
+                               (r"^macaneta interna\b", "Maçanetas Internas"), (r"^macaneta\b", "Maçanetas das Portas"),
+                               (r"^(cabo|alavanca|puxador)\b", "Cabos e Alavancas de Abertura")],
+    "vidro-eletrico": [(r"\b(borrachas?|canaletas?|pestanas?|guias?)\b", "Guias e Canaletas do Vidro"),
+                       (r"^(motor|maquina)\b.*\bvidro\b", "Máquinas e Motores de Vidro Elétrico")],
+    "painel-e-console": [(r"\bdirecao\b", "Capas da Coluna de Direção"),
+                         (r"\b(tomada|carregador|usb|acendedor|isqueiro)\b", "Tomadas USB e Acendedores"),
+                         (r"\b(cambio|marcha|coifa|seletor|console|porta-objetos)\b", "Consoles"),
+                         (r"\brelogio\b", "Displays e Telas"), (r"\b(painel|tabelier)\b", "Acabamentos do Painel")],
+    "botoes-e-chaves-de-seta": [(r"\b(start|partida)\b", "Botões de Partida"), (r"\bpisca|\balerta\b", "Botões do Pisca-alerta"),
+                                (r"^(botao|painel|interruptor|comando|tampa cega)\b", "Outros Botões")],
+    "acabamentos-e-forros": [(r"\b(tweeter|alto-falante|falante)\b", "Grades de Alto-falante"),
+                             (r"\b(coluna|pilar)\b", "Acabamentos de Coluna"),
+                             (r"\b(porta-malas|bagagito|tampa traseira)\b", "Acabamentos da Tampa Traseira"),
+                             (r"\bbanco\b", "Peças de Banco"), (r"^(alca|puxador|pega|kit pega)\b", "Alças e Puxadores"),
+                             (r"\bporta\b", "Molduras das Portas"), (r"\b(friso|externa|externo)\b", "Molduras Externas")],
+    "motor": [(r"^suporte (do )?motor\b|\bcoxins?\b", "Coxins do Motor"), (r"^(bocal|tampa)\b.*\boleo\b", "Tampas de Óleo")],
+    "mangueiras-do-motor": [(r"\b(arrefecimento|agua|radiador)\b", "Mangueiras de Arrefecimento"),
+                            (r"^mangueira\b", "Mangueiras e Linhas do Motor")],
+    "filtro-de-ar-e-turbo": [(r"\bturbina\b", "Turbinas"), (r"\bintercooler\b", "Intercoolers"),
+                             (r"\bfiltro (de )?ar\b", "Caixas do Filtro de Ar")],
+    "injecao-e-combustivel": [(r"\bmodulo (de )?injecao\b", "Módulos de Injeção"), (r"\bsensor\b.*\bpressao\b", "Sensores de Pressão"),
+                              (r"\bbomba\b", "Bombas de Combustível"), (r"\btanque\b", "Tanques de Combustível")],
+    "arrefecimento": [(r"\b(rele|ventoinha)\b", "Relés da Ventoinha"), (r"\breservatorio\b", "Reservatórios de Água")],
+    "ar-condicionado": [(r"^resistencia\b|\brele\b", "Resistências e Relés do Ar"), (r"^sensor\b", "Sensores do Ar-condicionado"),
+                        (r"^caixa\b", "Evaporadores"), (r"^(modulo|comando|botao)\b", "Comandos de Ar Condicionado")],
+    "modulos-e-eletrica": [(r"\b(keyless|presenca|peps)\b", "Antenas e Módulos Keyless"),
+                           (r"\bi?mobilizador\b|^antena (do )?modulo (de )?ignicao\b", "Módulos de Ignição e Imobilizador"),
+                           (r"^(suporte|caixa|tampa)\b.*\bbateria\b", "Caixas e Suportes da Bateria"),
+                           (r"^suporte\b.*\b(bcm|bsi|conforto)\b", "Módulos de Conforto (BCM)"),
+                           (r"^rele\b", "Relés"), (r"^(chicote|cabo terra)\b", "Chicotes Elétricos"),
+                           (r"^(modulo )?camera\b", "Câmeras"), (r"^sensor\b", "Outros Sensores"),
+                           (r"^(modulo|suporte (do )?modulo|antena)\b", "Módulos Eletrônicos")],
+    "ignicao-e-partida": [(r"\bbobina\b", "Bobinas de Ignição"), (r"\balternador\b", "Suportes do Alternador"),
+                          (r"\b(arranque|partida)\b", "Motores de Arranque")],
+    "freios": [(r"\b(defletor|espelho)\b", "Espelhos e Defletores do Disco"), (r"^botao\b", "Botões do Freio de Mão"),
+               (r"^sensor\b", "Sensores do Freio"), (r"^modulo\b.*\b(abs|esp|esc|estabilidade)\b", "Módulos ABS"),
+               (r"\bpinca\b", "Pinças de Freio")],
+    "suspensao-e-direcao": [(r"^sensor\b.*\b(nivel|altura|posicao)\b|\bsuspensao a ar\b", "Suspensão a Ar e Nivelamento"),
+                            (r"^suporte (da )?bomba\b", "Bombas de Direção e Suportes"), (r"^amortecedor\b", "Amortecedores")],
+    "cambio-e-transmissao": [(r"\b(transmissao|cambio)\b", "Câmbios e Peças Internas")],
+    "rodas": [(r"^(roda|estepe)\b", "Rodas")],
+    "para-choques-e-lataria": [(r"\b(churrasqueira|grade)\b", "Grades do Para-choque")],
+    "airbag-e-seguranca": [(r"\b(impacto|airbag|srs)\b", "Airbags, Módulos e Sensores")],
+    "som-e-multimidia": [(r"\bantena\b", "Antenas"), (r"\b(subwoofer|alto-falante|falante|tweeter)\b", "Alto-falantes"),
+                         (r"\bamplificador\b", "Amplificadores"), (r"^radio\b|\bcd\b", "Rádios"),
+                         (r"^(moldura|carcaca)\b", "Molduras da Multimídia"),
+                         (r"\b(multimidia|mylink|display|tela)\b", "Centrais Multimídia")],
+    "pedais-e-volante": [(r"^volante\b|\bbuzina\b", "Volantes"), (r"\bpedal|pedaleira\b", "Pedais")],
+    "escapamento": [(r"\bcatalisador\b", "Catalisadores"), (r"\b(escapamento|escape)\b", "Escapamentos")],
+}
+_TIPO_NO_BLOCO = {b: [(re.compile(rx), t) for rx, t in rs] for b, rs in TIPO_NO_BLOCO.items()}
+
+
+def tipo_no_bloco(nome, tipo, b):
+    """Tipo da peca DENTRO do bloco b (chave). Tipo de outro bloco (ou "Outros") ganha um tipo do bloco pelo nome;
+    sem regra, "Outros". Tipo que o mapa nao conhece fica como esta (o teste avisa: por em _TIPOS_DO_BLOCO)."""
+    if not b or not tipo:
+        return tipo
+    dono = BLOCO_POR_TIPO.get(tipo)
+    if tipo != "Outros" and (dono is None or dono == b):
+        return tipo
+    k = gi.strip_accents(nome or "").lower()
+    for rx, t in _TIPO_NO_BLOCO.get(b, []):
+        if rx.search(k):
+            return t
+    return "Outros"
+
+
+def classificar_peca(nome, cat, cid=""):
+    """(familia, tipo, bloco) da peca: familia e tipo do ML corrigidos pelo nome (classificar), o bloco (bloco) e o
+    tipo DENTRO do bloco (tipo_no_bloco). bloco = chave ("" = Outros). O main() e a folha de conferencia usam esta."""
+    fam0 = gi.familia(cat)
+    fam, tipo = classificar(nome, fam0, tipo_loja(subtipo(cat, cid or ""), fam0))
+    b = bloco(nome, fam, tipo)
+    return fam, tipo_no_bloco(nome, tipo, b), b
 
 
 # --------------------------------------------------------------------------
@@ -2742,8 +2966,7 @@ def main():
         ms, ys = anos_por_modelo(ms_titulo, mc, a0, a1)
         cat = cats.get(p.get("category_id"))
         n = nome_limpo(p["title"], mc, mod, ms_titulo)
-        fam0 = gi.familia(cat)
-        fam, tipo = classificar(n, fam0, tipo_loja(subtipo(cat, p.get("category_id") or ""), fam0))
+        fam, tipo, chave_bloco = classificar_peca(n, cat, p.get("category_id") or "")
         fotos = list(dict.fromkeys(p.get("pics") or ([p["img"]] if p.get("img") else [])))[:12]
         pecas.append({
             "id": p["id"],
@@ -2757,7 +2980,7 @@ def main():
             "b": mc,
             "m": mod,
             "y": [a0, a1] if a0 else None,
-            "c": BLOCO_NOME.get(bloco(n, fam, tipo)) or BLOCO_OUTROS,
+            "c": BLOCO_NOME.get(chave_bloco) or BLOCO_OUTROS,
             "s": tipo,
             "oem": " ".join(codigos_peca(p)),
             "o": codigos_busca(p),

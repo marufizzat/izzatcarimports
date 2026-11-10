@@ -25,7 +25,11 @@ describe('categorias', () => {
     // VP8L (sem perda): 14 bits de largura-1 e 14 de altura-1 a partir do byte 21
     const v = (799) | (631 << 14);
     expect(tamanhoWebp(cab('VP8L', (b) => { b[21] = v & 255; b[22] = (v >> 8) & 255; b[23] = (v >> 16) & 255; b[24] = (v >>> 24) & 255; }))).toEqual({ w: 800, h: 632 });
-    expect(tamanhoWebp(readFileSync('public/arte/v2/cat-motor.webp'))).toEqual({ w: 800, h: 800 });
+    // a arte do cartão é quadrada, de 800 (as antigas) a 1200 (instalar-cats.mjs, sem aumentar)
+    const motor = tamanhoWebp(readFileSync('public/arte/v2/cat-motor.webp'))!;
+    expect(motor.w).toBe(motor.h);
+    expect(motor.w).toBeGreaterThanOrEqual(800);
+    expect(motor.w).toBeLessThanOrEqual(1200);
     expect(tamanhoWebp(new Uint8Array(10))).toBeNull();
   });
 });

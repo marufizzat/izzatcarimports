@@ -10,12 +10,14 @@ import BuscaCodigo from '../components/inst/BuscaCodigo.astro';
 import IconeInst from '../components/inst/IconeInst.astro';
 import Icone from '../components/Icone.astro';
 import SeloReputacao from '../components/SeloReputacao.astro';
+import BannerV2 from '../components/v2/BannerV2.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/como-comprar.html`;
 const canonicalPath = '/como-comprar.html';
 const ML = 'https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS';
-const msgSite = 'Olá! Vim pelo site e quero comprar uma peça. Pode me ajudar?';
+const msgConfere = 'Quero que vocês confiram uma peça. Meu carro é ____ (modelo) ____ (ano) e a peça é: ____';
+const msgSite = 'Quero comprar uma peça. Pode me ajudar?';
 const passos = [
   { src: '/arte/v2/passo-1.webp', alt: 'Ache a peça — Pelo nome, pelo carro ou pelo código gravado.' },
   { src: '/arte/v2/passo-2.webp', alt: 'Confirme o seu carro — Manda o modelo e o ano. A gente confere na peça.' },
@@ -41,12 +43,17 @@ const passos = [
       ))}
     </ol>
   </section>
+  {/* depois dos passos: o Maruf com o celular, o passo 2 ("confirme o seu carro") com rosto */}
+  <div class="moldura">
+    <BannerV2 formato="arte" nome="banner-como-comprar" href={whatsUrl(msgConfere)}
+      texto="A gente confere. Manda o modelo e o ano. A gente confere na peça e responde com foto. Chamar no WhatsApp" />
+  </div>
 
   <div class="moldura">
     <section class="inst-sec inst-duas" id="whatsapp" aria-labelledby="h-whatsapp">
       <div class="inst-texto">
         <h2 class="titulo-secao inst-h2" id="h-whatsapp">Comprar pelo WhatsApp</h2>
-        <p>Manda a peça ou o carro no WhatsApp. A gente confirma se a peça serve no seu carro, passa o valor e combina o envio.</p>
+        <p>Manda a peça ou o carro no WhatsApp. A gente confirma se a peça serve no seu carro, passa o valor e combina o frete na hora, pelo seu CEP. Enviamos para todo o Brasil.</p>
         <p>A mensagem já abre pronta. Você só completa com o que precisa.</p>
         <div class="inst-acoes">
           <a class="botao botao-laranja inst-botao" href={whatsUrl(msgSite)} rel="noopener">
@@ -60,7 +67,7 @@ const passos = [
     <section class="inst-sec inst-sec--linha inst-duas" id="mercado-livre" aria-labelledby="h-ml">
       <div class="inst-texto">
         <h2 class="titulo-secao inst-h2" id="h-ml">Comprar pelo Mercado Livre</h2>
-        <p>As peças também estão na loja <b class="inst-quebra">IZZAT_CAR_IMPORTS</b> no Mercado Livre, com fotos, ficha técnica e frete no anúncio.</p>
+        <p>As peças também estão na loja <b class="inst-quebra">IZZAT_CAR_IMPORTS</b> no Mercado Livre, com fotos e ficha técnica. Ali, o frete e o prazo são os calculados no anúncio.</p>
         <p>A compra segue a proteção do próprio Mercado Livre.</p>
       </div>
       <div class="inst-loja cc-loja">
@@ -106,7 +113,7 @@ const passos = [
     id="h-chamada"
     titulo="Não sabe qual peça é?"
     texto="Manda o modelo, o ano e uma foto da peça no WhatsApp. A gente olha e responde por lá."
-    mensagem="Olá! Vim pelo site e não sei qual peça eu preciso. Meu carro é: ____ (modelo e ano)"
+    mensagem="Não sei qual peça eu preciso. Meu carro é: ____ (modelo e ano)"
   />
 </Pagina>
 
