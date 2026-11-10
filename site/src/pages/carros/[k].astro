@@ -9,6 +9,7 @@ import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
 import AtalhosVisuais from '../../components/AtalhosVisuais.astro';
 import TextoApoio from '../../components/TextoApoio.astro';
+import AnosDoCarro from '../../components/AnosDoCarro.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import { existsSync } from 'node:fs';
@@ -90,6 +91,7 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
       <div class="grade-cabeca">
         <h2 class="titulo-secao" id="h-pecas">Peças do {nome}</h2>
         <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{N > 1 ? ' · as mais novas primeiro' : ''}</p>
+        <AnosDoCarro lista={lista} b={c.b} m={c.m} base={base} />
       </div>
       <GradePecas lista={lista.slice(0, 48)} total={N} linkTodas={base} />
     </section>
