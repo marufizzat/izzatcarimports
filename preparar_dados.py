@@ -256,7 +256,11 @@ SIGLAS = {"abs", "bcm", "bsi", "led", "cd", "dvd", "gps", "usb", "ecu", "tcu", "
 PALAVRAS_FORA = re.compile(
     r"^(or|ori|orig|origi|origin|origina|original|originais|genuin[oa]|"
     r"preto|preta|cinza|prata|prateado|branco|branca|vermelho|vermelha|azul|bege|"
-    r"cromado|grafite|marrom|dourado|verde-musgo)$", re.I)
+    r"cromado|grafite|marrom|dourado|verde-musgo|amarel[oa]|laranja|ros[ae]|rox[oa]|dourada|prateada|chumbo|"
+    r"bordô|vinho)(-(escur[oa]|clar[oa]|fosc[oa]|gelo|musgo))?$", re.I)   # "bordo" (sem acento) e o de bordo: fica
+# o que vem logo depois da cor e só fala da cor ("Vermelho Brilhante", "Cinza Escuro"): sai junto
+COR_DEPOIS = {"escuro", "escura", "claro", "clara", "brilhante", "fosco", "fosca", "metalico", "metálico", "metalica",
+              "metálica", "perolizado", "perolizada"}
 
 
 ACENTOS = {
@@ -306,6 +310,8 @@ ACENTOS.update({
     "aco": "aço", "plasticos": "plásticos", "eletronicos": "eletrônicos",
     "hidraulicos": "hidráulicos", "mecanico": "mecânico", "metalicos": "metálicos", "estatico": "estático",
     "conexoes": "conexões", "vedacao": "vedação", "tracao": "tração", "aceleracao": "aceleração",
+    "rele": "relé", "reles": "relés", "diagnostico": "diagnóstico", "planetaria": "planetária",
+    "secundaria": "secundária", "transferencia": "transferência",
 })
 MOTOR_FORA = re.compile(r"^(\d{1,2}v|tfsi|fsi|tsi|tdi|thp|t\d?|turbo|flex|hibrido|híbrido|"
                         r"hybrid|sport|v6|v8|aut)$", re.I)
@@ -758,7 +764,7 @@ versailles celta prisma agile meriva vectra astra omega kadett ipanema monza che
 equinox cobalt sonic malibu fiesta focus fusion ecosport ranger escort verona courier kangoo twingo
 laguna stepway kardian sandero logan duster captur kwid oroch fluence partner hoggar berlingo corolla
 yaris hilux sw4 rav4 camry creta tucson azera sonata elantra veloster kicks march sentra frontier murano
-renegade compass cherokee wrangler tiggo arrizo celer picanto sorento sportage cerato soul""".split())
+renegade compass cherokee wrangler tiggo arrizo celer picanto sorento sportage cerato soul fastback""".split())
 # Carros soltos que ja saiam do fim do nome antes (peca sem modelo no cartao so perde estes).
 _SOLTOS_ANTIGOS = frozenset(MODELOS_SOLTOS) - {"nivus", "virtus", "tiguan", "amarok", "kicks"}
 SOBRA_RE = re.compile(r"^(/\d{2,4}|\d{2,4}/|mk\d|[a-z]{1,3}\d{1,3}[a-z]?|\d{3}[eidh]|\d[.,]\dt?|\dcc|\d[a-z])$",
@@ -954,6 +960,49 @@ def expandir_nome(palavras_cruas, tirar_carro=True):
     return limpo
 
 
+# Medida que vale no nome ("Chave roda 17mm", "Tomada 120w", "Bateria 60ah", "550i" da BMW, "0km", "2din").
+UNIDADE_NO_NOME = re.compile(r"\d+([.,]\d+)?(mm|cm|w|v|a|ah|cc|km|kg|cv|hp|i|din)", re.I)
+# Palavra que é nome de peça e também de carro: fica no nome ("Sensor polo negativo", "Motor aspirado").
+CARRO_QUE_E_PECA = {"polo", "aspirado"}
+# Sobra solta no fim ("... sensor de estacionamento cor" de "Cor Preto"; "std" = standard)
+FIM_SOLTO = {"cor", "std"}
+# Fabricante da peça escrito em minúsculas no anúncio: com a grafia dele ("bosch" -> "Bosch")
+MARCA_DA_PECA = {"bosch": "Bosch", "valeo": "Valeo", "hella": "Hella", "magneti": "Magneti", "marelli": "Marelli",
+                 "delphi": "Delphi", "denso": "Denso", "continental": "Continental", "siemens": "Siemens",
+                 "visteon": "Visteon", "gauss": "Gauss", "vdo": "VDO", "trw": "TRW", "mahle": "Mahle", "behr": "Behr",
+                 "webasto": "Webasto", "sony": "Sony", "alpine": "Alpine", "bose": "Bose", "jbl": "JBL",
+                 "pioneer": "Pioneer", "lexicon": "Lexicon", "harman": "Harman", "kardon": "Kardon", "aisin": "Aisin",
+                 "brose": "Brose", "mitsuba": "Mitsuba", "nakata": "Nakata", "cofap": "Cofap", "sachs": "Sachs"}
+_POSICAO_G = {"traseiro": "m", "traseira": "f", "dianteiro": "m", "dianteira": "f", "esquerdo": "m",
+              "esquerda": "f", "direito": "m", "direita": "f", "interno": "m", "interna": "f", "externo": "m",
+              "externa": "f"}
+
+
+def _concordar_posicao(ws):
+    """'Lanterna traseira esquerdo' -> 'Lanterna traseira esquerda' (o titulo do ML erra o genero). So mexe na
+    sequencia de posicao com os 2 generos misturados, e concorda com a 1a palavra (a peca). O substantivo logo antes
+    da sequencia leva a 1a posicao quando concorda com ela ("Amortecedor tampa traseira direito": a tampa e
+    traseira; o amortecedor e direito)."""
+    ws = list(ws)
+    info = _genero(ws[0]) if ws else None
+    if not info or info[0] != "nome":
+        return ws
+    peca = info[1]
+    i = 1
+    while i < len(ws):
+        j = i
+        while j < len(ws) and _sem(ws[j]) in _POSICAO_G:
+            j += 1
+        seq = range(i, j)
+        if len({_POSICAO_G[_sem(ws[x])] for x in seq}) > 1:
+            antes = _genero(ws[i - 1]) if i - 1 > 0 else None
+            ini = i + 1 if antes and antes[0] == "nome" and antes[1] == _POSICAO_G[_sem(ws[i])] else i
+            for x in range(ini, j):
+                ws[x] = _flexionar(_lema_pos(_sem(ws[x])), peca, "s")
+        i = j + 1
+    return ws
+
+
 def nome_limpo(titulo, marca, modelo, outros=()):
     """'Lanterna Esquerda Tampa Traseira Volvo Xc 60 18/24 A045591'
     -> 'Lanterna esquerda tampa traseira'. Carro, ano e codigo aparecem a parte.
@@ -971,7 +1020,21 @@ def nome_limpo(titulo, marca, modelo, outros=()):
         if mod:
             chaves_modelo |= {gi.chave_modelo(w) for w in mod.split()} | {gi.chave_modelo(mod)}
     saida = []
+    fora_ate = None              # parentese da cor que saiu: "Amarelo (tampa)", "(cinza escuro)" saem inteiros
+    cor_antes = False
     for w in t.split():
+        if fora_ate:
+            if w.endswith(")"):
+                fora_ate = None
+            continue
+        if w.startswith("(") and not w.endswith(")") and (cor_antes or PALAVRAS_FORA.match(w.strip("(),"))):
+            fora_ate = True
+            continue
+        if w.startswith("(") and w.endswith(")") and (cor_antes or PALAVRAS_FORA.match(w.strip("(),"))):
+            continue
+        if cor_antes and w.lower() in COR_DEPOIS:
+            continue
+        cor_antes = bool(PALAVRAS_FORA.match(w)) or (cor_antes and w in ("/", "-"))
         k = gi.chave_modelo(w)
         if not k:
             continue
@@ -983,9 +1046,21 @@ def nome_limpo(titulo, marca, modelo, outros=()):
             continue                                       # geracao/chassi: "G06", "E90", "G5", "B8"
         if k in _CONHECIDOS_GLOBAL and re.search(r"\d", w):   # outro modelo: s90, q5
             continue
+        # outro carro no meio do nome (o carro da peca aparece a parte): "...anti ruido Evoque suporte do radio" do
+        # Discovery, "golf" no A3. Sem modelo no cartao, o carro do nome e a unica pista: fica.
+        if modelo and len(k) >= 4 and (k in _CONHECIDOS_GLOBAL or k in _MODELOS_CHAVE) \
+                and k not in CARRO_QUE_E_PECA and not _palavra_comum(k):
+            continue
         if len(k) == 1:
             continue
         if re.search(r"\d", w) and len(k) >= 5:          # codigo OEM / part number
+            continue
+        # pedaco de codigo do anuncio ("2s65", "801b", "6b5", "h18-h", "x32.0"): fica so o codigo de motor/chassi
+        # ("M270", "G6DA", "D1S"), a medida ("17mm", "120w") e a sigla ("4x4", "MP3")
+        nucleo = w.lower().strip("(),")
+        if re.search(r"\d", nucleo) and not re.fullmatch(r"\d+([.,]\d+)?", nucleo) \
+                and not CODIGO_NO_NOME.fullmatch(nucleo) and not UNIDADE_NO_NOME.fullmatch(nucleo) \
+                and nucleo not in SIGLAS:
             continue
         if re.fullmatch(r"\d+([.,]\d+)?", w):            # 1.6, 2.0 soltos
             continue
@@ -993,6 +1068,9 @@ def nome_limpo(titulo, marca, modelo, outros=()):
     # por extenso, com acento e concordancia; sem o "carro" que sobrar no fim
     # ("Sirene Alarme Jetta Golf Passat", "Motor Vidro Eletrico Voyage Saveiro G5 G6")
     palavras_nome = _sem_trecho_repetido(_sem_lado_repetido(expandir_nome(saida, tirar_carro=bool(modelo))))
+    palavras_nome = _concordar_posicao(palavras_nome)
+    while len(palavras_nome) > 1 and _sem(palavras_nome[-1]) in FIM_SOLTO:
+        palavras_nome.pop()
     frase = []
     for i, w in enumerate(palavras_nome):
         nucleo = w.strip("()")
@@ -1004,6 +1082,8 @@ def nome_limpo(titulo, marca, modelo, outros=()):
             frase.append(w[:1].upper() + w[1:])
         elif not modelo and _carro_no_nome(nucleo):        # sem modelo no cartao, o carro do nome e a pista
             frase.append(w.replace(nucleo, _NOMES_PROPRIOS[gi.chave_modelo(nucleo)]))
+        elif nucleo.lower() in MARCA_DA_PECA:                # fabricante da peca: "Bosch", "Sony"
+            frase.append(w.replace(nucleo, MARCA_DA_PECA[nucleo.lower()]))
         else:
             frase.append(w)
     nome = _brake_light(_sem_palavra_repetida(" ".join(frase).strip(" -/")))

@@ -77,11 +77,17 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      Também incerta: caixa de borda a borda no lado curto e borda da foto sem cara de fundo de estúdio (close da peça:
      não há fundo para conferir). Foto quadrada nunca (o quadro não corta nada). Medida por lado no cache dos sinais
      (`"f"`, 5 números); sem ela: `medir_fotos_ml.py --faixas` (baixa a `-O` de novo, 8 linhas; `MEDIR_FOTOS_O` = pasta
-     com as `-O` já baixadas). Nov/2026: 10.168 de 45.153 incertas (5.678 mudam na tela).
+     com as `-O` já baixadas). Nov/2026: 11.116 de 45.153 incertas (10.168 pelo teste da faixa + 948 montagens com carro).
      Miniaturas pela foto `-A` do ML (228 px, proporção da foto). Tela cheia: fundo escuro, foto inteira.
      **Classe de cada foto** (no mesmo JSON, com a assinatura dHash): `p` peça, `s` sem peça, `m` marketing do anúncio
      (palavras de propaganda no OCR — entrega, garantia, dicas, seminovo…; cartão escuro com texto; ou a mesma foto em
-     3+ anúncios), `c` carro inteiro (`prob_carro` > 0,6). `fotosGaleria()` (lib/quadroFoto.ts) tira `m` e põe `c` no
+     3+ anúncios), `c` montagem com o carro: só na tela BRANCA pura da montagem do vendedor (borda >= 240; foto de estúdio,
+     fundo cinza ~215-235, nunca é carro: lanterna, grade e farol enganavam o classificador), com `prob_carro` > 0,6 na
+     foto inteira ou a média das 3 melhores janelas no formato de carro > 0,63 (pega o carro pequeno ao lado da peça), com
+     o carro inteiro dentro da janela (`i` > 0,45: o console de teto ou a lanterna sozinhos são cortados pela janela) ou
+     solto da peça. Sinais `b`/`k`/`i`/`n` no cache; sem eles: `medir_fotos_ml.py --montagem` (baixa a `-O`, ~25 min) e
+     `--reclassificar`.
+     A montagem leva a marca de incerta (aparece inteira). `fotosGaleria()` (lib/quadroFoto.ts) tira `m` e põe `c` no
      fim na galeria, miniaturas, tela cheia, JSON-LD, og:image e feed. Muito texto sozinho não é marketing: é a
      etiqueta da peça (mostra o código). Mudou uma regra: `medir_fotos_ml.py --reclassificar` (sinais em cache local).
      Testes: `python testes/test_medir_fotos_ml.py` e `site/testes/quadroFoto.test.ts`.

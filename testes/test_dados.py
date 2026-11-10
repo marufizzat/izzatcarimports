@@ -970,6 +970,49 @@ def test_nome_sem_palavra_repetida():
     assert _sem_palavra_repetida("Kit par de molas par") == "Kit par de molas par"
 
 
+def test_nome_sem_outro_carro_pedaco_de_codigo_nem_cor():
+    """Revisão 7, P3.9: outro carro no meio do nome ("...anti ruído evoque suporte do rádio" do Discovery), pedaço
+    de código do anúncio ("2s65", "801b"), a cor que sobra ("cor", "Amarelo (tampa)"), acento ("reles") e o gênero
+    trocado pelo anúncio ("Lanterna traseira esquerdo"). Regras gerais, nunca por peça."""
+    import preparar_dados as pd
+    novos = {"evoque", "golf", "pulse"} - pd._CONHECIDOS_GLOBAL      # sem o main(): os carros do estoque à mão
+    pd._CONHECIDOS_GLOBAL.update(novos)
+    try:
+        casos = [
+            ("Sensor Módulo Antena Anti Ruido Discovery Evoque Original Suporte Do Radio Land Rover Discovery 4 2012",
+             "Land Rover", "Discovery", "Sensor módulo antena anti ruído suporte do rádio"),
+            ("Motor Vidro Eletrico Direito Audi A3 Vw Golf Mqb 13/21 801b", "Audi", "A3", "Motor vidro elétrico direito"),
+            ("Mangueira Filtro Ar Pulse Fastback Jeep Compass 21/26 520798", "Jeep", "Compass", "Mangueira filtro ar"),
+            ("Macaneta Interna Diant Dir Ford Fiesta New Fiesta 02/12 2s65 Preto", "Ford", "Fiesta",
+             "Maçaneta interna dianteira direita"),
+            ("Caixa Fusiveis Reles Motor Hyundai Genesis 09/14 Original", "Hyundai", "Genesis", "Caixa fusíveis relés motor"),
+            ("Gargalo Reservatorio Agua Parabrisa Fiat Toro 16/24 90569800 Amarelo (tampa) / Branco (corpo)", "Fiat",
+             "Toro", "Gargalo reservatório água para-brisa"),
+            ("Modulo Conforto Sensor De Estacionamento Vw Up 1sb919475 Cor Preto", "Volkswagen", "Up",
+             "Módulo conforto sensor de estacionamento"),
+            ("Grade Churrasqueira Citroen C3 2024 Preto Fosco", "Citroën", "C3", "Grade churrasqueira"),
+            ("Tubo Flexivel Escapamento Volvo Xc60 18/24 31465022 Prata Metálico", "Volvo", "XC60", "Tubo flexível escapamento"),
+            ("Lanterna Traseira Esquerdo Audi A4 09/12 8k5945093d", "Audi", "A4", "Lanterna traseira esquerda"),
+            ("Acabamento Externo Dianteira Direito Vw Passat 07/12 Preto", "Volkswagen", "Passat",
+             "Acabamento externo dianteiro direito"),
+            ("Motor Vidro Eletrico Dianteiro Direito Fiat Toro 16/26 Bosch", "Fiat", "Toro",
+             "Motor vidro elétrico dianteiro direito Bosch"),
+            # o que fica: a medida, o código de motor, o "polo" da bateria, o computador de bordo, a tampa traseira
+            ("Chave Roda 17mm Vw Audi Original 4d0012219a", "Volkswagen", "", "Chave roda 17mm"),
+            ("Chicote Chassis B200 W246 Mercedes 12/18", "Mercedes-Benz", "", "Chicote chassis B200 W246"),
+            ("Cabo Polo Negativo Bateria Jaguar E-pace 18/24", "Jaguar", "E-Pace", "Cabo polo negativo bateria"),
+            ("Display Computador Bordo Renault Sandero 08/14 8200722451", "Renault", "Sandero", "Display computador bordo"),
+            ("Amortecedor Tampa Traseira Direito Honda Wr-v 2026 7482031xj", "Honda", "WR-V",
+             "Amortecedor tampa traseira direito"),
+            # sem modelo no cartão, o carro do nome é a pista: fica
+            ("Botao Retrovisor Nissan Versa Kicks 2017", "Nissan", "", "Botão retrovisor Versa Kicks"),
+        ]
+        for titulo, marca, modelo, esperado in casos:
+            assert pd.nome_limpo(titulo, marca, modelo) == esperado, (titulo, pd.nome_limpo(titulo, marca, modelo))
+    finally:
+        pd._CONHECIDOS_GLOBAL.difference_update(novos)
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

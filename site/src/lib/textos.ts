@@ -47,6 +47,8 @@ const P = (n: number) => (n === 1 ? 'peça' : 'peças');
 const sistema = (n: string) => n.replace(/^peças de /i, '');
 const O = (n: number) => (n === 1 ? 'original' : 'originais');
 const M = (n: number) => (n === 1 ? 'modelo' : 'modelos');
+// "São 34 peças" / "É 1 peça" (sem "temos": a voz da loja no site é "a gente")
+const S = (n: number) => (n === 1 ? 'É' : 'São');
 
 /** Subtipo de peca em minusculas (ex.: "Bielas" -> "bielas"), mantendo siglas (ABS) e codigos com numero. */
 export function minuscula(s: string): string {
@@ -136,11 +138,11 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
   const k = `categoria:${f.k}`;
 
   const p1 = escolha(`${k}:1`, ehPeca ? [
-    `Temos ${N} ${tema} ${O(N)} no estoque.`,
+    `${S(N)} ${N} ${tema} ${O(N)} no estoque.`,
     `No estoque há ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
     `Esta categoria reúne ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
   ] : [
-    `Temos ${N} ${P(N)} de ${tema} ${O(N)} no estoque.`,
+    `${S(N)} ${N} ${P(N)} de ${tema} ${O(N)} no estoque.`,
     `No estoque há ${N} ${P(N)} de ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
     `Esta categoria reúne ${N} ${P(N)} ${O(N)} de ${tema}, retiradas de carros com baixa legal no Detran-RS.`,
   ]);
@@ -180,9 +182,9 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
   const subs = tiposFrase(lista.map((p) => p.s), 2);
 
   const p1 = escolha(`${k}:1`, [
-    `Temos ${N} ${P(N)} ${O(N)} para ${nome}${anos}.`,
+    `${S(N)} ${N} ${P(N)} ${O(N)} para ${nome}${anos}.`,
     `No estoque há ${N} ${P(N)} para ${nome}${anos}, de carros com baixa legal no Detran-RS.`,
-    `Para ${nome}${anos} temos ${N} ${P(N)} ${O(N)} em estoque.`,
+    `Para ${nome}${anos}, ${S(N).toLowerCase()} ${N} ${P(N)} ${O(N)} em estoque.`,
   ]);
   const paragrafos = [p1];
   if (fams.length && N < 5) {
@@ -200,7 +202,7 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
       `Entre as peças do ${nome}, as mais comuns são ${juntar(subs)}.`,
     ]));
   } else {
-    paragrafos.push(`Antes de pedir, olha o ano e o código gravado da peça para ${nome}; na dúvida, a gente confere pelo WhatsApp.`);
+    paragrafos.push(`Antes de pedir, confira o ano e o código gravado da peça para ${nome}; na dúvida, a gente confere pelo WhatsApp.`);
   }
   const meta = caber([
     `${N} ${P(N)} ${O(N)} de ${nome}${anos}${fams.length ? `: ${fams.slice(0, 2).join(', ')}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
@@ -224,10 +226,10 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
   // sem modelo lido (Mini, Lifan): nada de "para 0 modelos"
   const paragrafos: string[] = [
     modelos ? escolha(`${k}:1`, [
-      `Temos ${N} ${P(N)} ${O(N)} de ${m.n} para ${modelos} ${M(modelos)}.`,
+      `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} para ${modelos} ${M(modelos)}.`,
       `Há ${N} ${P(N)} ${O(N)} de ${m.n} em estoque, para ${modelos} ${M(modelos)}${modelos > 1 ? ' diferentes' : ''}.`,
       `As peças de ${m.n} no estoque somam ${N}, de ${modelos} ${M(modelos)}.`,
-    ]) : `Temos ${N} ${P(N)} ${O(N)} de ${m.n} no estoque.`,
+    ]) : `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} no estoque.`,
   ];
   if (nomes.length) {
     paragrafos.push(escolha(`${k}:2`, [

@@ -15,7 +15,7 @@ const logo = logoInfo(m.k, 160, 90);
 const texto = textosMarca(m, lista);
 const qtd = (n: number, um: string, varios: string) => `${n.toLocaleString('pt-BR')} ${n === 1 ? um : varios}`;
 const lead = m.m.length > 0
-  ? `${qtd(m.c, 'peça original', 'peças originais')} de ${qtd(m.m.length, 'modelo', 'modelos')}. Escolhe o seu carro ou confere as mais novas.`
+  ? `${qtd(m.c, 'peça original', 'peças originais')} de ${qtd(m.m.length, 'modelo', 'modelos')}. Escolha o seu carro ou confira as mais novas.`
   : `${qtd(m.c, 'peça original', 'peças originais')} de ${m.n}. As mais novas estão logo abaixo.`;
 ---
 <Pagina titulo={tituloMarca(m.n)} descricao={texto.meta}>

@@ -29,7 +29,7 @@ const caminho = [
 ---
 <Pagina
   titulo="Envios para todo o Brasil | Izzat Car Imports"
-  descricao="Enviamos peças para todo o Brasil. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Pelo Mercado Livre, o frete e o prazo são os calculados no anúncio."
+  descricao="A gente envia peças para todo o Brasil. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Pelo Mercado Livre, o frete e o prazo são os calculados no anúncio."
   canonical={canonical}
 >
   <TopoArte trilha={[['Início', '/'], ['Envios', canonicalPath]]}
@@ -41,7 +41,7 @@ const caminho = [
     <section class="env-topo" aria-labelledby="h-frete">
       <div class="env-jeitos">
         <h2 class="titulo-secao inst-h2" id="h-frete">Como o frete funciona</h2>
-        <p class="inst-lead-sec env-lead">Enviamos para todo o Brasil. O frete depende de onde você fecha a compra:</p>
+        <p class="inst-lead-sec env-lead">A gente envia para todo o Brasil. O frete depende de onde você fecha a compra:</p>
         <ul class="env-lista">
           {jeitos.map((j) => (
             <li><span class="inst-disco inst-disco-g"><IconeInst nome={j.i} /></span><span><b>{j.t}</b>{j.s}</span></li>
@@ -51,11 +51,11 @@ const caminho = [
 
       <form class="env-cep" id="form-cep" novalidate aria-labelledby="h-cep">
         <h2 class="env-cep-titulo" id="h-cep">Quanto fica o frete para você?</h2>
-        <p>Digita o CEP. O WhatsApp abre com a mensagem pronta e o frete é combinado na hora.</p>
+        <p>Digite o CEP. O WhatsApp abre com a mensagem pronta e o frete é combinado na hora.</p>
         <div class="campo">
           <label for="f-cep">Seu CEP</label>
           <input id="f-cep" name="cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" required aria-describedby="e-cep" />
-          <p class="erro" id="e-cep" hidden>Confere o CEP: são 8 números.</p>
+          <p class="erro" id="e-cep" hidden>Confira o CEP: são 8 números.</p>
         </div>
         <div class="campo">
           <label for="f-peca">Qual peça? <span class="opc">(opcional)</span></label>
@@ -80,7 +80,7 @@ const caminho = [
   <Chamada
     id="h-chamada"
     titulo="Peça grande ou mais de uma peça?"
-    texto="A gente combina o envio pelo WhatsApp. Manda a peça e o CEP."
+    texto="A gente combina o envio pelo WhatsApp. Mande a peça e o CEP."
     mensagem="Quero combinar o envio. A peça é: ____. Meu CEP: ____"
   />
 </Pagina>
@@ -117,8 +117,8 @@ const caminho = [
       a.click();
       a.remove();
       if (status) {
-        status.textContent = 'Abrimos o WhatsApp com o seu CEP. Se não abriu, ';
-        status.appendChild(Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener', textContent: 'toca aqui' }));
+        status.textContent = 'A gente abriu o WhatsApp com o seu CEP. Se não abriu, ';
+        status.appendChild(Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener', textContent: 'toque aqui' }));
         status.appendChild(document.createTextNode('.'));
       }
     });

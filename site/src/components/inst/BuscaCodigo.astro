@@ -4,7 +4,7 @@
 import IconeInst from './IconeInst.astro';
 import Icone from '../Icone.astro';
 interface Props { id?: string; titulo?: string; texto?: string; class?: string }
-const { id = 'h-codigo', titulo = 'Tem o código gravado?', texto = 'Digita o código da sua peça velha: aparecem as peças com o mesmo código.', class: cls } = Astro.props;
+const { id = 'h-codigo', titulo = 'Tem o código gravado?', texto = 'Digite o código da sua peça velha: aparecem as peças com o mesmo código.', class: cls } = Astro.props;
 ---
 <form class:list={['bc', cls]} action="/catalogo.html" method="get" role="search" aria-labelledby={id}>
   <span class="bc-etiqueta" aria-hidden="true"><span class="bc-furo"></span>Cód. <span class="oem">95992471</span></span>
