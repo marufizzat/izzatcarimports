@@ -114,6 +114,77 @@ export function mensagemPeca(x: PecaMsg, meuCarro = ''): string {
   return cabecaPeca(x) + meuCarro + caudaPeca(x.url);
 }
 
+/** Somas da lista em centavos inteiros: o subtotal do site e o total no WhatsApp, que é a SOMA do preço de cada peça com
+ *  o desconto (cada um arredondado como aparece na linha dela, para a coluna fechar com o total). lib/lista.ts usa. */
+const centavos = (v: number) => Math.round(v * 100);
+export function somaPrecos(l: readonly { preco: number }[]): { site: number; whats: number; desconto: number } {
+  const site = l.reduce((s, x) => s + centavos(x.preco), 0);
+  const whats = l.reduce((s, x) => s + centavos(precoWhats(x.preco)), 0);
+  return { site: site / 100, whats: whats / 100, desconto: (site - whats) / 100 };
+}
+
+/** "Pedir tudo no WhatsApp" da Lista de orçamento (/lista.html): o mesmo pedido organizado da peça, com cada item
+ *  numerado, os totais e o link da lista por último (quem atende abre e vê as mesmas peças):
+ *
+ *    Olá! Vim pelo site da Izzat Car.
+ *
+ *    *PEDIDO DE PEÇAS (3 itens)*
+ *
+ *    *1. Farol direito*
+ *    Chevrolet Cruze · 2017 a 2021
+ *    Código: E131464301 · Anúncio: MLB123
+ *    R$ 244,64
+ *
+ *    *2. …*
+ *
+ *    Subtotal no site: R$ 1.234,56
+ *    *Total no WhatsApp (10% de desconto): R$ 1.111,10*
+ *
+ *    Meu carro: Volvo XC60 2019
+ *    Servem e ainda têm?
+ *
+ *    https://izzatcarimports.com.br/lista.html?i=MLB123,MLB456,MLB789
+ *
+ *  1 item: tudo no singular. Sem carro salvo: sem a linha. Lista comprida (mais de `limite` letras, o WhatsApp corta
+ *  mensagem longa no link): cada item numa linha só (nome + código + preço); se ainda passar, sem o código; e, no fim,
+ *  só as primeiras com "… e mais N peças (todas no link)". Os totais e o link ficam sempre. */
+export type ItemMsg = { id: string; nome: string; carro?: string; anos?: string; cod?: string; preco: number };
+export const LINK_LISTA = 'https://izzatcarimports.com.br/lista.html';
+export const LIMITE_MSG_LISTA = 1800;
+export function mensagemLista(itens: readonly ItemMsg[], meuCarro = '', limite = LIMITE_MSG_LISTA): string {
+  const n = itens.length;
+  const um = n === 1;
+  const { site, whats } = somaPrecos(itens);
+  const titulo = `*PEDIDO DE ${um ? 'PEÇA' : 'PEÇAS'} (${n} ${um ? 'item' : 'itens'})*`;
+  const completo = (x: ItemMsg, i: number) => [
+    `*${i + 1}. ${x.nome}*`,
+    [x.carro, x.anos].filter(Boolean).join(' · '),
+    [x.cod && `Código: ${x.cod}`, `Anúncio: ${x.id}`].filter(Boolean).join(' · '),
+    `R$ ${paraBrl(x.preco)}`,
+  ].filter(Boolean).join('\n');
+  const curto = (comCod: boolean) => (x: ItemMsg, i: number) =>
+    [`*${i + 1}. ${x.nome}*`, comCod && x.cod && `Cód. ${x.cod}`, `R$ ${paraBrl(x.preco)}`].filter(Boolean).join(' · ');
+  const fim = [
+    `Subtotal no site: R$ ${paraBrl(site)}\n*Total no WhatsApp (${DESCONTO_WHATS}% de desconto): R$ ${paraBrl(whats)}*`,
+    `${linhaMeuCarro(meuCarro)}${um ? CAUDA_PECA : 'Servem e ainda têm?'}`,
+    `${LINK_LISTA}?i=${itens.map((x) => x.id).join(',')}`,
+  ].join('\n\n');
+  const montar = (corpo: string) => mensagem(`\n\n${titulo}\n\n${corpo}\n\n${fim}`);
+  let msg = montar(itens.map(completo).join('\n\n'));
+  if (msg.length <= limite) return msg;
+  for (const comCod of [true, false]) {
+    msg = montar(itens.map(curto(comCod)).join('\n'));
+    if (msg.length <= limite) return msg;
+  }
+  // ainda longa: as primeiras peças, o aviso e os mesmos totais (de todas) e o link (com todas)
+  const linhas = itens.map(curto(false));
+  for (let k = n - 1; k >= 1; k--) {
+    msg = montar(`${linhas.slice(0, k).join('\n')}\n… e mais ${n - k} ${n - k === 1 ? 'peça' : 'peças'} (todas no link)`);
+    if (msg.length <= limite) return msg;
+  }
+  return msg;
+}
+
 /** Anos para a mensagem: "2018 a 2024" (ou "2019"). */
 export function anosTexto(y?: [number, number] | null): string {
   return y ? (y[0] === y[1] ? String(y[0]) : `${y[0]} a ${y[1]}`) : '';
