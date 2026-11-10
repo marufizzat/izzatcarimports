@@ -106,6 +106,16 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    Selo: `site/src/components/SeloReputacao.astro` (variantes `faixa`, `compacto`, `rodape`). Sem o dado, não aparece.
    Sem logo do Mercado Livre e sem percentual.
 
+8. **Busca e "a gente procura" (rodada 10, nov/2026)**: código digitado com espaço/traço/ponto ("8200 328 856") é juntado
+   (`codigoJunto()`/`separar()` em `lib/busca.ts`) e acha a peça em 1º; o título do resultado nunca diz "Nenhuma peça" com
+   resultado na tela. Quando a busca dá 0, só parecidas, ou nenhuma peça serve no carro/ano (`Busca.bate()`), o catálogo
+   mostra o bloco "Não achou? A gente procura no pátio" (WhatsApp com o digitado + o carro do filtro/digitado/salvo, no
+   formato de `lib/whats.ts`; GA4 `contato_whatsapp` com `botao: 'procurar-patio'`, lido de `data-botao` no `rastreio.js`;
+   link `procuro-peca.html?q=&carro=` pré-preenche o formulário). Mesmo código + carro com preços diferentes: o campo `dif`
+   (`diferencas()` em `preparar_dados.py`, só o que o TÍTULO do anúncio diz: "T8", "2.0", "G5/G6") vira a pílula
+   `.etiqueta-dif` ao lado do carro no cartão (catálogo e `CartaoPeca.astro`). O WhatsApp do cabeçalho/menu leva o carro
+   salvo ("Procuro uma peça para Volvo XC60 2019.") via `data-whats-carro`.
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.

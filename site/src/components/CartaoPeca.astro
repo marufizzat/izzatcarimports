@@ -26,7 +26,7 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
     </div>
     <div class="etiqueta-dados">
       <span class="etiqueta-serve" hidden></span>
-      {carro && <span class="etiqueta-carro"><span class="etiqueta-modelo">{carro}</span>{anos && <span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>{anos}</span>}</span>}
+      {carro && <span class="etiqueta-carro"><span class="etiqueta-modelo">{carro}{p.dif && <> <span class="etiqueta-dif">{p.dif}</span></>}</span>{anos && <span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>{anos}</span>}</span>}
       <h3 class="etiqueta-nome">{p.n}</h3>
       {cod && <span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">{cod}</span></span>}
       <span class="sr-only">R$ {brl(p.p)}</span>

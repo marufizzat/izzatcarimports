@@ -39,7 +39,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
           Mesmo desenho de pintarChip(); marca também html[data-carro] para quem reserva lugar ao carro (catálogo). */}
       <script is:inline>try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')),b=document.currentScript.previousElementSibling,t=b.lastElementChild,s=(k,x)=>{var e=document.createElement('span');e.className='cab-carro-'+k;e.append(x);return e},m;c.m&&(document.documentElement.dataset.carro='',b.className+=' com-carro',m=s('modelo',s('marca',c.b+' ')),m.append(c.m),t.replaceChildren(m),c.y&&t.append(s('ano',''+c.y)))}catch(e){}</script>
       <a class="cab-icone cab-lupa" href="/catalogo.html#busca" aria-label="Buscar peça"><Icone nome="busca" /></a>
-      <a class="botao botao-laranja cab-whats" href={whatsUrl('Estou procurando uma peça.')} aria-label="Chamar no WhatsApp">
+      <a class="botao botao-laranja cab-whats" href={whatsUrl('Procuro uma peça.')} data-botao="cabecalho" data-whats-carro aria-label="Chamar no WhatsApp">
         <Icone nome="whats" /><span>WhatsApp</span>
       </a>
       <button class="cab-icone cab-menu" type="button" aria-label="Abrir menu" aria-haspopup="dialog" aria-controls="menu-movel" data-abrir-menu>
@@ -82,11 +82,22 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
       {carros.map((c) => <a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a>)}
     </div>
   </div>
-  <a class="botao botao-laranja menu-whats" href={whatsUrl('Estou procurando uma peça.')}><Icone nome="whats" />Chamar no WhatsApp</a>
+  <a class="botao botao-laranja menu-whats" href={whatsUrl('Procuro uma peça.')} data-botao="menu" data-whats-carro><Icone nome="whats" />Chamar no WhatsApp</a>
 </dialog>
 
 <script>
   import { lerMeuCarro, EVENTO, ABRIR, ESCOLHIDO, type MeuCarro } from '../lib/meuCarro';
+  import { nomeCarro } from '../lib/meuCarro';
+  import { whatsUrl } from '../lib/whats';
+
+  // WhatsApp do topo e do menu: com carro salvo, a mensagem já leva o carro ("Procuro uma peça para Volvo XC60 2019.")
+  function whatsComCarro() {
+    const c = lerMeuCarro();
+    const txt = c ? `Procuro uma peça para ${nomeCarro(c)}.` : 'Procuro uma peça.';
+    document.querySelectorAll<HTMLAnchorElement>('a[data-whats-carro]').forEach((a) => { a.href = whatsUrl(txt); });
+  }
+  whatsComCarro();
+  window.addEventListener(EVENTO, whatsComCarro);
 
   // chip do cabeçalho: mostra o carro salvo (sem carro: "Meu carro"). O mesmo desenho do script do HTML (logo acima).
   // Modelo e ano em partes separadas: no aperto, o modelo ganha reticências e o ano nunca some.
