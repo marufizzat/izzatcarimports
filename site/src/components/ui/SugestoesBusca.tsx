@@ -2,7 +2,9 @@
 // Adaptado do padrao "Async Autocomplete" do 21st.dev (autor: coss.com): debounce, estado de
 // carregando, vazio e lista com teclado (combobox/listbox), reescrito sobre o motor local Busca.
 // As sugestões seguem a MESMA regra do catálogo (lib/busca.ts): o número de "Ver todos" é o que o catálogo mostra.
-// No topo, o carro (ou a marca, ou o sistema) que a pessoa digitou, com a contagem; sem nada, a saída é o WhatsApp.
+// No topo, o carro (ou a marca, ou o sistema) que a pessoa digitou, com a contagem. No pé, preso, "Ver todos" e, por
+// último, "Não achou? A gente procura no pátio" (WhatsApp com o digitado + o carro, a MESMA mensagem do bloco do catálogo:
+// lib/patio.ts), sempre que há 3+ letras, também sem nenhuma sugestão (cliente oculto 10/11, melhoria 2).
 import {
   useEffect, useId, useLayoutEffect, useMemo, useRef, useState,
   type FocusEvent as FE, type FormEvent as FormE, type KeyboardEvent as KE,
@@ -10,6 +12,8 @@ import {
 import { Busca, capaItem, carroAnos, type Atalho, type Item, type Sugestoes } from '../../lib/busca';
 import { icone } from '../catalogo/etiqueta';
 import { whatsUrl } from '../../lib/whats';
+import { pedidoPatio } from '../../lib/patio';
+import { lerMeuCarro } from '../../lib/meuCarro';
 import './sugestoes.css';
 
 type Props = {
@@ -62,7 +66,7 @@ const IconeSprite = ({ nome }: { nome: string }) => <svg viewBox="0 0 24 24" ari
 type Op =
   | { tipo: 'atalho'; a: Atalho }
   | { tipo: 'item'; it: Item }
-  | { tipo: 'whats' }
+  | { tipo: 'patio' }
   | { tipo: 'ver' };
 
 export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou código', tamanho = 'normal', autoFoco = false, inicial = '' }: Props) {
@@ -78,6 +82,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   const form = useRef<HTMLFormElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const lista = useRef<HTMLDivElement>(null);
+  const patio = useRef<HTMLAnchorElement>(null);
 
   // debounce de ~120 ms
   useEffect(() => {
@@ -93,17 +98,19 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   const textoBusca = q.trim();
   const termoTela = curto(termo.trim() || textoBusca);
   const atalhos = res?.atalhos ?? [];
-  // com atalho no topo ou na busca aproximada, menos peças: a lista inteira cabe sem rolar
-  const itens = res ? res.itens.slice(0, res.aproximado ? 4 : atalhos.length ? 5 : 6) : [];
   const semResultado = estado === 'pronto' && !!res && res.total === 0;
   const mostraCarregando = estado === 'carregando' && !busca;
   const erro = estado === 'erro' && !busca;
+  // "Não achou?": com 3+ letras ou números digitados (e sempre que a busca não achou nada ou não carregou)
+  const comPatio = (textoBusca.match(/[\p{L}\p{N}]/gu) ?? []).length >= 3 || semResultado || erro;
+  // com atalho no topo, na busca aproximada ou com a linha do pátio no pé, menos peças: a lista quase cabe sem rolar
+  const itens = res ? res.itens.slice(0, (res.aproximado ? 4 : atalhos.length ? 5 : 6) - (comPatio ? 1 : 0)) : [];
 
   const ops: Op[] = [
     ...atalhos.map((a) => ({ tipo: 'atalho' as const, a })),
     ...itens.map((it) => ({ tipo: 'item' as const, it })),
-    ...(semResultado || erro || res?.aproximado ? [{ tipo: 'whats' as const }] : []),
     ...(!semResultado ? [{ tipo: 'ver' as const }] : []),
+    ...(comPatio ? [{ tipo: 'patio' as const }] : []),
   ];
   const total = ops.length;
   // Aviso para o leitor de tela, numa região viva que existe SEMPRE (a que nasce junto com a lista costuma ser pulada):
@@ -161,11 +168,15 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     }
   }, []);
 
-  const msgWhats = `Procuro: ${textoBusca}. Tem no pátio?`;
+  // o pedido do pátio: o texto do campo agora (não o atrasado do debounce), o carro digitado e o salvo
+  const linkPatio = comPatio
+    ? whatsUrl(pedidoPatio({ q: textoBusca, carroDaBusca: res?.carros[0] ?? null, meuCarro: lerMeuCarro() }).texto)
+    : '';
   const escolher = (op: Op) => {
     if (op.tipo === 'atalho') window.location.href = op.a.href;
     else if (op.tipo === 'item') window.location.href = `/peca/${op.it.h}.html`;
-    else if (op.tipo === 'whats') window.open(whatsUrl(msgWhats), '_blank', 'noopener');
+    // link de verdade (o clique conta no GA4 com o data-botao e abre noutra aba), nunca window.open
+    else if (op.tipo === 'patio') patio.current?.click();
     else form.current?.requestSubmit();
   };
 
@@ -244,30 +255,34 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
         </li>
       );
     }
-    if (op.tipo === 'whats') {
+    if (op.tipo === 'patio') {
+      // a última linha: um link de verdade (Tab chega nele; Enter e clique abrem o WhatsApp noutra aba), que também é
+      // opção da lista (as setas chegam nele e Enter no campo clica nele)
+      const { onClick: _semClique, ...semClique } = comum;
       return (
-        <li key="whats" {...comum} className={`sb-op sb-whats${on}`}>
-          <span className="sb-foto sb-icone"><IconeSprite nome="whats" /></span>
-          <span className="sb-txt">
-            <b>{semResultado || erro ? 'Não está no site? A gente procura no pátio' : 'Não achou? A gente procura no pátio'}</b>
-            <small>Chamar no WhatsApp</small>
-          </span>
-          <span className="sb-ir"><IconeSeta /></span>
-        </li>
+        <a key="patio" {...semClique} ref={patio} className={`sb-patio${on}`} href={linkPatio} target="_blank" rel="noopener"
+           data-botao="procurar-patio" tabIndex={0}>
+          <span className="sb-patio-ic"><IconeSprite nome="whats" /></span>
+          <span className="sb-patio-txt">Não achou? A gente procura no pátio<span className="sr-only">, pelo WhatsApp</span></span>
+          <IconeSeta />
+        </a>
       );
     }
     const n = res?.total ?? 0;
     return (
-      <li key="ver" {...comum} className={`sb-op sb-ver${on}`}>
+      <div key="ver" {...comum} className={`sb-op sb-ver${on}`}>
         <span>
           {!res || erro ? `Buscar “${termoTela}” no catálogo`
             : res.aproximado ? `Ver as ${n2(n)} peças parecidas`
             : n === 1 ? 'Ver o resultado no catálogo' : `Ver todos os ${n2(n)} resultados`}
         </span>
         <IconeSeta />
-      </li>
+      </div>
     );
   };
+  // o pé preso no fim da lista: "Ver todos" e "Não achou?" (as peças rolam por baixo)
+  const corpo = ops.map((op, k) => [op, k] as const).filter(([op]) => op.tipo === 'atalho' || op.tipo === 'item');
+  const pe = ops.map((op, k) => [op, k] as const).filter(([op]) => op.tipo === 'ver' || op.tipo === 'patio');
 
   return (
     <div className="sb-raiz" ref={raiz} onBlur={onBlur}>
@@ -354,7 +369,8 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
             </p>
           )}
           <ul id={listaId} role="listbox" aria-label="Sugestões de peças">
-            {ops.map(opcao)}
+            {corpo.map(([op, k]) => opcao(op, k))}
+            {pe.length > 0 && <li role="none" className="sb-pe">{pe.map(([op, k]) => opcao(op, k))}</li>}
           </ul>
         </div>
       )}

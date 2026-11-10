@@ -273,24 +273,31 @@
 /* na página do próprio carro salvo: "Confira o ano" em âmbar nas peças de outros anos (nunca "não serve") */
 .etiqueta .etiqueta-serve-ano { background: #fff7e6; color: #6b4100; box-shadow: inset 0 0 0 1px #f1d9a6, 0 2px 8px -3px rgb(16 16 20 / .28); }
 .etiqueta .etiqueta-serve-ano::before { content: "!"; background: #f5b700; color: #1d1d1f; font-size: 11px; font-weight: 850; line-height: 16px; text-align: center; }
-/* ação rápida: só com mouse (no toque, um link invisível sobre a foto roubaria o toque que abre a peça) */
+/* ação rápida: só com mouse (no toque, um link invisível sobre a foto roubaria o toque que abre a peça).
+   Uma faixa de 44 px na BASE DA FOTO, de ponta a ponta do cartão, colada na borda de baixo dela (cliente oculto 10/11,
+   melhoria 3: o botão flutuando no meio do cartão pegava o clique de quem queria abrir a peça). O centro da foto, o
+   nome e o preço ficam livres; os cantos são os do cartão naquela altura (retos: a faixa é parte dele, não um botão
+   solto). Entra só com um fade curto (sem subir: nada se mexe debaixo do mouse). */
 .etiqueta-acao { display: none; }
 @media (hover: hover) and (pointer: fine) {
   .etiqueta-acao {
-    position: absolute; z-index: 2; left: 10px; right: 10px; top: calc(100cqi - 50px); height: 40px;
-    display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 11px;
-    background: linear-gradient(180deg, color-mix(in oklab, var(--accent), #fff 14%) 0%, var(--accent) 52%, var(--accent-press) 100%);
+    position: absolute; z-index: 2; left: 0; right: 0; top: calc(100cqi - 44px); height: 44px;
+    display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 12px;
+    background: linear-gradient(180deg, color-mix(in oklab, var(--accent), #fff 12%) 0%, var(--accent) 55%, var(--accent-press) 100%);
     color: #1d1d1f; font-weight: 700; font-size: 14px; font-stretch: 96%; white-space: nowrap;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), 0 8px 18px -8px rgb(140 50 0 / .6);
-    opacity: 0; transform: translateY(8px); pointer-events: none;
-    transition: opacity .2s ease, transform .28s cubic-bezier(.2,.7,.2,1), filter .2s;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .34), 0 -6px 14px -8px rgb(140 50 0 / .35);
+    opacity: 0; pointer-events: none;
+    transition: opacity .16s ease, filter .2s;
   }
   .etiqueta-acao svg { width: 18px; height: 18px; flex: none; }
-  .etiqueta-cx:hover .etiqueta-acao, .etiqueta-cx:focus-within .etiqueta-acao { opacity: 1; transform: none; pointer-events: auto; }
+  .etiqueta-cx:hover .etiqueta-acao, .etiqueta-cx:focus-within .etiqueta-acao { opacity: 1; pointer-events: auto; }
   .etiqueta-cx:hover .etiqueta-serve, .etiqueta-cx:focus-within .etiqueta-serve { opacity: 0; }
   .etiqueta-acao:hover { filter: brightness(1.05); }
-  .etiqueta-acao:focus-visible { outline: 3px solid #1d1d1f; outline-offset: 2px; border-radius: 11px; box-shadow: 0 0 0 5px #fff; }
+  /* teclado: o anel por dentro da faixa (por fora ele cobriria o nome do cartão) */
+  .etiqueta-acao:focus-visible { outline: 3px solid #1d1d1f; outline-offset: -3px; }
+  @container etiqueta (max-width: 180px) { .etiqueta-acao { gap: 6px; padding: 0 8px; font-size: 13px; } .etiqueta-acao svg { width: 16px; height: 16px; } }
 }
+@media (prefers-reduced-motion: reduce) { .etiqueta-acao { transition: none; } }
 
 /* ---- Selo em disco (icones aprovados dos destaques) ----------------------- */
 .selo { display: flex; align-items: center; gap: 12px; }

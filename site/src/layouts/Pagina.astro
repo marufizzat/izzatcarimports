@@ -3,7 +3,7 @@
 import Base from './Base.astro';
 import Cabecalho from '../components/Cabecalho.astro';
 import Rodape from '../components/Rodape.astro';
-interface Props { titulo: string; descricao?: string; canonical?: string; ogImagem?: string; noindex?: boolean; ogTipo?: 'website' | 'product'; produto?: object; rodapeSelos?: boolean; }
+interface Props { titulo: string; descricao?: string; canonical?: string; ogImagem?: string; noindex?: boolean; ogTipo?: 'website' | 'product'; ogTitulo?: string; ogDescricao?: string; produto?: object; rodapeSelos?: boolean; }
 const { produto, rodapeSelos = true, ...resto } = Astro.props;
 ---
 <Base {...resto} direcao="a">

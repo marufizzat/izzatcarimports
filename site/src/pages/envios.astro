@@ -86,40 +86,35 @@ const caminho = [
 </Pagina>
 
 <script>
-  import { mensagem, linkWhats } from '../lib/whats';
-  // CEP → WhatsApp com a mensagem pronta (link de verdade: preserva o gesto e o rastreio conta o Contact)
+  import { linkWhats, mensagemFrete, abrirWhats } from '../lib/whats';
+  import { ligarCampoCep, cepCompleto, formatarCep, salvarCep } from '../lib/cep';
+  // CEP → WhatsApp com a mensagem pronta (link de verdade: preserva o gesto e o rastreio conta o Contact). A máscara, os
+  // 8 números e o CEP lembrado (o mesmo do "Como é o envio?" da página da peça) ficam em lib/cep.ts.
   const form = document.getElementById('form-cep') as HTMLFormElement | null;
   if (form) {
     const cep = form.elements.namedItem('cep') as HTMLInputElement;
     const peca = form.elements.namedItem('peca') as HTMLInputElement;
     const erro = document.getElementById('e-cep');
     const status = document.getElementById('env-cep-status');
-    const digitos = () => cep.value.replace(/\D/g, '');
-    cep.addEventListener('input', () => {
-      const d = digitos().slice(0, 8);
-      cep.value = d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
-      if (erro && !erro.hidden && d.length === 8) { erro.hidden = true; cep.setAttribute('aria-invalid', 'false'); }
+    ligarCampoCep(cep, () => {
+      if (erro && !erro.hidden) { erro.hidden = true; cep.setAttribute('aria-invalid', 'false'); }
     });
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const d = digitos();
-      if (d.length !== 8) {
+      if (!cepCompleto(cep.value)) {
         if (erro) erro.hidden = false;
         cep.setAttribute('aria-invalid', 'true');
         cep.focus();
         return;
       }
-      const p = peca.value.trim();
-      const texto = mensagem(`Quero saber o frete para o CEP ${d.slice(0, 5)}-${d.slice(5)}.` + (p ? ` A peça é: ${p}` : ' A peça é: ____'));
-      const url = linkWhats(texto);
-      const a = Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener' });
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const c = formatarCep(cep.value);
+      salvarCep(c);
+      const url = linkWhats(mensagemFrete(c, { peca: peca.value.trim() }));
+      abrirWhats(url, 'frete-cep');
       if (status) {
-        status.textContent = 'A gente abriu o WhatsApp com o seu CEP. Se não abriu, ';
-        status.appendChild(Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener', textContent: 'toque aqui' }));
-        status.appendChild(document.createTextNode('.'));
+        const a = Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener', textContent: 'abra por aqui' });
+        a.dataset.botao = 'frete-cep';
+        status.replaceChildren('A gente abriu o WhatsApp com o seu CEP. Se não abriu, ', a, '.');
       }
     });
   }

@@ -12,7 +12,7 @@ import { modelosDa } from '../../lib/meuCarro';
 import { doMesmoCarro } from '../../lib/relacionadas';
 import { nomeModelos } from '../../lib/meuCarro';
 import { nomeCompleto, nomeMensagem, titulosPecas } from '../../lib/nomePeca';
-import { descricaoPeca } from '../../lib/descricao';
+import { descricaoPeca, descricaoLink, tituloLink } from '../../lib/descricao';
 import type { Peca } from '../../lib/dados';
 import { fotosGaleria } from '../../lib/quadroFoto';
 
@@ -97,6 +97,10 @@ const linhaPeca = nomeMensagem(p);
 // descrição (Google e prévia do link): o nome limpo + carro + anos, nunca o título cru do anúncio; até 160 caracteres
 // (lib/descricao.ts: a frase mais completa que couber)
 const descricao = descricaoPeca(p, codigo, brl(p.p));
+// prévia do link (WhatsApp, Facebook): título curto (nome + carro) e o preço e o código na 1ª linha (cliente oculto,
+// atrito 10). O <title> e a meta description (Google) não mudam.
+const ogTitulo = tituloLink(p);
+const ogDescricao = descricaoLink(p, codigo, brl(p.p));
 const trilha: [string, string][] = [['Início', '/'], ['Catálogo', '/catalogo.html']];
 if (fam && fam.n !== 'Outros') trilha.push([fam.n, `/categoria/${fam.k}.html`]);
 if (carro) trilha.push([`${carro.b} ${carro.m}`, `/carros/${carro.k}.html`]);
@@ -126,17 +130,19 @@ const ld = {
   ],
 };
 ---
-<Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(fotosMl[0], 'F') || undefined} ogTipo="product"
+<Pagina titulo={titulo} descricao={descricao} ogTitulo={ogTitulo} ogDescricao={ogDescricao} ogImagem={capa ? `${SITE}${capa}` : foto(fotosMl[0], 'F') || undefined} ogTipo="product"
         produto={{ id: p.id, name: nomeFora, price: p.p, category: p.c }} rodapeSelos={false}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   {/* prévia do link como produto (Facebook/WhatsApp leem o preço e o estado) */}
   <meta slot="head" property="product:price:amount" content={p.p.toFixed(2)} />
   <meta slot="head" property="product:price:currency" content="BRL" />
   <meta slot="head" property="product:condition" content="used" />
-  {/* prévia do link (WhatsApp, Facebook): a capa de estúdio tem sempre 1000×1000 (capas_estudio.py) */}
+  {/* prévia do link (WhatsApp, Facebook): a capa de estúdio tem sempre 1000×1000 (capas_estudio.py); a foto do ML, sem
+      medida (o tamanho muda de foto para foto) */}
   {capa && <meta slot="head" property="og:image:width" content="1000" />}
   {capa && <meta slot="head" property="og:image:height" content="1000" />}
   {capa && <meta slot="head" property="og:image:type" content="image/webp" />}
+  <meta slot="head" property="og:image:alt" content={ogTitulo} />
   <link slot="head" rel="preload" as="image" href={capa ?? foto(fotosMl[0], 'F')} fetchpriority="high" />
 
   <div class="moldura">
