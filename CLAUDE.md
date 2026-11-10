@@ -201,6 +201,15 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (só as peças do carro, feito no
   build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entra em partes (12 cartões, o resto, a lista completa em
   fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`.
+- **Troca de página sem tela branca** (nov/2026): transição entre documentos (`@view-transition` no fim do
+  `global.css`; Chrome/Edge 126+ e Safari 18.2+, quem não tem navega como antes), até 250 ms, nenhuma com
+  `prefers-reduced-motion` e o `html.leve` pula no `pageswap`. O cabeçalho fica parado (grupo `cab`, fundo cheio só
+  durante a troca) e a foto do cartão tocado vira a capa da peça: `public/navegar.js` (no `<head>` do `Base.astro`, com
+  defer) põe `view-transition-name: foto-peca` SÓ no `.etiqueta-foto` do clique (na página da peça, a capa do palco solta o
+  nome: dois iguais cancelam a transição) e o CSS dá o mesmo nome ao `.galeria-palco` só durante a troca
+  (`:active-view-transition`). Nada de `unload`/`no-store`: o voltar (bfcache) continua instantâneo.
+  Teste no Playwright: o Chromium dele desliga `PaintHolding` e `RenderDocument` (a página nova nem pinta com a
+  transição); religar os dois (`_r12fluido/scripts/chromium-real.cjs`). O WebKit confere a transição inteira.
 - Catálogo: a 1ª tela (24 cartões e os filtros) vem pronta no HTML, feita no build com o MESMO `busca.json`; o índice só
   desce depois das fotos dela, ou já se o endereço traz busca/filtro (`html.cat-url`, marcado no `<head>` de
   `catalogo.astro`, que também guarda o lugar das fichas e do "Seu carro"). Lotes de 48 (2 entram sozinhos, depois o
