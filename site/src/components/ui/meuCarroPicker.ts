@@ -133,7 +133,7 @@ function htmlCampos(e: Estado): string {
  *  e troca pelo carro salvo antes de pintar: o aviso já nasce no lugar (a grade de marcas não desce depois). */
 export const AVISO_CARRO = '__CARRO__';
 export function htmlAvisoSemPeca(carro: string): string {
-  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">pede no WhatsApp</a>.</p>`;
+  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">peça no WhatsApp</a>.</p>`;
 }
 
 function htmlMarcas(g: Garagem, e: Estado): string {

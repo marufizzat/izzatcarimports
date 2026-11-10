@@ -965,7 +965,7 @@ UNIDADE_NO_NOME = re.compile(r"\d+([.,]\d+)?(mm|cm|w|v|a|ah|cc|km|kg|cv|hp|i|din
 # Palavra que é nome de peça e também de carro: fica no nome ("Sensor polo negativo", "Motor aspirado").
 CARRO_QUE_E_PECA = {"polo", "aspirado"}
 # Sobra solta no fim ("... sensor de estacionamento cor" de "Cor Preto"; "std" = standard)
-FIM_SOLTO = {"cor", "std"}
+FIM_SOLTO = {"cor"}
 # Fabricante da peça escrito em minúsculas no anúncio: com a grafia dele ("bosch" -> "Bosch")
 MARCA_DA_PECA = {"bosch": "Bosch", "valeo": "Valeo", "hella": "Hella", "magneti": "Magneti", "marelli": "Marelli",
                  "delphi": "Delphi", "denso": "Denso", "continental": "Continental", "siemens": "Siemens",
@@ -1046,11 +1046,6 @@ def nome_limpo(titulo, marca, modelo, outros=()):
             continue                                       # geracao/chassi: "G06", "E90", "G5", "B8"
         if k in _CONHECIDOS_GLOBAL and re.search(r"\d", w):   # outro modelo: s90, q5
             continue
-        # outro carro no meio do nome (o carro da peca aparece a parte): "...anti ruido Evoque suporte do radio" do
-        # Discovery, "golf" no A3. Sem modelo no cartao, o carro do nome e a unica pista: fica.
-        if modelo and len(k) >= 4 and (k in _CONHECIDOS_GLOBAL or k in _MODELOS_CHAVE) \
-                and k not in CARRO_QUE_E_PECA and not _palavra_comum(k):
-            continue
         if len(k) == 1:
             continue
         if re.search(r"\d", w) and len(k) >= 5:          # codigo OEM / part number
@@ -1068,6 +1063,11 @@ def nome_limpo(titulo, marca, modelo, outros=()):
     # por extenso, com acento e concordancia; sem o "carro" que sobrar no fim
     # ("Sirene Alarme Jetta Golf Passat", "Motor Vidro Eletrico Voyage Saveiro G5 G6")
     palavras_nome = _sem_trecho_repetido(_sem_lado_repetido(expandir_nome(saida, tirar_carro=bool(modelo))))
+    # outro carro compatível no nome ("Evoque" no sensor do Discovery, "Pulse" na mangueira do Compass) fica, com
+    # maiúscula de nome próprio: é informação para quem procura a peça
+    palavras_nome = [w.capitalize() if (len(_sem(w)) >= 4 and (_sem(w) in _CONHECIDOS_GLOBAL or _sem(w) in _MODELOS_CHAVE)
+                     and _sem(w) not in CARRO_QUE_E_PECA and not _palavra_comum(_sem(w)) and w.islower()) else w
+                     for w in palavras_nome]
     palavras_nome = _concordar_posicao(palavras_nome)
     while len(palavras_nome) > 1 and _sem(palavras_nome[-1]) in FIM_SOLTO:
         palavras_nome.pop()

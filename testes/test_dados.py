@@ -980,7 +980,7 @@ def test_nome_sem_outro_carro_pedaco_de_codigo_nem_cor():
     try:
         casos = [
             ("Sensor Módulo Antena Anti Ruido Discovery Evoque Original Suporte Do Radio Land Rover Discovery 4 2012",
-             "Land Rover", "Discovery", "Sensor módulo antena anti ruído suporte do rádio"),
+             "Land Rover", "Discovery", "Sensor módulo antena anti ruído Evoque suporte do rádio"),
             ("Motor Vidro Eletrico Direito Audi A3 Vw Golf Mqb 13/21 801b", "Audi", "A3", "Motor vidro elétrico direito"),
             ("Mangueira Filtro Ar Pulse Fastback Jeep Compass 21/26 520798", "Jeep", "Compass", "Mangueira filtro ar"),
             ("Macaneta Interna Diant Dir Ford Fiesta New Fiesta 02/12 2s65 Preto", "Ford", "Fiesta",

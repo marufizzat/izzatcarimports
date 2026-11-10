@@ -56,7 +56,7 @@ export function tituloPeca(p: PecaNome, o: { max?: number; extra?: string; anos?
   const ex = o.extra || '';
   const opcoes: string[] = [];
   const por = (t: string, sufixo = true) => opcoes.push(sufixo ? t + TITULO_SUFIXO : t);
-  if (!ex && cod) por(junta(p.n, carro, anos, cod));
+  if (!ex && cod) { por(junta(p.n, carro, anos, cod)); por(junta(p.n, carro, anos, cod), false); }
   por(junta(p.n, carro, anos, ex));
   if (o.anos && anos) por(junta(p.n, carro, anos, ex), false);
   por(junta(p.n, carro, ex));
