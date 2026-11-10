@@ -16,6 +16,8 @@ export type Indice = {
   id: string[]; t: string[]; n: string[]; p: number[]; i: string[]; h: string[]; f: string;
   b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[]; s: number[]; o: string[];
   e?: string; // capa de estúdio por peça: '0' nenhuma, '1' automática, '2' maquiada (estudio-pro)
+  // capas leves do cartão (scripts/capas-cartao.mjs, no build): '1' = as de 400/640 px são da capa que o "e" diz
+  r?: string;
   // peça que serve em 2+ carros: {índice: ["S60", "XC60"]} e, quando a faixa muda, {índice: [[2018, 2024], ...]}
   ms?: Record<string, string[]>; ys?: Record<string, ([number, number] | null)[]>;
   // mesma peça (código e carro) com preço diferente: a versão que o título diz, só nas que têm ({índice: "T8"})
@@ -24,6 +26,8 @@ export type Indice = {
 export type Item = {
   k: number; id: string; t: string; n: string; p: number; i: string; h: string; f: boolean;
   b: string; m: string; y: [number, number] | null; c: string; s: string; o: string; e: string;
+  /** 1 = a capa tem as versões leves de 400/640 px em dia (fotoCartao); ausente = só a capa inteira */
+  r?: 1;
   ms?: string[]; ys?: ([number, number] | null)[];
   /** a versão que separa esta peça das outras de mesmo código e carro com outro preço ("T8", "2.0", "G5/G6") */
   dif?: string;
@@ -182,6 +186,7 @@ export class Busca {
       };
       // os campos raros só quando existem: a 1ª tela do catálogo vai serializada no HTML ("ms":[0] em 24 cartões pesava)
       const ms = ix.ms?.[k], ys = ix.ys?.[k], dif = ix.dif?.[k];
+      if (ix.r?.[k] === '1') it.r = 1;
       if (ms) it.ms = ms;
       if (ys) it.ys = ys;
       if (dif) it.dif = dif;
@@ -560,11 +565,46 @@ export function foto(chave: string, tam = 'V') {
   return chave.startsWith('http') ? chave : `https://http2.mlstatic.com/D_${chave}-${tam}.webp`;
 }
 
-/** Capa da peça na busca: a de estúdio quando existe (igual às páginas), senão a foto do ML. */
-export function capaItem(it: Item, tam = 'O') {
+type Capa = Pick<Item, 'id' | 'e' | 'i' | 'r'>;
+/** Capa da peça na busca: a de estúdio quando existe (igual às páginas), senão a foto do ML. Miniatura (tam 'E' ou
+ *  'A', as sugestões da busca): a capa leve de 400 px quando ela está em dia (a inteira tem 1000 px para 56 na tela). */
+export function capaItem(it: Capa, tam = 'O') {
+  if (it.e !== '0' && it.r && (tam === 'E' || tam === 'A')) return `/estudio-400/${it.id}.webp`;
   if (it.e === '2') return `/estudio-pro/${it.id}.webp`;
   if (it.e === '1') return `/estudio/${it.id}.webp`;
   return foto(it.i, tam);
+}
+
+/** Larguras das capas leves dos cartões (scripts/capas-cartao.mjs): public/estudio-400/ e public/estudio-640/. */
+export const LARGURAS_CAPA = [400, 640] as const;
+
+/** sizes do cartão em cada lugar: a largura da FOTO do cartão, medida de 320 a 1920 px (moldura = 100vw - 32px até
+ *  767, 100vw - 64px depois, no máximo 1240); arredondado para cima (um pouco a mais é melhor que a menos). */
+export const SIZES_CARTAO = {
+  // grade de 2/3/4 colunas (gap 12/16/18): categoria, carro e a grade do ano da página do carro (GradePecas.astro)
+  grade: '(max-width: 699px) calc(50vw - 22px), (max-width: 1099px) calc(33.4vw - 21px), (max-width: 1303px) calc(25vw - 29px), 297px',
+  // catálogo: 2/3 colunas; do 1024 a lateral dos filtros (264 + 28) entra; 4 colunas do 1280
+  catalogo: '(max-width: 699px) calc(50vw - 22px), (max-width: 1023px) calc(33.4vw - 21px), (max-width: 1279px) calc(33.4vw - 129px), (max-width: 1303px) calc(25vw - 102px), 224px',
+  // home, "Os mais procurados": trilho de 2,2 cartões no celular, 4 colunas do 700 (VitrineDestaques.astro)
+  vitrine: '(max-width: 699px) calc(45.5vw - 20px), (max-width: 1303px) calc(25vw - 28px), 297px',
+  // home, carrossel (Coverflow.astro): 208 px; no PC em 3D o do meio chega a 300
+  carrossel: '(min-width: 1024px) 300px, 208px',
+  // peça vendida (404) e "do mesmo carro" da peça: trilho de 208 px; 30vw do 1024; 6 colunas do 1280
+  parecidas: '(min-width: 1280px) 200px, (min-width: 1024px) 30vw, 208px',
+} as const;
+
+/** A foto do cartão (UMA regra para os 3 que montam cartão: CartaoPeca.astro, a Etiqueta do catálogo e cartaoHtml):
+ *  - capa de estúdio: src = a capa inteira (navegador sem srcset e o socorro do erro); com as capas leves em dia (r),
+ *    srcset 400/640/inteira e o sizes do lugar: o celular 2x baixa ~8 KB e o 3x ~17 KB, não os ~41 KB da inteira;
+ *  - sem capa: a foto do ML em 320/400/500. */
+export function fotoCartao(it: Capa, sizes: string): { src: string; srcset?: string; sizes?: string; estudio: boolean } {
+  if (it.e !== '0') {
+    const src = capaItem(it);
+    if (!it.r) return { src, estudio: true };
+    return { src, srcset: [...LARGURAS_CAPA.map((w) => `/estudio-${w}/${it.id}.webp ${w}w`), `${src} 1000w`].join(', '), sizes, estudio: true };
+  }
+  if (!it.i || it.i.startsWith('http')) return { src: foto(it.i), estudio: false };
+  return { src: foto(it.i, 'O'), srcset: `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`, sizes, estudio: false };
 }
 
 /** "Volvo XC60 · 2018–2024" (peça de 2+ carros: "Volvo S60 / XC60 · 2018–2024", como no cartão) */

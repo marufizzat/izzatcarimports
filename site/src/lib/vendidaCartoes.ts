@@ -1,7 +1,7 @@
 // Os cartões "Parecidas à venda" da 404 da peça vendida. Só no navegador e só quando o endereço é de uma peça (a 404
 // importa este arquivo sob demanda: a 404 comum não baixa a busca). Sem ilha React: o HTML do cartão é o MESMO do
 // cartão do catálogo (Etiqueta, em catalogo/Catalogo.tsx) e do CartaoPeca.astro, montado aqui.
-import { Busca, capaItem, foto, type Indice, type Item } from './busca';
+import { Busca, SIZES_CARTAO, foto, fotoCartao, type Indice, type Item } from './busca';
 import { parecidas, type Vendida } from './vendida';
 import {
   CLASSE_CARTAO, linhaCarro, precoPartes, codigoPeca, dadosCarro, msgWhats, urlPeca, icone, linkWhats,
@@ -11,16 +11,17 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const atributos = (o: Record<string, string | number | undefined>) =>
   Object.entries(o).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => ` ${k}="${esc(String(v))}"`).join('');
 
-/** O cartão da peça (o desenho do catálogo), com o "Pedir no WhatsApp" de quem usa mouse. */
-export function cartaoHtml(it: Item): string {
+/** O cartão da peça (o desenho do catálogo), com o "Pedir no WhatsApp" de quem usa mouse. `sizes`: a largura da foto
+ *  no lugar (SIZES_CARTAO); sem ela (ou com o índice do .map), a das parecidas da 404. */
+export function cartaoHtml(it: Item, sizes?: string | number): string {
   const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
   const [reais, cent] = precoPartes(it.p);
   const cod = codigoPeca(it.o);
-  const estudio = it.e !== '0';
-  const src = estudio ? capaItem(it) : foto(it.i, 'O');
-  const img = estudio
-    ? `<img src="${esc(src)}" class="estudio" data-ml="${esc(it.i ? foto(it.i, 'O') : '')}" alt="" width="800" height="800" loading="lazy" decoding="async">`
-    : `<img src="${esc(src)}" srcset="${esc(`${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`)}" sizes="(min-width:1280px) 200px, (min-width:1024px) 30vw, 208px" alt="" width="800" height="800" loading="lazy" decoding="async">`;
+  const f = fotoCartao(it, typeof sizes === 'string' ? sizes : SIZES_CARTAO.parecidas);
+  const leve = f.srcset ? ` srcset="${esc(f.srcset)}" sizes="${esc(f.sizes ?? '')}"` : '';
+  const img = f.estudio
+    ? `<img${leve} src="${esc(f.src)}" class="estudio" data-ml="${esc(it.i ? foto(it.i, 'O') : '')}" alt="" width="800" height="800" loading="lazy" decoding="async">`
+    : `<img${leve} src="${esc(f.src)}" alt="" width="800" height="800" loading="lazy" decoding="async">`;
   const linha = carro ? `<span class="etiqueta-carro"><span class="etiqueta-modelo">${esc(carro)}</span>${it.dif ? ` <span class="etiqueta-dif">${esc(it.dif)}</span>` : ''}${anos ? `<span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>${esc(anos)}</span>` : ''}</span>` : '';
   return `<div class="${CLASSE_CARTAO}"><a class="etiqueta" href="/peca/${esc(it.h)}.html"${atributos(dadosCarro(it.b, it.m, it.y, it.ms, it.ys))}>`
     + `<div class="etiqueta-foto">${img}</div><div class="etiqueta-dados">${linha}<h3 class="etiqueta-nome">${esc(it.n)}</h3>`
@@ -31,13 +32,15 @@ export function cartaoHtml(it: Item): string {
     + `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('whats')}"></use></svg>Pedir no WhatsApp</a></div>`;
 }
 
-/** Foto que não carregou: a capa de estúdio dá lugar à foto do ML; se essa também falhar, fica a placa clara. */
+/** Foto que não carregou: a capa leve (srcset) dá lugar à capa inteira; ela, à foto do ML; se essa também falhar, fica a
+ *  placa clara. */
 export function vigiarFotos(raiz: HTMLElement) {
   raiz.addEventListener('error', (e) => {
     const img = e.target;
     if (!(img instanceof HTMLImageElement)) return;
     const ml = img.dataset.ml;
-    if (ml && img.getAttribute('src') !== ml) { img.classList.remove('estudio'); img.src = ml; delete img.dataset.ml; }
+    if (img.hasAttribute('srcset') && img.classList.contains('estudio')) { img.removeAttribute('srcset'); img.removeAttribute('sizes'); }
+    else if (ml && img.getAttribute('src') !== ml) { img.classList.remove('estudio'); img.src = ml; delete img.dataset.ml; }
     else img.classList.add('sem-capa');
   }, true);
 }

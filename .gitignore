@@ -12,6 +12,10 @@ __pycache__/
 site/dist-previa/
 site/.wrangler/
 site/public/estudio/
+# capas leves dos cartões (site/scripts/capas-cartao.mjs, feitas no build; o robô guarda no cache do Actions)
+site/public/estudio-400/
+site/public/estudio-640/
+site/src/data/capas-cartao.json
 estudio_falhas*.json
 
 # medidas das fotos do ML: cache do robô e arquivo temporário do medidor

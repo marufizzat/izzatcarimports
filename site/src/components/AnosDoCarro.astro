@@ -129,7 +129,7 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
             .filter((it) => norm(it.b) === norm(B) && serveNoModelo(it, M))
             .sort((a, z) => (z.id > a.id ? 1 : -1));
         })();
-        const [itens, { cartaoHtml, vigiarFotos }] = await Promise.all([doCarro, import('../lib/vendidaCartoes')]);
+        const [itens, { cartaoHtml, vigiarFotos }, { SIZES_CARTAO }] = await Promise.all([doCarro, import('../lib/vendidaCartoes'), import('../lib/busca')]);
         if (ano !== y) return;   // trocou de ano enquanto o índice descia
         const doAno = itens.filter((it) => { const f = anosNoModelo(it, M); return !!f && y >= f[0] && y <= f[1]; });
         if (!doAno.length) { semGradeAno(); return; }
@@ -140,7 +140,7 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
         }
         vigiarFotos(gradeAno);
         gradeAno.removeAttribute('aria-busy');
-        gradeAno.innerHTML = doAno.slice(0, 48).map(cartaoHtml).join('');
+        gradeAno.innerHTML = doAno.slice(0, 48).map((it) => cartaoHtml(it, SIZES_CARTAO.grade)).join('');
         grade.classList.add('fora-do-ano');
         textos(y, doAno.length);
         filtrarLista(y, new Set(doAno.map((it) => `/peca/${it.h}.html`)));
