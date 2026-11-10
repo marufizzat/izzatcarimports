@@ -1,6 +1,7 @@
 // Artes dos blocos de peças (preparar_dados.py: BLOCOS). Só no build: lê public/.
-// - cat-<k>.webp: o cartão da grade da home (800×800, com o nome desenhado na arte);
-// - topo-cat-<k>.webp: o topo da página da categoria (a mesma arte sem a faixa do nome).
+// - cat-<k>.webp: o cartão da grade da home (quadrada, até 1200 px, com o nome desenhado na arte; + a variante de 600);
+// - topo-cat-<k>.webp: o topo da página da categoria (a mesma arte sem a faixa do nome; até 1254 px + a de 640).
+// As variantes menores (scripts/variantes-imagens.mjs) entram pelo srcset (lib/variantes.ts).
 // Arte que ainda não chegou: null (a grade mostra o nome num fundo de estúdio; o topo fica só com o texto).
 // As artes entram com scripts/instalar-cats.mjs.
 import { existsSync, readFileSync } from 'node:fs';
@@ -9,10 +10,13 @@ import { join } from 'node:path';
 const PUB = join(process.cwd(), 'public');
 const existe = (arq: string) => existsSync(join(PUB, arq));
 
-/** "/arte/v2/cat-<k>.webp" se a arte existe; senão null. */
-export function arteCartao(k: string): string | null {
-  const a = `/arte/v2/cat-${k}.webp`;
-  return existe(a) ? a : null;
+/** Cartão da grade: "/arte/v2/cat-<k>.webp" e o tamanho real dela (800 nas antigas, 1200 nas de 1536) se a arte
+ *  existe; senão null. */
+export function arteCartao(k: string): { src: string; w: number; h: number } | null {
+  const src = `/arte/v2/cat-${k}.webp`;
+  if (!existe(src)) return null;
+  const t = tamanhoWebp(readFileSync(join(PUB, src)));
+  return t ? { src, ...t } : null;
 }
 
 /** Largura e altura de um .webp (cabeçalho VP8, VP8L ou VP8X), sem decodificar a imagem. */

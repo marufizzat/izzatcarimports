@@ -6,13 +6,15 @@ import sharp from 'sharp';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
+import { ehVariante } from './variantes-imagens.mjs';
 
 const DIR = join(process.cwd(), 'public', 'arte', 'v2');
 const SAIDA = join(DIR, 'mini');
 mkdirSync(SAIDA, { recursive: true });
 const atuais = new Set();
 let feitas = 0;
-for (const f of readdirSync(DIR).filter((x) => /^topo-cat-[a-z0-9-]+\.webp$/.test(x))) {
+// a variante de 640 do topo (variantes-imagens.mjs) não é arte: fica de fora
+for (const f of readdirSync(DIR).filter((x) => /^topo-cat-[a-z0-9-]+\.webp$/.test(x) && !ehVariante(x, DIR))) {
   const buf = readFileSync(join(DIR, f));
   const h = createHash('sha1').update(buf).digest('hex').slice(0, 8);
   const nome = f.replace(/\.webp$/, `.${h}.webp`);

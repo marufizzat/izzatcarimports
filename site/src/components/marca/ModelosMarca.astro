@@ -7,6 +7,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Resumo } from '../../lib/dados';
+import { srcArte, SIZES } from '../../lib/variantes';
 interface Logo { src: string; w: number; h: number; png: boolean }
 interface Props { marca: Resumo['marcas'][number]; carros: Resumo['carros']; logo: Logo | null; }
 const { marca, carros, logo } = Astro.props;
@@ -16,6 +17,8 @@ const comPagina = [...carros].sort((a, b) => b.c - a.c);
 const paginas = new Set(comPagina.map((c) => c.m));
 const destaque = comPagina.slice(0, 3);
 const demais = comPagina.slice(3);
+// tamanho da arte na tela de cada destaque (lib/variantes.ts): o 1º é o grande (largura toda no celular), mm-d2 lado a lado
+const sizesDestaque = (i: number) => (destaque.length === 2 ? SIZES.marcaDupla : i === 0 ? SIZES.marcaPrimeiro : SIZES.marcaLado);
 const outros = marca.m.filter((x) => !paginas.has(x.n)).sort((a, b) => b.c - a.c);
 const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça' : 'peças'}`;
 const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURIComponent(marca.n)}&modelo=${encodeURIComponent(modelo)}`;
@@ -31,7 +34,7 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
             <a class:list={['mm-dest', { 'sem-arte': !temArte(c.k) }]} href={`/carros/${c.k}.html`}>
               <span class="mm-dest-arte">
                 {temArte(c.k)
-                  ? <img src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
+                  ? <img src={`/arte/v2/carro-${c.k}.webp`} {...srcArte(`/arte/v2/carro-${c.k}.webp`, sizesDestaque(i))} alt="" width="1200" height="800" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
                   : logo && <img class:list={['mm-dest-logo-grande', { svg: !logo.png }]} src={logo.src} alt="" width={logo.w} height={logo.h} />}
               </span>
               <span class="mm-dest-info">
@@ -58,7 +61,7 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
             <a class="mm-mod" href={`/carros/${c.k}.html`}>
               <span class:list={['mm-mod-arte', { 'sem-arte': !temArte(c.k) }]}>
                 {temArte(c.k)
-                  ? <img src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" />
+                  ? <img src={`/arte/v2/carro-${c.k}.webp`} {...srcArte(`/arte/v2/carro-${c.k}.webp`, SIZES.marcaGrade)} alt="" width="1200" height="800" loading="lazy" decoding="async" />
                   : logo && <img class:list={[{ svg: !logo.png }]} src={logo.src} alt="" width={logo.w} height={logo.h} loading="lazy" />}
               </span>
               <span class="mm-mod-txt"><b>{c.m}</b><small class="num">{pecasTxt(c.c)}</small></span>

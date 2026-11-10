@@ -1,12 +1,14 @@
 // Instala as artes dos BLOCOS de peças (preparar_dados.py: BLOCOS) a partir dos PNG gerados (cat-<k>.png, quadrados,
-// peça em estúdio + nome desenhado embaixo à esquerda). Para cada uma:
-//   public/arte/v2/cat-<k>.webp       800×800 (o cartão da grade da home)
+// peça em estúdio + nome desenhado embaixo à esquerda; 1536 px de preferência, aceita de 800 a qualquer tamanho).
+// Para cada uma (nunca aumenta a arte: PNG de 800 sai em 800):
+//   public/arte/v2/cat-<k>.webp       até 1200×1200 (o cartão da grade da home; o grande do bento no PC retina pede ~980)
 //   public/arte/v2/topo-cat-<k>.webp  a mesma arte SEM a faixa do nome (o topo da página da categoria), até 1254 px de
-//                                      largura (nunca aumenta a arte); o corte acha onde o nome começa (nome em 1 ou 2
-//                                      linhas) e, sem achar, corta em 79% da altura, como os topos antigos
-// e roda scripts/miniaturas.mjs (as miniaturas dos topos, para a página do carro).
+//                                      largura; o corte acha onde o nome começa (nome em 1 ou 2 linhas) e, sem achar,
+//                                      corta em 79% da altura, como os topos antigos
+// e roda scripts/variantes-imagens.mjs (cat-<k>-600 e topo-cat-<k>-640, para o srcset do celular) e
+// scripts/miniaturas.mjs (as miniaturas dos topos, para a página do carro).
 // Uso, na pasta site/:  node scripts/instalar-cats.mjs [pasta dos PNG] [--teste]
-//   pasta padrão: ../../izzatcarimports/output/cats-v3 (a do Codex), ou IZZATCAR_CATS; --teste só mostra o corte.
+//   pasta padrão: ../../izzatcarimports/output/cats-v5 (a do Codex), ou IZZATCAR_CATS; --teste só mostra o corte.
 // Chave que não é bloco (cat-<k>.png com k fora de resumo.json) é avisada e pulada.
 import sharp from 'sharp';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -15,8 +17,9 @@ import { spawnSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
 const teste = args.includes('--teste');
-const ORIGEM = resolve(args.find((a) => !a.startsWith('--')) || process.env.IZZATCAR_CATS || '/Users/izzat/Projects/izzatcarimports/output/cats-v3');
+const ORIGEM = resolve(args.find((a) => !a.startsWith('--')) || process.env.IZZATCAR_CATS || '/Users/izzat/Projects/izzatcarimports/output/cats-v5');
 const DESTINO = join(process.cwd(), 'public', 'arte', 'v2');
+const CARTAO_MAX = 1200;
 const TOPO_MAX = 1254;
 const CORTE_PADRAO = 991 / 1254;   // o recorte dos topos antigos
 
@@ -88,16 +91,19 @@ for (const f of pngs) {
   const achado = await inicioDoNome(quadrado);
   const corte = achado ?? CORTE_PADRAO;
   const larg = Math.min(lado, TOPO_MAX);
+  const cartao = Math.min(lado, CARTAO_MAX);
   const altTopo = Math.round(lado * corte);
-  console.log(`  ${k}: ${meta.width}×${meta.height} -> cartão 800, topo ${larg}×${Math.round(larg * corte)} (corte ${(corte * 100).toFixed(1)}%${achado ? '' : ', padrão'})`);
+  console.log(`  ${k}: ${meta.width}×${meta.height} -> cartão ${cartao}, topo ${larg}×${Math.round(larg * corte)} (corte ${(corte * 100).toFixed(1)}%${achado ? '' : ', padrão'})`);
   if (teste) continue;
-  await sharp(quadrado).resize(800, 800).webp({ quality: 80 }).toFile(join(DESTINO, `cat-${k}.webp`));
+  await sharp(quadrado).resize(cartao, cartao).webp({ quality: 80 }).toFile(join(DESTINO, `cat-${k}.webp`));
   await sharp(quadrado).extract({ left: 0, top: 0, width: lado, height: altTopo }).resize({ width: larg })
     .webp({ quality: 74 }).toFile(join(DESTINO, `topo-cat-${k}.webp`));
   feitas++;
 }
 console.log(`instalar-cats: ${feitas} artes instaladas em public/arte/v2/${teste ? ' (teste: nada gravado)' : ''}`);
 if (feitas) {
-  const r = spawnSync(process.execPath, [join('scripts', 'miniaturas.mjs')], { stdio: 'inherit' });
-  process.exit(r.status ?? 0);
+  for (const script of ['variantes-imagens.mjs', 'miniaturas.mjs']) {
+    const r = spawnSync(process.execPath, [join('scripts', script)], { stdio: 'inherit' });
+    if (r.status) process.exit(r.status);
+  }
 }

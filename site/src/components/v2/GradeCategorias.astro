@@ -9,6 +9,7 @@
 // peça agora, conta o modelo em todos os anos; se o modelo saiu do site, a grade fica a normal. Sempre com um aviso.
 import { resumo, whatsUrl } from '../../lib/dados';
 import { arteCartao, bento } from '../../lib/categorias';
+import { srcArte, sizesCategoria } from '../../lib/variantes';
 const fams = resumo().familias.filter((f) => f.k !== 'outros' && f.c > 0).map((f) => ({ ...f, arte: arteCartao(f.k) }));
 const total = resumo().total;
 const NO_CELULAR = 8;
@@ -31,7 +32,7 @@ const b5 = bento(fams.length, 5);
       <li class:list={['cat', { 'cat-g4': i < b4.grandes, 'cat-g5': i < b5.grandes, 'cat-extra': i >= NO_CELULAR, 'cat-sem-arte': !f.arte }]}>
         <a href={`/categoria/${f.k}.html`} data-tipo={f.n} data-href-base={`/categoria/${f.k}.html`} data-base={f.c} aria-label={`${f.n}: ${f.c.toLocaleString('pt-BR')} peças`}>
           {f.arte
-            ? <img src={f.arte} alt="" width="800" height="800" loading="lazy" decoding="async" />
+            ? <img src={f.arte.src} {...srcArte(f.arte.src, sizesCategoria(i < b4.grandes, i < b5.grandes))} alt="" width={f.arte.w} height={f.arte.h} loading="lazy" decoding="async" />
             : <span class="cat-estudio" aria-hidden="true"><span class="cat-nome">{f.n}</span></span>}
           <span class="cat-qtd num" data-qtd hidden={f.c < POUCAS}>{f.c.toLocaleString('pt-BR')} peças</span>
         </a>

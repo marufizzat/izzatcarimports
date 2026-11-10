@@ -18,6 +18,7 @@ import { textosCarro, tituloCarro } from '../../lib/textos';
 import { fotoVitrine } from '../../lib/vitrine';
 import { linkAviso } from '../../lib/aviso';
 import { miniatura } from '../../lib/miniatura';
+import { SIZES } from '../../lib/variantes';
 import { serveNoModelo } from '../../lib/meuCarro';
 export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
 const r = resumo();
@@ -61,7 +62,7 @@ const og = existe(arteCarro) ? arteCarro : foto(c.capas[0], 'F');
 ---
 <Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta}>
   <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
-    antes={c.b} titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} encaixe="meio" lead={lead}>
+    antes={c.b} titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} arteSizes={SIZES.topoCarro} encaixe="meio" lead={lead}>
     <Fragment slot="acoes">
       <div class="carro-acoes">
         <a class="botao botao-grafite" href={verTodas}>Ver as {fmt(N)} {N === 1 ? 'peça' : 'peças'}</a>
