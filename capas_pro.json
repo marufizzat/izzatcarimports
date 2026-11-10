@@ -3564,73 +3564,77 @@
   "motivo": "ChatGPT mudou ângulo/forma/código ou original ilegível"
  },
  "MLB6596380144": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura triângulo porta traseira esquerda",
   "carro": "Fiat Argo",
   "foto": "825866-MLB110245298197_042026"
  },
  "MLB6596376970": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Display sensor estacionamento ml",
   "carro": "Mercedes-Benz",
   "foto": "719229-MLB110244287917_042026"
  },
  "MLB6596376418": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão farol milha reostato",
   "carro": "Kia Picanto",
-  "foto": "918357-MLB110245378011_042026"
+  "foto": "918357-MLB110245378011_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6596362922": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Conjunto botões painel",
   "carro": "Fiat Palio",
   "foto": "683700-MLB110244278907_042026"
  },
  "MLB6596362158": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar painel",
   "carro": "Nissan Kicks",
   "foto": "686392-MLB110243980665_042026"
  },
  "MLB6596360578": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão pisca-alerta",
   "carro": "Honda Fit",
   "foto": "715961-MLB110243918367_042026"
  },
  "MLB6596318092": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chave seta alavanca pisca",
   "carro": "Volkswagen Gol",
-  "foto": "699730-MLB110244203011_042026"
+  "foto": "699730-MLB110244203011_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6596206888": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Amortecedor tampa traseira",
   "carro": "Hyundai Azera",
-  "foto": "658217-MLB109382125152_042026"
+  "foto": "658217-MLB109382125152_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6596205376": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão pisca-alerta panda",
   "carro": "Geely GC2",
   "foto": "930383-MLB110243845067_042026"
  },
  "MLB6596204564": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura painel central carbono",
   "carro": "Geely GC2",
-  "foto": "621267-MLB109381361306_042026"
+  "foto": "621267-MLB109381361306_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6596190314": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Luz teto cortesia",
   "carro": "Mercedes-Benz CLA",
   "foto": "960417-MLB109381875642_042026"
  },
  "MLB6596172804": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão pisca-alerta trava",
   "carro": "Renault Megane",
   "foto": "870052-MLB109382155936_042026"
@@ -3643,31 +3647,32 @@
   "foto": "850203-MLB109381371068_042026"
  },
  "MLB4596084437": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão start stop engine",
   "carro": "Renault Captur",
   "foto": "614022-MLB110245660347_042026"
  },
  "MLB4596083809": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro elétrico",
   "carro": "Volkswagen Gol",
   "foto": "975866-MLB110246430173_042026"
  },
  "MLB4596078485": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Tampa cega obturador aquecimento assento",
   "carro": "Kia",
-  "foto": "877821-MLB110244374835_042026"
+  "foto": "877821-MLB110244374835_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4596048407": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão farol milha",
   "carro": "Volkswagen Gol",
   "foto": "923928-MLB109381933292_042026"
  },
  "MLB4596047819": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão pisca-alerta",
   "carro": "Renault Clio",
   "foto": "623689-MLB110243922955_042026"
@@ -3680,10 +3685,11 @@
   "foto": "937026-MLB110241080987_042026"
  },
  "MLB6607892396": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Comutador coluna seta limpador",
   "carro": "Fiat Uno",
-  "foto": "647432-MLB109484612308_042026"
+  "foto": "647432-MLB109484612308_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6607885840": {
   "status": "pulada",
@@ -3693,13 +3699,13 @@
   "foto": "720370-MLB109485015502_042026"
  },
  "MLB6607881656": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro elétrico duplo",
   "carro": "Peugeot 206",
   "foto": "847500-MLB110352606101_042026"
  },
  "MLB6607880056": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro elétrico direito",
   "carro": "Renault Clio",
   "foto": "994067-MLB110352601379_042026"
@@ -3719,10 +3725,11 @@
   "foto": "735726-MLB110352404215_042026"
  },
  "MLB6607877542": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Console teto traseiro ar",
   "carro": "Jaguar E-Pace",
-  "foto": "828123-MLB109484469256_042026"
+  "foto": "828123-MLB109484469256_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6607873260": {
   "status": "pulada",
@@ -3732,13 +3739,13 @@
   "foto": "791653-MLB110352435889_042026"
  },
  "MLB6607869440": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Luz teto botão teto solar",
   "carro": "Audi A4",
   "foto": "911733-MLB110352169399_042026"
  },
  "MLB6607867412": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura acabamento coluna",
   "carro": "Volvo XC60",
   "foto": "831573-MLB109484425660_042026"
@@ -3751,28 +3758,30 @@
   "foto": "734886-MLB109482517504_042026"
  },
  "MLB6607734552": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Fechadura porta-malas",
   "carro": "Audi Q3",
   "foto": "954226-MLB110350392203_042026"
  },
  "MLB6607729128": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar central",
   "carro": "Hyundai HB20",
   "foto": "802183-MLB109482507570_042026"
  },
  "MLB6607727410": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Motor limpador traseiro",
   "carro": "Audi Q3",
-  "foto": "939494-MLB110350363645_042026"
+  "foto": "939494-MLB110350363645_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6607709856": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão pisca-alerta trava",
   "carro": "Renault Logan",
-  "foto": "966087-MLB109481622824_042026"
+  "foto": "966087-MLB109481622824_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6607707630": {
   "status": "pulada",
@@ -3782,10 +3791,11 @@
   "foto": "642441-MLB110349290805_042026"
  },
  "MLB6607701122": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chave seta farol",
   "carro": "Honda Civic",
-  "foto": "814029-MLB110349612221_042026"
+  "foto": "814029-MLB110349612221_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4602351401": {
   "status": "pulada",
@@ -3795,13 +3805,14 @@
   "foto": "744335-MLB110352601665_042026"
  },
  "MLB4602339315": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão vidro elétrico simples",
   "carro": "Volkswagen Gol",
-  "foto": "754720-MLB110352429119_042026"
+  "foto": "754720-MLB110352429119_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4602337157": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Máquina vidro elétrico traseiro esquerdo",
   "carro": "Chevrolet Cruze",
   "foto": "710967-MLB109484461378_042026"
