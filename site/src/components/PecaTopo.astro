@@ -7,7 +7,7 @@
 // Gatilhos so com dado de verdade: estoque = p.q (ML), reputacao = resumo().reputacao, CDV/nota/garantia do site.
 import type { Peca } from '../lib/dados';
 import { foto, brl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
-import { linkWhats, cabecaPeca, CAUDA_PECA } from '../lib/whats';
+import { linkWhats, cabecaPeca, CAUDA_PECA, DESCONTO_WHATS } from '../lib/whats';
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
 import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
@@ -69,7 +69,8 @@ const perguntas = [
   },
   {
     pergunta: 'Como é o envio?',
-    resposta: 'Para todo o Brasil, com código de rastreio, e a peça vai embalada com cuidado. No Mercado Livre, o frete aparece no anúncio, antes de você fechar a compra. Pelo WhatsApp, a gente cota o frete para o seu CEP.',
+    // regra do dono (09/11): frete a combinar pelo site; frete e prazo do ML são os do anúncio (sem prazo próprio)
+    resposta: 'Enviamos para todo o Brasil. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.',
     link: { href: '/envios.html', texto: 'Ver envios' },
   },
   {
@@ -122,6 +123,9 @@ const perguntas = [
       </div>
       {q === 1 && <p class="estoque-txt">Peça usada: quando vende, acabou.</p>}
       <div class="compra-botoes" data-compra-botoes>
+        {/* desconto pelo WhatsApp (pedido do dono): selo claro colado no canto do botão laranja, sem ocupar altura
+            (a 1ª tela do celular continua com o botão à vista). Só no WhatsApp, nunca no Mercado Livre. */}
+        <p class="compra-desconto"><Icone nome="etiqueta" />{DESCONTO_WHATS}% de desconto pelo WhatsApp</p>
         <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir no WhatsApp</a>
         <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
       </div>
@@ -140,7 +144,7 @@ const perguntas = [
         <li><a href="/garantia.html"><img src="/arte/v2/selo-garantia.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>90 dias de garantia</b><small class="confianca-link">Ver como funciona</small></span></a></li>
         <li><span><img src="/arte/v2/selo-nota-fiscal.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>Nota fiscal</b><small>Em toda venda</small></span></span></li>
         <li><span><img src="/arte/v2/selo-cdv.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>Desmanche credenciado</b><small>Detran-RS · <span class="sem-quebra">CDV nº 01060</span></small></span></span></li>
-        <li><span><img src="/arte/v2/selo-envio.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>Envio para todo o Brasil</b><small>Com código de rastreio</small></span></span></li>
+        <li><span><img src="/arte/v2/selo-envio.webp" alt="" width="36" height="36" loading="lazy" decoding="async" /><span><b>Envio para todo o Brasil</b><small>Frete pelo seu CEP</small></span></span></li>
       </ul>
       <SeloReputacao variante="linha" />
     </div>
@@ -445,7 +449,14 @@ const perguntas = [
   .estoque-unica { color: var(--accent-text); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
   .estoque-unica i { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 78%); }
   .estoque-txt { margin: -2px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
-  .compra-botoes { display: grid; gap: 10px; margin-top: 6px; }
+  .compra-botoes { position: relative; display: grid; gap: 10px; margin-top: 6px; }
+  /* selo do desconto: pílula clara com letra grafite, presa no canto de cima do botão laranja (metade fora dele) */
+  .compra-desconto { position: absolute; z-index: 1; top: 0; right: 14px; transform: translateY(-50%); margin: 0;
+                     display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px 0 9px; border-radius: 999px;
+                     background: #fff; color: #1d1d1f; font-size: 12.5px; font-weight: 700; font-stretch: 94%; line-height: 1; white-space: nowrap;
+                     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%), 0 4px 12px -6px rgb(140 50 0 / .45);
+                     pointer-events: none; }
+  .compra-desconto svg { width: 15px; height: 15px; flex: none; color: var(--accent-text); }
   .compra-botoes .botao { --h: 56px; font-size: 16.5px; }
   .compra-botoes .botao-linha { --h: 52px; }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }

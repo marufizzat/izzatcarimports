@@ -15,7 +15,7 @@ const reputacao = !!r.reputacao && !COM_REPUTACAO.has(caminho);
 <footer class:list={['rodape faixa-escura', { 'rodape-sem-selos': !selos }]}>
   {selos && <ul class:list={['moldura rodape-selos', { 'com-rep': reputacao }]} aria-label="Garantias">
     {[['garantia', '90 dias de garantia', 'Em toda peça'], ['nota-fiscal', 'Nota fiscal', 'Em toda venda'],
-      ['cdv', 'Desmanche credenciado', 'Detran-RS\u00a0· CDV\u00a0nº\u00a001060'], ['envio', 'Envio para todo o Brasil', 'Com código de rastreio']].map(([k, t, s]) => (
+      ['cdv', 'Desmanche credenciado', 'Detran-RS\u00a0· CDV\u00a0nº\u00a001060'], ['envio', 'Envio para todo o Brasil', 'Frete pelo seu CEP']].map(([k, t, s]) => (
       <li><img src={`/arte/v2/selo-${k}.webp`} alt="" width="56" height="56" loading="lazy" decoding="async" /><span><b>{t}</b><small>{s}</small></span></li>
     ))}
     {reputacao && <SeloReputacao variante="rodape" />}

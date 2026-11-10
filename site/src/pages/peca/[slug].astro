@@ -7,7 +7,7 @@ import AbasDetalhes from '../../components/peca/AbasDetalhes.astro';
 import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
-import { blocoPeca } from '../../lib/whats';
+import { blocoPeca, DESCONTO_WHATS } from '../../lib/whats';
 import { modelosDa } from '../../lib/meuCarro';
 import { doMesmoCarro } from '../../lib/relacionadas';
 import { nomeModelos } from '../../lib/meuCarro';
@@ -140,7 +140,7 @@ const ld = {
       {unica && <span class="barra-unica"><i aria-hidden="true"></i>Peça única</span>}
     </div>
     {/* o link (com a mensagem pronta e o carro salvo) é o mesmo do botão principal: o script do PecaTopo copia */}
-    <a class="botao botao-laranja" data-whats-espelho tabindex="-1"><Icone nome="whats" /><span><span class="barra-pedir">Pedir no </span>WhatsApp</span></a>
+    <a class="botao botao-laranja" data-whats-espelho tabindex="-1"><Icone nome="whats" /><span><span class="barra-pedir">Pedir no </span>WhatsApp</span><span class="barra-desc"><span class="sr-only">, desconto de </span>−{DESCONTO_WHATS}%</span></a>
   </div>
 
   <AbasDetalhes p={p} serve={serve} serveRotulo={serveRotulo} />
@@ -235,6 +235,9 @@ const ld = {
   .barra-unica { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; line-height: 1.2; color: var(--accent-text); white-space: nowrap; }
   .barra-unica i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
   .barra-compra .botao { --h: 48px; flex: 0 1 auto; min-width: 0; height: var(--h); padding: 0 16px; font-size: 15px; white-space: nowrap; }
+  /* desconto pelo WhatsApp: "−10%" pequeno, claro e com letra grafite, dentro do botão laranja */
+  .barra-desc { flex: none; margin-left: -2px; padding: 3px 7px; border-radius: 999px; background: #fff; color: #1d1d1f;
+                font-size: 12.5px; font-weight: 800; font-stretch: 90%; line-height: 1.1; box-shadow: 0 1px 2px rgb(140 50 0 / .25); }
   /* preço grande ainda à vista (1ª tela do celular baixinho): a barra vem só com o botão, largo */
   .barra-compra.so-botao { padding-left: 9px; }
   .barra-compra.so-botao .barra-info { display: none; }

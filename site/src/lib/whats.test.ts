@@ -22,7 +22,7 @@ describe('WhatsApp: uma abertura só ("Olá! Vim pelo site da Izzat Car.")', () 
     const m = mensagemPeca({ nome: 'Lanterna esquerda tampa traseira', carro: 'Volvo XC60', anos: '2018 a 2024', cod: 'A045591', preco: '670,44',
       url: 'https://izzatcarimports.com.br/peca/x-MLB1.html' }, 'Meu carro é Volvo XC60 ano ____. ');
     expect(m).toBe('Olá! Vim pelo site da Izzat Car. Tenho interesse nesta peça:\n\nLanterna esquerda tampa traseira · Volvo XC60 2018 a 2024 · Cód. A045591\n'
-      + 'R$ 670,44\nhttps://izzatcarimports.com.br/peca/x-MLB1.html\n\nMeu carro é Volvo XC60 ano ____. Serve e ainda tem?');
+      + 'R$ 670,44\nhttps://izzatcarimports.com.br/peca/x-MLB1.html\n\nVi que tem 10% de desconto pedindo por aqui.\nMeu carro é Volvo XC60 ano ____. Serve e ainda tem?');
     expect(blocoPeca({ nome: 'Fechadura', url: 'u' })).toBe('Fechadura\nu');
     expect(blocoPeca({ linha: 'pronta', nome: 'x', url: 'u' })).toBe('pronta\nu');
   });
