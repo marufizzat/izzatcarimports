@@ -1191,11 +1191,15 @@ def test_lado_e_posicao_pelo_nome():
         "Painel luz airbag passageiro": ("", ""),
         # os dois lados ou as duas posições: nenhum
         "Acabamento trilho esquerdo banco direito": ("", ""),
-        "Maçaneta externa direita dianteira/traseira": ("D", ""),
+        # as duas posições: serve nas duas (entra nas duas fichas)
+        "Maçaneta externa direita dianteira/traseira": ("D", "A"),
         "Módulo injeção": ("", ""),
     }
     for nome, esperado in casos.items():
         assert lado_posicao(nome) == esperado, (nome, lado_posicao(nome))
+    # o nome sem posição usa a do tipo da peça
+    assert lado_posicao("Lanterna mala esquerda", "Lanternas Traseiras") == ("E", "T")
+    assert lado_posicao("Lanterna dianteira", "Lanternas Traseiras") == ("", "D")
     # o dado gerado: uma letra por peça, igual ao que o nome diz
     pecas = ROOT / "site" / "src" / "data" / "pecas.json"
     busca = ROOT / "site" / "public" / "dados" / "busca.json"
@@ -1203,9 +1207,10 @@ def test_lado_e_posicao_pelo_nome():
         ix = json.loads(busca.read_text(encoding="utf-8"))
         if "l" in ix:
             assert len(ix["l"]) == len(ix["id"]) == len(ix["pos"])
-            assert set(ix["l"]) <= set("ED0") and set(ix["pos"]) <= set("DT0")
-            for n, l, p in zip(ix["n"], ix["l"], ix["pos"]):
-                assert lado_posicao(n) == (l.replace("0", ""), p.replace("0", "")), n
+            assert set(ix["l"]) <= set("ED0") and set(ix["pos"]) <= set("DTA0")
+            tipos = [ix["tipos"][i] if i >= 0 else "" for i in ix["s"]]
+            for n, t, l, p in zip(ix["n"], tipos, ix["l"], ix["pos"]):
+                assert lado_posicao(n, t) == (l.replace("0", ""), p.replace("0", "")), n
             assert ix["l"].count("E") + ix["l"].count("D") > 1000
 
 

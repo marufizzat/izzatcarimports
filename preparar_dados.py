@@ -1215,14 +1215,20 @@ _POS_NOME = {"dianteiro": "D", "dianteira": "D", "dianteiros": "D", "dianteiras"
              "traseiro": "T", "traseira": "T", "traseiros": "T", "traseiras": "T"}
 
 
-def lado_posicao(nome):
-    """('E' | 'D' | '', 'D' | 'T' | ''): o lado (esquerdo/direito) e a posição (dianteiro/traseiro) que o nome diz."""
+def lado_posicao(nome, tipo=""):
+    """('E' | 'D' | '', 'D' | 'T' | 'A' | ''): o lado (esquerdo/direito) e a posição (dianteiro/traseiro) que o nome diz.
+    As duas posições no nome ("dianteira/traseira") = 'A' (serve nas duas: entra nas duas fichas). O nome sem posição
+    usa a do tipo da peça ("Lanternas Traseiras": "Lanterna mala esquerda" é traseira; a busca antiga achava pelo tipo)."""
     ws = re.findall(r"[a-z0-9]+", _sem(nome or ""))
     luz_airbag = "luz" in ws and "airbag" in ws
     lados = {_LADO_NOME[w] for w in ws
              if w in _LADO_NOME and not (luz_airbag and w in ("motorista", "passageiro"))}
     posicoes = {_POS_NOME[w] for w in ws if w in _POS_NOME}
-    return (lados.pop() if len(lados) == 1 else ""), (posicoes.pop() if len(posicoes) == 1 else "")
+    if not posicoes and tipo:
+        do_tipo = {_POS_NOME[w] for w in re.findall(r"[a-z0-9]+", _sem(tipo)) if w in _POS_NOME}
+        posicoes = do_tipo if len(do_tipo) == 1 else set()
+    pos = posicoes.pop() if len(posicoes) == 1 else "A" if len(posicoes) == 2 else ""
+    return (lados.pop() if len(lados) == 1 else ""), pos
 
 
 def _sem_lado_repetido(ws):
@@ -3525,9 +3531,9 @@ def main():
         "ys": {str(i): x["ys"] for i, x in enumerate(pecas) if x.get("ys")},
         # mesma peca com preco diferente: a versao que o titulo diz ("T8", "2.0"), so nas que tem: {indice: "T8"}
         "dif": {str(i): x["dif"] for i, x in enumerate(pecas) if x.get("dif")},
-        # lado e posição pelo nome (lado_posicao): uma letra por peça, '0' quando o nome não diz (fichas do catálogo)
-        "l": "".join(lado_posicao(x["n"])[0] or "0" for x in pecas),
-        "pos": "".join(lado_posicao(x["n"])[1] or "0" for x in pecas),
+        # lado e posição pelo nome (lado_posicao; a posição, senão, pelo tipo): uma letra por peça, '0' quando não diz
+        "l": "".join(lado_posicao(x["n"], x["s"])[0] or "0" for x in pecas),
+        "pos": "".join(lado_posicao(x["n"], x["s"])[1] or "0" for x in pecas),
     }
 
     marcar_datas(pecas, prods)

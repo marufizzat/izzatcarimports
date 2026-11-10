@@ -449,8 +449,9 @@ describe('lado e posição', () => {
       expect(it.l === 'E' ? /esquerd|motorista/.test(n) : /direit|passageiro/.test(n), it.n).toBe(true);
     }
     for (const it of b.itens.filter((x) => x.pos).slice(0, 300)) {
-      const n = normal(it.n);
-      expect(it.pos === 'T' ? /traseir/.test(n) : /dianteir|frontal/.test(n), it.n).toBe(true);
+      // o nome diz, ou o tipo da peça ("Lanternas Traseiras") quando o nome não diz
+      const n = normal(`${it.n} ${it.s}`);
+      expect(it.pos === 'T' ? /traseir/.test(n) : it.pos === 'D' ? /dianteir|frontal/.test(n) : /dianteir/.test(n) && /traseir/.test(n), it.n).toBe(true);
     }
   });
   it('as fichas filtram e as contagens batem com a lista', (ctx) => {
@@ -462,7 +463,11 @@ describe('lado e posição', () => {
       expect(r.length, l).toBe(n);
       expect(r.every((x) => x.l === l)).toBe(true);
     }
-    for (const [p, n] of fa.posicoes) expect(b.procurar({ ...f, pos: p }).length, p).toBe(n);
+    for (const [p, n] of fa.posicoes) {
+      const r = b.procurar({ ...f, pos: p });
+      expect(r.length, p).toBe(n);
+      expect(r.every((x) => x.pos === p || x.pos === 'A')).toBe(true);
+    }
   });
   it('"retrovisor direito xc60" é filtro: só os direitos, e a ficha Direito fica marcada', (ctx) => {
     if (!temCarro('Volvo', 'XC60') || !comLado) return ctx.skip();
@@ -481,7 +486,7 @@ describe('lado e posição', () => {
     const r = b.procurar({ q: 'amortecedor traseiro' });
     if (!r.some((x) => /amortecedor traseiro/.test(normal(x.n)))) return ctx.skip();
     expect(normal(r[0].n)).toMatch(/traseiro/);
-    expect(r.every((x) => x.pos === 'T')).toBe(true);
+    expect(r.every((x) => x.pos === 'T' || x.pos === 'A')).toBe(true);
   });
   it('sem nenhuma peça daquele lado, a busca volta a valer como texto (nunca pior que antes)', () => {
     // índice de 3 peças: o farol não diz o lado no nome, só no título do anúncio

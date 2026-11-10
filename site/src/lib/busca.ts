@@ -31,7 +31,7 @@ export type Indice = {
 };
 /** Lado da peça: E esquerdo (motorista), D direito (passageiro). */
 export type Lado = 'E' | 'D';
-/** Posição da peça: D dianteiro, T traseiro. */
+/** Posição da peça: D dianteiro, T traseiro (no índice também A: as duas, "dianteira/traseira", entra nas duas fichas). */
 export type Posicao = 'D' | 'T';
 export type Item = {
   k: number; id: string; t: string; n: string; p: number; i: string; h: string; f: boolean;
@@ -41,8 +41,8 @@ export type Item = {
   ms?: string[]; ys?: ([number, number] | null)[];
   /** a versão que separa esta peça das outras de mesmo código e carro com outro preço ("T8", "2.0", "G5/G6") */
   dif?: string;
-  /** lado e posição que o nome diz (só quando diz) */
-  l?: Lado; pos?: Posicao;
+  /** lado e posição que o nome diz (só quando diz; a posição, senão, a do tipo; A = as duas) */
+  l?: Lado; pos?: Posicao | 'A';
 };
 export type Filtros = {
   q?: string; marca?: string; modelo?: string; ano?: number; tipo?: string;
@@ -241,7 +241,7 @@ export class Busca {
       const ms = ix.ms?.[k], ys = ix.ys?.[k], dif = ix.dif?.[k], l = ix.l?.[k], pos = ix.pos?.[k];
       if (ix.r?.[k] === '1') it.r = 1;
       if (l === 'E' || l === 'D') it.l = l;
-      if (pos === 'D' || pos === 'T') it.pos = pos;
+      if (pos === 'D' || pos === 'T' || pos === 'A') it.pos = pos;
       if (ms) it.ms = ms;
       if (ys) it.ys = ys;
       if (dif) it.dif = dif;
@@ -567,7 +567,7 @@ export class Busca {
         (!faixa || (it.p >= faixa[2] && it.p < faixa[3])) &&
         (!f.frete || it.f) &&
         (!lado || it.l === lado) &&
-        (!pos || it.pos === pos));
+        (!pos || it.pos === pos || it.pos === 'A'));
       return { itens, aproximado: r.aproximado, carros: r.carros, comTexto: !!texto, codigo: r.codigo ?? '', derivado, ladoQ, posQ };
     };
     if (!tem || como.derivado === false) return rodar(false);
@@ -629,7 +629,8 @@ export class Busca {
       anos: [...porAno.entries()].sort((a, b) => b[0] - a[0]),
       precos: FAIXAS.map(([k, rot, a, b]) => [k, rot, semPreco.filter((i) => i.p >= a && i.p < b).length] as const),
       lados: contaFixa<Lado>(lista({ ...f, lado: undefined }, { semLado: true }), (i) => i.l, ['E', 'D']),
-      posicoes: contaFixa<Posicao>(lista({ ...f, pos: undefined }, { semPos: true }), (i) => i.pos, ['D', 'T']),
+      // a peça das duas posições (A) conta nas duas fichas
+      posicoes: (['D', 'T'] as Posicao[]).map((k) => [k, lista({ ...f, pos: undefined }, { semPos: true }).filter((i) => i.pos === k || i.pos === 'A').length] as [Posicao, number]).filter(([, n]) => n > 0),
     };
   }
 

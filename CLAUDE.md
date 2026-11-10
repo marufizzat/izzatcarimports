@@ -25,7 +25,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **Lado e posição** (`l` e `pos` no busca.json, uma letra por peça, '0' sem; `lado_posicao()`): lidos do NOME LIMPO.
      "motorista" = esquerdo e "passageiro" = direito (no Brasil); os dois lados (ou as duas posições) no nome = nenhum;
      a luz do airbag do passageiro fica sem lado; o que vai na tampa traseira é traseiro ("Lanterna tampa traseira
-     esquerda" = esquerda e traseira). Nov/2026: 1.709 com lado, 1.355 com posição. Teste: `test_lado_e_posicao_pelo_nome`.
+     esquerda" = esquerda e traseira); "dianteira/traseira" = `A` (serve nas duas, entra nas duas fichas); nome sem
+     posição usa a do tipo ("Lanternas Traseiras": a busca antiga achava "Lanterna mala" por ele). Nov/2026: 1.709 com
+     lado, 1.378 com posição. Teste: `test_lado_e_posicao_pelo_nome`.
    - **Descrição**: só as seções sobre a peça; "chat do anúncio" vira WhatsApp; sai o dado repetido e a medida-padrão
      do modelo de anúncio (`DIM_PADRAO_MIN`); o que está em espanhol sai (`_espanhol`: tudo em espanhol = só a ficha) e
      o "tu/teu" do vendedor vira "você/seu" (`sem_tu`).
