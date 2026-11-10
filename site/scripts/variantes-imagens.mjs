@@ -9,7 +9,6 @@
 // rodou = só a arte inteira (variante velha nunca aparece). Variante de arte que sumiu é apagada.
 // Uso, na pasta site/:  node scripts/variantes-imagens.mjs [--tudo]   (sem --tudo refaz só o que mudou)
 // Arte nova de carro ou de categoria: rode este script e faça o commit das variantes junto (o CI não gera).
-import sharp from 'sharp';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -38,6 +37,8 @@ export function ehVariante(nome, dir = DIR) {
 export const hashDe = (buf) => createHash('sha1').update(buf).digest('hex').slice(0, 12);
 
 async function principal() {
+  // sharp só aqui: o teste (src/lib/variantes.test.ts) importa ehVariante sem precisar do sharp (opcional do Astro no CI)
+  const { default: sharp } = await import('sharp');
   const tudo = process.argv.includes('--tudo');
   const antes = existsSync(MANIFESTO) ? JSON.parse(readFileSync(MANIFESTO, 'utf-8')) : {};
   const manifesto = {};
