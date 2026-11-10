@@ -29,7 +29,7 @@ const naPaginaDoCarro = /^\/carros\/([^/]+)\.html$/.exec(Astro.url.pathname)?.[1
 const carro = naPaginaDoCarro && nome === 'banner-serve' && !Astro.props.titulo ? resumo().carros.find((c) => c.k === naPaginaDoCarro) : null;
 if (carro) {
   titulo = `Tem um ${carro.b} ${carro.m}?`;
-  apoio = Astro.props.apoio ?? 'Manda o ano e a peça que você procura. A gente confere no pátio e te responde com foto.';
+  apoio = Astro.props.apoio ?? 'Mande o ano e a peça que você procura. A gente confere no pátio e responde com foto.';
 }
 const icone = ICONE[nome] ?? 'conversa';
 ---

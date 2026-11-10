@@ -25,7 +25,7 @@ interface Props {
 const { titulo = 'Do mesmo carro', carro, modelo = '', anos = '', sub: subPronto, link, total, pecas, outras = [], semAno = false } = Astro.props;
 const sub = subPronto
   ?? (semAno
-    ? `${carro}. Esta peça não traz o ano: confere o ano em cada uma.`
+    ? `${carro}. Esta peça não traz o ano: confira o ano em cada uma.`
     : anos && pecas.length
       ? `Peças do ${carro} de ${anos}, a mesma geração desta.`
       : anos
@@ -46,7 +46,7 @@ const sub = subPronto
     {outras.length > 0 && (
       <div class="dmc-outros">
         <h3 class="dmc-outros-titulo">Outros anos do {modelo || carro}</h3>
-        <p class="dmc-sub">Anos diferentes dos desta peça{anos ? ` (${anos})` : ''}: confere o ano no cartão antes de pedir.</p>
+        <p class="dmc-sub">Anos diferentes dos desta peça{anos ? ` (${anos})` : ''}: confira o ano no cartão antes de pedir.</p>
         <div class="trilho dmc-grade">{outras.map((x) => <CartaoPeca p={x} />)}</div>
       </div>
     )}

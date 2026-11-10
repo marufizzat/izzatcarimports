@@ -128,11 +128,13 @@
 /* ---- Botoes desenhados ----------------------------------------------------
    Material: laranja com brilho de cima, borda interna clara, sombra quente
    embaixo; ao apertar, afunda 1px. Nunca o botao padrao do navegador.
-   O LARANJA tem 2 alturas no site inteiro (auditoria 4, 8.1): --botao-g (56, a acao da secao) e --botao-p
-   (48, compacto: cabecalho, "Buscar", barra fixa da peca, avisos, linha "Seu carro"). Nada de outro numero. */
+   TODO botao (laranja, grafite e linha) tem 2 alturas no site inteiro (auditoria 4, 8.1; revisao 7, P3.6):
+   --botao-g (56, o padrao: a acao da secao, o par laranja + linha, "Ver mais") e --botao-p (48, compacto: cabecalho,
+   "Buscar", barra fixa da peca, avisos, "Copiar", "E o meu carro", linha "Seu carro", rodape da gaveta).
+   Nada de outro numero: a hierarquia vem da cor (laranja > grafite > linha), nunca de uma 3a altura. */
 :root { --botao-g: 56px; --botao-p: 48px; }
 .botao {
-  --h: 52px;
+  --h: var(--botao-g);
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   height: var(--h); padding: 0 22px; border-radius: 12px;
   font-weight: 650; font-size: 16px; font-stretch: 96%; letter-spacing: .005em;

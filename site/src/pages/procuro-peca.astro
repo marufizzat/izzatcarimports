@@ -72,7 +72,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
             </div>
             <div class="campo">
               <label for="f-codigo">Código gravado <span class="opc">(opcional)</span></label>
-              <input id="f-codigo" name="codigo" type="text" autocomplete="off" placeholder="Se tiver, copia da peça" />
+              <input id="f-codigo" name="codigo" type="text" autocomplete="off" placeholder="Se tiver, copie da peça" />
             </div>
             <div class="campo">
               <label for="f-cidade">Cidade e estado <span class="opc">(opcional)</span></label>
@@ -86,16 +86,16 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 
         <div class="pc-acao">
           <button type="submit" class="botao botao-laranja pc-enviar"><Icone nome="whats" />Enviar pelo WhatsApp</button>
-          <p class="pc-nota" id="pc-nota">Abre o WhatsApp com tudo preenchido. Você confere e envia por lá.</p>
+          <p class="pc-nota" id="pc-nota">O WhatsApp abre com tudo preenchido. Você confere e envia por lá.</p>
           <p class="pc-status" role="status" aria-live="polite" id="pc-status"></p>
         </div>
 
         <div class="pc-aviso">
           <p>Quer saber quando chegar peça do seu carro no pátio?</p>
           <a class="botao botao-linha pc-aviso-botao" href={linkAviso(WHATS, 'carro')} rel="noopener" data-aviso>
-            <Icone nome="whats" /><span data-aviso-txt>Me avisa quando chegar peça para o meu carro</span>
+            <Icone nome="whats" /><span>Me avise quando chegar peça</span>
           </a>
-          <p class="pc-aviso-erro" id="pc-aviso-erro" role="status" aria-live="polite" hidden>Preenche a marca e o modelo do carro para a gente saber qual é.</p>
+          <p class="pc-aviso-erro" id="pc-aviso-erro" role="status" aria-live="polite" hidden>Preencha a marca e o modelo do carro para a gente saber qual é.</p>
         </div>
       </form>
 
@@ -107,7 +107,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
           <li><Icone nome="check" /><span><b>O código gravado</b>, se você tiver. É o jeito mais certo de achar.</span></li>
           <li><Icone nome="check" /><span><b>Cidade e estado</b>, para a gente combinar o envio.</span></li>
         </ul>
-        <p class="pc-dica">Uma foto da peça velha também ajuda muito. Manda depois, pelo WhatsApp.</p>
+        <p class="pc-dica">Uma foto da peça velha também ajuda muito. Mande depois, pelo WhatsApp.</p>
       </aside>
     </div>
   </div>
@@ -122,7 +122,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   const status = document.getElementById('pc-status');
 
   const regras: Record<string, { ok: (v: string) => boolean; msg: string }> = {
-    marca: { ok: (v) => v.trim().length >= 2, msg: 'Conte a marca do carro, por exemplo Volkswagen.' },
+    marca: { ok: (v) => v.trim().length >= 2, msg: 'Informe a marca do carro, por exemplo Volkswagen.' },
     modelo: { ok: (v) => v.trim().length >= 1, msg: 'Falta o modelo. Por exemplo, Gol ou Polo.' },
     ano: {
       ok: (v) => {
@@ -133,7 +133,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       },
       msg: 'Use o ano com 4 números, por exemplo 2015 ou 2015/2018.',
     },
-    peca: { ok: (v) => v.trim().length >= 3, msg: 'Escreve qual peça você procura.' },
+    peca: { ok: (v) => v.trim().length >= 3, msg: 'Escreva qual peça você procura.' },
   };
 
   if (form && status) {
@@ -158,10 +158,10 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
     };
     campo('marca').addEventListener('input', sugerirModelos);
 
-    // "Avise-me quando chegar peça para o meu <carro>": o link acompanha o que está nos campos. O ano vem do campo;
-    // sem ano no campo, o do "Meu carro" salvo, só se for o MESMO carro.
+    // "Me avise quando chegar peça": o link (a mensagem do WhatsApp) acompanha o carro dos campos. O ano vem do campo;
+    // sem ano no campo, o do "Meu carro" salvo, só se for o MESMO carro. O rótulo fica curto e fixo: com o carro ele
+    // quebrava em 2 linhas no celular (57 px, fora das 2 alturas de botão).
     const aviso = form.querySelector<HTMLAnchorElement>('[data-aviso]');
-    const avisoTxt = form.querySelector<HTMLElement>('[data-aviso-txt]');
     const avisoErro = document.getElementById('pc-aviso-erro');
     const carroDoForm = () => {
       const marcaTxt = campo('marca').value.trim();
@@ -178,7 +178,6 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       if (!aviso) return;
       const c = carroDoForm();
       aviso.href = linkAviso(form.dataset.whats || '', c ? c.nome : 'carro', c ? c.ano : null);
-      if (avisoTxt) avisoTxt.textContent = `Me avisa quando chegar peça para o meu ${c ? c.nome : 'carro'}`;
       if (c && avisoErro) avisoErro.hidden = true;
     };
     ['marca', 'modelo', 'ano'].forEach((n) => { campo(n).addEventListener('input', pintarAviso); campo(n).addEventListener('change', pintarAviso); });
@@ -253,12 +252,12 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       a.click();
       a.remove();
 
-      status.textContent = 'Abrimos o WhatsApp com a sua busca. Se não abriu, ';
+      status.textContent = 'A gente abriu o WhatsApp com a sua busca. Se não abriu, ';
       const link = document.createElement('a');
       link.href = url;
       link.target = '_blank';
       link.rel = 'noopener';
-      link.textContent = 'toca aqui';
+      link.textContent = 'toque aqui';
       status.appendChild(link);
       status.appendChild(document.createTextNode('.'));
     });
@@ -317,7 +316,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   /* "Avise-me quando chegar peça": discreto, no fim do formulário */
   .pc-aviso { display: grid; gap: 10px; justify-items: start; padding-top: 20px; border-top: 1px solid var(--line); }
   .pc-aviso p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
-  .pc-aviso-botao { --h: 46px; height: auto; min-height: var(--h); padding: 9px 16px; font-size: 15px; white-space: normal; text-align: left; line-height: 1.3; max-width: 100%; }
+  .pc-aviso-botao { --h: var(--botao-p); height: auto; min-height: var(--h); padding: 9px 16px; font-size: 15px; white-space: normal; text-align: left; line-height: 1.3; max-width: 100%; }
   .pc-aviso-botao :global(svg) { width: 19px; height: 19px; }
   @media (max-width: 600px) { .pc-aviso-botao { width: 100%; justify-content: flex-start; } }
   .pc-aviso .pc-aviso-erro { font-size: 14px; font-weight: 580; color: var(--accent-text); }

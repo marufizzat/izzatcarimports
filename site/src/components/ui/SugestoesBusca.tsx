@@ -249,7 +249,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
         <li key="whats" {...comum} className={`sb-op sb-whats${on}`}>
           <span className="sb-foto sb-icone"><IconeSprite nome="whats" /></span>
           <span className="sb-txt">
-            <b>{semResultado || erro ? 'Não achamos no site. A gente procura no pátio' : 'Não achou? A gente procura no pátio'}</b>
+            <b>{semResultado || erro ? 'Não está no site? A gente procura no pátio' : 'Não achou? A gente procura no pátio'}</b>
             <small>Chamar no WhatsApp</small>
           </span>
           <span className="sb-ir"><IconeSeta /></span>
@@ -350,7 +350,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
           )}
           {semResultado && (
             <p className="sb-status">
-              Nada com “{termoTela}” no site.{!res?.carros.length && ' Tenta o modelo do carro ou o código gravado.'}
+              Nada com “{termoTela}” no site.{!res?.carros.length && ' Tente o modelo do carro ou o código gravado.'}
             </p>
           )}
           <ul id={listaId} role="listbox" aria-label="Sugestões de peças">

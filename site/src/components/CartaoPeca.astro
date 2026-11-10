@@ -54,7 +54,7 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
       const selo = el.querySelector<HTMLElement>('.etiqueta-serve');
       if (!selo) return;
       const ano = naPagina && s === 'confira-ano';
-      const txt = ano ? 'Confere o ano' : s === 'sim' && !naPagina ? `Serve no seu ${c!.m}` : '';
+      const txt = ano ? 'Confira o ano' : s === 'sim' && !naPagina ? `Serve no seu ${c!.m}` : '';
       selo.hidden = !txt;
       selo.classList.toggle('etiqueta-serve-ano', ano);
       if (txt) selo.textContent = txt;

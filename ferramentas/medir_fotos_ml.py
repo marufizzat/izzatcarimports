@@ -25,14 +25,18 @@ Classes (a galeria, o JSON-LD e o feed tiram "m" e põem "c" no fim):
     m  marketing do anúncio: banner de entrega/garantia/dicas (2+ palavras de propaganda no texto lido pelo OCR, com
        texto de banner, 5%+ da foto), cartão escuro com texto, ou a MESMA foto (assinatura idêntica) em 3+ anúncios
        diferentes. O selo pequeno "produto seminovo original" e o lacre da loja colados na foto da peça NÃO contam.
-    c  carro inteiro (classificador prob_carro do capas_estudio.py > 0,6): vai para o fim da galeria
+    c  montagem com o carro (o carro do anúncio colado ao lado da peça numa tela BRANCA pura, borda >= 240): o
+       prob_carro do capas_estudio.py > 0,6 na foto inteira, ou a média das 3 melhores janelas no formato de carro
+       > 0,63 (o carro pequeno da montagem) com o carro inteiro dentro da janela (i > 0,45) ou solto da peça (2+
+       objetos). Foto de estúdio (fundo cinza) nunca é carro: lanterna, grade, farol e caixa de ar enganam o
+       classificador. Vai para o fim da galeria e aparece inteira (marca de incerta).
 Muito texto sozinho NÃO é marketing: nas fotos do catálogo, mais de 15% de texto é quase sempre a etiqueta da peça
 (nome, carro e código do vendedor, ou a etiqueta de fábrica), que mostra o código ao comprador.
 
 Só mede/classifica o que falta (nunca baixa de novo o que já tem); grava aos poucos (pode parar e retomar).
 Baixa a foto média (-O, até 500 px) só na memória, e os 64 primeiros bytes da grande (-F) para o tamanho.
-Os sinais brutos de cada foto (texto, luz, carro, hash) ficam num cache local (MEDIR_SINAIS, fora do repositório):
---reclassificar refaz as classes por eles, sem baixar nada.
+Os sinais brutos de cada foto (texto, luz, carro, hash, e os da montagem: b borda, k e i carro nas janelas, n objetos)
+ficam num cache local (MEDIR_SINAIS, fora do repositório): --reclassificar refaz as classes por eles, sem baixar nada.
 
 Motor (MEDIR_MOTOR): vision (Mac: ferramentas/caixa_vision.swift aberto em cada uma das 8 linhas de trabalho, recorte
 e OCR do Vision; sem swiftc, o ~/.local/bin/recorta-fundo e sem classe) | rembg (robô: recorte rembg e OCR rapidocr;
@@ -46,6 +50,8 @@ Opções: --extra ARQ       junta o JSON do robô (cache entre rodadas) e grava 
         --reclassificar   refaz as classes (e a caixa incerta) pelos sinais em cache (depois de mudar uma regra)
         --faixas          faz o teste da faixa nas fotos com caixa que ainda não têm ("f" no cache, ou o antigo de 4
                           números): baixa a -O de novo
+        --montagem        os sinais da montagem (b, k, i, n) nas fotos que ainda não têm: baixa a -O de novo (~25 min
+                          as 45 mil); depois, --reclassificar
 Teste: python testes/test_medir_fotos_ml.py
 """
 import io
@@ -297,6 +303,110 @@ def prob_carro_foto():
     return lambda img: ce.prob_carro(img.convert("RGBA"))
 
 
+def lote_carro():
+    """O mesmo classificador do prob_carro (capas_estudio.py) em lote: lista de recortes RGB -> lista de prob_carro.
+    Mesma preparação dele (quadrado branco em volta, 224 px, normalização do ImageNet)."""
+    sys.path.insert(0, str(ROOT))
+    import capas_estudio as ce
+    import numpy as np
+    from PIL import Image
+    import onnxruntime as ort
+    ce.prob_carro(Image.new("RGBA", (32, 32), (255, 255, 255, 255)))     # baixa o modelo, se faltar
+    op = ort.SessionOptions()       # 1 núcleo por chamada: as linhas de trabalho (MEDIR_PARALELO) usam os outros
+    op.intra_op_num_threads, op.inter_op_num_threads = int(os.getenv("MEDIR_ONNX_NUCLEOS", "1")), 1
+    sessao = ort.InferenceSession(str(ce.MODELO_CLASSIF), op, providers=["CPUExecutionProvider"])
+    classes = sorted(ce.CLASSES_CARRO)
+    nome = sessao.get_inputs()[0].name
+    media, desvio = np.array([0.485, 0.456, 0.406], dtype="float32"), np.array([0.229, 0.224, 0.225], dtype="float32")
+
+    def preparar(rec):
+        w, h = rec.size
+        q = Image.new("RGB", (max(w, h),) * 2, (255, 255, 255))
+        q.paste(rec, ((max(w, h) - w) // 2, (max(w, h) - h) // 2))
+        return ((np.asarray(q.resize((224, 224), Image.BILINEAR), dtype="float32") / 255.0 - media) / desvio).transpose(2, 0, 1)
+
+    def rodar(recortes):
+        if not recortes:
+            return []
+        out = sessao.run(None, {nome: np.stack([preparar(r) for r in recortes]).astype("float32")})[0]
+        p = np.exp(out - out.max(axis=1, keepdims=True))
+        p /= p.sum(axis=1, keepdims=True)
+        return [float(v) for v in p[:, classes].sum(axis=1)]
+    return rodar
+
+
+# ---------- a montagem com o carro ----------
+# A foto "montagem" do vendedor: a peça e o carro recortados, colados numa tela BRANCA PURA (borda 255). A foto de
+# verdade da peça (estúdio, fundo cinza-claro ~215-235) nunca é montagem: lanterna, grade, farol e caixa de ar
+# parecem carro para o classificador na foto inteira (os 8 falsos "carro" da revisão 7 eram todos assim).
+# Na montagem o carro costuma ser pequeno (o classificador na foto inteira dá 0,03 no coletor do Kicks): procura-se
+# o carro em janelas no formato de carro (2:1, 42% e 60% da largura do conteúdo) deslizando por ele. Vale a média das
+# 3 melhores: o carro aparece em várias janelas vizinhas; o para-choque sozinho engana uma janela só. E o carro da
+# montagem é um objeto INTEIRO dentro da janela (a borda da janela é quase toda tela branca); a janela que pega um
+# pedaço de uma peça grande (console de teto, lanterna, painel) corta a peça na borda: "i" pesa isso.
+FUNDO_MONTAGEM = 240   # borda da foto (mediana, no canal mais escuro) daqui para cima = tela branca da montagem
+                       # (as montagens têm 255; uma com 242; as fotos de estúdio ficam em 200-235, poucas até 249)
+CARRO_JANELA = 0.63    # a média das 3 melhores janelas no formato de carro acima disso = há um carro na montagem
+                       # (amostra de 436 telas brancas: carros de 0,71 a 0,98; para-choque sozinho 0,55; uma van 0,43)
+CARRO_INTEIRO = 0.45   # e o mesmo com cada janela pesada pelo fundo na borda dela (fundo/0,6, até 1) acima disso, ou
+                       # 2+ objetos separados (a peça e o carro). Folha da rodada 8: tira 3 dos 5 falsos (console de
+                       # teto, lanterna, painel de instrumentos) e perde 2 de 1.059 montagens
+
+
+def janelas_carro(cw, ch):
+    """Janelas (x0, y0, x1, y1) no formato de carro (largura = 1,9 × altura) em px do conteúdo cw × ch: 42% e 60% da
+    largura, passo de meia janela, cobrindo o conteúdo todo."""
+    import math
+    saida = []
+    for esc in (0.42, 0.6):
+        ww = esc * cw
+        wh = min(ch, ww / 1.9)
+        nx = max(1, math.ceil((cw - ww) / (ww / 2)) + 1)
+        ny = max(1, math.ceil((ch - wh) / (wh / 2)) + 1)
+        for iy in range(ny):
+            for ix in range(nx):
+                x = 0 if nx == 1 else ix * (cw - ww) / (nx - 1)
+                y = 0 if ny == 1 else iy * (ch - wh) / (ny - 1)
+                saida.append((x, y, x + ww, y + wh))
+    return saida
+
+
+def montagem(img, lote):
+    """Sinais da montagem: {"b": borda da foto (0-255, mediana no canal mais escuro)} e, só na tela branca
+    (b >= FUNDO_MONTAGEM): "k" = a média das 3 melhores janelas no formato de carro (prob_carro em lote), "i" = o mesmo
+    com cada janela pesada pelo fundo na borda dela (carro inteiro dentro da janela) e "n" = quantos objetos separados
+    (o carro solto ao lado da peça conta 2). `lote` = lote_carro() (None: só a borda)."""
+    import numpy as np
+    from scipy import ndimage
+    img = img.convert("RGB")
+    a = np.asarray(img, dtype=np.int16)
+    h, w = a.shape[:2]
+    b = max(2, round(0.02 * min(w, h)))
+    borda = np.concatenate([a[:, :b].reshape(-1, 3), a[:, -b:].reshape(-1, 3), a[:b].reshape(-1, 3), a[-b:].reshape(-1, 3)])
+    fundo = np.median(borda, axis=0)
+    out = {"b": round(float(fundo.min()), 1)}
+    if fundo.min() < FUNDO_MONTAGEM or lote is None:
+        return out
+    m = ndimage.binary_opening(np.abs(a - fundo).max(axis=2) >= 30, structure=np.ones((3, 3)))
+    ys, xs = np.nonzero(m)
+    if len(xs) < 0.002 * w * h:
+        return dict(out, k=0.0, i=0.0, n=0)
+    x0, y0 = int(xs.min()), int(ys.min())
+    cw, ch = int(xs.max()) + 1 - x0, int(ys.max()) + 1 - y0
+    rot, n = ndimage.label(m, structure=np.ones((3, 3)))
+    objetos = int((np.bincount(rot.ravel())[1:] >= 0.003 * w * h).sum()) if n else 0
+    caixas = [(round(x0 + j0), round(y0 + k0), round(x0 + j1), round(y0 + k1)) for j0, k0, j1, k1 in janelas_carro(cw, ch)]
+    probs = lote([img.crop(c) for c in caixas])
+    inteiro = []
+    for (X0, Y0, X1, Y1), pr in zip(caixas, probs):
+        t = max(1, round(0.04 * min(X1 - X0, Y1 - Y0)))
+        sub = m[Y0:Y1, X0:X1]
+        borda = np.concatenate([sub[:t].ravel(), sub[-t:].ravel(), sub[:, :t].ravel(), sub[:, -t:].ravel()])
+        inteiro.append(pr * min(1.0, (1 - borda.mean()) / 0.6))
+    media3 = lambda v: (lambda m3: sum(m3) / len(m3))(sorted(v, reverse=True)[:3] or [0.0])   # noqa: E731
+    return dict(out, k=round(media3(probs), 3), i=round(media3(inteiro), 3), n=objetos)
+
+
 def motores(nome):
     """(recortar, ler_texto ou None, prob_carro ou None, linhas de trabalho)."""
     try:
@@ -420,23 +530,34 @@ def assinatura(img):
     return "%016x" % int("".join("1" if b else "0" for b in bits), 2)
 
 
-def sinais(img, ler_texto, prob_carro):
-    """Os sinais brutos de uma foto: t = área de texto (0-1), x = texto lido, l = luz média, c = carro, h = assinatura."""
+def sinais(img, ler_texto, prob_carro, lote=None):
+    """Os sinais brutos de uma foto: t = área de texto (0-1), x = texto lido, l = luz média, c = carro, h = assinatura
+    e os da montagem (montagem(): b = borda, k = carro na janela, n = objetos; com `lote`)."""
     import numpy as np
     area, texto = ler_texto(img)
-    return {"t": round(float(area), 4), "x": (texto or "")[:300], "l": round(float(np.asarray(img.convert("L")).mean()), 1),
-            "c": round(float(prob_carro(img)), 3), "h": assinatura(img)}
+    s = {"t": round(float(area), 4), "x": (texto or "")[:300], "l": round(float(np.asarray(img.convert("L")).mean()), 1),
+         "c": round(float(prob_carro(img)), 3), "h": assinatura(img)}
+    if lote is not None:
+        s.update(montagem(img, lote))
+    return s
 
 
 def classe_de(tem_caixa, s):
-    """p | s | m | c pelos sinais de UMA foto (o modelo repetido em vários anúncios é marcado depois, em modelos())."""
+    """p | s | m | c pelos sinais de UMA foto (o modelo repetido em vários anúncios é marcado depois, em modelos()).
+    Carro (c): só na tela branca da montagem do vendedor, com o carro na foto inteira ou numa janela no formato de
+    carro (e inteiro dentro dela, ou solto da peça). Sem os sinais da montagem no cache (foto antiga ainda sem
+    --montagem): a regra antiga, foto inteira."""
     x = _normal(s.get("x"))
     palavras = {m.group(1) for m in PROPAGANDA.finditer(x)}
     if len(palavras) >= 2 and s["t"] >= TEXTO_BANNER and not LACRE.search(x):
         return "m"
     if s["l"] < ESCURO and s["t"] > TEXTO_ESCURO:
         return "m"
-    if s["c"] > CARRO:
+    if "b" not in s:
+        if s["c"] > CARRO:
+            return "c"
+    elif s["b"] >= FUNDO_MONTAGEM and (s["c"] > CARRO or s.get("k", 0) > CARRO_JANELA
+                                       and (s.get("i", 1) > CARRO_INTEIRO or s.get("n", 0) >= 2)):
         return "c"
     return "p" if tem_caixa else "s"
 
@@ -458,10 +579,14 @@ def incerta_da(e):
 
 
 def com_classe(e, classe, h, inc=None):
-    """Os números da entrada + classe + assinatura (+ a marca de caixa incerta). inc None = mantém a marca de `e`."""
+    """Os números da entrada + classe + assinatura (+ a marca de caixa incerta). inc None = mantém a marca de `e`.
+    A montagem com o carro (c) aparece sempre inteira (a caixa do recorte às vezes pega só o carro ou só a peça):
+    leva a marca de incerta, menos a foto quadrada (o quadro nunca a corta)."""
     if inc is None:
         inc = incerta_da(e)
-    return numeros(e) + [classe] + ([h] if h else []) + ([INCERTA] if inc and len(numeros(e)) >= 6 else [])
+    n = numeros(e)
+    inc = inc or (classe == "c" and len(n) >= 6 and n[0] != n[1])
+    return n + [classe] + ([h] if h else []) + ([INCERTA] if inc and len(n) >= 6 else [])
 
 
 def incerta_pelo_cache(e, s):
@@ -554,6 +679,41 @@ def fazer_faixas(dados, cache, chaves):
           flush=True)
 
 
+def fazer_montagem(cache, chaves):
+    """--montagem: os sinais da montagem (montagem(): b, k, n) nas `chaves` (baixa a -O de novo, ou lê de
+    MEDIR_FOTOS_O) e grava no cache. A classe sai depois, no --reclassificar. MEDIR_PARALELO linhas; respeita
+    MEDIR_TEMPO_MAX."""
+    import concurrent.futures as cf
+    lote = lote_carro()
+    t0, tempo_max = time.time(), float(os.getenv("MEDIR_TEMPO_MAX", "0") or 0)
+    trava, cont = threading.Lock(), {"i": 0, "erro": 0, "branca": 0}
+    print(f"montagem: {len(chaves)} fotos", flush=True)
+
+    def uma(k):
+        if tempo_max and time.time() - t0 > tempo_max:
+            return
+        try:
+            s = montagem(baixar_media(k), lote)
+        except Exception:  # noqa: BLE001  (rede, foto que saiu do ar)
+            s = None
+        with trava:
+            cont["i"] += 1
+            if s is None:
+                cont["erro"] += 1
+                return
+            cache.setdefault(k, {}).update(s)
+            cont["branca"] += "k" in s
+            if cont["i"] % 2000 == 0:
+                gravar(cache, SINAIS)
+                print(f"  {cont['i']}/{len(chaves)}  {time.time() - t0:.0f}s  (tela branca: {cont['branca']})", flush=True)
+
+    with cf.ThreadPoolExecutor(int(os.getenv("MEDIR_PARALELO", "8"))) as ex:
+        list(ex.map(uma, chaves))
+    gravar(cache, SINAIS)
+    print(f"montagem: {cont['i'] - cont['erro']} feitas ({cont['branca']} na tela branca), {cont['erro']} erro de rede"
+          f" | {time.time() - t0:.0f}s", flush=True)
+
+
 def main(argv):
     extra = argv[argv.index("--extra") + 1] if "--extra" in argv else None
     t0 = time.time()
@@ -566,6 +726,10 @@ def main(argv):
         dados = {k: v for k, v in dados.items() if k in usadas}
     cache = ler(SINAIS)
     tem_sinais = lambda k: k in cache and "h" in cache[k]     # noqa: E731  (só "f" = teste da faixa sem os sinais)
+    if "--montagem" in argv:                     # os sinais da montagem nas fotos que ainda não têm (baixa a -O)
+        fazer_montagem(cache, [k for k in fila_de(pecas, {}, set(filter(None, os.getenv("MEDIR_IDS", "").split(","))))
+                               if tem_sinais(k) and ("b" not in cache[k]          # o "i" (de depois) só vale com k alto
+                                                     or cache[k].get("k", 0) > CARRO_JANELA and "i" not in cache[k])])
     if "--reclassificar" in argv:                # regra nova: refaz pelos sinais guardados, sem baixar nada
         for k, e in dados.items():
             if tem_sinais(k):
@@ -598,7 +762,11 @@ def main(argv):
         except Exception as e:  # noqa: BLE001  (sem rembg/onnx: grava só a junção, mede na próxima rodada)
             print(f"sem o recorte ({motor}): {str(e)[:80]} — fica para a próxima rodada", flush=True)
             fila, sem_classe = [], []
-    classificar = (lambda img: sinais(img, ler_texto, prob)) if ler_texto and prob else None
+    try:
+        lote = lote_carro() if prob else None
+    except Exception:  # noqa: BLE001
+        lote = None
+    classificar = (lambda img: sinais(img, ler_texto, prob, lote)) if ler_texto and prob else None
     if not classificar:
         sem_classe = []
     tempo_max = float(os.getenv("MEDIR_TEMPO_MAX", "0") or 0)
@@ -655,7 +823,7 @@ def main(argv):
     print("classes: " + ", ".join(f"{c} {n}" for c, n in sorted(contagem.items())) + f" (modelo repetido: {len(rep)})"
           + f" | caixa incerta: {sum(1 for e in dados.values() if incerta_da(e))}", flush=True)
     gravar(dados, ARQ)
-    if cache and (fila or sem_classe or "--faixas" in argv):
+    if cache and (fila or sem_classe or "--faixas" in argv or "--montagem" in argv):
         gravar(cache, SINAIS)
     if extra:
         gravar(dados, extra)

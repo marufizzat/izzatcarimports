@@ -21,12 +21,12 @@ const msgProcura = 'Não achei a peça no site. Meu carro é ____ (modelo e ano)
 
 const perguntas = [
   ['A peça é original?', 'Sim. Toda peça sai de um carro com baixa legal no Detran-RS e é original de fábrica. Somos desmanche credenciado, CDV nº 01060.'],
-  ['Tem garantia?', 'Tem: 90 dias de garantia em toda peça. Se der problema nesse prazo, fala com a gente pelo WhatsApp com o número do pedido e fotos.'],
+  ['Tem garantia?', 'Tem: 90 dias de garantia em toda peça. Se der problema nesse prazo, fale com a gente pelo WhatsApp com o número do pedido e fotos.'],
   ['Vocês emitem nota fiscal?', 'Sim, em toda venda.'],
-  ['Como sei se a peça serve no meu carro?', 'Olha o carro e os anos na página da peça e o código gravado. Na dúvida, manda o modelo e o ano do seu carro no WhatsApp que a gente confere na peça antes de você comprar.'],
+  ['Como sei se a peça serve no meu carro?', 'Confira o carro e os anos na página da peça e o código gravado. Na dúvida, mande o modelo e o ano do seu carro no WhatsApp que a gente confere na peça antes de você comprar.'],
   ['Como faço para comprar?', 'Pelo Mercado Livre, no botão de cada peça, ou direto pelo WhatsApp, com a mensagem já pronta.'],
   ['Enviam para todo o Brasil?', 'Sim. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.'],
-  ['Não achei a peça. E agora?', 'Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp que a gente procura no pátio.'],
+  ['Não achei a peça. E agora?', 'Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp que a gente procura no pátio.'],
 ];
 const ld = {
   '@context': 'https://schema.org',
@@ -59,11 +59,11 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-destaques" class="titulo-secao">Destaques do pátio</h2>
-        <p class="lead">Peças originais com preço, nota fiscal e 90 dias de garantia. Abre a peça para ver as fotos e o código gravado.</p>
+        <p class="lead">Peças originais com preço, nota fiscal e 90 dias de garantia. Abra a peça para ver as fotos e o código gravado.</p>
       </div>
       <VitrineDestaques />
       <BannerV2 class="vitrine-serve" nome="banner-serve" href={whatsUrl(msgServe)}
-        texto="Serve no meu carro? Manda o modelo e o ano. A gente confere e te responde com foto. Chamar no WhatsApp" />
+        texto="Serve no meu carro? Mande o modelo e o ano. A gente confere e responde com foto. Chamar no WhatsApp" />
     </div>
   </section>
 
@@ -71,7 +71,7 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-cat" class="titulo-secao">Peças por categoria</h2>
-        <p class="lead">Escolhe a parte do carro e confere tudo o que tem no estoque.</p>
+        <p class="lead">Escolha a parte do carro e confira tudo o que tem no estoque.</p>
       </div>
       <GradeCategorias />
     </div>
@@ -94,8 +94,8 @@ const ld = {
   <section class="secao cv" aria-labelledby="t-marcas">
     <div class="moldura">
       <div class="cabeca-secao">
-        <h2 id="t-marcas" class="titulo-secao">Escolhe pela marca do seu carro</h2>
-        <p class="lead">{marcasVisiveis().length} marcas para escolher. Escolhe a sua para ver só as peças dela.</p>
+        <h2 id="t-marcas" class="titulo-secao">Escolha pela marca do seu carro</h2>
+        <p class="lead">{marcasVisiveis().length} marcas para escolher. Escolha a sua para ver só as peças dela.</p>
       </div>
       <NuvemMarcas />
     </div>
@@ -113,7 +113,7 @@ const ld = {
       <div class="cabeca-secao linha">
         <div>
           <h2 id="t-carros" class="titulo-secao">Carros do pátio</h2>
-          <p class="lead">Escolhe o carro e confere todas as peças que saíram dele.</p>
+          <p class="lead">Escolha o carro e confira todas as peças que saíram dele.</p>
         </div>
         <a class="botao botao-linha so-largo" href="/carros.html">Ver os {r.carros.length} carros</a>
       </div>
@@ -134,7 +134,7 @@ const ld = {
       {/* no celular a fila desliza de lado: ganha parada no Tab só quando rola (lib/trilhoFoco.ts: paradaSeRolar) */}
       <ol class="passos" aria-label="Como comprar, em 4 passos" data-rola>
         {[['Ache a peça', 'Pelo nome, pelo carro ou pelo código gravado.'],
-          ['Confirme o seu carro', 'Manda o modelo e o ano. A gente confere na peça.'],
+          ['Confirme o seu carro', 'Mande o modelo e o ano. A gente confere na peça.'],
           ['Feche a compra', 'No Mercado Livre ou direto pelo WhatsApp.'],
           ['Receba em casa', 'Com nota fiscal e código de rastreio.']].map(([t, s], i) => (
           <li><img src={`/arte/v2/passo-${i + 1}.webp`} alt={`${i + 1}. ${t}`} width="800" height="671" loading="lazy" decoding="async" /><p>{s}</p></li>
@@ -162,7 +162,7 @@ const ld = {
         <img class="faq-ajuda-icone" src="/icones/conversa-96.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />
         <div class="faq-ajuda-txt">
           <b>Ficou outra dúvida?</b>
-          <span>Manda no WhatsApp. Quem responde é a equipe do pátio.</span>
+          <span>Mande no WhatsApp. Quem responde é a equipe do pátio.</span>
           <a class="botao botao-laranja" href={whatsUrl('Tenho uma dúvida:')}><Icone nome="whats" />Chamar no WhatsApp</a>
         </div>
       </div>
