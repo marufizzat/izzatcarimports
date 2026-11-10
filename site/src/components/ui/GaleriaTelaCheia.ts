@@ -3,6 +3,8 @@
 // foco visível, com zoom e gestos (deslizar, pinça, toque duplo, roda do mouse).
 // O HTML é montado na 1ª abertura e reaproveitado. Durante o gesto, o desenho vai direto no estilo (um por quadro),
 // sem recriar nada: fluido mesmo em celular fraco. Quem abre: PecaTopo.astro (abrirGaleria).
+// Fundo escuro e a foto do anúncio INTEIRA, sem o corte do palco da página (o enquadramento de lib/quadroFoto.ts vale
+// só para as miniaturas, que são cópias das da página).
 
 type Vista = { s: number; x: number; y: number };
 type Gesto = {
@@ -17,8 +19,8 @@ type Gesto = {
 export type Abrir = {
   /** fotos grandes (as do trilho da página, na mesma ordem) */
   fotos: string[];
-  /** miniaturas (as pequenas da página); vazia = usa a foto grande */
-  minis?: string[];
+  /** miniaturas: as <img> pequenas da página (copiadas com o mesmo quadro); vazia = usa a foto grande */
+  minis?: (HTMLImageElement | null)[];
   titulo: string;
   indice?: number;
   /** quem recebe o foco de volta ao fechar */
@@ -35,16 +37,17 @@ const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
 
 const CSS = `
-.gt{position:fixed;inset:0;z-index:1100;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--plate);color:#1d1d1f;
+.gt{position:fixed;inset:0;z-index:1100;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:#0e0e10;color:#f5f5f7;color-scheme:dark;
   opacity:0;transition:opacity .22s ease;user-select:none;-webkit-user-select:none}
 .gt[hidden]{display:none}
 .gt.on{opacity:1}
 .gt.mexendo .gt-trilho,.gt.mexendo .gt-foto{transition:none}
 .gt-topo{display:flex;align-items:center;gap:10px;padding:max(12px,env(safe-area-inset-top)) 12px 10px 16px;min-width:0}
 .gt-titulo{flex:1;min-width:0;margin:0;font-size:15px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gt-contador{flex:none;padding:6px 11px;border-radius:999px;background:#1d1d1f;color:#fff;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}
-.gt-botao{flex:none;width:44px;height:44px;border:0;border-radius:12px;display:grid;place-items:center;padding:0;background:#ececf0;color:#1d1d1f;cursor:pointer}
-.gt-botao:hover{background:#e2e2e7}
+.gt-contador{flex:none;padding:6px 11px;border-radius:999px;background:rgb(255 255 255 / .14);color:#fff;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}
+.gt-botao{flex:none;width:44px;height:44px;border:0;border-radius:12px;display:grid;place-items:center;padding:0;background:rgb(255 255 255 / .12);color:#fff;cursor:pointer}
+.gt-botao:hover{background:rgb(255 255 255 / .2)}
+.gt-botao:focus-visible,.gt-mini:focus-visible,.gt-seta:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .gt-botao svg{width:20px;height:20px}
 .gt-meio{position:relative;min-height:0;overflow:hidden}
 .gt-palco{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:zoom-in}
@@ -67,10 +70,11 @@ const CSS = `
 @media (min-width:720px){.gt-seta{display:grid}}
 .gt-faixa{display:flex;gap:8px;overflow-x:auto;justify-content:safe center;padding:10px 14px calc(14px + env(safe-area-inset-bottom));scrollbar-width:none;overscroll-behavior-x:contain}
 .gt-faixa::-webkit-scrollbar{display:none}
-.gt-mini{flex:none;width:60px;height:60px;padding:0;border:0;border-radius:12px;overflow:hidden;background:#f5f5f7;cursor:pointer;
-  box-shadow:inset 0 0 0 1.5px #e2e2e7;opacity:.62;transition:opacity .2s,box-shadow .2s}
-.gt-mini[aria-current="true"]{opacity:1;box-shadow:inset 0 0 0 2.5px var(--accent)}
-.gt-mini img{width:100%;height:100%;object-fit:contain;padding:4px;pointer-events:none}
+.gt-mini{position:relative;flex:none;width:60px;height:60px;padding:0;border:0;border-radius:12px;overflow:hidden;background:linear-gradient(#f4f3f0,#e7e5e1);cursor:pointer;
+  outline:2.5px solid transparent;outline-offset:-2.5px;opacity:.5;transition:opacity .2s,outline-color .2s}
+.gt-mini[aria-current="true"]{opacity:1;outline-color:var(--accent)}
+.gt-mini img{width:100%;height:100%;object-fit:contain;padding:4px;pointer-events:none;mix-blend-mode:multiply}
+.gt-mini img.estudio{padding:0;object-fit:cover;mix-blend-mode:normal}
 @media (prefers-reduced-motion:reduce){.gt,.gt-trilho,.gt-foto,.gt-mini{transition:none!important}}
 `;
 const svg = (d: string, w = 2) =>
@@ -249,7 +253,7 @@ function onDuplo(e: MouseEvent) {
   duploZoom(e.clientX, e.clientY);
 }
 
-function montar(fotos: string[], minis: string[], titulo: string) {
+function montar(fotos: string[], minis: (HTMLImageElement | null)[], titulo: string) {
   if (!document.getElementById('gt-estilo')) {
     const st = document.createElement('style');
     st.id = 'gt-estilo';
@@ -294,12 +298,14 @@ function montar(fotos: string[], minis: string[], titulo: string) {
     b.type = 'button';
     b.className = 'gt-mini';
     b.setAttribute('aria-label', `Foto ${k + 1}`);
-    const mi = document.createElement('img');
+    // cópia da miniatura da página: mesma classe e mesmo quadro (style), já no cache do navegador
+    const pag = minis[k];
+    const mi = pag ? (pag.cloneNode(false) as HTMLImageElement) : document.createElement('img');
     mi.alt = '';
     mi.loading = 'lazy';
     mi.decoding = 'async';
     mi.draggable = false;
-    mi.src = minis[k] || src;
+    if (!pag) mi.src = src;
     b.append(mi);
     b.addEventListener('click', () => irPara(k));
     faixa.append(b);

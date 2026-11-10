@@ -46,8 +46,12 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **Versão 2** (`ESTUDIO_VERSAO=2`; o padrão segue 1 até o dono aprovar). Saída em 1000 px, enquadramento por regra:
      peso visual igual pelo casco convexo, piso comum a 0,79, centro de massa, hastes finas na diagonal.
      Leva o logo original (`ESTUDIO_LOGO=a` selo no canto, recomendado | `b` relevo | `c` assinatura | `0` sem logo).
-     Separa sozinha a foto montagem e pula a foto com o carrinho do anúncio colado. As suspeitas vão para
-     `_revisar.json`; a folha sai com `ferramentas/folha_revisar.py <pasta>`. Para o Google Shopping, a cópia sem logo
+     Separa sozinha a foto montagem e pula a foto com o carrinho do anúncio colado. **Peça cortada na foto** (encosta
+     na borda ou acaba na reta do recorte do vendedor, colada num fundo branco: `cortes_na_foto`): procura outra foto
+     do anúncio com a peça inteira (até depois da 6ª); se nenhuma serve, a capa sai menor que a normal, com 10% de
+     margem dos lados e o mesmo piso (`REGRA_CORTADA`), e entra no `_revisar.json` como "cortada na capa". A foto
+     conferida (`ok`) e a escolhida a mão nunca são trocadas. As suspeitas vão para `_revisar.json`; a folha sai com
+     `ferramentas/folha_revisar.py <pasta>`. Para o Google Shopping, a cópia sem logo
      sai com `ESTUDIO_SAIDA_LIMPA` (o feed não aceita logo sobreposto). Maquiadas na v2: `ferramentas/marca_pro.py`
      (grava noutra pasta e nunca sobrescreve `estudio-pro`). Ao ligar a v2, pôr `ESTUDIO_VERSAO`/`ESTUDIO_LOGO` também no `atualizar.yml`.
    - **Ajustes manuais** (`capas_ajustes.json` na raiz, o robô respeita): por peça, a foto escolhida (`chave` do ML;
@@ -55,6 +59,32 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      filtros automáticos; `sem_capa` = nenhuma foto serve (o robô apaga a capa e o site mostra a foto do ML);
      `ok` = falso alarme conferido (não volta ao `_revisar.json`). Ajuste novo/mudado refaz a capa (assinatura em
      `<saída>/_ajustes_aplicados.json`, que vai junto no ramo). Teste: `python testes/test_capas_ajustes.py`.
+   - **Fotos do anúncio na galeria da peça** (depois da capa): o mesmo quadro quadrado da capa, fundo do estúdio
+     (`#F4F3F0→#E7E5E1`) e a foto "multiplicando" sobre ele (o branco cru do ML vira o tom do estúdio). A peça fica
+     centrada ocupando ~84% quando a foto deixa (`site/src/lib/quadroFoto.ts`, só CSS, a foto do ML não é copiada), com
+     4 regras para nenhuma peça parecer cortada: **nunca amplia além do quadrado da própria foto** (o lado curto aparece
+     sempre inteiro; o quadro só corta o eixo longo, onde a caixa diz que não há peça); **caixa incerta** ou sem peça
+     achada = a foto inteira no meio (respiro de 6%); **respiro mínimo de 4%** entre a peça e a borda do palco (peça
+     encostada na borda da foto: a foto vai para o meio, com folga); **foto pequena** (lado maior < 1024 px) inteira, no
+     máximo 1,25× no palco retina. Onde o quadro passa da foto, as bordas se desfazem no fundo (classe `i`, também nas
+     miniaturas e na faixa da tela cheia).
+     A caixa da peça de cada foto fica em `site/src/data/fotos-ml-caixas.json` (commitado): `ferramentas/medir_fotos_ml.py`
+     mede só o que falta (Mac: Vision num processo aberto, `ferramentas/caixa_vision.swift`, 8 em paralelo, ~1h15 para as
+     45 mil; robô: rembg nas fotos novas, cache `caixas-`, até 4 min por rodada). Foto sem medida aparece inteira, como
+     antes. **Caixa incerta** (`"incerta"` no fim da entrada): o teste da faixa de segurança (`faixas()`) procura "coisa"
+     (pixel 25+ diferente do fundo, pega plástico branco; as letras de etiqueta viram uma mancha só) em toda a foto além
+     da caixa no eixo longo — montagem com o carro colado, plástico branco medido só na parte preta, zoom na etiqueta.
+     Também incerta: caixa de borda a borda no lado curto e borda da foto sem cara de fundo de estúdio (close da peça:
+     não há fundo para conferir). Foto quadrada nunca (o quadro não corta nada). Medida por lado no cache dos sinais
+     (`"f"`, 5 números); sem ela: `medir_fotos_ml.py --faixas` (baixa a `-O` de novo, 8 linhas; `MEDIR_FOTOS_O` = pasta
+     com as `-O` já baixadas). Nov/2026: 10.168 de 45.153 incertas (5.678 mudam na tela).
+     Miniaturas pela foto `-A` do ML (228 px, proporção da foto). Tela cheia: fundo escuro, foto inteira.
+     **Classe de cada foto** (no mesmo JSON, com a assinatura dHash): `p` peça, `s` sem peça, `m` marketing do anúncio
+     (palavras de propaganda no OCR — entrega, garantia, dicas, seminovo…; cartão escuro com texto; ou a mesma foto em
+     3+ anúncios), `c` carro inteiro (`prob_carro` > 0,6). `fotosGaleria()` (lib/quadroFoto.ts) tira `m` e põe `c` no
+     fim na galeria, miniaturas, tela cheia, JSON-LD, og:image e feed. Muito texto sozinho não é marketing: é a
+     etiqueta da peça (mostra o código). Mudou uma regra: `medir_fotos_ml.py --reclassificar` (sinais em cache local).
+     Testes: `python testes/test_medir_fotos_ml.py` e `site/testes/quadroFoto.test.ts`.
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
 
 7. **Reputação do Mercado Livre**: `atualizar_catalogo.py` (`save_seller_reputation`) lê a rota pública

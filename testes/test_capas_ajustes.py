@@ -16,21 +16,29 @@ sys.path.insert(0, str(ROOT))
 import capas_estudio as ce  # noqa: E402
 
 # foto sintética de cada chave: (cor da peça, caixas da peça em frações)
+# as peças são ELIPSES (peça de verdade não acaba numa reta exata; reta + fundo liso = foto cortada pelo vendedor)
 FOTOS = {
     "f-azul": ((30, 60, 200), [(0.30, 0.30, 0.70, 0.70)]),
     "f-vermelha": ((210, 30, 30), [(0.25, 0.20, 0.75, 0.60)]),
     "f-verde": ((30, 170, 60), [(0.30, 0.30, 0.70, 0.70)]),
     "f-dupla": ((30, 170, 60), [(0.10, 0.30, 0.40, 0.70), (0.60, 0.30, 0.90, 0.70)]),   # 2 pedaços: vai p/ revisar
+    # peça CORTADA: o vendedor cortou a foto passando pela peça e colou num fundo branco (reta em x = 0,62)
+    "f-recortada": ((200, 120, 20), [(0.15, 0.20, 1.05, 0.80)], 0.62),
+    # peça CORTADA pela borda da foto (passa da borda direita)
+    "f-borda": ((200, 120, 20), [(0.30, 0.25, 1.30, 0.75)]),
+    "f-laranja": ((200, 120, 20), [(0.20, 0.25, 0.80, 0.75)]),                        # a mesma peça, inteira
 }
 
 
 def foto_sintetica(chave):
     from PIL import Image, ImageDraw
-    cor, caixas = FOTOS[chave.split("+")[0]]
+    cor, caixas, *reta = FOTOS[chave.split("+")[0]]
     im = Image.new("RGB", (600, 400), (255, 255, 255))
     d = ImageDraw.Draw(im)
     for x0, y0, x1, y1 in caixas:
-        d.rectangle((x0 * 600, y0 * 400, x1 * 600, y1 * 400), fill=cor)
+        d.ellipse((x0 * 600, y0 * 400, x1 * 600, y1 * 400), fill=cor)
+    if reta:                   # corte reto do vendedor: daqui para a direita, só fundo branco
+        d.rectangle((reta[0] * 600, 0, 600, 400), fill=(255, 255, 255))
     if "+carro" in chave:      # "carrinho colado" encostado no canto de cima da peça
         d.rectangle((0.60 * 600, 0.05 * 400, 0.95 * 600, 0.32 * 400), fill=(90, 90, 90))
     b = io.BytesIO()
@@ -106,9 +114,9 @@ def test_recorte_manual_corta_e_apaga():
         assert a[int(0.50 * 400), int(0.50 * 600)] == 255        # a peça continua
 
 
-def _ambiente(tmp):
+def _ambiente(tmp, pecas=None, ajustes=None):
     """Catálogo de mentira e o módulo apontando para a pasta temporária."""
-    pecas = [
+    pecas = pecas or [
         {"id": "MLB1", "fotos": ["f-azul", "f-vermelha", "f-verde"], "limpa": True},   # ajuste: foto 1 (vermelha)
         {"id": "MLB2", "fotos": ["f-azul", "f-verde"], "limpa": True},                 # sem_capa
         {"id": "MLB3", "fotos": ["f-dupla", "f-azul"], "limpa": True},                 # ok (conferida)
@@ -136,7 +144,7 @@ def _ambiente(tmp):
     ce._baixadas = []
     ce.SAIDA.mkdir()
     (ce.SAIDA / "MLB2.webp").write_bytes(b"capa velha")       # a capa antiga da peça 'sem_capa'
-    ajustes = {
+    ajustes = ajustes if ajustes is not None else {
         "_leia": "comentário",
         "MLB1": {"chave": "f-vermelha", "foto": 1, "corte": [0.0, 0.0, 1.0, 0.8]},
         "MLB2": {"sem_capa": True},
@@ -189,6 +197,80 @@ def test_robo_respeita_os_ajustes():
         assert not (s / "MLB2.webp").exists()
         b = json.loads((tmp / "site" / "public" / "dados" / "busca.json").read_text(encoding="utf-8"))
         assert b["e"] == "10111", b["e"]
+    os.environ.pop("ESTUDIO_SAIDA", None)
+
+
+def caixa_da_peca(arq):
+    """Caixa da peça colorida na capa (o estúdio é cinza): (x0, y0, x1, y1) em frações do quadro."""
+    import numpy as np
+    from PIL import Image
+    a = np.asarray(Image.open(arq).convert("RGB")).astype(int)
+    ys, xs = np.nonzero((a.max(2) - a.min(2)) > 80)
+    L = a.shape[1]
+    return xs.min() / L, ys.min() / L, (xs.max() + 1) / L, (ys.max() + 1) / L
+
+
+def test_detector_de_peca_cortada():
+    """Cortada = encosta na borda da foto OU acaba numa reta exata com fundo liso (corte do vendedor)."""
+    import numpy as np
+    from PIL import Image
+
+    def cortes(chave):
+        img = Image.open(io.BytesIO(foto_sintetica(chave))).convert("RGB")
+        return ce.cortes_na_foto(recorte_limiar(img).split()[3], img)
+    assert cortes("f-laranja") == {} and cortes("f-azul") == {} and cortes("f-vermelha") == {}
+    c = cortes("f-recortada")
+    assert set(c) == {"dir"} and c["dir"] > 0.8, c            # a reta do vendedor, no meio da foto
+    c = cortes("f-borda")
+    assert c.get("dir", 0) > 0.5, c                            # passa da borda da foto
+    # foto de bancada (fundo com textura): a reta não conta, só a borda da foto
+    img = Image.open(io.BytesIO(foto_sintetica("f-recortada"))).convert("RGB")
+    ruido = np.random.default_rng(1).integers(-12, 12, (400, 600, 3))
+    fundo = np.clip(np.asarray(img).astype(int) + ruido * (np.asarray(img).min(2, keepdims=True) > 240), 0, 255)
+    img2 = Image.fromarray(fundo.astype("uint8"))
+    assert ce.cortes_na_foto(recorte_limiar(img).split()[3], img2) == {}
+    assert ce.peso_do_corte({}) == 0 and ce.peso_do_corte({"dir": 0.4, "topo": 0.7}) == 0.7
+
+
+def test_capa_nunca_toca_a_borda():
+    """Peça cortada na foto: o robô pega uma foto em que ela aparece inteira (até depois das 6 primeiras); se nenhuma
+    serve, a capa sai MENOR que a normal, com margem >= 8% dos lados e o piso comum, e entra no _revisar.json como
+    "cortada na capa". Nenhuma capa encosta na borda. A foto conferida (ok) nunca é trocada."""
+    os.environ.pop("ESTUDIO_REFAZER", None)
+    os.environ.pop("ESTUDIO_IDS", None)
+    os.environ.pop("ESTUDIO_FATIA", None)
+    os.environ["ESTUDIO_SAIDA"] = "teste"
+    sete = ["f-borda+1", "f-recortada+2", "f-borda+3", "f-borda+4", "f-recortada+5", "f-borda+6", "f-laranja+7"]
+    pecas = [
+        {"id": "MLB10", "fotos": ["f-recortada", "f-laranja"], "limpa": True},   # troca pela foto inteira
+        {"id": "MLB11", "fotos": ["f-recortada"], "limpa": True},                # nenhuma inteira: menor, com margem
+        {"id": "MLB12", "fotos": sete, "limpa": True},                           # a inteira é a 7ª foto
+        {"id": "MLB13", "fotos": ["f-recortada", "f-laranja"], "limpa": True},   # conferida a olho: fica a dela
+        {"id": "MLB14", "fotos": ["f-laranja"], "limpa": True},                  # normal
+    ]
+    ajustes = {"MLB13": {"ok": True, "chave": "f-recortada", "foto": 0}}
+    with tempfile.TemporaryDirectory() as d:
+        _ambiente(Path(d), pecas, ajustes)
+        ce.main(recortar=recorte_limiar)
+        s = ce.SAIDA
+        revisar = json.loads(ce.REVISAR.read_text(encoding="utf-8"))
+        cx = {m: caixa_da_peca(s / f"{m}.webp") for m in ("MLB10", "MLB11", "MLB12", "MLB13", "MLB14")}
+        prop = {m: (c[2] - c[0]) / (c[3] - c[1]) for m, c in cx.items()}
+        for m, (x0, y0, x1, y1) in cx.items():            # nenhuma capa encosta na borda
+            assert min(x0, 1 - x1) >= 0.07 - 0.005 and min(y0, 1 - y1) >= ce.BORDA_CAPA, (m, cx[m])
+            assert abs(y1 - ce.REGRA["PISO"]) < 0.01, (m, cx[m])                       # piso comum
+        inteira, cortada = prop["MLB14"], prop["MLB11"]
+        assert inteira > 1.5 and cortada < 1.3, prop
+        assert abs(prop["MLB10"] - inteira) < 0.1 and "MLB10" not in revisar       # trocou pela foto inteira
+        assert abs(prop["MLB12"] - inteira) < 0.1 and "MLB12" not in revisar       # achou a 7ª foto
+        assert "f-laranja+7" in ce._baixadas
+        x0, y0, x1, y1 = cx["MLB11"]
+        assert min(x0, 1 - x1) >= ce.MARGEM_CORTADA, cx["MLB11"]                  # margem larga dos lados
+        assert (x1 - x0) * 1000 <= (0.62 - 0.15) * 600 * ce.REGRA_CORTADA["UP"] + 4, cx["MLB11"]   # ampliou pouco
+        assert (x1 - x0) < cx["MLB14"][2] - cx["MLB14"][0] or (y1 - y0) < cx["MLB14"][3] - cx["MLB14"][1]  # menor
+        assert any("cortada na capa" in m for m in revisar["MLB11"]["motivos"]), revisar
+        assert abs(prop["MLB13"] - cortada) < 0.1 and "MLB13" not in revisar       # conferida: não troca
+        assert "MLB14" not in revisar
     os.environ.pop("ESTUDIO_SAIDA", None)
 
 

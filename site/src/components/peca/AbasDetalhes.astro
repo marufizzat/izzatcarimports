@@ -32,7 +32,7 @@ const carroTxt = p.b && p.m ? ` do ${p.b} ${p.m}` : p.b ? ` de ${p.b}` : '';
 const descTexto = [
   `${p.n} original${carroTxt}${anos ? `, ${anos}` : ''}${cod ? `, com o código ${cod} gravado` : ''}.`,
   'Peça usada, de carro com baixa legal no Detran-RS.',
-  'As fotos são da própria peça: veja nelas o estado e os detalhes.',
+  'As fotos são da própria peça: nelas dá para ver o estado e os detalhes.',
 ].join(' ');
 const med = d.medidas;
 const dims = med ? ([['Comprimento', med.c], ['Largura', med.l], ['Altura', med.a]] as [string, string | undefined][]).filter(([, v]) => v) : [];

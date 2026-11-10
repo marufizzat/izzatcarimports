@@ -12,7 +12,9 @@ import { modelosDa } from '../../lib/meuCarro';
 import { doMesmoCarro } from '../../lib/relacionadas';
 import { nomeModelos } from '../../lib/meuCarro';
 import { nomeCompleto, nomeMensagem } from '../../lib/nomePeca';
+import { descricaoPeca } from '../../lib/descricao';
 import type { Peca } from '../../lib/dados';
+import { fotosGaleria } from '../../lib/quadroFoto';
 
 export function getStaticPaths() {
   return pecas().map((p) => ({ params: { slug: p.slug }, props: { id: p.id } }));
@@ -85,17 +87,20 @@ const codigo = codigoDaPeca(p.oem);
 const base = tituloBase(p);
 // o nome da peça fora da página (aba, schema, GA4/Pixel): o mesmo do título, nunca o título cru do ML (lib/nomePeca.ts)
 const nomeFora = `${base}${tituloRepetido(base) ? ` ${p.id}` : ''}`;
-const titulo = `${nomeFora} | Izzat Car`;
+// " | Izzat Car" só se o título inteiro couber em 65 caracteres (o Google corta o resto: auditoria 3/4, item 9.4)
+const titulo = `${nomeFora} | Izzat Car`.length <= 65 ? `${nomeFora} | Izzat Car` : nomeFora;
 // a linha da peça nas mensagens do WhatsApp: "Nome · Carro anos · Cód. X" (o link leva o MLB para achar o anúncio)
 const linhaPeca = nomeMensagem(p);
-// descrição (Google e prévia do link): o nome limpo + carro + anos, nunca o título cru do anúncio
-const sobre = `${p.n} original${carros ? ` ${p.m ? 'do' : 'de'} ${carros}` : ''}${anosTxt ? `, ${anosTxt}` : ''}${codigo ? `, código ${codigo}` : ''}`;
-const descricao = `${sobre}. Peça usada, de carro com baixa legal no Detran-RS. R$ ${brl(p.p)}, nota fiscal e 90 dias de garantia.`;
-const trilha: [string, string][] = [['Início', '/index.html'], ['Catálogo', '/catalogo.html']];
+// descrição (Google e prévia do link): o nome limpo + carro + anos, nunca o título cru do anúncio; até 160 caracteres
+// (lib/descricao.ts: a frase mais completa que couber)
+const descricao = descricaoPeca(p, codigo, brl(p.p));
+const trilha: [string, string][] = [['Início', '/'], ['Catálogo', '/catalogo.html']];
 if (fam && fam.n !== 'Outros') trilha.push([fam.n, `/categoria/${fam.k}.html`]);
 if (carro) trilha.push([`${carro.b} ${carro.m}`, `/carros/${carro.k}.html`]);
 else if (marca) trilha.push([marca.n, `/marca/${marca.k}.html`]);
 const capa = capaEstudio(p.id);
+// fotos do anúncio sem o marketing do vendedor e com o carro inteiro no fim (as mesmas da galeria e do feed)
+const fotosMl = fotosGaleria(p.fotos);
 // WhatsApp (lib/whats.ts): a peça pelo nome limpo, carro, anos e código (nunca o título cru do anúncio); o carro da
 // pessoa já vem com a marca e o modelo da peça (só o ano em branco), como no botão "Pedir no WhatsApp".
 const pecaMsg = blocoPeca({ linha: linhaPeca, url });
@@ -104,7 +109,7 @@ const meuCarroMsg = !p.b ? 'Meu carro é ____ (modelo) ____ (ano).' : modelosDa(
 const ld = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'Product', name: nomeFora, image: [...(capa ? [SITE + capa] : []), ...p.fotos.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
+    { '@type': 'Product', name: nomeFora, image: [...(capa ? [SITE + capa] : []), ...fotosMl.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
       mpn: codigo || p.id,
       description: `${descricao} Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
       brand: { '@type': 'Brand', name: p.b || 'Original' },
@@ -117,14 +122,14 @@ const ld = {
   ],
 };
 ---
-<Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(p.fotos[0], 'F') || undefined}
+<Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(fotosMl[0], 'F') || undefined}
         produto={{ id: p.id, name: nomeFora, price: p.p, category: p.c }} rodapeSelos={false}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   {/* prévia do link (WhatsApp, Facebook): a capa de estúdio tem sempre 1000×1000 (capas_estudio.py) */}
   {capa && <meta slot="head" property="og:image:width" content="1000" />}
   {capa && <meta slot="head" property="og:image:height" content="1000" />}
   {capa && <meta slot="head" property="og:image:type" content="image/webp" />}
-  <link slot="head" rel="preload" as="image" href={capa ?? foto(p.fotos[0], 'F')} fetchpriority="high" />
+  <link slot="head" rel="preload" as="image" href={capa ?? foto(fotosMl[0], 'F')} fetchpriority="high" />
 
   <div class="moldura">
     <nav class="trilha" aria-label="Você está em">
@@ -155,7 +160,7 @@ const ld = {
   )}
   {!temCarro && daMarca.length > 0 && (
     <DoMesmoCarro titulo={marca ? `Mais peças ${marca.n}` : 'Mais peças'} carro={marca ? marca.n : ''}
-                  sub={marca ? `De outros modelos ${marca.n}: confira o carro e o ano em cada cartão.` : 'Do nosso estoque: confira o carro e o ano em cada cartão.'}
+                  sub={marca ? `De outros modelos ${marca.n}: confere o carro e o ano em cada cartão.` : 'Do nosso estoque: confere o carro e o ano em cada cartão.'}
                   link={marca ? `/marca/${marca.k}.html` : '/catalogo.html'} total={marca ? marca.c : r.total} pecas={daMarca} />
   )}
 
@@ -234,7 +239,7 @@ const ld = {
   .barra-preco small { font-size: .6em; color: var(--ink-2); }
   .barra-unica { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; line-height: 1.2; color: var(--accent-text); white-space: nowrap; }
   .barra-unica i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
-  .barra-compra .botao { --h: 48px; flex: 0 1 auto; min-width: 0; height: var(--h); padding: 0 16px; font-size: 15px; white-space: nowrap; }
+  .barra-compra .botao { --h: var(--botao-p); flex: 0 1 auto; min-width: 0; height: var(--h); padding: 0 16px; font-size: 15px; white-space: nowrap; }
   /* desconto pelo WhatsApp: "−10%" pequeno, claro e com letra grafite, dentro do botão laranja */
   .barra-desc { flex: none; margin-left: -2px; padding: 3px 7px; border-radius: 999px; background: #fff; color: #1d1d1f;
                 font-size: 12.5px; font-weight: 800; font-stretch: 90%; line-height: 1.1; box-shadow: 0 1px 2px rgb(140 50 0 / .25); }

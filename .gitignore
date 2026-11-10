@@ -13,3 +13,7 @@ site/dist-previa/
 site/.wrangler/
 site/public/estudio/
 estudio_falhas*.json
+
+# medidas das fotos do ML: cache do robô e arquivo temporário do medidor
+.cache-caixas/
+site/src/data/*.tmp

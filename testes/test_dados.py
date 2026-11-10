@@ -325,6 +325,29 @@ def test_enquadramento_v2_regra():
     assert r["torta"][1] < (L - r["torta"][3]) // 2        # centro de massa à direita puxa a peça para a esquerda
 
 
+def test_enquadramento_v2_peca_cortada():
+    """Peça cortada na foto (nenhuma foto a mostra inteira): menor que a capa normal, margem >= 8% dos lados, mesmo
+    piso. O peso visual nunca empurra a peça para fora da zona nem a faz maior que no enquadramento normal."""
+    from capas_estudio import enquadrar, REGRA, REGRA_CORTADA, MARGEM_CORTADA, BORDA_CAPA
+    L = 1000
+    piso = round(REGRA["PISO"] * L)
+    assert REGRA_CORTADA["PISO"] == REGRA["PISO"] and REGRA_CORTADA["UP"] < REGRA["UP"]
+    assert REGRA_CORTADA["XMIN"] >= MARGEM_CORTADA and 1 - REGRA_CORTADA["XMAX"] >= MARGEM_CORTADA
+    assert REGRA_CORTADA["T"] < REGRA["T"] and min(REGRA["XMIN"], 1 - REGRA["XMAX"]) >= BORDA_CAPA
+    casos = {
+        "larga": (1100, 400, {"casco": 380000, "cx": 550}),     # a tampa do porta-malas cortada dos dois lados
+        "compacta": (500, 500, {"casco": 250000, "cx": 250}),
+        "alta": (300, 1100, {"casco": 300000, "cx": 150}),
+        "pequena": (120, 90, {"casco": 9000, "cx": 60}),        # foto pequena: nunca amplia
+    }
+    for k, (w, h, med) in casos.items():
+        s0, x0, y0, nw0, nh0 = enquadrar(w, h, med, L)
+        s, x, y, nw, nh = enquadrar(w, h, med, L, REGRA_CORTADA)
+        assert s <= REGRA_CORTADA["UP"] and s <= s0, k                   # nunca maior que a capa normal
+        assert x >= MARGEM_CORTADA * L and x + nw <= (1 - MARGEM_CORTADA) * L, (k, x, nw)
+        assert y >= REGRA_CORTADA["TOPO"] * L and y + nh == piso, k      # mesmo piso das outras capas
+
+
 def test_subtipo_com_a_mae():
     """Problema 4: subtipo solto ("De Vidros", "Elétrico", "Com Tela") vira nome inteiro, no estilo do ML."""
     from preparar_dados import subtipo
@@ -921,6 +944,30 @@ def test_codigo_de_enchimento():
         assert not codigo_valido(lixo), lixo
     for bom in ("1J0858601", "030864", "31476671", "9806675280", "1000001"):
         assert codigo_valido(bom), bom
+
+
+def test_descricao_acentos_e_perfeito_estado():
+    """Auditoria 4, 7.3: "botoes", "saidas", "Alem", "Genuino", "esteticos" saiam sem acento na descricao, e
+    "perfeito estado de funcionamento" e promessa sem olhar a peca (vira o texto neutro)."""
+    from preparar_dados import descricao, acentuar_texto, ESTADO_NEUTRO
+    assert acentuar_texto("Botoes de controle e saidas de ar") == "Botões de controle e saídas de ar"
+    assert acentuar_texto("Alem disso, peca Genuino com acabamentos esteticos") == "Além disso, peça Genuíno com acabamentos estéticos"
+    assert acentuar_texto("BOTOES") == "BOTÕES"
+    d = descricao("CONDICAO\nPeça usada original em perfeito estado de funcionamento.\nCom os botoes do painel.", "Painel")
+    txt = str(d)
+    assert "perfeito estado" not in txt
+    assert ESTADO_NEUTRO in txt
+    assert "botões" in txt and "botoes" not in txt
+
+
+def test_nome_sem_palavra_repetida():
+    """Auditoria 4, 3.3: a mesma palavra de novo no fim do nome sai; versao com a grafia da marca."""
+    from preparar_dados import _sem_palavra_repetida
+    assert _sem_palavra_repetida("Jogo bancos terracota interior xdrive kit terracota") == "Jogo bancos terracota interior xDrive kit"
+    assert _sem_palavra_repetida("Motor atuador termostato motor") == "Motor atuador termostato"
+    # palavra curta e lado ficam (sao outra informacao)
+    assert _sem_palavra_repetida("Par lanterna esquerda direita") == "Par lanterna esquerda direita"
+    assert _sem_palavra_repetida("Kit par de molas par") == "Kit par de molas par"
 
 
 if __name__ == "__main__":

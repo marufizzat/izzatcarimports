@@ -30,6 +30,8 @@ jobs:
       TEM_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
+      # hora do início: os passos que podem demorar (medir fotos) param a tempo de o site sair dentro dos 40 min
+      - run: echo "INICIO=$(date +%s)" >> "$GITHUB_ENV"
 
       # products.json da rodada anterior (descricoes ja buscadas) + analise das fotos
       - uses: actions/cache/restore@v4
@@ -111,6 +113,38 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: python -u capas_estudio.py --so-marcar
+
+      # ---- Enquadramento das fotos do ML na galeria da peça (site/src/data/fotos-ml-caixas.json, medido no Mac
+      # com o Vision e commitado). Aqui só as fotos NOVAS são medidas (rembg), num cache próprio que o robô junta
+      # ao do repositório (o do repositório manda). Foto sem medida aparece inteira, como antes.
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache-caixas/fotos-ml-caixas.json
+          key: caixas-${{ github.run_id }}
+          restore-keys: caixas-
+      - name: Medir as fotos novas do ML (galeria)
+        continue-on-error: true   # medir foto nunca pode travar a atualização do catálogo
+        timeout-minutes: 8
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          # até 4 min, e só se ainda sobram 10 min para o build e a publicação. Sem tempo: só junta as medidas que o
+          # robô já fez (senão a página voltava ao jeito antigo nesta rodada e mudava de novo na próxima)
+          SOBRA=$(( 30 * 60 - ( $(date +%s) - INICIO ) ))
+          if [ "$SOBRA" -lt 60 ]; then
+            echo "sem tempo para medir nesta rodada: só junta"
+            python -u ferramentas/medir_fotos_ml.py --extra .cache-caixas/fotos-ml-caixas.json --podar --so-juntar
+            exit 0
+          fi
+          export MEDIR_TEMPO_MAX=$(( SOBRA < 240 ? SOBRA : 240 ))
+          pip install "rembg[cpu]==2.0.*" scipy || echo "rembg indisponível: só junta as medidas já feitas"
+          python -u ferramentas/medir_fotos_ml.py --extra .cache-caixas/fotos-ml-caixas.json --podar
+      - uses: actions/cache/save@v4
+        if: always()
+        continue-on-error: true
+        with:
+          path: .cache-caixas/fotos-ml-caixas.json
+          key: caixas-${{ github.run_id }}
       - name: Guardar capas novas no ramo capas-estudio
         continue-on-error: true   # capa de estudio nunca pode travar a atualizacao do catalogo
         run: |
@@ -154,9 +188,18 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy2.outputs.page_url }}
     steps:
       - id: deploy
         uses: actions/deploy-pages@v4
         with:
-          timeout: 1800000   # 30 min: o site tem ~5 mil capas e o GitHub às vezes demora para sincronizar
+          timeout: 600000   # 10 min é o máximo que a ação aceita; se estourar, o passo abaixo tenta de novo
+          error_count: 10
+        continue-on-error: true
+      - name: Publicar (2ª tentativa, se a 1ª estourou o tempo)
+        if: steps.deploy.outcome == 'failure'
+        id: deploy2
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+          error_count: 10

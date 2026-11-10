@@ -1,6 +1,7 @@
 // Le os dados gerados por ../preparar_dados.py (uma vez por build).
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fotosGaleria } from './quadroFoto';
 
 export type Peca = {
   id: string; slug: string; t: string; n: string; limpa?: boolean; p: number; fotos: string[]; ml: string;
@@ -53,8 +54,10 @@ export function marcasVisiveis(): Resumo['marcas'] {
   return resumo().marcas.filter((m) => m.c >= MARCA_MIN_PECAS);
 }
 
-// Foto do ML pela chave: tamanho por sufixo (V=320, C=400, O=500, W=568 quadrada, F=cheia)
-export type Tam = 'E' | 'V' | 'C' | 'O' | 'W' | 'F';
+// Foto do ML pela chave: tamanho por sufixo (V=320, C=400, O=500, W=568 quadrada, F=cheia). E (280) e as outras
+// quadradas o ML às vezes recorta ou completa com faixa branca; A (até 228 px) e O/F guardam a foto inteira, na
+// proporção dela (a miniatura da galeria usa A: o mesmo quadro do palco, lib/quadroFoto.ts).
+export type Tam = 'A' | 'E' | 'V' | 'C' | 'O' | 'W' | 'F';
 export function foto(chave: string, tam: Tam = 'O'): string {
   if (!chave) return '';
   if (chave.startsWith('http')) return chave;
@@ -91,7 +94,7 @@ export function temEstudio(id: string): boolean {
   return capaEstudio(id) !== null;
 }
 export function capa(p: { id: string; fotos: string[] }, tam: Tam = 'O'): string {
-  return capaEstudio(p.id) ?? foto(p.fotos[0], tam);
+  return capaEstudio(p.id) ?? foto(fotosGaleria(p.fotos)[0], tam);
 }
 export function logoMarca(k: string): string | null {
   for (const ext of ['svg', 'png']) if (existsSync(join(process.cwd(), 'public', 'marcas', `${k}.${ext}`))) return `/marcas/${k}.${ext}`;

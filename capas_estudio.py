@@ -20,6 +20,9 @@ VERSÃO 2 (ESTUDIO_VERSAO=2; o padrão continua 1 até o dono aprovar): 1000 px,
 (peso visual igual, piso comum, centro de massa, hastes na diagonal), logo da Izzat Car (ESTUDIO_LOGO=a|b|c|0),
 foto montagem separada sozinha e lista de capas suspeitas em <saída>/_revisar.json
 (folha: ferramentas/folha_revisar.py). Cópia sem logo para o Google Shopping: ESTUDIO_SAIDA_LIMPA=<pasta>.
+Peça CORTADA na foto (cortes_na_foto: encosta na borda ou acaba na reta do recorte do vendedor): outra foto do anúncio
+com a peça inteira; se nenhuma, capa menor com margem (REGRA_CORTADA) e motivo "cortada na capa" no _revisar.json.
+ESTUDIO_REGISTRO=<arquivo.json>: anota a foto usada e os cortes de cada capa feita (auditoria; opcional).
 AJUSTES MANUAIS por peça (o olho humano decide, o robô respeita): capas_ajustes.json na raiz (ESTUDIO_AJUSTES) —
 foto escolhida, corte, áreas apagadas, sem capa ou falso alarme conferido (detalhes em AJUSTES, mais abaixo).
 Regenerar tudo no Mac (numa pasta nova, fora do site; depois ela substitui site/public/estudio e o ramo
@@ -264,6 +267,11 @@ def compor(recorte, checar_cantos=True, original=None, confiar=False):
 #   2. PISO comum: a base da peça pousa na linha 0,79 — a sombra fica sempre no mesmo lugar.
 #   3. CENTRO pelo centro de massa visual (metade centroide da silhueta, metade centro da caixa).
 #   4. HASTE (alongamento PCA >= 8: amortecedor de tampa, friso, vareta): vai para a diagonal de 33°.
+#   5. PEÇA CORTADA na foto (encosta na borda da foto ou acaba na reta do recorte do vendedor, cortes_na_foto):
+#      o robô tenta as outras fotos do anúncio (até as depois da 6ª) atrás de uma com a peça inteira; se nenhuma serve,
+#      fica a menos cortada com REGRA_CORTADA — menor que a normal (T 0,52, foto ampliada no máx. 1,5x), margem de
+#      10% dos lados, o mesmo piso —
+#      e a peça entra no _revisar.json como "cortada na capa". Foto conferida (ok) ou escolhida a mão não é trocada.
 #   Faixas livres de peça: alto (0–0,16, selo/relevo) e base (0,84–1, assinatura).
 # Logo (só o arquivo original site/public/identidade/logo.png): ESTUDIO_LOGO=a|b|c|0
 #   a = selo pequeno no canto superior direito (recomendado) · b = baixo-relevo tom sobre tom no alto
@@ -287,6 +295,157 @@ REGRA = dict(
     HASTE=8.0,               # alongamento a partir do qual a peça vai para a diagonal
     ANG=33.0,                # ângulo da diagonal (graus, subindo para a direita)
 )
+# Peça CORTADA na foto (falta pedaço): primeiro o robô procura outra foto do anúncio em que ela apareça inteira; se
+# nenhuma serve, NÃO amplia — a peça sai menor que no enquadramento normal (peso visual 0,52 em vez de 0,62, zona
+# 0,10–0,90, alto 0,20), com o mesmo piso, "flutuando" no estúdio, nunca invadindo a borda (pedido do dono, nov/2026:
+# a caixa do filtro de ar saía com as abas e o tubo fora do quadro). A foto em si amplia no máximo 1,5x (a normal, 2x):
+# sem ampliar nada, a peça de foto pequena ficava minúscula (MLB6865095712).
+REGRA_CORTADA = dict(REGRA, T=0.52, XMIN=0.10, XMAX=0.90, TOPO=0.20, UP=1.5)
+MARGEM_CORTADA = 0.08        # peça cortada: margem mínima dos lados (a regra acima dá 0,10)
+BORDA_CAPA = 0.05            # nenhuma capa com a peça a menos disto de qualquer borda (a normal fica a 0,07+)
+CORTE = dict(
+    BORDA=2,                 # px: a peça a até isto da borda da foto encosta nela (o mesmo critério de antes)...
+    TOQUE=0.0,               # ... num trecho > TOQUE do lado da peça (0 = qualquer toque, como antes: o robô já
+                             # trocava de foto por isso; subir o limite devolvia a capa para fotos piores)
+    RETA=0.22,               # linha reta exata do lado da peça >= RETA do comprimento desse lado...
+    RETA_PX=36,              # ... e >= RETA_PX px (foto de até 1200 px)
+    FUNDO=14,                # fundo liso (foto já recortada pelo vendedor): cor a menos disto da dos cantos (JPEG)
+    CONTRASTE=40,            # a peça, junto da linha, difere do fundo pelo menos isto
+    INCLINA=0.125,           # px: a borda da tesoura não inclina mais que isto no trecho todo...
+    ONDULA=0.11,             # ... nem ondula devagar mais que isto (px); a borda da peça inclina ou ondula
+)
+
+def _cor_fundo_liso(g):
+    """Cor do fundo LISO da foto (fundo branco/sólido colado pelo vendedor): os 4 cantos iguais e sem textura.
+    Foto de bancada, chão ou papel com sombra: None (aí só vale o toque na borda)."""
+    import numpy as np
+    H, W = g.shape[:2]
+    k = max(4, min(H, W) // 100)
+    cantos = [g[:k, :k], g[:k, W - k:], g[H - k:, :k], g[H - k:, W - k:]]
+    if any(c.reshape(-1, 3).std(0).max() > 2.5 for c in cantos):
+        return None
+    med = np.array([np.median(c.reshape(-1, 3), 0) for c in cantos])
+    if (med.max(0) - med.min(0)).max() > 6:
+        return None
+    return med.mean(0)
+
+
+def _reta_lisa(g, m, fundo, r=CORTE, med=None):
+    """Lado DIREITO da peça (as outras bordas chegam aqui viradas): fração da altura da peça em que ela acaba
+    EXATAMENTE na mesma coluna da foto, com o fundo liso logo depois — o corte reto do vendedor. Buraco da peça na
+    linha do corte (grade, vão) não interrompe o trecho. Medido nos pixels da FOTO (a máscara do rembg tem a borda
+    mole); peça redonda ou torta não fica numa coluna só por muito tempo."""
+    import numpy as np
+    ys, xs = np.nonzero(m)
+    y0, y1, x1 = ys.min(), ys.max(), xs.max()
+    H, W = m.shape
+    ext = y1 - y0 + 1
+    if ext < r["RETA_PX"]:
+        return 0.0
+    a, b = max(4, x1 - 6), min(W - 9, x1 + 3)           # janela em volta do lado da máscara
+    if b < a:
+        return 0.0
+    fundo = np.asarray(fundo, dtype=np.int16)
+    longe = np.abs(g[y0:y1 + 1, a - 4:b + 9].astype(np.int16) - fundo).max(-1)   # distância à cor do fundo
+    peca = longe[:, 4:b - a + 5] >= r["CONTRASTE"]
+    # última coluna da peça em cada linha (dentro da janela); -1 = nenhuma
+    ult = np.where(peca.any(1), peca.shape[1] - 1 - np.argmax(peca[:, ::-1], axis=1), -1)
+    vao = max(8, round(0.02 * ext))                       # interrupção tolerada (buraco/vão na linha do corte)
+    melhor, linhas = 0, None
+    for c in range(b - a + 1):
+        fora = (longe[:, c + 6:c + 12] <= r["FUNDO"]).all(1)
+        ok = np.nonzero((ult == c) & fora)[0]
+        if len(ok) < r["RETA_PX"]:
+            continue
+        cortes = np.nonzero(np.diff(ok) > vao)[0]            # trechos separados por mais que um vão
+        for grupo in np.split(ok, cortes + 1):
+            if len(grupo) > melhor:
+                melhor, linhas = len(grupo), (c, grupo)
+    if melhor < r["RETA_PX"]:
+        return 0.0
+    # tira-teima: a tesoura é reta de verdade. A posição da borda (com fração de pixel) não pode inclinar nem
+    # ondular ao longo do trecho; a borda natural da peça (caixa, módulo, alça) sempre inclina ou ondula um pouco.
+    c, rows = linhas
+    lum = g[y0 + rows, a - 4:b + 9].astype(float).mean(-1)
+    lf = float(np.mean(fundo))
+    den = np.maximum(lf - lum[:, c + 1:c + 5].min(1), 1.0)   # a parte mais escura da peça junto da linha (referência)
+    pos = sum(np.clip((lf - lum[:, c + k]) / den, -0.5, 1.5) for k in range(3, 8))
+    yy = rows.astype(float)
+    incl, base = np.polyfit(yy, pos, 1)
+    resto = pos - (incl * yy + base)
+    k = min(15, len(resto))
+    lenta = np.convolve(resto, np.ones(k) / k, mode="valid")   # ondulação lenta (a textura da peça é ruído rápido)
+    if med is not None:                                   # diagnóstico (ferramentas/testes)
+        med.update(trecho=melhor / ext, inclina=float(abs(incl) * (yy[-1] - yy[0] + 1)), ondula=float(resto.std()),
+                   lenta=float(lenta.std()))
+    if abs(incl) * (yy[-1] - yy[0] + 1) > r["INCLINA"] or lenta.std() > r["ONDULA"]:
+        return 0.0
+    return melhor / ext
+
+
+def cortes_na_foto(alfa, original=None, r=CORTE):
+    """Lados em que a peça está CORTADA na foto: {lado: fração desse lado da peça que está cortada}. Dois sinais:
+      1. encosta na borda da foto (falta pedaço fora do quadro);
+      2. acaba numa LINHA RETA EXATA com fundo liso do lado de fora — o vendedor cortou a foto passando pela peça
+         e colou num fundo branco: a peça "some" numa reta no meio da foto, longe da borda (o caso mais comum).
+    alfa = máscara do recorte (PIL L ou array); original = a foto (RGB), para o sinal 2."""
+    import numpy as np
+    if original is not None and getattr(alfa, "size", None) != original.size and not isinstance(alfa, np.ndarray):
+        alfa = alfa.resize(original.size)
+    a = np.asarray(alfa)
+    m = a > 24
+    ys, xs = np.nonzero(m)
+    if len(xs) < 20:
+        return {}
+    H, W = m.shape
+    x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
+    alt, larg = y1 - y0 + 1, x1 - x0 + 1
+    tol = r["BORDA"]
+    out = {}
+    toques = {"esq": m[:, :tol + 1].any(1).sum() / alt, "dir": m[:, W - 1 - tol:].any(1).sum() / alt,
+              "topo": m[:tol + 1].any(0).sum() / larg, "base": m[H - 1 - tol:].any(0).sum() / larg}
+    for lado, frac in toques.items():
+        if frac > r["TOQUE"]:
+            out[lado] = round(float(frac), 3)
+    if original is not None:
+        g = np.asarray(original.convert("RGB"))
+        if g.shape[:2] == m.shape:
+            fundo = _cor_fundo_liso(g)
+            if fundo is not None:
+                vistas = {"dir": (g, m), "esq": (g[:, ::-1], m[:, ::-1]),
+                          "base": (g.transpose(1, 0, 2), m.T), "topo": (g.transpose(1, 0, 2)[:, ::-1], m.T[:, ::-1])}
+                for lado, (gg, mm) in vistas.items():
+                    f = _reta_lisa(gg, mm, fundo, r)
+                    if f >= r["RETA"]:
+                        out[lado] = round(float(max(out.get(lado, 0.0), f)), 3)
+    return out
+
+
+def peso_do_corte(cortes):
+    """Quanto a peça está cortada (0 = inteira): a maior fração cortada de um lado."""
+    return max(cortes.values()) if cortes else 0.0
+
+
+def margens_da_capa(inf):
+    """Margens (frações do quadro) entre a peça e as 4 bordas da capa, pelo enquadramento (info de compor_v2)."""
+    L = inf.get("lado") or LADO_V2
+    x, y, w, h = inf["x"], inf["y"], inf["w"], inf["h"]
+    return {"esq": x / L, "dir": (L - x - w) / L, "topo": y / L, "base": (L - y - h) / L}
+
+
+def motivo_cortada(inf):
+    """Motivo "cortada na capa" para o _revisar.json (ou None): a peça da capa veio cortada da foto (nenhuma foto do
+    anúncio a mostra inteira) ou chegou perto demais da borda da capa."""
+    if not inf or "x" not in inf:
+        return None
+    perto = [ld for ld, v in margens_da_capa(inf).items() if v < BORDA_CAPA]
+    if perto:
+        return f"cortada na capa (encosta na borda: {', '.join(perto)})"
+    if inf.get("cortes"):
+        return "cortada na capa (" + ", ".join(f"{ld} {v:.0%}" for ld, v in sorted(inf["cortes"].items())) + ")"
+    return None
+
+
 _FUNDOS = {}
 
 
@@ -374,8 +533,10 @@ def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=Fal
     caixa = alfa.point(lambda v: 255 if v > 24 else 0).getbbox()
     if not caixa:
         return None, False
-    W0, H0 = recorte.size
-    cortada = caixa[0] <= 2 or caixa[1] <= 2 or caixa[2] >= W0 - 2 or caixa[3] >= H0 - 2
+    foto = original if (original is not None and original.size == recorte.size) else None
+    cortes = cortes_na_foto(alfa, foto)          # borda da foto ou reta do recorte do vendedor (falta pedaço)
+    cortada = bool(cortes)
+    regra = REGRA_CORTADA if cortada else REGRA   # cortada: menor que a normal, margem larga
     peca = recorte.crop(caixa)
     w, h = peca.size
     if w * h < 400:
@@ -391,7 +552,7 @@ def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=Fal
     if med is None:
         return None, False
     L = LADO_V2
-    s, x, y, nw, nh = enquadrar(w, h, med, L)
+    s, x, y, nw, nh = enquadrar(w, h, med, L, regra)
     peca = peca.resize((nw, nh), Image.LANCZOS)
     if s > 1.15:                                  # ampliou: devolve a nitidez fina
         rgb = peca.convert("RGB").filter(ImageFilter.UnsharpMask(radius=1.2, percent=60, threshold=2))
@@ -399,7 +560,7 @@ def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=Fal
         peca = rgb
     if info is not None:
         info.update(escala=round(s, 3), x=x, y=y, w=nw, h=nh, alongamento=round(E, 1), haste=E >= REGRA["HASTE"],
-                    pedacos=pedacos_grandes(recorte.split()[3]))
+                    pedacos=pedacos_grandes(recorte.split()[3]), cortes=cortes, lado=L)
     tela = _fundo_v2(L).copy().convert("RGBA")
     escuro = Image.new("RGBA", (L, L), (38, 34, 30, 255))
     a = peca.split()[3]
@@ -846,9 +1007,13 @@ def main(recortar=None):
                 print(f"  {x['id']}: a foto do ajuste manual saiu do anúncio — segue o automático", flush=True)
         elif aj and aj.get("ok"):
             manual = {"_ok": aj.get("chave")}     # só para não voltar ao _revisar
+            if VERSAO == "2" and aj.get("chave") in fs:   # a foto conferida vem primeiro (o robô nunca troca a capa
+                cands = [aj["chave"]] + [k for k in cands if k != aj["chave"]]   # que o olho humano aprovou)
+        # v2: as outras fotos do anúncio só entram se todas as candidatas tiverem a peça cortada
+        extras = [k for k in fs if k not in cands] if VERSAO == "2" else []
         mudou = bool(manual and manual.get("_assinatura") and aplicados.get(x["id"]) != manual["_assinatura"])
         if (x["id"] not in feitas or mudou) and (refazer or mudou or x["id"] not in falhas):
-            fila.append((x["id"], cands, manual))
+            fila.append((x["id"], cands, manual, extras))
     so = set(filter(None, os.getenv("ESTUDIO_IDS", "").split(",")))   # ex.: teste em poucas peças
     if so:
         fila = [f for f in fila if f[0] in so]
@@ -888,6 +1053,7 @@ def main(recortar=None):
               + (f", cópia sem logo em {limpa}" if limpa else ""), flush=True)
 
     revisar = {}    # v2: capas suspeitas para o olho humano (montagem, cortada, vários pedaços, reserva)
+    registro = {}   # ESTUDIO_REGISTRO=<arquivo>: foto usada e cortes de cada capa feita (auditoria; opcional)
     novos_aplicados = {}   # MLB -> assinatura do ajuste manual aplicado nesta rodada
 
     def cortar_fundo(img):
@@ -915,7 +1081,8 @@ def main(recortar=None):
             if img is None:
                 return None, f"ajuste manual sem peça ({k})"
             if corte:
-                print(f"  {mlb}: ajuste manual — a peça encosta na borda da foto (conferir)", flush=True)
+                print(f"  {mlb}: ajuste manual — a peça está cortada na foto {inf.get('cortes')} (saiu menor; conferir)",
+                      flush=True)
             return img, dict(inf, foto=k, manual=True)
         except Exception as e:  # noqa: BLE001  (rede, imagem corrompida, corte inválido)
             return None, f"ajuste manual falhou: {str(e)[:60]}"
@@ -925,18 +1092,23 @@ def main(recortar=None):
             return   # sem falha: fica pra proxima rodada
         mlb, cands = item[:2]
         aj = item[2] if len(item) > 2 else None
+        extras = list(item[3]) if len(item) > 3 else []
         capa, motivo, reserva, cortada = None, "recorte vazio", None, None
+        peso_cortada, inf_cortada = 9.0, {}
+        ok_chave = aj.get("_ok") if aj else None   # foto conferida a olho: fica, mesmo com a peça cortada
         montagem = None                       # v2: montagem que não deu para separar (último recurso)
         notas, inf_de = [], {}                # v2: o que aconteceu com cada foto / info da capa escolhida
         if aj and aj.get("_chave"):
             img, r = capa_manual(mlb, aj)
             if img is not None:
-                capa, inf_de, cands = img, r, []
+                capa, inf_de, cands, extras = img, r, [], []
                 with trava:
                     novos_aplicados[mlb] = aj["_assinatura"]
             else:
                 notas.append(r + " — seguiu o automático")
-        for k in cands:
+        for k in list(cands) + extras:
+            if k in extras and (capa is not None or cortada is None):
+                break                 # as fotos extras só servem para trocar uma peça cortada por uma inteira
             try:
                 original = Image.open(io.BytesIO(baixar(k))).convert("RGB")
                 original.thumbnail((fonte, fonte))
@@ -960,13 +1132,14 @@ def main(recortar=None):
                 img, corte = montar(recorte, original, inf=inf)
                 if img is None and inf.get("so_carro"):
                     notas.append(f"carro colado na foto ({k})")
-                if img is not None and not corte:
+                if img is not None and (not corte or (v2 and ok_chave and k == ok_chave)):
                     capa = img
                     inf_de = dict(inf, foto=k)
                     break
-                if img is not None:   # peça encostada na borda da foto: só se nenhuma outra servir
-                    if cortada is None:
-                        cortada, inf_cortada = img, dict(inf, foto=k)
+                if img is not None:   # peça cortada na foto: só se nenhuma outra servir (fica a menos cortada)
+                    peso = peso_do_corte(inf.get("cortes") or {}) if v2 else 1.0
+                    if cortada is None or peso < peso_cortada - 0.02:
+                        cortada, inf_cortada, peso_cortada = img, dict(inf, foto=k), peso
                     motivo = "cortada"
                     continue
                 if reserva is None:   # se nenhuma foto ficar limpa, usa a 1a sem os pedaços de carro soltos
@@ -979,7 +1152,6 @@ def main(recortar=None):
         if v2 and capa is None:
             if cortada is not None:
                 capa, inf_de = cortada, inf_cortada
-                notas.append("peça cortada na foto")
             elif montagem is not None:
                 capa, inf_de = montagem[0], {"foto": montagem[1]}
                 notas.append("capa de foto montagem")
@@ -989,6 +1161,9 @@ def main(recortar=None):
         capa = capa or cortada or reserva
         conferida = inf_de.get("manual") or (aj and aj.get("_ok") and aj["_ok"] == inf_de.get("foto"))
         if v2 and capa is not None and not conferida:   # capa conferida a olho (capas_ajustes.json) não volta
+            corte_capa = motivo_cortada(inf_de)           # vale para todo caminho: cortada, montagem, reserva
+            if corte_capa:
+                notas.append(corte_capa)
             if inf_de.get("pedacos", 1) > 1:
                 notas.append(f"{inf_de['pedacos']} pedaços grandes")
             if notas:
@@ -1006,6 +1181,9 @@ def main(recortar=None):
             if limpa:                                    # cópia sem logo (Google Shopping)
                 capa.save(limpa / f"{mlb}.webp", quality=QUALIDADE_V2, method=6)
             com_logo(capa).save(SAIDA / f"{mlb}.webp", quality=QUALIDADE_V2, method=6)
+            with trava:
+                registro[mlb] = {"foto": inf_de.get("foto"), "cortes": inf_de.get("cortes") or {},
+                                 "escala": inf_de.get("escala"), "manual": bool(inf_de.get("manual"))}
         else:
             capa.save(SAIDA / f"{mlb}.webp", quality=84, method=6)
         with trava:
@@ -1037,6 +1215,11 @@ def main(recortar=None):
         antigo.update(novos_aplicados)
         arq.write_text(json.dumps(antigo, ensure_ascii=False, indent=0, sort_keys=True), encoding="utf-8")
         print(f"  ajustes manuais aplicados: {len(novos_aplicados)} -> {arq}", flush=True)
+    if v2 and os.getenv("ESTUDIO_REGISTRO"):
+        arq = Path(os.environ["ESTUDIO_REGISTRO"])
+        antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
+        antigo.update(registro)
+        arq.write_text(json.dumps(antigo, ensure_ascii=False, indent=0), encoding="utf-8")
     if v2:   # lista para o olho humano (ferramentas/folha_revisar.py monta a folha)
         arq = REVISAR if not fatia else Path(str(REVISAR).replace(".json", f".{fatia.replace('/', 'de')}.json"))
         antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}

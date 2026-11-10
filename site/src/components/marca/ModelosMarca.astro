@@ -25,7 +25,7 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
 ---
 {(comPagina.length > 0 || outros.length > 0) && (
   <section class="mm" aria-labelledby="mm-titulo">
-    <h2 class="titulo-secao mm-titulo" id="mm-titulo">Escolha o seu {marca.n}</h2>
+    <h2 class="titulo-secao mm-titulo" id="mm-titulo">Qual é o seu {marca.n}?</h2>
 
     {destaque.length > 0 && (
       <ul class:list={['mm-destaque', `mm-d${destaque.length}`]}>

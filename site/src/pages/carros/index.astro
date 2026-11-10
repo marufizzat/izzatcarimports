@@ -12,6 +12,7 @@ import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import { resumo, logoInfo, whatsUrl } from '../../lib/dados';
 import { srcArte, SIZES } from '../../lib/variantes';
+import { caber } from '../../lib/descricao';
 const r = resumo();
 const marcas = [...new Set(r.carros.map((c) => c.b))];
 const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
@@ -21,9 +22,9 @@ const leadLista = `${n} carros, do que tem mais peças para o que tem menos.`;
 const vitrine = r.carros.filter((c) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${c.k}.webp`))).slice(0, 3);
 ---
 <Pagina titulo="Peças por carro | Izzat Car Imports"
-        descricao={`Escolha o seu carro e veja as peças originais que saíram dele: ${r.carros.slice(0, 8).map((c) => `${c.b} ${c.m}`).join(', ')} e mais ${n - 8} modelos.`}>
-  <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html']]} titulo="Peças por carro"
-    lead={`Cada um dos ${n} carros aqui passou pelo nosso pátio. Escolha o seu e veja as peças originais que saíram dele.`}>
+        descricao={caber([8, 6, 5, 4, 3].map((k) => `Escolhe o seu carro e confere as peças originais que saíram dele: ${r.carros.slice(0, k).map((c) => `${c.b} ${c.m}`).join(', ')} e mais ${n - k} modelos.`))}>
+  <TopoArte trilha={[['Início', '/'], ['Carros', '/carros.html']]} titulo="Peças por carro"
+    lead={`Cada um dos ${n} carros aqui passou pelo nosso pátio. Escolhe o seu e confere as peças originais que saíram dele.`}>
     <div slot="lado" class="carros-vitrine" aria-hidden="true">
       {vitrine.map((c, i) => (
         <img class={`cv cv-${i + 1}`} src={`/arte/v2/carro-${c.k}.webp`}

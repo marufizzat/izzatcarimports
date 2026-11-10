@@ -20,6 +20,7 @@ import { linkAviso } from '../../lib/aviso';
 import { miniatura } from '../../lib/miniatura';
 import { SIZES } from '../../lib/variantes';
 import { serveNoModelo } from '../../lib/meuCarro';
+import { garagem } from '../../lib/garagem';
 export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
 const r = resumo();
 const c = r.carros.find((x) => x.k === Astro.props.k)!;
@@ -59,22 +60,24 @@ const texto = textosCarro(c, lista);
 const apoio = texto.paragrafos.slice(1);
 const arteCarro = `/arte/v2/carro-${c.k}.webp`;
 // prévia do link (WhatsApp, Instagram): a arte de estúdio do carro; sem ela, a foto da 1ª peça
-const og = existe(arteCarro) ? arteCarro : foto(c.capas[0], 'F');
+const og = existe(arteCarro) ? arteCarro : '/identidade/og.jpg';
+// a arte do carro como a garagem a vê (a/as): vai junto quando a pessoa salva este carro (a abertura já nasce com ela)
+const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n === c.m);
 ---
 <Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta}>
-  <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
+  <TopoArte trilha={[['Início', '/'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
     antes={c.b} antesNoTitulo titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} arteSizes={SIZES.topoCarro} encaixe="meio" lead={lead}>
     <Fragment slot="acoes">
       <div class="carro-acoes">
         <a class="botao botao-grafite" href={verTodas}>Ver as {fmt(N)} {N === 1 ? 'peça' : 'peças'}</a>
-        <button class="botao botao-linha carro-meu" type="button" data-este-carro data-b={c.b} data-m={c.m}>
+        <button class="botao botao-linha carro-meu" type="button" data-este-carro data-b={c.b} data-m={c.m} data-a={arteG?.a} data-as={arteG?.as?.join(',')}>
           <Icone nome="carro" class="ic-carro" /><Icone nome="check" class="ic-ok" /><span data-este-txt>É o meu carro</span>
         </button>
       </div>
       {/* "Avise-me" só no carro com poucas peças (no XC60, com 515, ele só empurrava a grade para baixo) */}
       {N < AVISO_ATE && (
         <a class="botao botao-linha carro-aviso" href={linkAviso(WHATS, nome)} rel="noopener" data-aviso data-whats={WHATS} data-nome={nome} data-b={c.b} data-m={c.m}>
-          <Icone nome="whats" /><span>Avise-me quando chegar peça para o meu {nome}</span>
+          <Icone nome="whats" /><span>Me avisa quando chegar peça para o meu {nome}</span>
         </a>
       )}
     </Fragment>
@@ -124,7 +127,11 @@ const og = existe(arteCarro) ? arteCarro : foto(c.capas[0], 'F');
     if (aviso) aviso.href = linkAviso(aviso.dataset.whats || '', aviso.dataset.nome || `${B} ${M}`, eh(c) ? c.y : null);
   }
   botao?.addEventListener('click', () => {
-    if (!eh(lerMeuCarro())) salvarMeuCarro({ b: B, m: M, y: null });
+    if (!eh(lerMeuCarro())) {
+      const a = botao?.dataset.a;
+      const as = botao?.dataset.as ? botao.dataset.as.split(',').map(Number) : undefined;
+      salvarMeuCarro({ b: B, m: M, y: null, ...(a ? { a, ...(as ? { as } : {}) } : {}) });
+    }
     window.dispatchEvent(new CustomEvent('abrir-meu-carro'));
   });
   window.addEventListener(EVENTO, (e) => pintar((e as CustomEvent<MeuCarro | null>).detail));

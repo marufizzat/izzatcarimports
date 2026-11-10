@@ -7,6 +7,7 @@
 // Gatilhos so com dado de verdade: estoque = p.q (ML), reputacao = resumo().reputacao, CDV/nota/garantia do site.
 import type { Peca } from '../lib/dados';
 import { foto, brl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
+import { quadroFoto, fotosGaleria } from '../lib/quadroFoto';
 import { linkWhats, cabecaPeca, CAUDA_PECA, DESCONTO_WHATS } from '../lib/whats';
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
@@ -35,11 +36,14 @@ const cauda = CAUDA_PECA;
 const msg = cabeca + semCarro + cauda;
 // Estoque real do ML: 1 = peca unica (usada: quando vende, acabou); mais de 1 = so a quantidade, sem pressa inventada.
 const q = typeof p.q === 'number' && p.q >= 1 ? p.q : 0;
-// 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça.
+// 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça, no mesmo
+// quadro da capa (lib/quadroFoto.ts: peça centrada ocupando ~84%, ou a foto inteira num fundo de estúdio). Sem o
+// marketing do vendedor (banner de entrega, garantia, dicas) e com a foto do carro inteiro no fim (fotosGaleria).
 const est = capaEstudio(p.id);
-const fotos: { g: string; m: string; e?: boolean }[] = [
+const doAnuncio = fotosGaleria(p.fotos);
+const fotos: { g: string; m: string; e?: boolean; q?: { cls?: string; style?: string } }[] = [
   ...(est ? [{ g: est, m: est, e: true }] : []),
-  ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'E') })),
+  ...(doAnuncio.length ? doAnuncio : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'A'), q: quadroFoto(f) })),
 ];
 // 1ª tela do celular (CSS no fim): a altura que a foto pode ter depende de quantas linhas vêm abaixo dela. Contado no
 // build pelo tamanho do texto (sem script, sem pulo na tela): nome curto = 1 linha (a foto ganha); nome longo = letra
@@ -54,18 +58,20 @@ const perguntas = [
     pergunta: 'Como sei que serve no meu carro?',
     resposta: [
       carro ? `Esta peça é ${p.m ? 'do' : 'de'} ${carro}${anos ? `, ${anos}` : ''}.` : '',
-      cod ? `Compare o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.`
-          : 'Ela não tem código gravado: para conferir, mande o modelo e o ano do seu carro no WhatsApp.',
+      cod ? `Compara o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.`
+          : 'Ela não tem código gravado: para conferir, manda o modelo e o ano do seu carro no WhatsApp.',
     ].filter(Boolean).join(' '),
     link: cod ? { href: '#como-achar-codigo', texto: 'Onde achar o código' } : undefined,
   },
   {
     pergunta: 'E se não servir?',
-    // Só o que o site já afirma (90 dias, WhatsApp, a gente resolve). A regra de troca por incompatibilidade
-    // (prazo, frete) ainda não foi definida pelo Maruf: nada de "troca ou devolução" aqui (auditoria 3, item 1.2).
-    resposta: 'Toda peça tem 90 dias de garantia: fale no WhatsApp com o número do pedido que a gente resolve. '
+    // Só o que o site já afirma (a gente confere antes, 90 dias, WhatsApp, a gente avalia e resolve). A regra de troca por
+    // incompatibilidade (prazo, frete, compra errada) ainda não foi definida pelo Maruf: nada de "troca ou devolução"
+    // aqui nem na garantia (auditorias 3, item 1.2, e 4, item 3.2).
+    resposta: 'Na dúvida, manda o modelo e o ano antes de comprar: a gente confere na peça. Depois da compra, são 90 dias '
+      + 'de garantia: fala no WhatsApp com o número do pedido que a gente avalia e resolve. '
       + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
-    link: { href: '/garantia.html', texto: 'Ver garantia e trocas' },
+    link: { href: '/garantia.html', texto: 'Ver a garantia' },
   },
   {
     pergunta: 'Como é o envio?',
@@ -85,13 +91,14 @@ const perguntas = [
       {/* o trilho é a parada do teclado da galeria: setas trocam a foto, Enter abre a tela cheia (script abaixo) */}
       <ul class="galeria-trilho" data-trilho tabindex="0" aria-label="Fotos da peça: setas trocam, Enter amplia">
         {fotos.map((f, i) => (
-          <li><img class:list={[{ estudio: f.e }]} src={f.g} alt={i === 0 ? `${p.n}${carro ? `, ${carro}` : ''}, foto 1 de ${fotos.length}` : `${p.n}, foto ${i + 1} de ${fotos.length}`} width="1000" height="1000"
+          <li><img class:list={[{ estudio: f.e }, f.q?.cls]} style={f.q?.style} src={f.g} alt={i === 0 ? `${p.n}${carro ? `, ${carro}` : ''}, foto 1 de ${fotos.length}` : `${p.n}, foto ${i + 1} de ${fotos.length}`} width={f.q?.style ? undefined : 1000} height={f.q?.style ? undefined : 1000}
                    loading={i === 0 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} decoding="async" /></li>
         ))}
       </ul>
       <span class="galeria-contador num" data-contador aria-live="polite">1 / {fotos.length}</span>
       <span class="galeria-dica galeria-dica-mouse" aria-hidden="true">Passe o mouse para ver de perto</span>
       <span class="galeria-dica galeria-dica-toque" aria-hidden="true">Toque para ampliar</span>
+      <span class="galeria-dica galeria-dica-clique" aria-hidden="true">Clique para ampliar</span>
     </div>
     {fotos.length > 1 && (<>
       <div class="galeria-pontos" aria-hidden="true">
@@ -100,7 +107,9 @@ const perguntas = [
       <div class="galeria-miniaturas" role="group" aria-label="Miniaturas" data-minis>
         {fotos.map((f, i) => (
           <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
-            <img class:list={[{ estudio: f.e }]} src={f.m} alt="" width="72" height="72" loading="lazy" decoding="async" />
+            {/* miniatura (-A: a foto inteira, na proporção dela, como a -F do palco): o mesmo quadro do palco, com o
+                mesmo degradê nas bordas das fotos "inteiras" (classe i; a tela cheia copia esta miniatura) */}
+            <img class:list={[{ estudio: f.e }, f.q?.cls]} style={f.q?.style} src={f.m} alt="" width={f.q?.style ? undefined : 72} height={f.q?.style ? undefined : 72} loading="lazy" decoding="async" />
           </button>
         ))}
       </div>
@@ -125,7 +134,7 @@ const perguntas = [
       <div class="compra-botoes" data-compra-botoes>
         {/* desconto pelo WhatsApp (pedido do dono): selo claro colado no canto do botão laranja, sem ocupar altura
             (a 1ª tela do celular continua com o botão à vista). Só no WhatsApp, nunca no Mercado Livre. */}
-        <p class="compra-desconto"><Icone nome="etiqueta" />{DESCONTO_WHATS}% de desconto<span class="compra-desconto-onde">&nbsp;pelo WhatsApp</span></p>
+        <p class="compra-desconto"><Icone nome="etiqueta" /><span>{DESCONTO_WHATS}% de desconto<span class="compra-desconto-onde"> pelo WhatsApp</span></span></p>
         <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir no WhatsApp</a>
         <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
       </div>
@@ -257,12 +266,12 @@ const perguntas = [
       const i = indice();
       carregarTelaCheia().then((m) => m.abrirGaleria({
         fotos: fotos.map((f) => f.getAttribute('src') || ''),
-        minis: minis.map((b) => b.querySelector('img')?.getAttribute('src') || ''),
+        minis: minis.map((b) => b.querySelector('img')),
         titulo, indice: i, foco: trilho,
         aoFechar: (k) => { if (k !== indice()) ir(k, false); },
       })).catch(() => {});
     };
-    trilho.addEventListener('pointerdown', () => { carregarTelaCheia(); }, { passive: true });
+    trilho.addEventListener('pointerdown', () => { lupaFim(); carregarTelaCheia(); }, { passive: true });
     trilho.addEventListener('click', abrir);
     trilho.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(); }
@@ -294,44 +303,88 @@ const perguntas = [
       requestAnimationFrame(pontas);
     }
 
-    // computador: lupa que segue o mouse, só na foto à vista. Um desenho por quadro; a escala respeita o tamanho real
-    // da foto (a capa de estúdio tem 1000 px: passar de 1,5x só borrava, ainda mais em tela retina).
+    // Computador (mouse, tela de 1180 px ou mais): lupa como nas lojas grandes. A foto do palco NUNCA muda de tamanho
+    // (ampliada no lugar, as bordas da peça saíam do quadro e pareciam cortadas). Um guia sobre a foto marca a área e
+    // o painel ao lado, sobre a coluna da compra, mostra essa área ampliada. O painel é o quadro do palco Z vezes maior
+    // (o mesmo fundo de estúdio e a foto no mesmo lugar, inclusive a do anúncio enquadrada por lib/quadroFoto.ts),
+    // deslocado: mostra exatamente o que está sob o guia. Montado no 1º uso; medidas uma vez por foto; por quadro, só
+    // dois transform (nada de layout). Abaixo de 1180 px não há lugar para o painel: o clique abre a tela cheia.
+    const podeLupa = window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 1180px)');
+    let painel: HTMLElement | null = null;
+    let quadro: HTMLElement, ampliada: HTMLImageElement, guia: HTMLElement;
     let lupaImg: HTMLImageElement | null = null;
-    let mx = 0, my = 0, lupaAgendada = false;
+    let mx = 0, my = 0, lupaAgendada = false, Z = 2, gw = 0, gh = 0;
     function lupaFim() {
       if (!lupaImg) return;
-      lupaImg.classList.remove('lupa-on');
-      lupaImg.style.removeProperty('transform-origin');
-      lupaImg.style.removeProperty('--lupa');
       lupaImg = null;
-      palco.classList.remove('lupa');
+      g.classList.remove('lupa');
     }
-    const escala = (im: HTMLImageElement) => {
-      if (im.classList.contains('estudio')) return 1.5;
-      const r = im.getBoundingClientRect();
-      const s = getComputedStyle(im);
-      const caixaL = r.width - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight);
-      const caixaA = r.height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
-      if (!im.naturalWidth || caixaL <= 0) return 2;
-      const k = Math.min(1, caixaL / im.naturalWidth, caixaA / im.naturalHeight); // object-fit: scale-down
-      return Math.max(1.6, Math.min(2.2, 1 / k));
+    // a foto à vista como está desenhada no quadro (px do quadro): capa de estúdio (cover), foto do anúncio enquadrada
+    // (fill, posta pelo --w/--x/--y e maior que o quadro) ou inteira (scale-down, com respiro: menor que a caixa)
+    const lupaComecar = (im: HTMLImageElement, r: DOMRect) => {
+      const nw = im.naturalWidth, nh = im.naturalHeight;
+      if (!nw || !r.width) return false;   // ainda carregando: tenta no próximo movimento
+      const s = getComputedStyle(im), c = im.getBoundingClientRect();
+      const pl = parseFloat(s.paddingLeft), pt = parseFloat(s.paddingTop);
+      const cw = c.width - pl - parseFloat(s.paddingRight), ch = c.height - pt - parseFloat(s.paddingBottom);
+      const fit = s.objectFit;
+      let k = fit === 'cover' ? Math.max(cw / nw, ch / nh) : Math.min(cw / nw, ch / nh);
+      if (fit === 'scale-down') k = Math.min(1, k);
+      const w = fit === 'fill' ? cw : nw * k, h = fit === 'fill' ? ch : nh * k;
+      // zoom: capa de estúdio (1000 px) 2×; foto do anúncio pela resolução dela (até 1,25× o tamanho real, como a
+      // capa), entre 2× e 2,5× (foto maior)
+      Z = im.classList.contains('estudio') ? 2 : Math.max(2, Math.min(2.5, 1.25 * nw / w));
+      if (!painel) {
+        painel = document.createElement('div');
+        painel.className = 'galeria-lupa';
+        painel.setAttribute('aria-hidden', 'true');
+        painel.append(quadro = document.createElement('div'));
+        quadro.append(ampliada = new Image());
+        ampliada.alt = '';
+        ampliada.decoding = 'async';
+        g.append(painel);
+        guia = document.createElement('span');
+        guia.className = 'galeria-guia';
+        trilho.after(guia);
+      }
+      // à direita do palco, da altura dele e da largura dele (menos, se a janela acaba antes)
+      const pw = Math.min(r.width, document.documentElement.clientWidth - r.right - 44), ph = r.height;
+      if (pw < 240) return false;
+      painel.style.cssText = `width:${pw}px;height:${ph}px`;
+      quadro.style.cssText = `width:${r.width * Z}px;height:${r.height * Z}px`;
+      ampliada.className = im.className;   // estudio | i (bordas que se desfazem no fundo)
+      ampliada.style.cssText = `${im.getAttribute('style') || ''};left:${(c.left - r.left + pl + (cw - w) / 2) * Z}px;`
+        + `top:${(c.top - r.top + pt + (ch - h) / 2) * Z}px;width:${w * Z}px;height:${h * Z}px`;
+      const src = im.currentSrc || im.src;
+      if (ampliada.src !== src) ampliada.src = src;
+      gw = pw / Z; gh = ph / Z;
+      guia.style.cssText = `width:${gw}px;height:${gh}px`;
+      lupaImg = im;
+      g.classList.add('lupa');
+      return true;
     };
     const lupaDesenhar = () => {
       lupaAgendada = false;
       const im = fotos[atual];
-      if (!im) return;
-      const r = trilho.getBoundingClientRect();
-      if (lupaImg !== im) { lupaFim(); lupaImg = im; im.style.setProperty('--lupa', String(escala(im))); im.classList.add('lupa-on'); palco.classList.add('lupa'); }
-      im.style.transformOrigin = `${((mx - r.left) / r.width) * 100}% ${((my - r.top) / r.height) * 100}%`;
+      if (!im || !podeLupa.matches) return lupaFim();
+      const r = im.parentElement!.getBoundingClientRect();
+      if (lupaImg !== im && !lupaComecar(im, r)) return;
+      // guia centrado no mouse, sem sair do quadro; o painel mostra a mesma área, Z vezes maior
+      const x = Math.max(0, Math.min(r.width - gw, mx - r.left - gw / 2));
+      const y = Math.max(0, Math.min(r.height - gh, my - r.top - gh / 2));
+      guia.style.transform = `translate3d(${x}px,${y}px,0)`;
+      quadro.style.transform = `translate3d(${-x * Z}px,${-y * Z}px,0)`;
     };
-    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      palco.addEventListener('pointermove', (e) => {
-        if (e.pointerType !== 'mouse') return;
-        mx = e.clientX; my = e.clientY;
-        if (!lupaAgendada) { lupaAgendada = true; requestAnimationFrame(lupaDesenhar); }
-      }, { passive: true });
-      palco.addEventListener('pointerleave', lupaFim);
-    }
+    const agendar = () => { if (!lupaAgendada) { lupaAgendada = true; requestAnimationFrame(lupaDesenhar); } };
+    palco.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse' || !podeLupa.matches) return;
+      mx = e.clientX; my = e.clientY;
+      agendar();
+    }, { passive: true });
+    palco.addEventListener('pointerleave', lupaFim);
+    // a página rolou com o mouse parado sobre a foto (galeria ainda não presa no alto): o guia segue o mouse
+    window.addEventListener('scroll', () => { if (lupaImg) agendar(); }, { passive: true });
+    window.addEventListener('resize', lupaFim, { passive: true });
   });
 
   // Copiar o código: "Copiado" (e o aviso para o leitor de tela) só quando copiou de verdade; se o navegador não
@@ -385,20 +438,48 @@ const perguntas = [
   .galeria-trilho:focus-visible { outline: 3px solid var(--accent-text); outline-offset: -4px; box-shadow: none; border-radius: 22px; }
   /* flex, não grid: no grid a altura 100% da foto não resolvia e a foto em pé ficava mais alta que o palco (cortava embaixo) */
   .galeria-trilho li { flex: 0 0 100%; height: 100%; min-width: 0; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-  .galeria-trilho img { width: 100%; height: 100%; max-height: 100%; min-width: 0; object-fit: contain; padding: 6%; cursor: zoom-in; transition: transform .18s ease-out; }
-  /* fotos do anúncio: inteiras e nunca esticadas além do tamanho real (foto pequena ficava borrada) */
-  .galeria-trilho img:not(.estudio) { object-fit: scale-down; }
+  .galeria-trilho img { width: 100%; height: 100%; max-height: 100%; min-width: 0; object-fit: contain; padding: 6%; cursor: zoom-in; }
   /* capa de estúdio já tem o próprio fundo: ocupa o palco inteiro, sem caixa dentro da caixa */
   .galeria-trilho img.estudio { padding: 0; object-fit: cover; }
-  /* lupa: só a foto à vista amplia, no ponto do mouse (só no computador; escala e ponto vêm do script) */
-  .galeria-trilho img.lupa-on { transform: scale(var(--lupa, 2)); }
+  /* Fotos do anúncio no quadro da capa (lib/quadroFoto.ts). O fundo é o do estúdio da capa e a foto "multiplica" sobre
+     ele: o branco cru do ML vira o tom do estúdio (a peça quase não muda). Sem medida (anúncio novo): inteira e nunca
+     esticada além do tamanho real, como antes. */
+  .galeria { --estudio: linear-gradient(#f4f3f0, #e7e5e1); }
+  .galeria-trilho li { position: relative; background: var(--estudio); }
+  .galeria-trilho img:not(.estudio), .galeria-miniaturas img:not(.estudio) { object-fit: scale-down; mix-blend-mode: multiply; }
+  /* enquadrada: a foto posta (left/top/width, sem transform) para a peça ficar no centro, ocupando ~84%, a 4%+ da
+     borda e sem nunca cortar o lado curto da foto (lib/quadroFoto.ts). A marca é o
+     --w no style (a cópia ampliada da lupa também leva style, então [style] sozinho não serve). Vai sem width/height no HTML:
+     o tamanho vem daqui e, fora do fluxo (absolute), ela não empurra nada */
+  :is(.galeria-trilho, .galeria-miniaturas, .gt-faixa) img[style*="--w"] {
+    position: absolute; padding: 0; max-width: none; max-height: none; object-fit: fill;
+    left: calc(var(--x, 0) * -100%); top: calc(var(--y, 0) * -100%); width: calc(var(--w) * 100%); height: calc(var(--h, var(--w)) * 100%); }
+  /* o quadro passa da foto (peça comprida, encostada na borda, foto pequena, caixa incerta ou sem peça achada): a foto
+     fica no meio e as bordas dela se desfazem no fundo do estúdio (nada de foto colada), também nas miniaturas */
+  :is(.galeria-trilho, .galeria-lupa, .galeria-miniaturas, .gt-faixa) img.i { --fx: clamp(0%, (1 - var(--w)) * 100%, 5%); --fy: clamp(0%, (1 - var(--h, var(--w))) * 100%, 5%);
+                          --mx: linear-gradient(90deg, #0000, #000 var(--fx), #000 calc(100% - var(--fx)), #0000);
+                          --my: linear-gradient(#0000, #000 var(--fy), #000 calc(100% - var(--fy)), #0000);
+                          -webkit-mask-image: var(--mx), var(--my); -webkit-mask-composite: source-in;
+                          mask-image: var(--mx), var(--my); mask-composite: intersect; }
+  /* lupa do computador (script): a foto do palco não muda; o guia marca a área e o painel ao lado, sobre a compra,
+     mostra ela ampliada (a galeria sobe acima da coluna da compra enquanto o painel está aberto e até ele sumir) */
+  .galeria { z-index: 0; transition: z-index 0s .15s; }
+  .galeria.lupa { z-index: 3; transition: none; }
+  .galeria-guia, .galeria-lupa { position: absolute; top: 0; left: 0; pointer-events: none; visibility: hidden; opacity: 0; transition: opacity .15s, visibility 0s .15s; }
+  .galeria.lupa :is(.galeria-guia, .galeria-lupa) { visibility: visible; opacity: 1; transition: opacity .15s; }
+  .galeria-guia { z-index: 1; border-radius: 12px; background: rgb(255 255 255 / .32); box-shadow: inset 0 0 0 1.5px rgb(29 29 31 / .28), 0 2px 10px rgb(29 29 31 / .1); will-change: transform; }
+  .galeria-lupa { left: calc(100% + 20px); overflow: hidden; border-radius: 22px; background: var(--estudio);
+                  box-shadow: 0 0 0 1px rgb(29 29 31 / .06), 0 24px 56px -16px rgb(29 29 31 / .34); }
+  .galeria-lupa > div { position: absolute; left: 0; top: 0; overflow: hidden; background: var(--estudio); will-change: transform; }
+  .galeria-lupa img { position: absolute; max-width: none; max-height: none; padding: 0; object-fit: fill; }
+  .galeria-lupa img:not(.estudio) { mix-blend-mode: multiply; }
   .galeria-contador { position: absolute; right: 14px; bottom: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 650;
                       background: rgb(29 29 31 / .78); color: #fff; backdrop-filter: blur(8px); z-index: 1; pointer-events: none; }
   html.leve .galeria-contador { backdrop-filter: none; background: rgb(29 29 31 / .86); }
   .galeria-dica { position: absolute; left: 14px; bottom: 14px; z-index: 1; padding: 6px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
                   background: rgb(255 255 255 / .9); color: #1d1d1f; box-shadow: var(--shadow-1); pointer-events: none; transition: opacity .2s; }
-  .galeria-dica-toque { display: none; }
-  .galeria-palco.lupa .galeria-dica-mouse { opacity: 0; }
+  .galeria-dica-toque, .galeria-dica-clique { display: none; }
+  .galeria.lupa .galeria-dica-mouse { opacity: 0; }
   @media (hover: none) {
     .galeria-dica-mouse { display: none; }
     .galeria-dica-toque { display: inline-block; }
@@ -406,13 +487,18 @@ const perguntas = [
   @media (hover: hover) and (pointer: fine) {
     .galeria-dica-toque { display: none; }
   }
+  /* mouse em tela sem lugar para o painel da lupa: o clique abre a tela cheia */
+  @media (hover: hover) and (pointer: fine) and (max-width: 1179px) {
+    .galeria-dica-mouse { display: none; }
+    .galeria-dica-clique { display: inline-block; }
+  }
   .galeria-miniaturas { position: relative; display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; padding: 3px; }
   .galeria-miniaturas::-webkit-scrollbar { display: none; }
   /* mais miniaturas escondidas: a ponta some num degradê (antes a última aparecia cortada, sem aviso) */
   .galeria-miniaturas.mais-dir { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent); }
   .galeria-miniaturas.mais-esq { -webkit-mask-image: linear-gradient(90deg, transparent, #000 56px); mask-image: linear-gradient(90deg, transparent, #000 56px); }
   .galeria-miniaturas.mais-esq.mais-dir { -webkit-mask-image: linear-gradient(90deg, transparent, #000 56px, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(90deg, transparent, #000 56px, #000 calc(100% - 56px), transparent); }
-  .galeria-miniaturas button { flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--surface-2);
+  .galeria-miniaturas button { position: relative; flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--estudio);
                                box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; outline: 2.5px solid transparent; outline-offset: -2.5px;
                                transition: outline-color .2s; }
   /* a ativa: anel por cima da foto (o box-shadow ficava por baixo da capa de estúdio) */
@@ -428,7 +514,7 @@ const perguntas = [
     .galeria-miniaturas { display: none; }
     .galeria-pontos { display: flex; }
   }
-  @media (prefers-reduced-motion: reduce) { .galeria-pontos i, .galeria-miniaturas button, .galeria-dica, .galeria-trilho img { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .galeria-pontos i, .galeria-miniaturas button, .galeria-dica, .galeria-guia, .galeria-lupa { transition: none !important; } }
 
   .compra { min-width: 0; display: grid; gap: 16px; align-content: start; }
   .compra-cabeca { display: grid; gap: 8px; }
