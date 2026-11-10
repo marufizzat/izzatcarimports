@@ -7,6 +7,7 @@ import TopoArte from '../TopoArte.astro';
 import GradePecas from '../GradePecas.astro';
 import AtalhosVisuais from '../AtalhosVisuais.astro';
 import TextoApoio from '../TextoApoio.astro';
+import TodasAsPecas from './TodasAsPecas.astro';
 import { pecas, resumo, logoInfo, capaEstudio, type Peca } from '../../lib/dados';
 import { textosCategoria, tituloCategoria, temaCategoria } from '../../lib/textos';
 import { arteTopo } from '../../lib/categorias';
@@ -82,6 +83,8 @@ const topo = arteTopo(f.k);
         <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{N > 1 ? ' · as mais novas primeiro' : ''}</p>
       </div>
       <GradePecas lista={lista.slice(0, 48)} total={N} linkTodas={base} />
+      {/* toda peça do bloco com um link de verdade (a grade mostra 48): o Google chega em todas (auditoria 3, 9.1) */}
+      {N > 48 && <TodasAsPecas lista={lista} titulo={`Todas as ${fmt(N)} peças de ${f.n}`} />}
     </section>
     {apoio.length > 0 && <div class="cat-apoio"><TextoApoio paragrafos={apoio} /></div>}
   </div>

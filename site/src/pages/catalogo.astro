@@ -4,10 +4,13 @@ import { join } from 'node:path';
 import Pagina from '../layouts/Pagina.astro';
 import Catalogo from '../components/catalogo/Catalogo';
 import SeloReputacao from '../components/SeloReputacao.astro';
-import { resumo, logoInfo, SITE } from '../lib/dados';
+import { resumo, logoInfo, SITE, pecas } from '../lib/dados';
+import TodasAsPecas from '../components/categoria/TodasAsPecas.astro';
 import { Busca, capaItem, foto, type Indice } from '../lib/busca';
 import { idsMaisNovos } from '../components/catalogo/etiqueta';
 const r = resumo();
+// peças do bloco "Outros" (sem página de categoria): o único link delas fica no pé do catálogo
+const foraDasCategorias = pecas().filter((p) => p.c === 'Outros');
 // A 1ª tela vem pronta no HTML (no 4G, sem esperar o índice de ~360 KB): as 24 primeiras da ordem padrão e os
 // filtros, feitos com o MESMO public/dados/busca.json que o navegador baixa depois (os cartões não mudam quando ele chega).
 // Sem JS, é isto que aparece (e o Google lê), com os atalhos do pé.
@@ -83,6 +86,8 @@ const confianca: [string, string][] = [
           <ul>{r.carros.slice(0, 24).map((c) => <li><a href={`/carros/${c.k}.html`}>{c.b} {c.m}</a></li>)}<li><a class="cat-atalhos-todos" href="/carros.html">Todos os carros</a></li></ul>
         </div>
       </nav>
+      {/* as peças fora das categorias ("Outros" não tem página): o link delas mora aqui (auditoria 3, 9.1) */}
+      <TodasAsPecas lista={foraDasCategorias} titulo={`Outras peças, fora das categorias (${foraDasCategorias.length})`} agrupar={false} id="outras-pecas" />
     </div>
   </div>
 </Pagina>

@@ -1,6 +1,7 @@
 // Feed do Google Shopping (gratis): cada peca vira um item RSS 2.0 com o namespace g:.
 // Funcoes puras (recebem a capa de estudio e o dominio), para os testes rodarem sem o build.
 import { foto, type Peca } from './dados';
+import { nomeCompleto } from './nomePeca';
 
 const CONTROLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g;
 const ENTIDADES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
@@ -30,7 +31,7 @@ export function descricaoFeed(p: Peca): string {
   const partes = limparTexto(p.desc).split(/(?<=\.)\s+/).filter((f) => f && !SAIR.test(f));
   let texto = partes.join(' ').trim();
   if (texto.length < 40) {
-    texto = `${limparTexto(p.t)}. Peça original retirada de carro com baixa legal, conferida e fotografada no nosso pátio.`
+    texto = `${limparTexto(nomeCompleto(p))}. Peça original retirada de carro com baixa legal, conferida e fotografada no nosso pátio.`
       + (p.oem ? ` Código original: ${limparTexto(p.oem)}.` : '')
       + ' Nota fiscal e 90 dias de garantia.';
   }
@@ -44,9 +45,10 @@ function cortar(s: string, max: number): string {
   return (ultimo > max * 0.8 ? corte.slice(0, ultimo) : corte).trimEnd();
 }
 
-/** Titulo do Google: ate 150 caracteres. */
+/** Titulo do Google: ate 150 caracteres. O nome limpo + carro + anos + codigo (o mesmo do <title> da peca, em
+ *  lib/nomePeca.ts), nunca o titulo cru do anuncio do ML ("Volvo Xc 60", "Gm", sem acento). */
 export function tituloFeed(p: Peca): string {
-  return cortar(limparTexto(p.t) || `Peça ${p.id}`, 150);
+  return cortar(limparTexto(nomeCompleto(p)) || `Peça ${p.id}`, 150);
 }
 
 export const escXml = (s: string) =>

@@ -13,6 +13,7 @@ import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
 import Compartilhar from './peca/Compartilhar.astro';
 import Acordeao from './ui/Acordeao.astro';
 import { nomeModelos, modelosDa } from '../lib/meuCarro';
+import { nomeMensagem } from '../lib/nomePeca';
 interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
 const { p, nivel = 'h1' } = Astro.props;
 const Titulo = nivel;
@@ -22,7 +23,8 @@ const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`
 const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
 // Mensagem do WhatsApp: sem carro salvo usa "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
-const cabeca = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n`;
+// a peça pelo nome limpo + carro + anos + código, nunca o título cru do ML (lib/nomePeca.ts); o link leva o MLB
+const cabeca = `Olá! Vi no site esta peça:\n\n${nomeMensagem(p)}\nR$ ${brl(p.p)}\n${url}\n\n`;
 // peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
 const semCarro = !p.b ? '' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____. ` : `Meu carro é ${carro} ano ____. `;
 const cauda = 'Serve e ainda tem?';
@@ -51,7 +53,9 @@ const perguntas = [
   },
   {
     pergunta: 'E se não servir?',
-    resposta: 'Toda peça tem 90 dias de garantia: se der problema, chame no WhatsApp com o número do pedido e fotos, que a gente avalia o caso e resolve com troca ou devolução. '
+    // Só o que o site já afirma (90 dias, WhatsApp, a gente resolve). A regra de troca por incompatibilidade
+    // (prazo, frete) ainda não foi definida pelo Maruf: nada de "troca ou devolução" aqui (auditoria 3, item 1.2).
+    resposta: 'Toda peça tem 90 dias de garantia: fale no WhatsApp com o número do pedido que a gente resolve. '
       + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
     link: { href: '/garantia.html', texto: 'Ver garantia e trocas' },
   },
@@ -147,7 +151,7 @@ const perguntas = [
       <Acordeao itens={perguntas} ld={false} compacto />
     </section>
 
-    <Compartilhar titulo={p.t} url={url} />
+    <Compartilhar titulo={nomeMensagem(p)} url={url} />
   </div>
 </div>
 
