@@ -8,8 +8,9 @@
 import type { Peca } from '../lib/dados';
 import { anosNoModelo } from '../lib/meuCarro';
 import { rolarFila } from '../lib/anosFila';
-interface Props { lista: Peca[]; b: string; m: string; base: string }
-const { lista, b, m, base } = Astro.props;
+/** k = a chave do carro: com mais de 48 peças, a grade do ano sai de /dados/carro/<k>.json (só as peças dele) */
+interface Props { lista: Peca[]; b: string; m: string; base: string; k?: string }
+const { lista, b, m, base, k } = Astro.props;
 const conta = new Map<number, number>();
 for (const p of lista) {
   const y = anosNoModelo(p, m);
@@ -26,7 +27,8 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
   + `var f=l.scrollWidth-l.clientWidth;if(l.scrollLeft>4)t.setAttribute('data-esq','');if(l.scrollLeft<f-4)t.setAttribute('data-dir','')})()`;
 ---
 {anos.length > 1 && (<>
-  <div class="anos-carro" data-anos-carro data-b={b} data-m={m} data-base={base} data-n={lista.length}>
+  <div class="anos-carro" data-anos-carro data-b={b} data-m={m} data-base={base} data-n={lista.length}
+       data-dados={k && lista.length > 48 ? `/dados/carro/${k}.json` : undefined}>
     <span class="ac-rot" id="ac-rot">Ano do carro</span>
     <div class="ac-trilho">
       <div class="ac-lista" role="group" aria-labelledby="ac-rot">
@@ -68,7 +70,9 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
     const total = Number(raiz.dataset.n || 0);
     let gradeAno: HTMLElement | null = null;
     let doCarro: Promise<Item[]> | null = null;
-    const fmt = (x: number) => `${x.toLocaleString('pt-BR')} ${x === 1 ? 'peça' : 'peças'}`;
+    // UM formatador, criado já (o toLocaleString('pt-BR') monta um a cada chamada: ~1 ms cada no celular lento, 25 grupos)
+    const nf = new Intl.NumberFormat('pt-BR');
+    const fmt = (x: number) => `${nf.format(x)} ${x === 1 ? 'peça' : 'peças'}`;
     const todas = secao.querySelector<HTMLElement>('.todas-pecas');
     const sumario = todas?.querySelector('summary') ?? null;
     const sumarioOrig = sumario?.textContent ?? '';
@@ -97,23 +101,43 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
         mais.textContent = y == null ? maisOrig.txt : n === 1 ? `Ver a peça do ${M} ${y} no catálogo` : `Ver as ${fmt(n)} do ${M} ${y} no catálogo`;
       }
     };
-    /** A lista "Todas as N peças": só as do ano (pelo endereço de cada linha); sem ano, volta inteira. */
-    const filtrarLista = (y: number | null, enderecos: Set<string> | null) => {
+    /** A lista "Todas as N peças": só as do ano (pelo endereço de cada linha); sem ano, volta inteira. Em fatias de ~6 ms
+     *  (515 linhas no XC60: de uma vez era um quadro de 60 ms num celular lento); `vez` = a chamada que ainda vale. */
+    let grupos: { g: HTMLElement; c: HTMLElement | null; linhas: [HTMLElement, string][] }[] | null = null;
+    const filtrarLista = (y: number | null, enderecos: Set<string> | null, vez: number) => {
       if (!todas) return;
-      let n = 0;
-      todas.querySelectorAll<HTMLElement>('.todas-pecas-grupo').forEach((g) => {
-        let k = 0;
-        g.querySelectorAll<HTMLElement>('li').forEach((li) => {
-          const ok = !enderecos || enderecos.has(li.querySelector('a')?.getAttribute('href') || '');
-          li.hidden = !ok;
-          if (ok) k++;
-        });
-        g.hidden = k === 0;
-        const c = g.querySelector<HTMLElement>('.todas-pecas-n');
-        if (c) c.textContent = `(${k.toLocaleString('pt-BR')})`;
-        n += k;
-      });
-      if (sumario) sumario.textContent = y == null || !enderecos ? sumarioOrig : n === 1 ? `A peça do ${B} ${M} ${y}` : `Todas as ${fmt(n)} do ${B} ${M} ${y}`;
+      grupos ??= [...todas.querySelectorAll<HTMLElement>('.todas-pecas-grupo')].map((g) => ({
+        g, c: g.querySelector<HTMLElement>('.todas-pecas-n'),
+        linhas: [...g.querySelectorAll<HTMLElement>('li')].map((li) => [li, li.querySelector('a')?.getAttribute('href') || ''] as [HTMLElement, string]),
+      }));
+      let i = 0, n = 0;
+      const fatia = () => {
+        if (vez !== vezLista) return;
+        const t0 = performance.now();
+        for (; i < grupos!.length && performance.now() - t0 < 6; i++) {
+          const { g, c, linhas } = grupos![i];
+          let k = 0;
+          for (const [li, h] of linhas) {
+            const ok = !enderecos || enderecos.has(h);
+            if (li.hidden === ok) li.hidden = !ok;
+            if (ok) k++;
+          }
+          if (g.hidden !== (k === 0)) g.hidden = k === 0;
+          if (c) c.textContent = `(${nf.format(k)})`;
+          n += k;
+        }
+        if (i < grupos!.length) { setTimeout(fatia, 0); return; }
+        if (sumario) sumario.textContent = y == null || !enderecos ? sumarioOrig : n === 1 ? `A peça do ${B} ${M} ${y}` : `Todas as ${fmt(n)} do ${B} ${M} ${y}`;
+      };
+      fatia();
+    };
+    // Fluidez (XC60, CPU 6x): o trabalho do toque vai em partes, cada uma no seu quadro (nenhum passa de 50 ms): os cartões
+    // da 1ª tela, o resto da grade do ano 12 por vez e, por último, a lista completa (fica embaixo da grade)
+    const pausa = () => new Promise<void>((r) => setTimeout(r, 0));
+    let vezLista = 0;
+    const listaDepois = (y: number | null, enderecos: Set<string> | null) => {
+      const vez = ++vezLista;
+      setTimeout(() => filtrarLista(y, enderecos, vez), 0);
     };
     const semGradeAno = () => {
       gradeAno?.remove();
@@ -135,7 +159,8 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
       }
       try {
         doCarro ??= (async () => {
-          const [{ Busca }, r] = await Promise.all([import('../lib/busca'), fetch('/dados/busca.json')]);
+          // só as peças deste carro (~10% do índice no XC60): o índice inteiro (1,4 MB) travava o 1º toque num celular lento
+          const [{ Busca }, r] = await Promise.all([import('../lib/busca'), fetch(raiz.dataset.dados || '/dados/busca.json')]);
           if (!r.ok) throw new Error(String(r.status));
           return new Busca((await r.json()) as Indice).itens
             .filter((it) => norm(it.b) === norm(B) && serveNoModelo(it, M))
@@ -151,11 +176,19 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
           grade.after(gradeAno);
         }
         vigiarFotos(gradeAno);
+        await pausa();
+        if (ano !== y || !gradeAno) return;
+        const cartoes = (de: number, ate: number) => doAno.slice(de, ate).map((it) => cartaoHtml(it, SIZES_CARTAO.grade)).join('');
         gradeAno.removeAttribute('aria-busy');
-        gradeAno.innerHTML = doAno.slice(0, 48).map((it) => cartaoHtml(it, SIZES_CARTAO.grade)).join('');
+        gradeAno.innerHTML = cartoes(0, 12);   // a 1ª tela (6 fileiras no celular, 3 no PC)
         grade.classList.add('fora-do-ano');
         textos(y, doAno.length);
-        filtrarLista(y, new Set(doAno.map((it) => `/peca/${it.h}.html`)));
+        for (let de = 12; de < Math.min(doAno.length, 48); de += 12) {   // o resto, 12 por vez
+          await pausa();
+          if (ano !== y || !gradeAno) return;
+          gradeAno.insertAdjacentHTML('beforeend', cartoes(de, de + 12));
+        }
+        listaDepois(y, new Set(doAno.map((it) => `/peca/${it.h}.html`)));
       } catch {
         doCarro = null;
         if (ano === y && aVista === 0) semGradeAno();
@@ -170,7 +203,7 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
       const aVista = aplicar();
       const n = chip?.dataset.c ? Number(chip.dataset.c) : 0;
       textos(y, n);
-      if (y == null) filtrarLista(null, null);
+      if (y == null) listaDepois(null, null);
       // o ano tem mais peças que as que estão na grade fixa (só em carro com mais de 48): monta a grade do ano inteira
       else if (total > 48 && (n > aVista || todas)) void completar(y, aVista);
       if (salvar && y != null) {
@@ -199,7 +232,8 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
       if (!chip) return;
       const y = chip.dataset.y ? Number(chip.dataset.y) : null;
       escolher(y, true);
-      if (y != null) centrar(y, true);
+      // a fila centra a ficha no quadro seguinte (a leitura das posições não cai no mesmo quadro do filtro)
+      if (y != null) requestAnimationFrame(() => setTimeout(() => { if (ano === y) centrar(y, true); }, 0));
     });
 
     // cartões que entram depois (a lista completa do carro): o mesmo filtro
@@ -211,7 +245,7 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
 
     // o carro salvo deste modelo, com ano: o ano dele já vem escolhido (e acompanha a troca no cabeçalho)
     const doSalvo = (c: MeuCarro | null) => {
-      if (eh(c) && c.y && c.y !== ano && chips.some((x) => x.dataset.y === String(c.y))) { escolher(c.y, false); centrar(c.y); }
+      if (eh(c) && c.y && c.y !== ano && chips.some((x) => x.dataset.y === String(c.y))) { centrar(c.y); escolher(c.y, false); }
     };
     window.addEventListener(EVENTO, (e) => doSalvo((e as CustomEvent<MeuCarro | null>).detail));
     doSalvo(lerMeuCarro());

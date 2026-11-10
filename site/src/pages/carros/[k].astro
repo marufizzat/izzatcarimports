@@ -92,7 +92,7 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
       <div class="grade-cabeca">
         <h2 class="titulo-secao" id="h-pecas">Peças do {nome}</h2>
         <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{N > 1 ? ' · as mais novas primeiro' : ''}</p>
-        <AnosDoCarro lista={lista} b={c.b} m={c.m} base={base} />
+        <AnosDoCarro lista={lista} b={c.b} m={c.m} base={base} k={c.k} />
       </div>
       <GradePecas lista={lista.slice(0, 48)} total={N} linkTodas={base} />
       {/* toda peça do carro com um link de verdade (a grade mostra 48; o "Ver as N" vai para o catálogo filtrado, que o
