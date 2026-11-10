@@ -5,14 +5,21 @@
 // Colunas da grade de marcas pela LARGURA DO SELETOR (container query), não da tela: a abertura no tablet, a caixa
 // do cabeçalho e o celular escolhem sozinhos (4 colunas até 469 px de seletor, 6 a partir daí), abertas ou fechadas.
 // Logos com as cores reais da marca, num disco claro, sem filtro.
+// Com o carro escolhido, o "cartão do seu carro" (arte, nome, anos em linha, botão) ocupa EXATAMENTE a altura dos
+// campos + a grade de marcas (--alt-campos + --alt-corpo): escolher, trocar ou esquecer o carro não muda a altura.
 ---
 <style is:global>
   /* ---- seletor: campos Marca | Modelo | Ano + a escolha do campo aberto ---- */
   .mc-raiz { position: relative; min-width: 0; color: var(--ink); container: mc / inline-size; }
   /* as medidas moram no filho (o contêiner não consulta a si mesmo); --linha-marca é recalculada junto */
   .mc-raiz .mc-conteudo { --disco: 56px; --rotulo: 16px; --linha-marca: calc(var(--disco) + 6px + var(--rotulo));
-    display: grid; gap: 14px; min-width: 0; }
-  @container mc (min-width: 470px) { .mc-raiz .mc-conteudo { --disco: 60px; --linha-marca: calc(var(--disco) + 6px + var(--rotulo)); } }
+    --campo: 56px; --vao: 14px; --vao-marcas: 16px;
+    /* altura dos campos (com o vão) e da grade de marcas de cara (2 fileiras + o vão + "Ver todas") */
+    --alt-campos: calc(var(--campo) + var(--vao));
+    --vao-mais: 14px;
+    --alt-corpo: calc(2 * var(--linha-marca) + var(--vao-marcas) + var(--vao-mais) + 40px);
+    display: grid; gap: var(--vao); min-width: 0; }
+  @container mc (min-width: 470px) { .mc-raiz .mc-conteudo { --disco: 62px; --vao: 16px; --vao-marcas: 14px; --vao-mais: 12px; } }
   .mc-raiz .mc-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .mc-raiz .mc-seta { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
     transition: transform .2s ease; }
@@ -29,8 +36,6 @@
   .mc-raiz .mc-campo[aria-current="step"],
   .mc-raiz .mc-campo-ano:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in oklab, var(--accent), transparent 84%); }
   .mc-raiz .mc-campo[aria-current="step"] .mc-seta { transform: rotate(180deg); color: var(--ink); }
-  .mc-raiz .mc-convite { box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--accent), transparent 25%); }
-  .mc-raiz .mc-convite .mc-seta { color: var(--accent-text); }
   .mc-raiz .mc-campo:disabled, .mc-raiz .mc-campo[data-off] { cursor: default; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
   .mc-raiz .mc-campo:disabled b, .mc-raiz .mc-campo[data-off] b { color: color-mix(in oklab, var(--ink-3), transparent 35%); }
   .mc-raiz .mc-campo:disabled .mc-seta, .mc-raiz .mc-campo[data-off] .mc-seta { opacity: .4; }
@@ -40,14 +45,16 @@
   .mc-raiz .mc-campo-ano select:disabled { cursor: default; }
   .mc-raiz .mc-campo-ano:has(select:focus-visible) { outline: 3px solid var(--accent-text); outline-offset: 3px; }
 
-  .mc-raiz .mc-corpo { display: grid; gap: 12px; align-content: start; min-width: 0; }
-  /* na abertura e na caixa o corpo tem a altura da grade de marcas: trocar de passo não empurra nada nem faz a caixa pular */
-  .mc-raiz[data-hero] .mc-corpo, .mc-dialogo .mc-corpo { min-height: calc(2 * var(--linha-marca) + 12px + 12px + 40px); }
-  .mc-raiz .mc-corpo[data-etapa="pronto"], .mc-raiz .mc-corpo[data-etapa="erro"] { align-content: center; }
-  .mc-raiz[data-hero] .mc-corpo[data-etapa="modelo"] { align-content: center; }
+  .mc-raiz .mc-corpo { display: grid; gap: var(--vao-mais); align-content: start; min-width: 0; }
+  /* na abertura e na caixa o corpo tem a altura da grade de marcas: trocar de passo não empurra nada nem faz a caixa pular;
+     o cartão do carro (sem os campos) fica com a altura dos campos + a grade */
+  .mc-raiz[data-hero] .mc-corpo, .mc-dialogo .mc-corpo { min-height: var(--alt-corpo); }
+  .mc-raiz[data-hero] .mc-corpo[data-etapa="pronto"], .mc-dialogo .mc-corpo[data-etapa="pronto"] { min-height: calc(var(--alt-campos) + var(--alt-corpo)); }
+  .mc-raiz .mc-corpo[data-etapa="erro"] { align-content: center; }
+  .mc-raiz[data-hero] .mc-corpo[data-etapa="modelo"], .mc-dialogo .mc-corpo[data-etapa="modelo"] { align-content: space-between; }
 
   /* marcas: logo com as cores da marca num disco claro (sem caixa dentro de caixa) */
-  .mc-raiz .mc-marcas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 6px; }
+  .mc-raiz .mc-marcas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--vao-marcas) 6px; }
   @container mc (min-width: 470px) { .mc-raiz .mc-marcas { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
   /* 4 colunas: de cara, 2 fileiras (8 marcas); "Ver todas" acrescenta as outras embaixo, sem mudar coluna nem disco */
   @container mc (max-width: 469px) { .mc-raiz .mc-marcas:not([data-todas]) > li:nth-child(n+9) { display: none; } }
@@ -83,14 +90,11 @@
   .mc-raiz .mc-esqueleto .mc-disco { background: var(--line); box-shadow: none; animation: mc-brilho 1.2s ease-in-out infinite; }
   .mc-raiz .mc-esqueleto .mc-marca-nome { width: 64%; border-radius: 6px; background: var(--line); }
   .mc-raiz .mc-esqueleto-txt { width: 170px; border-radius: 99px; background: var(--surface-2); }
-  /* abertura de quem já tem carro salvo: os campos já mostram o carro; a grade fica guardada até o resultado */
-  .mc-raiz[data-salvo][data-ssr] .mc-corpo { position: relative; }
-  .mc-raiz[data-salvo][data-ssr] .mc-corpo > * { visibility: hidden; }
-  .mc-raiz[data-salvo][data-ssr] .mc-corpo::before,
-  .mc-raiz[data-salvo][data-ssr] .mc-corpo::after { content: ""; position: absolute; left: 0; right: 0; border-radius: 14px; background: var(--surface-2);
-    animation: mc-brilho 1.2s ease-in-out infinite; }
-  .mc-raiz[data-salvo][data-ssr] .mc-corpo::before { top: calc(50% - 64px); height: 40px; right: 30%; }
-  .mc-raiz[data-salvo][data-ssr] .mc-corpo::after { top: calc(50% - 10px); height: 56px; }
+  /* abertura de quem já tem carro salvo: o esqueleto do cartão do carro (SeletorCarro.astro) já vem com o nome e o
+     link; só a contagem, os anos e a arte esperam os dados */
+  .mc-raiz .mc-esq { background: color-mix(in oklab, var(--ink), transparent 92%); box-shadow: none; animation: mc-brilho 1.2s ease-in-out infinite; }
+  .mc-raiz .mc-esq-linha { display: block; width: 9.5em; height: 1.1em; border-radius: 6px; }
+  .mc-raiz .mc-garagem-esq .mc-g-logo:empty { background: color-mix(in oklab, #fff, transparent 40%); }
   @keyframes mc-brilho { 50% { opacity: .5; } }
 
   /* modelos: grade de 3 colunas (nome + quantas peças), na ordem do estoque */
@@ -107,34 +111,92 @@
   .mc-raiz .mc-modelo[aria-pressed="true"] small { color: var(--accent-text); }
   .mc-raiz .mc-modelo-mais { background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent), transparent 55%); }
   .mc-raiz .mc-modelo-mais b { color: var(--accent-text); }
-  .mc-raiz .mc-link { justify-self: start; display: inline-flex; align-items: center; min-height: 36px; font-size: 14px; font-weight: 600; color: var(--ink-2);
+  .mc-raiz .mc-link { justify-self: start; display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 600; color: var(--ink-2);
     text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
   .mc-raiz .mc-link:hover { color: var(--ink); text-decoration-color: currentColor; }
   .mc-raiz .mc-link-centro { justify-self: center; }
-  .mc-raiz .mc-pe { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 18px; }
+  .mc-raiz .mc-pe { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 14px; }
 
-  /* resultado */
-  .mc-raiz .mc-resumo { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; }
-  .mc-raiz .mc-resumo .mc-disco { --disco: 54px; background: #f3f2ef; }
+  /* ---- cartão do seu carro (o carro já escolhido) ----
+     O painel tem o fundo do estúdio das artes (o mesmo degradê de cima a baixo): a arte do carro entra pela direita,
+     esmaecendo para a esquerda, e o nome fica à esquerda. Sem arte: o logo grande da marca num disco. */
+  .mc-raiz .mc-corpo[data-etapa="pronto"] { grid-template-rows: minmax(116px, 1fr); grid-auto-rows: auto; gap: 12px; align-content: stretch; }
+  .mc-raiz .mc-corpo[data-etapa="pronto"] > * { min-width: 0; }
+  .mc-raiz .mc-garagem { position: relative; isolation: isolate; overflow: hidden; min-width: 0; display: flex; align-items: center; padding: 14px 18px;
+    border-radius: 18px; box-shadow: inset 0 0 0 1px rgb(70 40 30 / .06);
+    background: linear-gradient(180deg, #f0e2de 0%, #ecdeda 28%, #e5d5d0 50%, #e7cfc4 61%, #dfcbc2 72%, #d6c5bd 100%); }
+  /* o carro ocupa de 13–21% a 92–95% da largura das artes: a arte cresce (o chão e o teto do estúdio sobram) e só a
+     margem vazia da esquerda esmaece no fundo do painel */
+  .mc-raiz .mc-g-arte { position: absolute; z-index: -1; top: -13%; right: -5%; height: 130%; width: auto; max-width: none; aspect-ratio: 3 / 2; object-fit: cover;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 15%); mask-image: linear-gradient(90deg, transparent 0, #000 15%);
+    transition: opacity .35s ease; }
+  .mc-raiz .mc-g-arte:not([data-ok]) { opacity: 0; }
+  .mc-raiz .mc-g-marca { position: absolute; z-index: -1; top: 50%; right: 26px; transform: translateY(-50%); }
+  .mc-raiz .mc-g-marca .mc-disco { --disco: 96px; background: #fff; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .05), 0 14px 28px -14px rgb(70 40 30 / .45); }
+  .mc-raiz .mc-g-marca .mc-disco img { transform: scale(1.4); }
+  .mc-raiz .mc-g-marca .mc-disco-nome { font-size: 17px; }
+  .mc-raiz .mc-g-txt { position: relative; min-width: 0; max-width: 58%; display: grid; gap: 7px; }
+  .mc-raiz .mc-garagem-sem .mc-g-txt { max-width: calc(100% - 140px); }
+  .mc-raiz .mc-g-olho { margin: 0; display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 11.5px; font-weight: 720; letter-spacing: .09em;
+    text-transform: uppercase; color: #6a5d58; }
+  .mc-raiz .mc-g-logo { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #fff;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / .05), 0 2px 6px -2px rgb(70 40 30 / .3); }
+  .mc-raiz .mc-g-logo img { display: block; width: auto; height: auto; max-width: 21px; max-height: 15px; }
+  .mc-raiz .mc-g-logo svg { width: 16px; height: 16px; fill: none; stroke: var(--ink-2); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .mc-raiz .mc-g-nome { margin: 0; font-stretch: 80%; font-weight: 830; font-size: 33px; line-height: .98; letter-spacing: -.014em; color: var(--ink); text-wrap: balance; }
+  .mc-raiz .mc-g-nome > span { font-weight: 560; color: #4f4541; }
+  .mc-raiz .mc-g-nome.mc-longo { font-size: 27px; }
+  .mc-raiz .mc-g-conta { margin: 1px 0 0; font-size: 14.5px; line-height: 1.3; color: #5a4e4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-raiz .mc-g-conta b { font-size: 15.5px; font-weight: 800; color: var(--ink); }
+
+  /* anos com peça, em linha (Todos · 2011 · 2012 …): rola de lado quando não cabe; as bordas esmaecem só do lado que tem mais */
+  .mc-raiz .mc-anos { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .mc-raiz .mc-anos-rot { flex: none; font-size: 13.5px; font-weight: 680; color: var(--ink-2); }
+  .mc-raiz .mc-anos-trilho { position: relative; flex: 1; min-width: 0; }
+  .mc-raiz .mc-anos-lista { position: relative; display: flex; gap: 6px; margin: -5px; padding: 5px; overflow-x: auto; overscroll-behavior-x: contain;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .mc-raiz .mc-anos-lista::-webkit-scrollbar { display: none; }
+  .mc-raiz .mc-anos-trilho[data-dir] .mc-anos-lista { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
+  .mc-raiz .mc-anos-trilho[data-esq] .mc-anos-lista { -webkit-mask-image: linear-gradient(90deg, transparent, #000 48px); mask-image: linear-gradient(90deg, transparent, #000 48px); }
+  .mc-raiz .mc-anos-trilho[data-esq][data-dir] .mc-anos-lista { -webkit-mask-image: linear-gradient(90deg, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 48px, #000 calc(100% - 48px), transparent); }
+  .mc-raiz .mc-ano { flex: none; min-width: 60px; height: 44px; display: inline-grid; place-items: center; margin: 0; padding: 0 13px; border: 0; border-radius: 12px;
+    background: var(--surface); color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 15px; font-weight: 660; font-stretch: 94%;
+    transition: background-color .16s ease, color .16s ease, box-shadow .16s ease; }
+  .mc-raiz .mc-ano:hover { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .mc-raiz .mc-ano[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: 0 6px 14px -8px rgb(0 0 0 / .6); }
+  .mc-raiz .mc-ano:focus-visible { outline-offset: 1px; box-shadow: none; border-radius: 12px; }
+  .mc-raiz .mc-ano.mc-esq { width: 60px; background: color-mix(in oklab, var(--ink), transparent 93%); box-shadow: none; }
+  .mc-raiz .mc-anos-seta { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .mc-raiz .mc-anos-seta { position: absolute; top: 50%; width: 32px; height: 32px; margin-top: -16px; display: grid; place-items: center; padding: 0; border: 0;
+      border-radius: 50%; background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line), 0 6px 14px -6px rgb(0 0 0 / .35);
+      opacity: 0; pointer-events: none; transition: opacity .18s ease; }
+    .mc-raiz .mc-anos-esq { left: -2px; }
+    .mc-raiz .mc-anos-dir { right: -2px; }
+    .mc-raiz .mc-anos-trilho[data-esq] .mc-anos-esq, .mc-raiz .mc-anos-trilho[data-dir] .mc-anos-dir { opacity: 1; pointer-events: auto; }
+    .mc-raiz .mc-anos-seta svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  }
+
+  .mc-raiz .mc-ver { --h: 56px; width: 100%; font-size: 17px; }
   .mc-raiz .mc-frase { margin: 0; font-size: 16.5px; line-height: 1.35; color: var(--ink-2); text-wrap: pretty; }
   .mc-raiz .mc-frase b { color: var(--ink); font-weight: 760; }
   .mc-raiz .mc-frase .num { display: inline-block; margin-right: 3px; font-stretch: 80%; font-weight: 840; font-size: 34px; line-height: .9; letter-spacing: -.01em;
     vertical-align: -3px; }
-  .mc-raiz .mc-ver { --h: 56px; width: 100%; font-size: 17px; }
-  /* sem ano: convite a escolher (o ano decide o encaixe) */
-  .mc-raiz .mc-dica { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; padding: 10px 12px; border-radius: 12px;
-    background: var(--accent-soft); color: var(--ink); font-size: 14.5px; line-height: 1.35; }
-  .mc-raiz .mc-dica button { min-height: 44px; padding: 0; margin-block: -6px; border: 0; background: none; font: inherit; font-weight: 720; color: var(--accent-text);
-    text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
   .mc-raiz .mc-aviso-linha { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line);
     font-size: 14.5px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
   .mc-raiz .mc-aviso-linha b { color: var(--ink); }
   .mc-raiz .mc-aviso-linha a { font-weight: 650; color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
-  .mc-raiz .mc-nota { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; font-size: 13.5px; color: var(--ink-3); }
-  .mc-raiz .mc-nota > span:first-child { margin-right: auto; }
-  .mc-raiz .mc-nota-acoes { display: flex; gap: 18px; }
-  .mc-raiz .mc-nota button { min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-weight: 650; color: var(--ink-2);
-    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  /* rodapé do cartão: "Salvo neste aparelho" é um selo pequeno; trocar e esquecer são links discretos, com alvo de 44 px */
+  .mc-raiz .mc-nota { margin: -6px 0 -10px; display: flex; align-items: center; justify-content: space-between; gap: 0 10px; min-height: 44px; font-size: 13px; color: var(--ink-3); }
+  .mc-raiz .mc-salvo { display: inline-flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; font-weight: 560; white-space: nowrap; text-overflow: ellipsis; }
+  .mc-raiz .mc-salvo-aviso { color: var(--accent-text); font-weight: 650; }
+  .mc-raiz .mc-salvo-aviso .mc-check { background: var(--accent-soft); stroke: var(--accent-text); }
+  .mc-raiz .mc-check { flex: none; width: 18px; height: 18px; padding: 3.5px; border-radius: 50%; background: color-mix(in oklab, var(--ink), transparent 91%);
+    fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+  .mc-raiz .mc-nota-acoes { display: inline-flex; align-items: center; margin-right: -8px; color: var(--line-2); }
+  .mc-raiz .mc-nota button { min-height: 44px; padding: 0 8px; border: 0; background: none; font: inherit; font-size: 13.5px; font-weight: 640; color: var(--ink-2);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; white-space: nowrap; }
   .mc-raiz .mc-nota button:hover { color: var(--ink); text-decoration-color: currentColor; }
   /* erro: o que fazer agora (tentar de novo, ou seguir pelo catálogo e pelo WhatsApp) */
   .mc-raiz .mc-aviso { display: grid; gap: 10px; justify-items: center; padding: 18px 14px; border-radius: 14px; background: var(--surface-2); text-align: center;
@@ -147,16 +209,43 @@
     .mc-raiz .mc-campos { grid-template-columns: minmax(0, 1.18fr) minmax(0, 1.07fr) minmax(0, .75fr); gap: 6px; }
     .mc-raiz .mc-campo { padding: 7px 22px 7px 11px; }
     .mc-raiz .mc-campo .mc-seta { right: 6px; width: 14px; height: 14px; margin-top: -7px; }
+    .mc-raiz .mc-corpo[data-etapa="pronto"] { gap: 10px; }
+    .mc-raiz .mc-modelo { min-height: 50px; }
+    .mc-raiz .mc-pe { gap: 0 10px; }
+    .mc-raiz .mc-pe .mc-link { font-size: 13px; white-space: nowrap; }
+    .mc-raiz .mc-garagem { padding: 12px 14px; border-radius: 16px; }
+    .mc-raiz .mc-g-arte { top: -6%; right: -6%; height: 114%; }
+    /* no celular a marca vai numa linha e o modelo na outra: o nome nunca encosta no carro */
+    .mc-raiz .mc-g-txt { max-width: 47%; gap: 5px; }
+    .mc-raiz .mc-g-nome > span { display: block; }
+    .mc-raiz .mc-g-olho { min-height: 28px; gap: 7px; font-size: 11px; }
+    .mc-raiz .mc-g-logo { width: 28px; height: 28px; }
+    .mc-raiz .mc-garagem-sem .mc-g-txt { max-width: calc(100% - 104px); }
+    .mc-raiz .mc-g-marca { right: 16px; }
+    .mc-raiz .mc-g-marca .mc-disco { --disco: 78px; }
+    .mc-raiz .mc-g-marca .mc-disco img { transform: scale(1.2); }
+    .mc-raiz .mc-g-nome { font-size: 26px; line-height: .96; }
+    .mc-raiz .mc-g-nome.mc-longo { font-size: 22px; }
+    .mc-raiz .mc-g-conta { font-size: 13.5px; }
+    .mc-raiz .mc-g-conta b { font-size: 14.5px; }
+    .mc-raiz .mc-anos { gap: 10px; }
+    .mc-raiz .mc-ver { --h: 52px; }
   }
   @container mc (max-width: 340px) {
+    .mc-raiz .mc-pe .mc-link { font-size: 12.5px; }
+    /* celular estreito (iPhone SE): o rodapé do cartão do carro numa linha só, sem cortar o "Salvo neste aparelho" */
+    .mc-raiz .mc-nota { gap: 0 6px; font-size: 12px; }
+    .mc-raiz .mc-salvo { gap: 5px; }
+    .mc-raiz .mc-check { width: 16px; height: 16px; padding: 3px; }
+    .mc-raiz .mc-nota-acoes { margin-right: -5px; }
+    .mc-raiz .mc-nota button { padding: 0 5px; font-size: 12.5px; }
     .mc-raiz .mc-campo { padding: 7px 19px 7px 9px; }
     .mc-raiz .mc-campo .mc-seta { right: 4px; width: 13px; height: 13px; }
     .mc-raiz .mc-campo b { font-size: 14.5px; }
     .mc-raiz .mc-modelo { padding: 7px 9px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .mc-raiz .mc-disco, .mc-raiz .mc-esqueleto .mc-disco, .mc-raiz[data-salvo][data-ssr] .mc-corpo::before,
-    .mc-raiz[data-salvo][data-ssr] .mc-corpo::after { animation: none; transition: none; }
+    .mc-raiz .mc-disco, .mc-raiz .mc-esqueleto .mc-disco, .mc-raiz .mc-esq, .mc-raiz .mc-g-arte, .mc-raiz .mc-ano { animation: none; transition: none; }
   }
 
   /* ---- caixa do cabeçalho (diálogo): presa no alto (não pula a cada passo) ---- */
@@ -173,6 +262,8 @@
     box-shadow: inset 0 0 0 1px var(--line-2); }
   .mc-dlg-fechar svg { width: 20px; height: 20px; }
   .mc-dialogo .mc-raiz { padding: 12px 20px 22px; overflow-y: auto; min-height: 0; }
+  /* na caixa o título já diz "Seu carro": no cartão fica só o logo */
+  .mc-dialogo .mc-g-olho > span:last-child { display: none; }
   @media (max-width: 639px) {
     .mc-dialogo { position: fixed; inset: auto 0 0 0; margin: 0; width: 100%; max-width: 100%; border-radius: 24px 24px 0 0; max-height: 90dvh; }
     .mc-dialogo .mc-raiz { padding: 12px 16px calc(20px + env(safe-area-inset-bottom)); }
