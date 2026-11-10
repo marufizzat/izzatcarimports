@@ -49,7 +49,7 @@ export function itemDe(x: unknown): ItemLista | null {
   return {
     id: o.id,
     // o endereço só com o que vira URL (o slug sempre termina no MLB)
-    slug: /^[a-z0-9-]+$/.test(slug) ? slug : '',
+    slug: /^[a-zA-Z0-9-]+$/.test(slug) ? slug : '',
     nome: texto(o.nome, 120) || 'Peça',
     carro: texto(o.carro, 80),
     anos: texto(o.anos, 20),

@@ -42,7 +42,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
           pintura, como o chip): marca html[data-lista] e o CSS mostra o ícone. Abaixo de 1100 px ele ocupa o lugar da
           lupa (o mesmo tamanho: nada se mexe nem aperta no celular de 320). */}
       <a class="cab-icone cab-lista" href="/lista.html" data-lista-cab aria-current={atual === '/lista.html' ? 'page' : undefined}><Icone nome="lista" /><span class="sr-only">Lista de orçamento: </span><b></b></a>
-      <script is:inline>try{var n=JSON.parse(localStorage.getItem('izzatcar.lista')).length;n&&(document.documentElement.dataset.lista=n,document.currentScript.previousElementSibling.lastChild.textContent=n)}catch(e){}</script>
+      <script is:inline>try{var n=JSON.parse(localStorage['izzatcar.lista']).length;n&&(document.documentElement.dataset.lista=n,document.currentScript.previousElementSibling.lastChild.textContent=n)}catch(e){}</script>
       <a class="cab-icone cab-lupa" href="/catalogo.html#busca" aria-label="Buscar peça"><Icone nome="busca" /></a>
       <a class="botao botao-laranja cab-whats" href={whatsUrl('Procuro uma peça.')} data-botao="cabecalho" data-whats-carro aria-label="Chamar no WhatsApp">
         <Icone nome="whats" /><span>WhatsApp</span>
@@ -148,7 +148,10 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
       const num = cabLista.querySelector('b')!;
       num.textContent = n ? String(n) : '';
       cabLista.title = n ? `Lista de orçamento: ${pecasTxt(n)}` : 'Lista de orçamento';
-      if (nLista >= 0 && n > nLista) { num.classList.remove('pulo'); void num.offsetWidth; num.classList.add('pulo'); }
+      // pulinho pela Web Animations (sem forçar o cálculo da página no meio do toque)
+      if (nLista >= 0 && n > nLista && num.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        num.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)', offset: .4 }, { transform: 'scale(1)' }], { duration: 450, easing: 'cubic-bezier(.3,1.6,.5,1)' });
+      }
     }
     nLista = n;
   }
@@ -238,8 +241,6 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   .cab .cab-lista b { position: absolute; top: 3px; right: 1px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px;
     display: grid; place-items: center; background: var(--accent); color: #1d1d1f; font-size: 11.5px; font-weight: 800; line-height: 1;
     font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px var(--bg); pointer-events: none; }
-  .cab .cab-lista b.pulo { animation: cab-pulo .45s cubic-bezier(.3,1.6,.5,1); }
-  @keyframes cab-pulo { 40% { transform: scale(1.35); } }
   .cab .cab-lista[aria-current="page"] { background: var(--accent-soft); }
   .cab .cab-whats span { display: none; }
   @media (max-width: 379px) { .cab .cab-linha > .logo img { height: 48px; } }

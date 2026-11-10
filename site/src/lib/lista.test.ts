@@ -6,7 +6,7 @@ import {
 import { precoWhats } from './whats';
 
 const item = (i: number, o: Partial<ItemLista> = {}): ItemLista => ({
-  id: `MLB${7000000000 + i}`, slug: `peca-${i}-mlb${7000000000 + i}`, nome: `Peça ${i}`, carro: 'Chevrolet Cruze', anos: '2017 a 2021',
+  id: `MLB${7000000000 + i}`, slug: `peca-${i}-MLB${7000000000 + i}`, nome: `Peça ${i}`, carro: 'Chevrolet Cruze', anos: '2017 a 2021',
   cod: `E13146430${i % 10}`, preco: 100 + i, capa: `/estudio-400/MLB${7000000000 + i}.webp`, ...o,
 });
 

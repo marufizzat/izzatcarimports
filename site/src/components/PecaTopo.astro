@@ -146,6 +146,9 @@ const perguntas = [
           <span class="cdp-selo">−{DESCONTO_WHATS}%</span></p>
         <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" /><span>Pedir no WhatsApp<span class="botao-preco num"> · R$ {precoW}</span></span></a>
         <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra><span>Comprar no Mercado Livre<span class="botao-preco num"> · R$ {brl(p.p)}</span></span></a>
+        {/* Lista de orçamento (components/peca/listaPeca.ts): o 3º caminho, discreto. No HTML só o botão (o lugar já fica
+            guardado: nada pula quando o script chega); o "Ver lista (n)" e o estado "Na sua lista" vêm do script */}
+        <div class="compra-lista"><button type="button"><Icone nome="lista-mais" /><span>Adicionar à lista<span class="cl-longo"> de orçamento</span></span></button></div>
       </div>
       <ul class="compra-facil">
         <li><b>Na dúvida se serve?</b> A gente confere na peça antes de você comprar.</li>
@@ -191,6 +194,12 @@ const perguntas = [
   import { lerMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
   import { ligarCampoCep, cepCompleto, formatarCep, salvarCep } from '../lib/cep';
   import { linkWhats, mensagemFrete, blocoDaCabeca, urlDaCauda, linhaMeuCarro, abrirWhats } from '../lib/whats';
+  import { ligarListaPeca, ligarVaiJunto } from './peca/listaPeca';
+
+  // "Adicionar à lista de orçamento" (o 3º botão da compra) e o "+ lista" dos cartões do "Vai junto" (peca/VaiJunto.astro)
+  ligarListaPeca();
+  const vaiJunto = document.querySelector<HTMLElement>('[data-vj-raiz]');
+  if (vaiJunto) ligarVaiJunto(vaiJunto);
 
   // WhatsApp leva o carro salvo na mensagem (troca só a linha "Meu carro é ...").
   // [data-whats-espelho] (o botão da barra fixa do celular) recebe o mesmo link do botão principal.
@@ -272,7 +281,10 @@ const perguntas = [
   // Galeria em tela cheia: módulo pequeno e sem React (ui/GaleriaTelaCheia.ts). Pré-busca quando o navegador folga
   // e no 1º toque na foto; o HTML dela só é montado na 1ª vez que abre.
   let telaCheia: Promise<typeof import('./ui/GaleriaTelaCheia')> | null = null;
-  const carregarTelaCheia = () => (telaCheia ??= import('./ui/GaleriaTelaCheia'));
+  // pré-busca que falha (a pessoa saiu da página no meio, rede caiu) não fica guardada nem vira erro na página:
+  // a próxima tentativa baixa de novo
+  const carregarTelaCheia = () => (telaCheia ??= import('./ui/GaleriaTelaCheia').catch((e) => { telaCheia = null; throw e; }));
+  const preCarregar = () => { carregarTelaCheia().catch(() => {}); };
 
   document.querySelectorAll<HTMLElement>('[data-galeria]').forEach((g) => {
     const trilho = g.querySelector<HTMLElement>('[data-trilho]')!;
@@ -341,7 +353,7 @@ const perguntas = [
         aoFechar: (k) => { if (k !== indice()) ir(k, false); },
       })).catch(() => {});
     };
-    trilho.addEventListener('pointerdown', () => { lupaFim(); carregarTelaCheia(); }, { passive: true });
+    trilho.addEventListener('pointerdown', () => { lupaFim(); preCarregar(); }, { passive: true });
     trilho.addEventListener('click', abrir);
     trilho.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(); }
@@ -351,8 +363,8 @@ const perguntas = [
     // pré-busca depois da carga e quando o navegador folgar (só baixa o módulo; não monta nada). Antes do "load" ela
     // disputava a rede com a foto grande da 1ª tela no 4G lento.
     const preBuscar = () => {
-      if ('requestIdleCallback' in window) requestIdleCallback(() => { carregarTelaCheia(); }, { timeout: 4000 });
-      else setTimeout(() => { carregarTelaCheia(); }, 800);
+      if ('requestIdleCallback' in window) requestIdleCallback(preCarregar, { timeout: 4000 });
+      else setTimeout(preCarregar, 800);
     };
     if (document.readyState === 'complete') preBuscar();
     else window.addEventListener('load', preBuscar, { once: true });
@@ -626,6 +638,28 @@ const perguntas = [
   @media (max-width: 479px) { .compra-de-por .cdp-selo { display: none; } }
   @media (max-width: 359px) { .compra-botoes .botao-linha .botao-preco { display: none; } .compra-de-por { font-size: 13.5px; } }
   .compra-botoes .botao { --h: var(--botao-g); font-size: 16.5px; }
+  /* Lista de orçamento: o 3º caminho, discreto (sem caixa: um ladrilho com o ícone + o texto), e o "Ver lista (n)" à
+     direita. Altura fixa de 44 px (alvo de toque) e numa linha só em toda largura: o link que chega com o script não
+     empurra nada. "Na sua lista": o ladrilho fica verde (verde = é seu, como o "Serve no seu carro"). */
+  .compra-lista { display: flex; align-items: center; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; min-height: 44px; margin: -2px 0 -4px; }
+  .compra-lista > button { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px 0 0; border: 0; border-radius: 12px;
+    background: none; color: var(--ink); font-size: 15px; font-weight: 650; font-stretch: 96%; text-align: left; -webkit-tap-highlight-color: transparent; }
+  .compra-lista > button svg { flex: none; box-sizing: content-box; width: 20px; height: 20px; padding: 7px; border-radius: 10px; color: var(--accent-text);
+    background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 74%); transition: background-color .2s, color .2s, transform .2s; }
+  .compra-lista > button > span { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; transition: text-decoration-color .2s; }
+  @media (hover: hover) { .compra-lista > button:hover > span { text-decoration-color: currentColor; } }
+  .compra-lista > button:active svg { transform: scale(.92); }
+  .compra-lista > button.na-lista svg { color: var(--serve-ink); background: var(--serve-bg); box-shadow: inset 0 0 0 1px var(--serve-borda); animation: cl-ok .4s cubic-bezier(.3,1.5,.5,1); }
+  @keyframes cl-ok { 40% { transform: scale(1.14); } }
+  .compra-lista .cl-ver { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; font-size: 14.5px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .compra-lista .cl-ver > span:first-child { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  .compra-lista .cl-ver[hidden] { display: none; }
+  .compra-lista .cl-ver .num { font-weight: 650; color: var(--ink-2); }
+  .compra-lista .cl-ver svg { width: 16px; height: 16px; }
+  .compra-lista .cl-cheia { flex-basis: 100%; margin: 0 0 6px; font-size: 13.5px; line-height: 1.4; color: var(--ink-2); }
+  .compra-lista .cl-cheia a { color: var(--ink); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+  @media (max-width: 419px) { .compra-lista .cl-longo { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .compra-lista > button.na-lista svg { animation: none; } }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .compra-facil b { font-weight: 650; color: var(--ink-2); }
 
