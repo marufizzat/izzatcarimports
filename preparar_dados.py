@@ -3087,7 +3087,8 @@ def diferencas(pecas):
     - versao/geracao diferente (T5 x T8, B6 x nada): a versao inteira da peca ("T5 2.0", "3.6 V6", "T5/T6 2.0");
     - mesma versao em todas (T8 e T8; T5 e "T5 2.0"): nada;
     - sem versao em nenhuma, motor diferente (1.0/1.4 x 1.0; 2.0 x nada): o motor;
-    - sem nada disso, cores diferentes nos titulos: "Cor: cinza e preto".
+    - sem nada disso, cores diferentes nos titulos: a cor, sem prefixo ("Cinza e preto", "Preto": ao lado do carro,
+      "Cor:" ficava estranho e roubava espaco no cartao de 2 colunas).
     Devolve quantas pecas ganharam "dif"."""
     for g in grupos_mesma_peca(pecas):
         partes = [versao_do_titulo(x["t"]) for x in g]
@@ -3100,7 +3101,7 @@ def diferencas(pecas):
         elif not any(prim) and not any(sec):
             cores = [cores_do_titulo(x["t"]) for x in g]
             distintas = {tuple(c) for c in cores if c}
-            marcar = ([(x, "Cor: " + " e ".join(c)) for x, c in zip(g, cores) if c] if len(distintas) > 1 else [])
+            marcar = ([(x, " e ".join(c).capitalize()) for x, c in zip(g, cores) if c] if len(distintas) > 1 else [])
         else:
             marcar = []
         for x, t in marcar:

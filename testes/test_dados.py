@@ -1158,7 +1158,7 @@ def test_mesma_peca_precos_diferentes_dif():
     g += [peca(3, "Antena Teto Shark Volvo S60 18/24 31346765 Cinza Preto", 741.77, "31346765", "S60"),
           peca(4, "Antena Teto Shark Volvo S60 Xc60 V60 18/24 31346765 Preto", 843.77, "31346765", "S60")]
     pd.diferencas(g)
-    assert [x.get("dif") for x in g] == ["1.0/1.4", "1.0", "Cor: cinza e preto", "Cor: preto"]
+    assert [x.get("dif") for x in g] == ["1.0/1.4", "1.0", "Cinza e preto", "Preto"]
     # o dado gerado: "dif" so nas pecas de um grupo, e o busca.json leva o mapa esparso
     pecas = ROOT / "site" / "src" / "data" / "pecas.json"
     busca = ROOT / "site" / "public" / "dados" / "busca.json"
