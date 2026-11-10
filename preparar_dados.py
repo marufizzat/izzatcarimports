@@ -105,6 +105,11 @@ ORIGINAL_CORTADO = re.compile(r"\b(or|ori|orig|origi|origin|origina|original)\b"
 CODIGO_SEPARADO = re.compile(r"\b([A-Za-z]{1,3})[ -](\d{2,3})\b")
 
 
+# Modelo colado na cilindrada: "Bmw X32.0" (X3 2.0), "Audi Q52.0", "Volvo Xc602.0". So separa quando o pedaco da
+# frente e um carro conhecido no estoque (nunca parte um codigo de peca).
+MODELO_COLADO = re.compile(r"\b([A-Za-z]{1,3}\d{1,2})(\d[.,]\d)\b")
+
+
 def limpar_titulo(titulo, modelos_conhecidos):
     """Prepara o titulo SO pra leitura do carro (nunca pro texto exibido)."""
     t = ORIGINAL_CORTADO.sub(" ", titulo)
@@ -113,7 +118,10 @@ def limpar_titulo(titulo, modelos_conhecidos):
         junto = m.group(1) + m.group(2)
         return junto if gi.chave_modelo(junto) in modelos_conhecidos else m.group(0)
 
-    return CODIGO_SEPARADO.sub(juntar, t)
+    def separar(m):
+        return f"{m.group(1)} {m.group(2)}" if gi.chave_modelo(m.group(1)) in modelos_conhecidos else m.group(0)
+
+    return CODIGO_SEPARADO.sub(juntar, MODELO_COLADO.sub(separar, t))
 
 
 MODELOS_SOLTOS = {
@@ -311,7 +319,7 @@ ACENTOS.update({
     "hidraulicos": "hidráulicos", "mecanico": "mecânico", "metalicos": "metálicos", "estatico": "estático",
     "conexoes": "conexões", "vedacao": "vedação", "tracao": "tração", "aceleracao": "aceleração",
     "rele": "relé", "reles": "relés", "diagnostico": "diagnóstico", "planetaria": "planetária",
-    "secundaria": "secundária", "transferencia": "transferência",
+    "secundaria": "secundária", "transferencia": "transferência", "multimedia": "multimídia",
 })
 MOTOR_FORA = re.compile(r"^(\d{1,2}v|tfsi|fsi|tsi|tdi|thp|t\d?|turbo|flex|hibrido|híbrido|"
                         r"hybrid|sport|v6|v8|aut)$", re.I)
@@ -1003,10 +1011,31 @@ def _concordar_posicao(ws):
     return ws
 
 
+# Palavra cortada pelo limite de letras do titulo do ML, no FIM dele ("... Toro 15/21 Die" = diesel, "... Focus Sed" =
+# sedan): vira a palavra inteira; pedaco que serve em mais de uma sai. So no titulo cheio (58+ letras) e so com as
+# palavras desta lista ("Original" cortado ja sai em PALAVRAS_FORA; "Compl", "Dir", "Tras" sao abreviacoes).
+TITULO_CHEIO = 58
+PALAVRAS_INTEIRAS = ("diesel", "sedan", "hatch", "gasolina")
+
+
+def palavra_cortada(w):
+    """A palavra inteira de um pedaco cortado ("die" -> "diesel"), "" se o pedaco serve em mais de uma (sai) ou None
+    se nao e pedaco de nenhuma (fica como esta). Pedaco que ja e palavra ou abreviacao conhecida ("gas") nunca."""
+    k = _sem(w).strip(".,;-")
+    if len(k) < 3 or k in ACENTOS or k in _PALAVRAS or k in ABREV_ADJETIVO or k in ABREV_FIXA \
+            or k in ABREV_INVARIAVEL:
+        return None
+    cand = {x for x in PALAVRAS_INTEIRAS if _sem(x).startswith(k) and _sem(x) != k}
+    return None if not cand else cand.pop() if len(cand) == 1 else ""
+
+
 def nome_limpo(titulo, marca, modelo, outros=()):
     """'Lanterna Esquerda Tampa Traseira Volvo Xc 60 18/24 A045591'
     -> 'Lanterna esquerda tampa traseira'. Carro, ano e codigo aparecem a parte.
     outros = os outros carros em que a peca serve ("ms"): saem do nome como o modelo."""
+    ws = titulo.split()
+    if len(titulo) >= TITULO_CHEIO and len(ws) > 1 and palavra_cortada(ws[-1]) is not None:
+        titulo = " ".join(ws[:-1] + [palavra_cortada(ws[-1])]).strip()      # "... 15/21 Die" -> "... 15/21 diesel"
     t = CODIGO_SEPARADO.sub(lambda m: m.group(1) + m.group(2), titulo)   # "Xc 60" -> "Xc60"
     t = gi.ANOS_RE.sub(" ", t)
     t = re.sub(r"\b(19|20)\d{2}\s*(a|até|ate|/|-)\s*(19|20)\d{2}\b", " ", t, flags=re.I)

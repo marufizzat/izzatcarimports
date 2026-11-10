@@ -1037,6 +1037,25 @@ def test_foto_do_cartao_na_ordem_da_galeria():
         assert not monta, f"{len(monta)} pecas com a montagem no 'i' tendo foto da peca: {monta[:5]}"
 
 
+def test_palavra_cortada_no_fim_e_modelo_colado():
+    """Rodada 8: "AT9 die" (diesel cortado pelo limite do ML), "multimedia" sem acento e o "X32.0" (X3 2.0) sem modelo."""
+    import preparar_dados as pd
+    assert pd.nome_limpo("Engrenagem Planetaria Câmbio At9 Fiat Toro 2.0 2.2 15/21 Die", "Fiat", "Toro") \
+        == "Engrenagem planetária câmbio AT9 diesel"
+    assert pd.palavra_cortada("Die") == "diesel" and pd.palavra_cortada("gasol") == "gasolina"
+    assert pd.palavra_cortada("gas") is None          # palavra conhecida ("gás"), nunca pedaço
+    assert pd.palavra_cortada("compl") is None        # abreviação: o nome resolve ("completa")
+    assert pd.palavra_cortada("Bosch") is None
+    # título curto: a última palavra não foi cortada pelo ML
+    assert pd.nome_limpo("Bico Injetor Fiat Toro Die", "Fiat", "Toro").endswith("die")
+    assert pd.nome_limpo("Central Multimedia Peugeot 208 13/18 9809503580 Original", "Peugeot", "208") == "Central multimídia"
+    k = {"x3", "q5", "xc60"}
+    assert pd.limpar_titulo("Mangueira Ventilação Cárter Bmw X32.0 18/24 11157623746", k) \
+        == "Mangueira Ventilação Cárter Bmw X3 2.0 18/24 11157623746"
+    assert pd.palavras(pd.limpar_titulo("Mangueira Cárter Bmw X32.0 18/24", k), "BMW") == ["X3"]
+    assert pd.limpar_titulo("Sensor Abc12.0 Vw Gol", k) == "Sensor Abc12.0 Vw Gol"   # não é carro: não parte
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):
