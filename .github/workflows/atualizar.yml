@@ -201,6 +201,9 @@ jobs:
       # Cloudflare (opcional): so publica la se o Maruf cadastrar os 2 segredos no repo.
       # Assim a migracao pro Cloudflare e so cadastrar os segredos + apontar o dominio.
       - name: Publicar tambem no Cloudflare (se configurado)
+        # nunca trava o GitHub Pages (o site oficial): o plano Free do Cloudflare aceita 20 mil arquivos por versao e o
+        # dist passou disso com as capas leves dos cartoes (~22 mil); so com o plano pago (100 mil) este passo passa
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
