@@ -11,6 +11,7 @@ import CarrosPatio from '../../components/v2/CarrosPatio.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import { resumo, logoInfo, whatsUrl } from '../../lib/dados';
+import { srcArte, SIZES } from '../../lib/variantes';
 const r = resumo();
 const marcas = [...new Set(r.carros.map((c) => c.b))];
 const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
@@ -25,7 +26,8 @@ const vitrine = r.carros.filter((c) => existsSync(join(process.cwd(), 'public', 
     lead={`Cada um dos ${n} carros aqui passou pelo nosso pátio. Escolha o seu e veja as peças originais que saíram dele.`}>
     <div slot="lado" class="carros-vitrine" aria-hidden="true">
       {vitrine.map((c, i) => (
-        <img class={`cv cv-${i + 1}`} src={`/arte/v2/carro-${c.k}.webp`} alt="" width="1200" height="800" loading="lazy" decoding="async" />
+        <img class={`cv cv-${i + 1}`} src={`/arte/v2/carro-${c.k}.webp`}
+          {...srcArte(`/arte/v2/carro-${c.k}.webp`, i === 0 ? SIZES.vitrine1 : SIZES.vitrine23)} alt="" width="1200" height="800" loading="lazy" decoding="async" />
       ))}
     </div>
   </TopoArte>

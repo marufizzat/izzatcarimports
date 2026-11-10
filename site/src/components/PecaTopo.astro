@@ -14,6 +14,7 @@ import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
 import Compartilhar from './peca/Compartilhar.astro';
 import Acordeao from './ui/Acordeao.astro';
 import { nomeModelos, modelosDa } from '../lib/meuCarro';
+import { nomeMensagem } from '../lib/nomePeca';
 interface Props { p: Peca; nivel?: 'h1' | 'h2'; }
 const { p, nivel = 'h1' } = Astro.props;
 const Titulo = nivel;
@@ -24,9 +25,10 @@ const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
 // só código com cara de código (lixo da extração, como "Par", não vira caixa com "Copiar")
 const cod = codigoDaPeca(p.oem);
-// Mensagem do WhatsApp (lib/whats.ts, a mesma do cartão): a abertura do site, o nome limpo, carro, anos, código, preço
-// e o link. Sem carro salvo vai "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
-const cabeca = cabecaPeca({ nome: p.n, carro, anos, cod, preco: brl(p.p), url });
+// Mensagem do WhatsApp (lib/whats.ts, a mesma do cartão): a abertura do site, a peça pelo nome limpo + carro + anos +
+// código (nomeMensagem, lib/nomePeca.ts; nunca o título cru do ML), o preço e o link (que leva o MLB).
+// Sem carro salvo vai "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
+const cabeca = cabecaPeca({ linha: nomeMensagem(p), preco: brl(p.p), url });
 // peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
 const semCarro = !p.b ? '' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____. ` : `Meu carro é ${carro} ano ____. `;
 const cauda = CAUDA_PECA;
@@ -59,7 +61,9 @@ const perguntas = [
   },
   {
     pergunta: 'E se não servir?',
-    resposta: 'Toda peça tem 90 dias de garantia: se der problema, chame no WhatsApp com o número do pedido e fotos, que a gente avalia o caso e resolve com troca ou devolução. '
+    // Só o que o site já afirma (90 dias, WhatsApp, a gente resolve). A regra de troca por incompatibilidade
+    // (prazo, frete) ainda não foi definida pelo Maruf: nada de "troca ou devolução" aqui (auditoria 3, item 1.2).
+    resposta: 'Toda peça tem 90 dias de garantia: fale no WhatsApp com o número do pedido que a gente resolve. '
       + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
     link: { href: '/garantia.html', texto: 'Ver garantia e trocas' },
   },
@@ -157,7 +161,7 @@ const perguntas = [
       <Acordeao itens={perguntas} ld={false} compacto />
     </section>
 
-    <Compartilhar titulo={[p.n, [carro, anos].filter(Boolean).join(' ')].filter(Boolean).join(' · ')} url={url} />
+    <Compartilhar titulo={nomeMensagem(p)} url={url} />
   </div>
 </div>
 
