@@ -85,12 +85,16 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      **Classe de cada foto** (no mesmo JSON, com a assinatura dHash): `p` peça, `s` sem peça, `m` marketing do anúncio
      (palavras de propaganda no OCR — entrega, garantia, dicas, seminovo…; cartão escuro com texto; ou a mesma foto em
      3+ anúncios), `c` montagem com o carro: só na tela BRANCA pura da montagem do vendedor (borda >= 240; foto de estúdio,
-     fundo cinza ~215-235, nunca é carro: lanterna, grade e farol enganavam o classificador), com `prob_carro` > 0,6 na
-     foto inteira ou a média das 3 melhores janelas no formato de carro > 0,63 (pega o carro pequeno ao lado da peça), com
-     o carro inteiro dentro da janela (`i` > 0,45: o console de teto ou a lanterna sozinhos são cortados pela janela) ou
-     solto da peça. Sinais `b`/`k`/`i`/`n` no cache; sem eles: `medir_fotos_ml.py --montagem` (baixa a `-O`, ~25 min) e
-     `--reclassificar`.
-     A montagem leva a marca de incerta (aparece inteira). `fotosGaleria()` (lib/quadroFoto.ts) tira `m` e põe `c` no
+     fundo cinza ~215-235, nunca é carro: lanterna, grade e farol enganavam o classificador). O **detector de objetos**
+     (SSD MobileNet, COCO, `detector_carro`, modelo de 29 MB em `~/.rembg/models/detector`, baixa sozinho) acha o carro
+     e diz onde: carro (classe 3) com score >= 0,5 numa caixa de até 45% da foto = montagem, mesmo colado na peça, cortado
+     na borda ou numa foto panorâmica. A regra antiga das janelas (`prob_carro` > 0,6 na foto inteira ou a média das 3
+     melhores janelas no formato de carro > 0,63, com o carro inteiro na janela, `i` > 0,45, ou solto da peça) continua
+     valendo para o carro grande, mas só se o detector viu algum carro (a soleira do F-Pace sozinha saiu). A
+     "caminhonete" do detector não abre caminho novo (módulo, válvula e trava sozinhos davam 0,6-0,86). Sinais
+     `b`/`k`/`i`/`n`/`d` no cache; sem eles: `medir_fotos_ml.py --montagem` (~25 min) e `--detector` (~3 min, só a tela
+     branca), depois `--reclassificar`; sem o `d`, só as janelas. Nov/2026 (rodada 9): 1.250 montagens.
+     A montagem leva a marca de incerta (aparece inteira, também a foto quadrada). `fotosGaleria()` (lib/quadroFoto.ts) tira `m` e põe `c` no
      fim na galeria, miniaturas, tela cheia, JSON-LD, og:image e feed. Muito texto sozinho não é marketing: é a
      etiqueta da peça (mostra o código). Mudou uma regra: `medir_fotos_ml.py --reclassificar` (sinais em cache local).
      Testes: `python testes/test_medir_fotos_ml.py` e `site/testes/quadroFoto.test.ts`.

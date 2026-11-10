@@ -26,10 +26,13 @@ Classes (a galeria, o JSON-LD e o feed tiram "m" e põem "c" no fim):
        texto de banner, 5%+ da foto), cartão escuro com texto, ou a MESMA foto (assinatura idêntica) em 3+ anúncios
        diferentes. O selo pequeno "produto seminovo original" e o lacre da loja colados na foto da peça NÃO contam.
     c  montagem com o carro (o carro do anúncio colado ao lado da peça numa tela BRANCA pura, borda >= 240): o
+       detector de objetos (SSD, COCO: detector_carro) acha um carro pequeno (caixa até 45% da foto) com score
+       >= 0,5 — pega o carro colado na peça, cortado na borda ou na foto panorâmica; ou a regra das janelas (o
        prob_carro do capas_estudio.py > 0,6 na foto inteira, ou a média das 3 melhores janelas no formato de carro
-       > 0,63 (o carro pequeno da montagem) com o carro inteiro dentro da janela (i > 0,45) ou solto da peça (2+
-       objetos). Foto de estúdio (fundo cinza) nunca é carro: lanterna, grade, farol e caixa de ar enganam o
-       classificador. Vai para o fim da galeria e aparece inteira (marca de incerta).
+       > 0,63 com o carro inteiro dentro da janela, i > 0,45, ou solto da peça, 2+ objetos), desde que o detector
+       tenha visto algum carro (a peça sozinha que parece carro nas janelas, como a soleira, sai). Sem o "d" no cache
+       (foto sem --detector), só as janelas. Foto de estúdio (fundo cinza) nunca é carro. Vai para o fim da galeria e
+       aparece inteira (marca de incerta, também a quadrada).
 Muito texto sozinho NÃO é marketing: nas fotos do catálogo, mais de 15% de texto é quase sempre a etiqueta da peça
 (nome, carro e código do vendedor, ou a etiqueta de fábrica), que mostra o código ao comprador.
 
@@ -52,6 +55,8 @@ Opções: --extra ARQ       junta o JSON do robô (cache entre rodadas) e grava 
                           números): baixa a -O de novo
         --montagem        os sinais da montagem (b, k, i, n) nas fotos que ainda não têm: baixa a -O de novo (~25 min
                           as 45 mil); depois, --reclassificar
+        --detector        os carros achados pelo detector ("d") nas fotos da tela branca que ainda não têm: baixa a -O
+                          de novo (~3 min as 6 mil); depois, --reclassificar. Modelo: MEDIR_DETECTOR (baixa sozinho)
 Teste: python testes/test_medir_fotos_ml.py
 """
 import io
@@ -335,6 +340,43 @@ def lote_carro():
     return rodar
 
 
+def detector_carro():
+    """Detector de objetos SSD MobileNet v1 (COCO, ONNX model zoo, 29 MB, CPU): img (PIL) -> as caixas de carro e
+    caminhonete achadas, [[score, classe COCO, x0, y0, x1, y1], ...] (fração da foto, score >= DETECTA_MIN, até 3).
+    Diferente do classificador (que diz "carro" para a foto inteira ou uma janela), ele ACHA o carro e diz onde está:
+    o carrinho colado na montagem vira uma caixa pequena com score alto, e a peça sozinha (soleira, lanterna, console)
+    não vira carro nenhum."""
+    import numpy as np
+    import onnxruntime as ort
+    if not DETECTOR.exists():
+        DETECTOR.parent.mkdir(parents=True, exist_ok=True)
+        tmp = DETECTOR.with_suffix(".tmp")
+        urllib.request.urlretrieve(URL_DETECTOR, tmp)
+        tmp.replace(DETECTOR)
+    op = ort.SessionOptions()       # 1 núcleo por chamada: as linhas de trabalho (MEDIR_PARALELO) usam os outros
+    op.intra_op_num_threads, op.inter_op_num_threads = int(os.getenv("MEDIR_ONNX_NUCLEOS", "1")), 1
+    sessao = ort.InferenceSession(str(DETECTOR), op, providers=["CPUExecutionProvider"])
+    nome = sessao.get_inputs()[0].name
+
+    def detectar(img):
+        caixas, classes, scores, n = sessao.run(None, {nome: np.asarray(img.convert("RGB"), dtype=np.uint8)[None]})
+        saida = []
+        for i in range(int(n[0])):
+            c, p = int(classes[0][i]), float(scores[0][i])
+            if c in CLASSES_DETECTOR and p >= DETECTA_MIN:
+                y0, x0, y1, x1 = (round(float(v), 3) for v in caixas[0][i])
+                saida.append([round(p, 3), c, x0, y0, x1, y1])
+        return sorted(saida, reverse=True)[:3]
+    return detectar
+
+
+DETECTOR = Path(os.getenv("MEDIR_DETECTOR") or Path.home() / ".rembg" / "models" / "detector" / "ssd_mobilenet_v1_12.onnx")
+URL_DETECTOR = ("https://github.com/onnx/models/raw/main/validated/vision/object_detection_segmentation/ssd-mobilenetv1/"
+                "model/ssd_mobilenet_v1_12.onnx")
+CLASSES_DETECTOR = (3, 8)   # COCO: 3 carro, 8 caminhonete/picape (Toro, Hilux, S10 na montagem); ônibus (6) não
+DETECTA_MIN = 0.2           # o que o detector guarda no cache ("d"); a regra usa CARRO_ACHADO
+
+
 # ---------- a montagem com o carro ----------
 # A foto "montagem" do vendedor: a peça e o carro recortados, colados numa tela BRANCA PURA (borda 255). A foto de
 # verdade da peça (estúdio, fundo cinza-claro ~215-235) nunca é montagem: lanterna, grade, farol e caixa de ar
@@ -371,11 +413,12 @@ def janelas_carro(cw, ch):
     return saida
 
 
-def montagem(img, lote):
+def montagem(img, lote, det=None):
     """Sinais da montagem: {"b": borda da foto (0-255, mediana no canal mais escuro)} e, só na tela branca
-    (b >= FUNDO_MONTAGEM): "k" = a média das 3 melhores janelas no formato de carro (prob_carro em lote), "i" = o mesmo
-    com cada janela pesada pelo fundo na borda dela (carro inteiro dentro da janela) e "n" = quantos objetos separados
-    (o carro solto ao lado da peça conta 2). `lote` = lote_carro() (None: só a borda)."""
+    (b >= FUNDO_MONTAGEM): "d" = os carros que o detector achou (detector_carro(); `det` None: sem "d"), "k" = a média
+    das 3 melhores janelas no formato de carro (prob_carro em lote), "i" = o mesmo com cada janela pesada pelo fundo na
+    borda dela (carro inteiro dentro da janela) e "n" = quantos objetos separados (o carro solto ao lado da peça conta
+    2). `lote` = lote_carro() (None: só a borda e o "d")."""
     import numpy as np
     from scipy import ndimage
     img = img.convert("RGB")
@@ -385,6 +428,8 @@ def montagem(img, lote):
     borda = np.concatenate([a[:, :b].reshape(-1, 3), a[:, -b:].reshape(-1, 3), a[:b].reshape(-1, 3), a[-b:].reshape(-1, 3)])
     fundo = np.median(borda, axis=0)
     out = {"b": round(float(fundo.min()), 1)}
+    if fundo.min() >= FUNDO_MONTAGEM and det is not None:
+        out["d"] = det(img)
     if fundo.min() < FUNDO_MONTAGEM or lote is None:
         return out
     m = ndimage.binary_opening(np.abs(a - fundo).max(axis=2) >= 30, structure=np.ones((3, 3)))
@@ -530,16 +575,30 @@ def assinatura(img):
     return "%016x" % int("".join("1" if b else "0" for b in bits), 2)
 
 
-def sinais(img, ler_texto, prob_carro, lote=None):
+def sinais(img, ler_texto, prob_carro, lote=None, det=None):
     """Os sinais brutos de uma foto: t = área de texto (0-1), x = texto lido, l = luz média, c = carro, h = assinatura
-    e os da montagem (montagem(): b = borda, k = carro na janela, n = objetos; com `lote`)."""
+    e os da montagem (montagem(): b = borda, d = carros achados, k = carro na janela, n = objetos; com `lote`/`det`)."""
     import numpy as np
     area, texto = ler_texto(img)
     s = {"t": round(float(area), 4), "x": (texto or "")[:300], "l": round(float(np.asarray(img.convert("L")).mean()), 1),
          "c": round(float(prob_carro(img)), 3), "h": assinatura(img)}
-    if lote is not None:
-        s.update(montagem(img, lote))
+    if lote is not None or det is not None:
+        s.update(montagem(img, lote, det))
     return s
+
+
+CARRO_ACHADO = 0.5     # score do detector (classe carro) daqui para cima = há um carro na foto (folha da rodada 9: as
+                       # montagens que as janelas perdiam vão de 0,54 a 0,98; pedal, maçaneta, difusor sozinhos < 0,4)
+CARRO_PEQUENO = 0.45   # e a caixa dele com até isso da foto: o carrinho colado da montagem (a caixa grande que pega a
+                       # foto quase toda é a própria peça: porta, para-choque, lanterna, moldura do rádio)
+# A "caminhonete" (8) do detector não entra no caminho novo: módulo, válvula, trava e alavanca sozinhos davam 0,6-0,86.
+# Ela só conta (com o carro, qualquer score guardado) para manter a montagem que a regra das janelas já pegava.
+
+
+def carro_achado(d):
+    """O detector achou o carrinho da montagem: caixa de carro com score >= CARRO_ACHADO e pequena."""
+    return any(c == 3 and p >= CARRO_ACHADO and (x1 - x0) * (y1 - y0) <= CARRO_PEQUENO
+               for p, c, x0, y0, x1, y1 in d or [])
 
 
 def classe_de(tem_caixa, s):
@@ -556,9 +615,16 @@ def classe_de(tem_caixa, s):
     if "b" not in s:
         if s["c"] > CARRO:
             return "c"
-    elif s["b"] >= FUNDO_MONTAGEM and (s["c"] > CARRO or s.get("k", 0) > CARRO_JANELA
-                                       and (s.get("i", 1) > CARRO_INTEIRO or s.get("n", 0) >= 2)):
-        return "c"
+    elif s["b"] >= FUNDO_MONTAGEM:
+        janelas = s["c"] > CARRO or s.get("k", 0) > CARRO_JANELA and (s.get("i", 1) > CARRO_INTEIRO or s.get("n", 0) >= 2)
+        if "d" not in s:                         # sem o detector (foto ainda sem --detector): só as janelas
+            if janelas:
+                return "c"
+        # com o detector: o carrinho achado (pequeno, score alto) é montagem, mesmo colado na peça ou numa foto
+        # panorâmica, onde as janelas falhavam; e a montagem das janelas só fica se o detector viu algum carro (a
+        # soleira do F-Pace parecia carro nas janelas e o detector não acha nada nela)
+        elif carro_achado(s["d"]) or janelas and s["d"]:
+            return "c"
     return "p" if tem_caixa else "s"
 
 
@@ -581,11 +647,12 @@ def incerta_da(e):
 def com_classe(e, classe, h, inc=None):
     """Os números da entrada + classe + assinatura (+ a marca de caixa incerta). inc None = mantém a marca de `e`.
     A montagem com o carro (c) aparece sempre inteira (a caixa do recorte às vezes pega só o carro ou só a peça):
-    leva a marca de incerta, menos a foto quadrada (o quadro nunca a corta)."""
+    leva sempre a marca de incerta, também a foto quadrada (o quadro não a corta, mas sem a marca ela ainda ia
+    ampliada até a caixa; com a marca, inteira no meio, como toda montagem)."""
     if inc is None:
         inc = incerta_da(e)
     n = numeros(e)
-    inc = inc or (classe == "c" and len(n) >= 6 and n[0] != n[1])
+    inc = inc or (classe == "c" and len(n) >= 6)
     return n + [classe] + ([h] if h else []) + ([INCERTA] if inc and len(n) >= 6 else [])
 
 
@@ -714,6 +781,40 @@ def fazer_montagem(cache, chaves):
           f" | {time.time() - t0:.0f}s", flush=True)
 
 
+def fazer_detector(cache, chaves):
+    """--detector: os carros achados pelo detector ("d") nas fotos da tela branca que ainda não têm (baixa a -O de
+    novo, ou lê de MEDIR_FOTOS_O) e grava no cache. A classe sai depois, no --reclassificar."""
+    import concurrent.futures as cf
+    det = detector_carro()
+    t0, tempo_max = time.time(), float(os.getenv("MEDIR_TEMPO_MAX", "0") or 0)
+    trava, cont = threading.Lock(), {"i": 0, "erro": 0, "carro": 0}
+    print(f"detector: {len(chaves)} fotos", flush=True)
+
+    def uma(k):
+        if tempo_max and time.time() - t0 > tempo_max:
+            return
+        try:
+            d = det(baixar_media(k))
+        except Exception:  # noqa: BLE001  (rede, foto que saiu do ar)
+            d = None
+        with trava:
+            cont["i"] += 1
+            if d is None:
+                cont["erro"] += 1
+                return
+            cache.setdefault(k, {})["d"] = d
+            cont["carro"] += carro_achado(d)
+            if cont["i"] % 1000 == 0:
+                gravar(cache, SINAIS)
+                print(f"  {cont['i']}/{len(chaves)}  {time.time() - t0:.0f}s  (com carro: {cont['carro']})", flush=True)
+
+    with cf.ThreadPoolExecutor(int(os.getenv("MEDIR_PARALELO", "8"))) as ex:
+        list(ex.map(uma, chaves))
+    gravar(cache, SINAIS)
+    print(f"detector: {cont['i'] - cont['erro']} feitas ({cont['carro']} com carro), {cont['erro']} erro de rede"
+          f" | {time.time() - t0:.0f}s", flush=True)
+
+
 def main(argv):
     extra = argv[argv.index("--extra") + 1] if "--extra" in argv else None
     t0 = time.time()
@@ -730,6 +831,9 @@ def main(argv):
         fazer_montagem(cache, [k for k in fila_de(pecas, {}, set(filter(None, os.getenv("MEDIR_IDS", "").split(","))))
                                if tem_sinais(k) and ("b" not in cache[k]          # o "i" (de depois) só vale com k alto
                                                      or cache[k].get("k", 0) > CARRO_JANELA and "i" not in cache[k])])
+    if "--detector" in argv:                     # os carros achados ("d") nas fotos da tela branca que ainda não têm
+        fazer_detector(cache, [k for k in fila_de(pecas, {}, set(filter(None, os.getenv("MEDIR_IDS", "").split(","))))
+                               if tem_sinais(k) and cache[k].get("b", 0) >= FUNDO_MONTAGEM and "d" not in cache[k]])
     if "--reclassificar" in argv:                # regra nova: refaz pelos sinais guardados, sem baixar nada
         for k, e in dados.items():
             if tem_sinais(k):
@@ -766,7 +870,12 @@ def main(argv):
         lote = lote_carro() if prob else None
     except Exception:  # noqa: BLE001
         lote = None
-    classificar = (lambda img: sinais(img, ler_texto, prob, lote)) if ler_texto and prob else None
+    try:                                         # sem o detector (rede, modelo): a regra antiga das janelas
+        det = detector_carro() if prob else None
+    except Exception as e:  # noqa: BLE001
+        print(f"sem o detector de carro: {str(e)[:80]}", flush=True)
+        det = None
+    classificar = (lambda img: sinais(img, ler_texto, prob, lote, det)) if ler_texto and prob else None
     if not classificar:
         sem_classe = []
     tempo_max = float(os.getenv("MEDIR_TEMPO_MAX", "0") or 0)
@@ -823,7 +932,7 @@ def main(argv):
     print("classes: " + ", ".join(f"{c} {n}" for c, n in sorted(contagem.items())) + f" (modelo repetido: {len(rep)})"
           + f" | caixa incerta: {sum(1 for e in dados.values() if incerta_da(e))}", flush=True)
     gravar(dados, ARQ)
-    if cache and (fila or sem_classe or "--faixas" in argv or "--montagem" in argv):
+    if cache and (fila or sem_classe or "--faixas" in argv or "--montagem" in argv or "--detector" in argv):
         gravar(cache, SINAIS)
     if extra:
         gravar(dados, extra)

@@ -89,7 +89,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.rembg
-          key: rembg-modelos-v1
+          key: rembg-modelos-v2   # v2: + o detector de carro da montagem (medir_fotos_ml.py, 29 MB)
       # filtro de etiqueta (texto na foto): se nao instalar, a capa segue sem o filtro
       - name: Filtro de etiqueta de texto (rapidocr)
         continue-on-error: true
