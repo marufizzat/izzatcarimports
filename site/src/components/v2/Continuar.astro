@@ -1,0 +1,70 @@
+---
+// "Continuar de onde parou" (lib/continuar.ts): UMA faixa discreta no alto da abertura para quem volta — a lista de
+// orçamento ("Sua lista tem 3 peças · R$ 1.234,56 no WhatsApp → Ver lista") ou, sem lista, a última busca ("Continuar a
+// busca: “farol xc60” → Ver as peças"). Desenhada ANTES da 1ª pintura pelo script logo abaixo (faixaAntes, sem nada de
+// fora): sem lista nem busca, ela nem existe para o CSS (html sem data-continuar) e nada se mexe. O × dispensa e lembra
+// (só volta quando a lista muda de peças ou a busca é outra).
+import Icone from '../Icone.astro';
+import { faixaAntes, CHAVE_BUSCA, CHAVE_FECHADO } from '../../lib/continuar';
+import { CHAVE_LISTA } from '../../lib/lista';
+import { DESCONTO_WHATS } from '../../lib/whats';
+const ls = (k: string) => `localStorage.getItem(${JSON.stringify(k)})`;
+const antes = `(function(){try{var f=(${faixaAntes.toString()})(${ls(CHAVE_LISTA)},${ls(CHAVE_BUSCA)},${ls(CHAVE_FECHADO)},Date.now(),${DESCONTO_WHATS});`
+  + `if(!f)return;var r=document.currentScript.previousElementSibling,q=function(s){return r.querySelector(s)};`
+  + `q('[data-ct-link]').setAttribute('href',f.href);r.setAttribute('data-ct-assinatura',f.assinatura);`
+  + `if(f.tipo==='lista'){q('[data-ct-titulo]').textContent='Sua lista tem '+f.n+(f.n===1?' peça':' peças');q('[data-ct-sub]').textContent='R$ '+f.total+' no WhatsApp';q('[data-ct-acao]').textContent='Ver lista'}`
+  + `else{q('[data-ct-titulo]').textContent='Continuar a busca';q('[data-ct-sub]').textContent='\\u201c'+f.q+'\\u201d';q('[data-ct-acao]').textContent='Ver as peças'}`
+  + `document.documentElement.setAttribute('data-continuar',f.tipo)}catch(e){}})()`;
+---
+<div class="ct" data-ct>
+  <a class="ct-link" data-ct-link href="/lista.html">
+    <span class="ct-icone" aria-hidden="true"><Icone nome="lista" class="ct-i-lista" /><Icone nome="busca" class="ct-i-busca" /></span>
+    <span class="ct-txt">
+      <b class="ct-titulo" data-ct-titulo></b>
+      <span class="ct-linha"><span class="ct-sub num" data-ct-sub></span><span class="ct-sep" aria-hidden="true"> · </span><span class="ct-ir"><span class="ct-acao" data-ct-acao></span><svg class="ct-seta" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+    </span>
+  </a>
+  <button type="button" class="ct-fechar" data-ct-fechar aria-label="Dispensar este aviso"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+</div>
+<script is:inline set:html={antes} />
+
+<script>
+  import { CHAVE_FECHADO } from '../../lib/continuar';
+  // × : some e fica lembrada (a assinatura da faixa); o foco vai para o título da abertura (o botão sumiu)
+  document.querySelector('[data-ct-fechar]')?.addEventListener('click', (e) => {
+    const faixa = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-ct]');
+    try { localStorage.setItem(CHAVE_FECHADO, faixa?.dataset.ctAssinatura || ''); } catch { /* sem armazenamento */ }
+    document.documentElement.removeAttribute('data-continuar');
+    const h1 = document.querySelector<HTMLElement>('h1');
+    if (h1) { h1.tabIndex = -1; h1.focus({ preventScroll: true }); }
+  });
+</script>
+
+<style>
+  /* pointer-events: a caixa do conteúdo da abertura não pega clique (só o que ela marca com o escopo dela) */
+  .ct { display: none; pointer-events: auto; justify-self: start; align-items: stretch; max-width: 100%; border-radius: 18px; background: rgb(255 255 255 / .92);
+    box-shadow: 0 0 0 1px rgb(16 16 20 / .06), 0 8px 24px -14px rgb(16 16 20 / .35); }
+  :global(html[data-continuar]) .ct { display: flex; }
+  .ct-link { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 9px 4px 9px 10px; border-radius: 18px 0 0 18px; color: #1d1d1f; }
+  .ct-icone { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: var(--accent-soft, #fff1e6); color: #c2410c; }
+  .ct-icone :global(svg) { width: 20px; height: 20px; }
+  :global(html[data-continuar="lista"]) .ct :global(.ct-i-busca), :global(html[data-continuar="busca"]) .ct :global(.ct-i-lista) { display: none; }
+  .ct-txt { display: grid; gap: 1px; min-width: 0; }
+  .ct-titulo { font-size: 14.5px; font-weight: 750; line-height: 1.25; }
+  .ct-linha { display: flex; flex-wrap: wrap; align-items: center; column-gap: 0; font-size: 14px; line-height: 1.35; color: #4a4a50; min-width: 0; }
+  .ct-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .ct-sep { white-space: pre; }
+  .ct-ir { display: inline-flex; align-items: center; white-space: nowrap; }
+  .ct-acao { font-weight: 700; color: #c2410c; text-decoration: underline; text-decoration-color: rgb(194 65 12 / .35); text-underline-offset: 3px; }
+  .ct-seta { width: 15px; height: 15px; margin-left: 3px; color: #c2410c; transition: transform .2s ease; }
+  .ct-link:hover .ct-acao { text-decoration-color: currentColor; }
+  .ct-link:hover .ct-seta { transform: translateX(2px); }
+  .ct-link:focus-visible, .ct-fechar:focus-visible { outline: 3px solid #c2410c; outline-offset: 2px; }
+  .ct-fechar { flex: none; width: 44px; display: grid; place-items: center; padding: 0; border: 0; border-left: 1px solid rgb(16 16 20 / .07);
+    border-radius: 0 18px 18px 0; background: none; color: #65656b; cursor: pointer; }
+  .ct-fechar:hover { color: #1d1d1f; background: rgb(16 16 20 / .04); }
+  .ct-fechar svg { width: 18px; height: 18px; }
+  /* celular estreito: o "Ver lista" na linha dele (sem o ponto pendurado no fim da linha de cima) */
+  @media (max-width: 359px) { .ct-sep { display: none; } .ct-ir { flex-basis: 100%; } }
+  @media (prefers-reduced-motion: reduce) { .ct-seta { transition: none; } }
+</style>

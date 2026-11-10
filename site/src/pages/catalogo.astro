@@ -95,7 +95,12 @@ const confianca: [string, string][] = [
 
 <script>
   import { paradaSeRolar } from '../lib/trilhoFoco';
+  import { lembrarBusca } from '../lib/continuar';
   paradaSeRolar('[data-rola]');
+  // "Continuar a busca" da home (lib/continuar.ts): a busca com texto em que a pessoa estava. O catálogo troca o endereço
+  // a cada filtro (replaceState): guarda ao chegar e de novo ao sair da página (o endereço de quando ela saiu)
+  lembrarBusca(location.search);
+  window.addEventListener('pagehide', () => lembrarBusca(location.search));
 </script>
 
 <style is:global>
