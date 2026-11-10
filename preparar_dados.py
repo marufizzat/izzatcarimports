@@ -610,7 +610,8 @@ sem seu sua seus suas pra pro quando""".split())
 
 
 def _espanhol(texto):
-    ws = re.findall(r"[a-záéíóúñüâêôãõçà]+", (texto or "").lower())
+    # só palavras soltas: "AL4", "ES2", "EN590" (pedaço de código) não contam como "al", "es", "en"
+    ws = re.findall(r"(?<![0-9a-záéíóúñüâêôãõçà])[a-záéíóúñüâêôãõçà]+(?![0-9a-záéíóúñüâêôãõçà])", (texto or "").lower())
     es = sum(1 for w in ws if w in _SO_ES or "ñ" in w or re.search(r"(ción|ciones|dad)$", w))
     pt = sum(1 for w in ws if w in _SO_PT or re.search(r"(ção|ções|ões|ã|õ)", w))
     return es >= 3 and es > 2 * pt
