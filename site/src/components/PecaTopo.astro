@@ -193,7 +193,9 @@ const perguntas = [
   const pedidos = [...document.querySelectorAll<HTMLAnchorElement>('[data-whats]')];
   const espelhos = [...document.querySelectorAll<HTMLAnchorElement>('[data-whats-espelho]')];
   const principal = document.querySelector<HTMLAnchorElement>('[data-compra-botoes] [data-whats]') ?? pedidos[0];
-  const avisos = [...document.querySelectorAll<HTMLElement>('[data-whats-carro]')];
+  // só o <span> da lista "WhatsApp: mensagem pronta com a peça…": o WhatsApp do cabeçalho e do menu também leva
+  // data-whats-carro (é um <a>, o Cabecalho troca o link dele) e não pode ter o texto trocado aqui
+  const avisos = [...document.querySelectorAll<HTMLElement>('span[data-whats-carro]')];
   const atualizarWhats = (c: MeuCarro | null) => {
     pedidos.forEach((a) => {
       const base = a.getAttribute('href')!.split('?')[0];
