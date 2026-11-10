@@ -83,7 +83,8 @@ def test_medir_uma_sem_rede():
         # com a classificação: classe e assinatura vão no fim da entrada, os sinais voltam para o cache
         sinal = {"t": 0.0, "x": "", "l": 200.0, "c": 0.0, "h": "00ff00ff00ff00ff"}
         e, s = mf.medir_uma("k", recorte, lambda img: dict(sinal))
-        assert e == [1200, 900, 120, 240, 600, 480, "p", "00ff00ff00ff00ff"] and s == sinal
+        # foto branca lisa: nada além da caixa (o teste da faixa vai para o cache em "f"; caixa confiável)
+        assert e == [1200, 900, 120, 240, 600, 480, "p", "00ff00ff00ff00ff"] and s == dict(sinal, f=[0.0, 0.0, 0.0, 0.0, 1.0])
         e, _ = mf.medir_uma("k", sem_peca, lambda img: dict(sinal, x="ENTREGA RÁPIDA E SEGURA! | seu pedido", t=0.14))
         assert e == [1200, 900, "m", "00ff00ff00ff00ff"]
 
@@ -183,6 +184,116 @@ def test_assinatura_e_modelos():
     for liso in ("0000000000000000", "0f0f0f0f0f0f0f0f", "0c0f0f0f0f0f0f4f"):    # simples demais: fotos diferentes coincidem
         assert mf.modelos({k: [1, 1, "p", liso] for k in "xyz"},
                           [{"id": f"M{i}", "fotos": [k]} for i, k in enumerate("xyz")]) == set()
+
+
+def _foto(w, h, fundo=(255, 255, 255)):
+    from PIL import Image
+    return Image.new("RGB", (w, h), fundo)
+
+
+def test_faixa_foto_limpa_e_sombra_colada():
+    from PIL import ImageDraw
+    im = _foto(500, 375)
+    d = ImageDraw.Draw(im)
+    d.rectangle((150, 100, 349, 274), fill=(30, 30, 30))          # a peça
+    d.rectangle((150, 275, 349, 280), fill=(205, 205, 205))       # sombra colada embaixo (dentro dos 2%)
+    f = mf.faixas(im, (150, 100, 350, 275))
+    assert f == [0.0, 0.0, 0.0, 0.0, 1.0], f
+    assert not mf.incerta(1200, 900, f)
+    # a caixa encostada na borda da foto: nada além daquele lado (-1)
+    assert mf.faixas(im, (0, 100, 350, 275))[0] == -1
+
+
+def test_faixa_pega_o_carro_colado_e_o_plastico_branco():
+    from PIL import ImageDraw
+    # montagem: o recorte pegou só o carro (à direita); a peça escura à esquerda fica além da caixa
+    im = _foto(500, 290)
+    d = ImageDraw.Draw(im)
+    d.rectangle((20, 160, 260, 250), fill=(20, 30, 70))           # a peça
+    d.rectangle((300, 20, 480, 120), fill=(180, 30, 30))          # o carro colado
+    f = mf.faixas(im, (300, 20, 481, 121))
+    assert f[0] > mf.FAIXA_MANCHA and mf.incerta(1115, 404, f), f
+    # plástico branco (30 abaixo do fundo) com a tampa preta no meio: a caixa pegou só a tampa
+    im = _foto(500, 375, (245, 245, 245))
+    d = ImageDraw.Draw(im)
+    d.rectangle((40, 150, 460, 230), fill=(215, 215, 215))        # o tubo de plástico, de lado a lado
+    d.ellipse((220, 160, 280, 220), fill=(15, 15, 15))            # a tampa preta
+    f = mf.faixas(im, (220, 160, 281, 221))
+    assert min(f[0], f[2]) > mf.FAIXA_MANCHA and mf.incerta(1200, 900, f), f
+    # a mesma foto em pé: o quadro só corta em cima e embaixo, e ali não há nada (o tubo fica inteiro no lado curto)
+    assert not mf.incerta(900, 1200, [f[0], 0.0, f[2], 0.0])
+    # foto quadrada nunca é cortada pelo quadro: nunca incerta
+    assert not mf.incerta(1200, 1200, f)
+
+
+def test_faixa_ignora_o_degrade_do_fundo_de_estudio():
+    import numpy as np
+    from PIL import Image
+    a = np.zeros((375, 500, 3), dtype="uint8")
+    a[:] = np.linspace(250, 190, 375, dtype="uint8")[:, None, None]   # o fundo escurece 60 de cima para baixo
+    a[120:250, 180:320] = 25                                          # a peça
+    f = mf.faixas(Image.fromarray(a), (180, 120, 320, 250))
+    assert not mf.incerta(1200, 900, f) and not mf.incerta(900, 1200, f), f
+
+
+def test_faixa_pega_a_etiqueta_e_o_close():
+    from PIL import ImageDraw
+    # etiqueta de papel embaixo da peça (letras finas, papel quase do tom do fundo): as letras viram uma mancha só
+    im = _foto(375, 500, (238, 238, 238))
+    d = ImageDraw.Draw(im)
+    d.rectangle((110, 100, 270, 300), fill=(25, 25, 25))           # a peça
+    d.rectangle((100, 380, 280, 470), fill=(250, 250, 250))         # o papel da etiqueta
+    for i in range(4):                                               # 4 linhas de letras de 1 px
+        for x in range(110, 270, 6):
+            d.line((x, 392 + i * 18, x + 3, 392 + i * 18 + 8), fill=(20, 20, 20), width=1)
+    f = mf.faixas(im, (110, 100, 271, 301))
+    assert f[3] > mf.FAIXA_MANCHA and mf.incerta(900, 1200, f), f
+    # close: a caixa vai de uma borda à outra no lado curto (não há fundo dos lados para conferir)
+    assert mf.incerta(900, 1200, [0.0, 0.0, 0.0, 0.0], (0, 194, 900, 1133))
+    assert mf.incerta(1200, 900, None, (100, 3, 1000, 897))
+    assert not mf.incerta(900, 1200, [0.0, 0.0, 0.0, 0.0], (30, 194, 900, 1133))
+    assert not mf.incerta(1200, 1200, None, (0, 0, 1200, 1200))      # quadrada: nunca cortada
+    # close da etiqueta numa peça escura que enche a foto: a borda é a peça (escura), não o fundo do estúdio
+    import numpy as np
+    from PIL import Image
+    a = np.full((500, 375, 3), 45, dtype="uint8")
+    a[::7] = 70                                                       # a textura do plástico
+    a[200:300, 60:375] = 245                                          # a etiqueta branca no meio
+    f = mf.faixas(Image.fromarray(a), (60, 200, 375, 300))
+    assert f[4] == 0.0 and mf.incerta(900, 1200, f, (144, 480, 900, 720)), f
+    assert not mf.incerta(900, 1200, [0.0, 0.0, 0.0, 0.0, 0.9])
+
+
+def test_marca_incerta_na_entrada():
+    e = [1200, 900, 10, 20, 300, 400, "p", "0123456789abcdef", mf.INCERTA]
+    assert mf.classe_da(e) == "p" and mf.hash_da(e) == "0123456789abcdef" and mf.incerta_da(e)
+    assert mf.numeros(e) == [1200, 900, 10, 20, 300, 400]
+    assert mf.com_classe(e, "m", mf.hash_da(e)) == [1200, 900, 10, 20, 300, 400, "m", "0123456789abcdef", mf.INCERTA]
+    assert mf.com_classe(e, "p", mf.hash_da(e), False) == [1200, 900, 10, 20, 300, 400, "p", "0123456789abcdef"]
+    assert mf.com_classe([1200, 900], "s", None, True) == [1200, 900, "s"]          # sem caixa: nunca incerta
+    assert mf.incerta_pelo_cache(e, {"h": "x"}) is None                              # sem o teste no cache: mantém
+    assert mf.incerta_pelo_cache(e, {"f": [0.0, -1, 0.2, 0.0]}) is True
+    assert mf.incerta_pelo_cache(e, {"f": [0.0, 0.5, 0.0, 0.5]}) is False             # só o eixo longo conta
+
+
+def test_incerta_sobrevive_a_gravar_juntar_e_reclassificar():
+    with tempfile.TemporaryDirectory() as d:
+        arq, pecas, sinais = Path(d) / "caixas.json", Path(d) / "pecas.json", Path(d) / "sinais.json"
+        h = "0123456789abcdef"
+        mf.gravar({"a": [1200, 900, 400, 300, 800, 600, "p", h, mf.INCERTA], "b": [1200, 900, 400, 300, 800, 600, "p", h]},
+                  arq)
+        pecas.write_text(json.dumps([{"id": "MLB1", "fotos": ["a", "b"]}]), encoding="utf-8")
+        base = {"t": 0.0, "x": "", "l": 190.0, "c": 0.0, "h": h}
+        # "a" sem o teste no cache (mantém a marca); "b" com mancha além da caixa no eixo longo (vira incerta)
+        mf.gravar({"a": dict(base), "b": dict(base, f=[0.3, 0.0, 0.0, 0.0])}, sinais)
+        antes = (mf.ARQ, mf.PECAS, mf.SINAIS)
+        try:
+            mf.ARQ, mf.PECAS, mf.SINAIS = arq, pecas, sinais
+            mf.main(["--reclassificar", "--so-juntar"])
+        finally:
+            mf.ARQ, mf.PECAS, mf.SINAIS = antes
+        final = json.loads(arq.read_text(encoding="utf-8"))
+        assert final["a"][-1] == mf.INCERTA and final["b"] == [1200, 900, 400, 300, 800, 600, "p", h, mf.INCERTA], final
 
 
 if __name__ == "__main__":

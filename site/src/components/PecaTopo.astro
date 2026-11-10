@@ -107,9 +107,9 @@ const perguntas = [
       <div class="galeria-miniaturas" role="group" aria-label="Miniaturas" data-minis>
         {fotos.map((f, i) => (
           <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
-            {/* miniatura (-A: a foto inteira, na proporção dela, como a -F do palco): o mesmo quadro do palco (sem o
-                degradê das bordas, que numa miniatura não aparece) */}
-            <img class:list={[{ estudio: f.e }]} style={f.q?.style} src={f.m} alt="" width={f.q?.style ? undefined : 72} height={f.q?.style ? undefined : 72} loading="lazy" decoding="async" />
+            {/* miniatura (-A: a foto inteira, na proporção dela, como a -F do palco): o mesmo quadro do palco, com o
+                mesmo degradê nas bordas das fotos "inteiras" (classe i; a tela cheia copia esta miniatura) */}
+            <img class:list={[{ estudio: f.e }, f.q?.cls]} style={f.q?.style} src={f.m} alt="" width={f.q?.style ? undefined : 72} height={f.q?.style ? undefined : 72} loading="lazy" decoding="async" />
           </button>
         ))}
       </div>
@@ -447,15 +447,16 @@ const perguntas = [
   .galeria { --estudio: linear-gradient(#f4f3f0, #e7e5e1); }
   .galeria-trilho li { position: relative; background: var(--estudio); }
   .galeria-trilho img:not(.estudio), .galeria-miniaturas img:not(.estudio) { object-fit: scale-down; mix-blend-mode: multiply; }
-  /* enquadrada: a foto posta (left/top/width, sem transform) para a peça ficar no centro, ocupando ~84%. A marca é o
+  /* enquadrada: a foto posta (left/top/width, sem transform) para a peça ficar no centro, ocupando ~84%, a 4%+ da
+     borda e sem nunca cortar o lado curto da foto (lib/quadroFoto.ts). A marca é o
      --w no style (a cópia ampliada da lupa também leva style, então [style] sozinho não serve). Vai sem width/height no HTML:
      o tamanho vem daqui e, fora do fluxo (absolute), ela não empurra nada */
   :is(.galeria-trilho, .galeria-miniaturas, .gt-faixa) img[style*="--w"] {
     position: absolute; padding: 0; max-width: none; max-height: none; object-fit: fill;
     left: calc(var(--x, 0) * -100%); top: calc(var(--y, 0) * -100%); width: calc(var(--w) * 100%); height: calc(var(--h, var(--w)) * 100%); }
-  /* a peça não cabe num quadrado da foto sem cortar (ou não foi achada): o quadro passa da foto no lado curto e as
-     bordas dela se desfazem no fundo do estúdio (nada de foto colada) */
-  :is(.galeria-trilho, .galeria-lupa) img.i { --fx: clamp(0%, (1 - var(--w)) * 100%, 5%); --fy: clamp(0%, (1 - var(--h, var(--w))) * 100%, 5%);
+  /* o quadro passa da foto (peça comprida, encostada na borda, foto pequena, caixa incerta ou sem peça achada): a foto
+     fica no meio e as bordas dela se desfazem no fundo do estúdio (nada de foto colada), também nas miniaturas */
+  :is(.galeria-trilho, .galeria-lupa, .galeria-miniaturas, .gt-faixa) img.i { --fx: clamp(0%, (1 - var(--w)) * 100%, 5%); --fy: clamp(0%, (1 - var(--h, var(--w))) * 100%, 5%);
                           --mx: linear-gradient(90deg, #0000, #000 var(--fx), #000 calc(100% - var(--fx)), #0000);
                           --my: linear-gradient(#0000, #000 var(--fy), #000 calc(100% - var(--fy)), #0000);
                           -webkit-mask-image: var(--mx), var(--my); -webkit-mask-composite: source-in;

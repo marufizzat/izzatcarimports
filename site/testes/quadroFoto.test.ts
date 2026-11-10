@@ -1,9 +1,11 @@
-// Enquadramento das fotos do ML na galeria (lib/quadroFoto.ts): a peça nunca é cortada, a foto cobre o quadro (ou,
-// com a classe "i", fica no meio do lado que sobra) e foto sem medida fica como antes. Confere também TODAS as medidas
-// reais de src/data/fotos-ml-caixas.json.
+// Enquadramento das fotos do ML na galeria (lib/quadroFoto.ts): a peça nunca é cortada, o quadro nunca amplia além do
+// quadrado da própria foto (o lado curto aparece sempre inteiro), a peça fica a 4%+ da borda do quadro, foto pequena
+// fica inteira e nítida, caixa incerta mostra a foto inteira, a foto cobre o quadro (ou, com a classe "i", fica no meio
+// do lado que sobra) e foto sem medida fica como antes. Confere também TODAS as medidas reais de
+// src/data/fotos-ml-caixas.json.
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { quadro, atributosQuadro, fotosGaleria, classeFoto, MARGEM, INTEIRA } from '../src/lib/quadroFoto';
+import { quadro, atributosQuadro, fotosGaleria, classeFoto, MARGEM, INTEIRA, RESPIRO, NITIDO, INCERTA } from '../src/lib/quadroFoto';
 
 /** lê o style gerado de volta (como o CSS faz: --h cai no --w, --x/--y no 0) */
 function ler(style: string) {
@@ -11,49 +13,46 @@ function ler(style: string) {
   for (const par of style.split(';')) { const [k, n] = par.split(':'); v[k.trim()] = Number(n); }
   return { w: v['--w'], h: v['--h'] ?? v['--w'], x: v['--x'] ?? 0, y: v['--y'] ?? 0 };
 }
+type E = (number | string)[];
 /** a peça e a foto no quadro, depois do arredondamento (unidade = lado do quadro) */
-function noQuadro(m: number[]) {
-  const a = atributosQuadro(quadro(m));
+function noQuadro(e: E) {
+  const a = atributosQuadro(quadro(e));
   if (!a.style) return null;
   const { w, h, x, y } = ler(a.style);
+  const m = e.filter((v): v is number => typeof v === 'number');
   const [W, H, x0, y0, x1, y1] = m;
   const px = (X: number) => (X * w) / W - x, py = (Y: number) => (Y * h) / H - y;
-  return { borda: a.cls === 'i', w, h, foto: [px(0), py(0), px(W), py(H)], peca: m.length >= 6 ? [px(x0), py(y0), px(x1), py(y1)] : null };
+  return { borda: a.cls === 'i', w, h, W, H, foto: [px(0), py(0), px(W), py(H)],
+           peca: m.length >= 6 ? [px(x0), py(y0), px(x1), py(y1)] : null, incerta: e.includes(INCERTA) };
 }
-const TOL = 0.004;   // < 3 px num palco de 620 px
+const TOL = 0.004;   // < 3 px num palco de 620 px (o arredondamento de 3 casas e o encaixe de < 2 px da foto)
 const e = 1e-9;      // só o erro da conta em ponto flutuante
-/** o mesmo que confere(), sem expect: '' = tudo certo, senão o motivo */
-function problema(m: number[]): string {
+/** '' = tudo certo, senão o motivo (sem expect: rápido nas 45 mil fotos reais) */
+function problema(m: E): string {
   const r = noQuadro(m);
   if (!r) return '';
   const [fx0, fy0, fx1, fy1] = r.foto;
   for (const [a, b, tam] of [[fx0, fx1, r.w], [fy0, fy1, r.h]]) {
+    // em cada eixo: ou a foto cobre o quadro todo (nada de fresta do fundo), ou fica no meio dele (classe "i")
     if (tam >= 1) { if (a > e || b < 1 - e) return 'fresta do fundo'; }
     else if (!r.borda || Math.abs(a + b - 1) >= 0.004) return 'foto fora do meio';
   }
-  if (r.peca) {
+  // nunca amplia além do quadrado da foto: o lado curto aparece inteiro
+  const [c0, c1] = r.W <= r.H ? [fx0, fx1] : [fy0, fy1];
+  if (c0 < -TOL || c1 > 1 + TOL) return 'lado curto cortado';
+  // foto pequena e caixa incerta/sem peça: a foto inteira
+  const inteira = Math.max(r.W, r.H) < NITIDO || r.incerta || !r.peca;
+  if (inteira && (fx0 < -TOL || fy0 < -TOL || fx1 > 1 + TOL || fy1 > 1 + TOL)) return 'foto que devia estar inteira cortada';
+  // (pela conta exata: o style arredondado a 3 casas erra até 0,3% numa foto de 300 px)
+  if (Math.max(r.W, r.H) < NITIDO && r.W / quadro(m)!.w < NITIDO - 1) return 'foto pequena ampliada demais';
+  if (r.peca && !r.incerta) {
     const [a, b, c, d] = r.peca;
     if (a < -TOL || b < -TOL || c > 1 + TOL || d > 1 + TOL) return 'peça cortada';
+    if (Math.min(a, b, 1 - c, 1 - d) < RESPIRO - TOL) return 'peça sem respiro';
   }
   return '';
 }
-function confere(m: number[]) {
-  const r = noQuadro(m);
-  if (!r) return;
-  const [fx0, fy0, fx1, fy1] = r.foto;
-  // em cada eixo: ou a foto cobre o quadro todo (nada de fresta do fundo), ou fica no meio dele (classe "i")
-  for (const [a, b, tam] of [[fx0, fx1, r.w], [fy0, fy1, r.h]]) {
-    if (tam >= 1) { expect(a).toBeLessThanOrEqual(e); expect(b).toBeGreaterThanOrEqual(1 - e); }
-    else { expect(r.borda).toBe(true); expect(Math.abs(a + b - 1)).toBeLessThan(0.004); }
-  }
-  if (r.peca) {                              // e a peça fica inteira dentro dele
-    const [a, b, c, d] = r.peca;
-    expect(a).toBeGreaterThanOrEqual(-TOL);
-    expect(b).toBeGreaterThanOrEqual(-TOL);
-    expect(c).toBeLessThanOrEqual(1 + TOL);
-    expect(d).toBeLessThanOrEqual(1 + TOL);
-  }
-}
+const confere = (m: E) => expect(problema(m), JSON.stringify(m)).toBe('');
 
 describe('quadro das fotos do ML na galeria', () => {
   it('sem medida: nada (a foto aparece como antes)', () => {
@@ -62,59 +61,76 @@ describe('quadro das fotos do ML na galeria', () => {
     expect(atributosQuadro(quadro([0, 0]))).toEqual({});
   });
 
-  it('peça no meio de uma foto quadrada: centrada ocupando ~84%', () => {
+  it('peça no meio de uma foto quadrada: a foto inteira (nunca amplia além do quadrado dela)', () => {
     const r = noQuadro([1200, 1200, 400, 400, 800, 800])!;
-    // 400 px de peça: ampliar a 84% exigiria um corte de 476 px, abaixo do mínimo (800 px): fica 800 e a peça no centro
+    expect(r.w).toBe(1);
+    expect(r.borda).toBe(false);
     expect(Math.abs((r.peca![0] + r.peca![2]) / 2 - 0.5)).toBeLessThan(0.01);
-    const grande = noQuadro([1200, 1200, 100, 150, 1100, 1050])!;
-    expect(grande.peca![2] - grande.peca![0]).toBeCloseTo(1 - 2 * MARGEM, 2);
-    expect(grande.borda).toBe(false);
+    confere([1200, 1200, 400, 400, 800, 800]);
+  });
+
+  it('foto deitada: o quadro corta só o lado longo, centrado na peça, e a peça ocupa ~84% quando dá', () => {
+    const r = noQuadro([1200, 900, 300, 100, 700, 800])!;   // peça alta numa foto deitada: 700/0,84 = 833 < 900
+    expect(r.h).toBe(1);                                    // a altura inteira da foto
+    expect(r.borda).toBe(false);
+    expect(Math.abs((r.peca![0] + r.peca![2]) / 2 - 0.5)).toBeLessThan(0.01);
+    confere([1200, 900, 300, 100, 700, 800]);
+    const pe = noQuadro([900, 1200, 100, 260, 800, 1000])!;  // em pé: corta em cima e embaixo, a largura inteira
+    expect(pe.w).toBe(1);
+    expect(pe.peca![3] - pe.peca![1]).toBeLessThanOrEqual(1 - 2 * MARGEM + TOL);
+    confere([900, 1200, 100, 260, 800, 1000]);
   });
 
   it('foto em pé com a peça pequena no canto: a peça vem para o centro, inteira, sem borda', () => {
-    confere([900, 1200, 20, 900, 260, 1180]);
-    expect(noQuadro([900, 1200, 20, 900, 260, 1180])!.borda).toBe(false);
+    confere([900, 1200, 60, 900, 300, 1140]);
+    expect(noQuadro([900, 1200, 60, 900, 300, 1140])!.borda).toBe(false);
   });
 
   it('peça mais comprida que o lado curto da foto: classe i, foto no meio, peça a 84% (nunca menor que antes)', () => {
     const r = noQuadro([900, 1200, 300, 100, 600, 1100])!;   // peça alta numa foto em pé
     expect(r.borda).toBe(true);
     expect(r.peca![3] - r.peca![1]).toBeCloseTo(1 - 2 * MARGEM, 2);
-    const cheia = noQuadro([1200, 800, 0, 100, 1200, 700])!; // peça de ponta a ponta: a foto inteira a 88%
-    expect(cheia.w).toBeCloseTo(INTEIRA, 2);
-    confere([1200, 800, 0, 100, 1200, 700]);
+    confere([900, 1200, 300, 100, 600, 1100]);
+  });
+
+  it('respiro mínimo: peça encostada na borda da foto fica a 4% da borda do quadro (o canto não morde)', () => {
+    for (const m of [[1200, 1200, 0, 0, 1200, 1198], [1200, 900, 0, 100, 1200, 700], [900, 1200, 0, 0, 500, 600],
+                     [900, 1200, 200, 300, 900, 900], [1200, 1200, 300, 0, 900, 700]]) {
+      const r = noQuadro(m)!;
+      expect(r.borda).toBe(true);
+      expect(Math.min(r.peca![0], r.peca![1], 1 - r.peca![2], 1 - r.peca![3])).toBeGreaterThanOrEqual(RESPIRO - TOL);
+      confere(m);
+    }
+    // peça pequena encostada em cima: a foto só diminui o necessário (92% do quadro, 4% de cada lado)
+    expect(noQuadro([1200, 1200, 300, 0, 900, 700])!.w).toBeCloseTo(1 - 2 * RESPIRO, 2);
+    // peça de ponta a ponta: a foto inteira com o respiro de antes (88%), nunca menor
+    expect(noQuadro([1200, 800, 0, 100, 1200, 700])!.w).toBeCloseTo(INTEIRA, 2);
   });
 
   it('quadrado a um fio do lado da foto: sem fresta de 1 px do fundo (caso real 862606-MLB112506866525)', () => {
     confere([656, 827, 28, 36, 616, 731]);
-    expect(problema([656, 827, 28, 36, 616, 731])).toBe('');
   });
 
-  it('sem peça achada: foto quadrada enche o quadro; deitada fica inteira a 88%', () => {
-    expect(atributosQuadro(quadro([1200, 1200]))).toEqual({ style: '--w:1' });
-    const a = atributosQuadro(quadro([1200, 900]));
-    expect(a.cls).toBe('i');
-    expect(ler(a.style!).w).toBeCloseTo(INTEIRA, 2);
+  it('sem peça achada ou caixa incerta: a foto inteira no meio (88% no lado maior), mesmo quadrada', () => {
+    for (const m of [[1200, 1200], [1200, 900], [900, 1200, 's', '0123456789abcdef'],
+                     [1108, 646, 479, 31, 915, 285, 'p', '03034745f1e1510f', INCERTA],     // montagem: a caixa pegou o carro
+                     [1200, 900, 500, 300, 700, 500, 'p', '0123456789abcdef', INCERTA]]) {
+      const a = atributosQuadro(quadro(m));
+      expect(a.cls).toBe('i');
+      const r = noQuadro(m)!;
+      expect(Math.max(r.w, r.h)).toBeCloseTo(INTEIRA, 2);
+      confere(m);
+    }
   });
 
-  it('foto pequena do ML não é esticada (no máximo 640/560 do tamanho real no palco do computador)', () => {
-    for (const m of [[500, 500, 50, 60, 450, 470], [426, 499, 18, 0, 408, 478], [480, 360], [500, 500]]) {
+  it('foto pequena: inteira e no máximo 1,25× no palco retina (NITIDO px da foto no quadro)', () => {
+    for (const m of [[500, 500, 50, 60, 450, 470], [426, 499, 18, 0, 408, 478], [478, 145, 21, 6, 457, 139], [480, 360],
+                     [563, 385, 26, 17, 538, 366], [1000, 1000, 100, 100, 900, 900]]) {
       const r = noQuadro(m)!;
       expect(r.borda).toBe(true);
-      expect(r.w).toBeLessThanOrEqual(m[0] / 560 + 0.001);       // largura da foto em lados do quadro (+ arredondamento)
+      expect(Math.max(m[0] as number / r.w, m[1] as number / r.h)).toBeGreaterThanOrEqual(NITIDO - 2);
       confere(m);
     }
-  });
-
-  it('foto grande nunca ampliada além de 800 px no quadro (nitidez no retina)', () => {
-    for (const m of [[1200, 1200, 500, 500, 700, 700], [1200, 900, 30, 600, 230, 880], [900, 1200, 400, 50, 600, 300]]) {
-      const r = noQuadro(m)!;
-      expect(m[0] / r.w).toBeGreaterThanOrEqual(800 - 2);   // px da foto num lado do quadro
-      confere(m);
-    }
-    const baixa = noQuadro([1200, 700, 500, 300, 700, 500])!;   // lado curto < 800: a altura inteira da foto, sem borda
-    expect(baixa.borda).toBe(false);
-    expect(1200 / baixa.w).toBeCloseTo(700, -1);
   });
 
   it('classe no fim da entrada não muda o quadro', () => {
@@ -131,7 +147,7 @@ describe('quadro das fotos do ML na galeria', () => {
   });
 
   it('style curto: sem zeros nem valores repetidos', () => {
-    expect(atributosQuadro(quadro([1200, 1200, 0, 0, 1200, 1200])).style).toBe('--w:1');
+    expect(atributosQuadro(quadro([1200, 1200, 200, 200, 1000, 1000])).style).toBe('--w:1');
     const s = atributosQuadro(quadro([900, 1200, 100, 300, 800, 1000])).style!;
     expect(s).not.toMatch(/:-?0\./);
     expect(s.length).toBeLessThan(40);
@@ -141,10 +157,11 @@ describe('quadro das fotos do ML na galeria', () => {
     let semente = 7;
     const r = () => ((semente = (semente * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < 4000; i++) {
-      const W = 300 + Math.round(r() * 900), H = 300 + Math.round(r() * 900);
+      const W = 300 + Math.round(r() * 900), H = r() < 0.2 ? W : 300 + Math.round(r() * 900);
       const x0 = Math.round(r() * W * 0.9), y0 = Math.round(r() * H * 0.9);
       const x1 = x0 + 1 + Math.round(r() * (W - x0 - 1)), y1 = y0 + 1 + Math.round(r() * (H - y0 - 1));
       confere([W, H, x0, y0, x1, y1]);
+      confere([W, H, x0, y0, x1, y1, 'p', '0123456789abcdef', INCERTA]);
       confere([W, H]);
     }
   }, 30000);
@@ -158,7 +175,10 @@ describe('quadro das fotos do ML na galeria', () => {
     for (const [k, e] of Object.entries(medidas)) {
       const m = e.filter((v): v is number => typeof v === 'number');
       const c = classeFoto(k, medidas);
-      if (!(m.length === 2 || m.length === 6) || (c !== null && !'psmc'.includes(c)) || problema(m)) ruins.push(`${k} ${JSON.stringify(e)} ${problema(m)}`);
+      const outras = e.filter((v) => typeof v === 'string' && v.length !== 1 && v.length !== 16 && v !== INCERTA);
+      const inc = e.includes(INCERTA) && (m.length !== 6 || m[0] === m[1]);   // incerta só com caixa e foto não quadrada
+      if (!(m.length === 2 || m.length === 6) || (c !== null && !'psmc'.includes(c)) || outras.length || inc || problema(e))
+        ruins.push(`${k} ${JSON.stringify(e)} ${problema(e)}`);
     }
     expect(ruins.slice(0, 5)).toEqual([]);
   }, 30000);
