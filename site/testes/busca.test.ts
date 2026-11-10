@@ -378,3 +378,21 @@ describe('a lista bate com o que a pessoa procura (bloco "A gente procura no pá
     expect(b.bate([], 'farol', null)).toBe(false);
   });
 });
+
+// cliente oculto 10/11 (atrito 7): mesmo código e carro com preço diferente; a versão do título vai no cartão (dif)
+describe('pílula da versão (dif) no índice', () => {
+  it('o mapa esparso dif do busca.json chega em cada peça; só peças que dividem código e carro com outro preço', (ctx) => {
+    const mapa: Record<string, string> = ix.dif ?? {};
+    if (!Object.keys(mapa).length) return ctx.skip();
+    expect(b.itens.filter((x) => x.dif).length).toBe(Object.keys(mapa).length);
+    for (const [k, v] of Object.entries(mapa)) {
+      const it = b.itens[Number(k)];
+      expect(it.dif).toBe(v);
+      expect(v.length).toBeLessThanOrEqual(24);
+      const cod = it.o.split(' ')[0];
+      const irmas = b.itens.filter((x) => x.b === it.b && x.m === it.m && x.o.split(' ')[0] === cod);
+      expect(irmas.length, it.id).toBeGreaterThan(1);
+      expect(new Set(irmas.map((x) => x.p)).size, it.id).toBeGreaterThan(1);
+    }
+  });
+});

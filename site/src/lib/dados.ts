@@ -14,6 +14,9 @@ export type Peca = {
   ms?: string[];
   /** Anos de cada carro do ms, quando a faixa muda de um para outro (o período de venda corta). */
   ys?: [number, number][];
+  /** Mesma peça (código e carro) com outro preço: a versão que o título diz ("T8", "2.0", "G5/G6"), para a pílula
+   *  .etiqueta-dif ao lado do carro (preparar_dados.py: diferencas). Ausente = nada a separar. */
+  dif?: string;
 };
 export type Resumo = {
   updated: string; total: number;

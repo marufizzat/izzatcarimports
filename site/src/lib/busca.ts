@@ -18,11 +18,15 @@ export type Indice = {
   e?: string; // capa de estúdio por peça: '0' nenhuma, '1' automática, '2' maquiada (estudio-pro)
   // peça que serve em 2+ carros: {índice: ["S60", "XC60"]} e, quando a faixa muda, {índice: [[2018, 2024], ...]}
   ms?: Record<string, string[]>; ys?: Record<string, ([number, number] | null)[]>;
+  // mesma peça (código e carro) com preço diferente: a versão que o título diz, só nas que têm ({índice: "T8"})
+  dif?: Record<string, string>;
 };
 export type Item = {
   k: number; id: string; t: string; n: string; p: number; i: string; h: string; f: boolean;
   b: string; m: string; y: [number, number] | null; c: string; s: string; o: string; e: string;
   ms?: string[]; ys?: ([number, number] | null)[];
+  /** a versão que separa esta peça das outras de mesmo código e carro com outro preço ("T8", "2.0", "G5/G6") */
+  dif?: string;
 };
 export type Filtros = {
   q?: string; marca?: string; modelo?: string; ano?: number; tipo?: string;
@@ -170,11 +174,19 @@ export class Busca {
   private _codigos: string[] | null = null;
 
   constructor(ix: Indice) {
-    this.itens = ix.id.map((id, k) => ({
-      k, id, t: ix.t[k], n: ix.n[k], p: ix.p[k], i: ix.i[k], h: ix.h[k], f: ix.f[k] === '1', e: ix.e?.[k] || '0',
-      b: ix.marcas[ix.b[k]] ?? '', m: ix.m[k], y: ix.y[k] || null, ms: ix.ms?.[k], ys: ix.ys?.[k],
-      c: ix.familias[ix.c[k]] ?? '', s: ix.tipos[ix.s[k]] ?? '', o: ix.o[k],
-    }));
+    this.itens = ix.id.map((id, k) => {
+      const it: Item = {
+        k, id, t: ix.t[k], n: ix.n[k], p: ix.p[k], i: ix.i[k], h: ix.h[k], f: ix.f[k] === '1', e: ix.e?.[k] || '0',
+        b: ix.marcas[ix.b[k]] ?? '', m: ix.m[k], y: ix.y[k] || null,
+        c: ix.familias[ix.c[k]] ?? '', s: ix.tipos[ix.s[k]] ?? '', o: ix.o[k],
+      };
+      // os campos raros só quando existem: a 1ª tela do catálogo vai serializada no HTML ("ms":[0] em 24 cartões pesava)
+      const ms = ix.ms?.[k], ys = ix.ys?.[k], dif = ix.dif?.[k];
+      if (ms) it.ms = ms;
+      if (ys) it.ys = ys;
+      if (dif) it.dif = dif;
+      return it;
+    });
   }
 
   private indice(): MiniSearch<Item> {

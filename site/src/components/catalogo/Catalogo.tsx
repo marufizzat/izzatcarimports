@@ -125,7 +125,7 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
         </div>
         <div className="etiqueta-dados">
           <span className="etiqueta-serve" hidden={!meuModelo}>{meuModelo ? `Serve no seu ${meuModelo}` : ''}</span>
-          {carro && <span className="etiqueta-carro"><span className="etiqueta-modelo">{carro}</span>{anos && <span className="etiqueta-anos"><span className="etiqueta-sep"> · </span>{anos}</span>}</span>}
+          {carro && <span className="etiqueta-carro"><span className="etiqueta-modelo">{carro}{it.dif && <> <span className="etiqueta-dif">{it.dif}</span></>}</span>{anos && <span className="etiqueta-anos"><span className="etiqueta-sep"> · </span>{anos}</span>}</span>}
           <h3 className="etiqueta-nome">{it.n}</h3>
           {cod && <span className="etiqueta-cod" title="Código gravado na peça">Cód. <span className="oem">{cod}</span></span>}
           <span className="sr-only">R$ {reais},{cent}</span>

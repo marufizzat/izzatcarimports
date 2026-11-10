@@ -207,6 +207,15 @@
 .etiqueta-dados { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; padding: 12px 14px 14px; }
 .etiqueta-carro { font-size: 12.5px; font-weight: 650; font-stretch: 94%; line-height: 1.3; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .etiqueta-anos { font-weight: 500; color: var(--ink-3); }
+/* mesma peça com outro preço (mesmo código e carro): a versão que o anúncio diz ("T8", "2.0", "G5/G6"), discreta
+   ao lado do carro (campo dif, preparar_dados.py). Em linha (inline, não inline-block): não aumenta a linha do carro
+   (o cartão com ela fica da mesma altura dos outros) e o Safari não põe "…" falso no fim do modelo de 2 linhas */
+.etiqueta-dif {
+  display: inline; padding: 1px 5px; border-radius: 5px;
+  background: rgb(16 16 20 / .06); box-shadow: inset 0 0 0 1px rgb(16 16 20 / .09);
+  font-size: 11px; font-weight: 700; font-stretch: 94%; line-height: 1; letter-spacing: .01em; color: var(--ink);
+  white-space: nowrap;
+}
 /* cartão largo: peça de 2+ carros ("Volkswagen Virtus / Polo / Up") vai para a 2ª linha e o ano nunca é cortado */
 @container etiqueta (min-width: 215px) {
   .etiqueta-carro { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
