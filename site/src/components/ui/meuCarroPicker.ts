@@ -12,7 +12,7 @@
 // Caixa aberta pela faixa da página da peça (raiz com data-origem="peca"): o resultado ganha "Conferir nesta peça"
 // e, ao escolher o ano, a raiz avisa (evento ESCOLHIDO) para a caixa fechar e mostrar a resposta na faixa.
 import { lerMeuCarro, salvarMeuCarro, carregarGaragem as baixarGaragem, linkCatalogo, EVENTO, ESCOLHIDO, type MeuCarro } from '../../lib/meuCarro';
-import { linkWhats } from '../catalogo/etiqueta';
+import { whatsUrl } from '../../lib/whats';
 
 export type Modelo = { n: string; c: number; ya: [number, number][] };
 export type Marca = { n: string; k: string; logo: string | null; lw: number; lh: number; c: number; modelos: Modelo[] };
@@ -69,7 +69,7 @@ const inicial = (): Estado => ({
 // quando a fonte chega. Em "Ver todas" (depois do toque), até 2 linhas, com hífen só se precisar; o nome inteiro fica no aria-label.
 const QUEBRA: Record<string, string> = { Volkswagen: 'Volks&shy;wagen', Chevrolet: 'Chevro&shy;let', Mitsubishi: 'Mitsu&shy;bishi' };
 const nomeMarca = (n: string) => QUEBRA[n] ?? esc(n);
-const whats = (txt: string) => esc(linkWhats(txt));
+const whats = (contexto: string) => esc(whatsUrl(contexto));
 
 // ---- desenho (funções puras: rodam no build para a abertura e no navegador) ----
 
@@ -114,7 +114,7 @@ function htmlMarcas(g: Garagem, e: Estado): string {
         ${disco(m)}${nomeNoDisco(m) ? '' : `<span class="mc-marca-nome${m.n.length >= 9 ? ' mc-longo' : ''}" aria-hidden="true">${nomeMarca(m.n)}</span>`}</button></li>`)
     .join('');
   const aviso = e.carroSemPeca
-    ? `<p class="mc-aviso-linha">Sem peças do <b>${esc(e.carroSemPeca)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Olá! Procuro peça para ${e.carroSemPeca}. Tem no pátio?`)}">peça no WhatsApp</a>.</p>`
+    ? `<p class="mc-aviso-linha">Sem peças do <b>${esc(e.carroSemPeca)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Procuro peça para ${e.carroSemPeca}. Tem no pátio?`)}">peça no WhatsApp</a>.</p>`
     : '';
   return `${aviso}
     <ul class="mc-marcas"${e.todas ? ' data-todas' : ''} aria-label="Marcas">${tiles}</ul>
@@ -124,7 +124,7 @@ function htmlMarcas(g: Garagem, e: Estado): string {
 function htmlModelos(e: Estado): string {
   const m = e.marca!;
   const todas = `/catalogo.html?${new URLSearchParams({ marca: m.n }).toString()}`;
-  const procura = `<a class="mc-link" href="${whats(`Olá! Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}">Não achou o modelo? A gente procura no pátio</a>`;
+  const procura = `<a class="mc-link" href="${whats(`Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}">Não achou o modelo? A gente procura no pátio</a>`;
   if (!m.modelos.length)
     // marca sem modelo lido nos anúncios (ex.: Mini): vai direto para as peças dela
     return `
@@ -188,7 +188,7 @@ function htmlErro(): string {
   return `<div class="mc-corpo" data-etapa="erro"><div class="mc-aviso"><p>Não deu para carregar os carros agora.</p>
     <p class="mc-aviso-acoes"><button type="button" class="botao botao-linha" data-acao="recarregar" data-chave="recarregar" data-foco>Tentar de novo</button>
       <a class="mc-link" href="/catalogo.html">Ver o catálogo</a>
-      <a class="mc-link" href="${whats('Olá! Estou procurando uma peça.')}">Chamar no WhatsApp</a></p></div></div>`;
+      <a class="mc-link" href="${whats('Estou procurando uma peça.')}">Chamar no WhatsApp</a></p></div></div>`;
 }
 
 /** Marcação inicial (campos + grade de marcas), igual à que o script desenha: a abertura já nasce com ela. */

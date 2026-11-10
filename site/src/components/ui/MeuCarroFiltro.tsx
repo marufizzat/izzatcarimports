@@ -5,7 +5,7 @@
 // modelo que saiu do site, o WhatsApp ("a gente procura no pátio"). Nunca um "Ver só as dele" que dá zero.
 import { useEffect, useState, type ReactNode } from 'react';
 import { lerMeuCarro, nomeCarro, carregarGaragem, estoqueDoCarro, EVENTO, ABRIR, type MeuCarro, type Estoque } from '../../lib/meuCarro';
-import { linkWhats } from '../catalogo/etiqueta';
+import { whatsUrl } from '../../lib/whats';
 
 export function useMeuCarro(): MeuCarro | null {
   const [carro, setCarro] = useState<MeuCarro | null>(null);
@@ -56,7 +56,7 @@ export default function MeuCarroFiltro({ marca, modelo, ano, aoAplicar }: Props)
     linha = (
       <>
         <p className="cat-meu-txt"><span>Sem peças do seu carro no site agora</span><b>{nomeCarro(carro)}</b></p>
-        <a className="botao botao-laranja cat-meu-whats" href={linkWhats(`Olá! Procuro peça para ${nomeCarro(carro)}. Tem no pátio?`)}>
+        <a className="botao botao-laranja cat-meu-whats" href={whatsUrl(`Procuro peça para ${nomeCarro(carro)}. Tem no pátio?`)}>
           <Rotulo pc="Procurar no pátio" cel="Procurar" />
         </a>
       </>

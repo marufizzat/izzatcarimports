@@ -11,12 +11,13 @@ import OficinasV2 from '../components/v2/OficinasV2.astro';
 import Coverflow from '../components/v2/Coverflow.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
+import Icone from '../components/Icone.astro';
 import { pecaPorId, resumo, marcasVisiveis, whatsUrl, temEstudio, SITE } from '../lib/dados';
 
 const r = resumo();
 const chegou = r.chegou.map(pecaPorId).filter((p): p is NonNullable<typeof p> => !!p && temEstudio(p.id)).slice(0, 14);
-const msgServe = 'Olá! Quero saber se uma peça serve no meu carro. Meu carro é: ____ (modelo) ____ (ano). A peça é: ____';
-const msgProcura = 'Olá! Não achei a peça no site. Meu carro é ____ (modelo e ano) e procuro: ____';
+const msgServe = 'Quero saber se uma peça serve no meu carro. Meu carro é: ____ (modelo) ____ (ano). A peça é: ____';
+const msgProcura = 'Não achei a peça no site. Meu carro é ____ (modelo e ano) e procuro: ____';
 
 const perguntas = [
   ['A peça é original?', 'Sim. Toda peça sai de um carro com baixa legal no Detran-RS e é original de fábrica. Somos desmanche credenciado, CDV nº 01060.'],
@@ -69,7 +70,7 @@ const ld = {
   <section class="secao cv" aria-labelledby="t-cat">
     <div class="moldura">
       <div class="cabeca-secao">
-        <h2 id="t-cat" class="titulo-secao">Peças por sistema do carro</h2>
+        <h2 id="t-cat" class="titulo-secao">Peças por categoria</h2>
         <p class="lead">Escolha a parte do carro e veja tudo o que tem no estoque.</p>
       </div>
       <GradeCategorias />
@@ -83,9 +84,10 @@ const ld = {
           <h2 id="t-chegou" class="titulo-secao">Chegou no pátio</h2>
           <p class="lead">Os anúncios mais novos, direto do pátio.</p>
         </div>
-        <a class="botao botao-linha" href="/catalogo.html?ordem=novos">Ver todas as novidades</a>
+        <a class="botao botao-linha so-largo" href="/catalogo.html?ordem=novos">Ver todas as novidades</a>
       </div>
       <Coverflow id="t-chegou" rotulo="Anúncios novos do pátio" pecas={chegou} />
+      <a class="botao botao-linha so-celular secao-mais" href="/catalogo.html?ordem=novos">Ver todas as novidades</a>
     </div>
   </section>
 
@@ -93,7 +95,7 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-marcas" class="titulo-secao">Escolha pela marca do seu carro</h2>
-        <p class="lead">{marcasVisiveis().length} marcas para escolher. Toque na sua para ver só as peças dela.</p>
+        <p class="lead">{marcasVisiveis().length} marcas para escolher. Escolha a sua para ver só as peças dela.</p>
       </div>
       <NuvemMarcas />
     </div>
@@ -113,9 +115,10 @@ const ld = {
           <h2 id="t-carros" class="titulo-secao">Carros do pátio</h2>
           <p class="lead">Escolha o carro e veja todas as peças que saíram dele.</p>
         </div>
-        <a class="botao botao-linha" href="/carros.html">Ver os {r.carros.length} carros</a>
+        <a class="botao botao-linha so-largo" href="/carros.html">Ver os {r.carros.length} carros</a>
       </div>
       <CarrosPatio />
+      <a class="botao botao-linha so-celular secao-mais" href="/carros.html">Ver os {r.carros.length} carros</a>
     </div>
   </section>
 
@@ -126,9 +129,10 @@ const ld = {
           <h2 id="t-como" class="titulo-secao">Como comprar</h2>
           <p class="lead">Do código gravado na peça até a sua porta.</p>
         </div>
-        <a class="botao botao-linha" href="/como-comprar.html">Ver os detalhes</a>
+        <a class="botao botao-linha so-largo" href="/como-comprar.html">Ver os detalhes</a>
       </div>
-      <ol class="passos">
+      {/* no celular a fila desliza de lado: com parada no Tab (as setas rolam) e nome, para quem usa teclado */}
+      <ol class="passos" tabindex="0" aria-label="Como comprar, em 4 passos">
         {[['Ache a peça', 'Pelo nome, pelo carro ou pelo código gravado.'],
           ['Confirme o seu carro', 'Manda o modelo e o ano. A gente confere na peça.'],
           ['Feche a compra', 'No Mercado Livre ou direto pelo WhatsApp.'],
@@ -136,6 +140,7 @@ const ld = {
           <li><img src={`/arte/v2/passo-${i + 1}.webp`} alt={`${i + 1}. ${t}`} width="800" height="671" loading="lazy" decoding="async" /><p>{s}</p></li>
         ))}
       </ol>
+      <a class="botao botao-linha so-celular secao-mais" href="/como-comprar.html">Ver os detalhes</a>
     </div>
   </section>
 
@@ -151,16 +156,16 @@ const ld = {
       <div class="cabeca-secao">
         <h2 id="t-faq" class="titulo-secao">Perguntas que a gente mais recebe</h2>
         <p class="lead">Respostas curtas, do jeito que a gente responde no balcão.</p>
-        <aside class="faq-ajuda">
-          <img class="faq-ajuda-icone" src="/icones/conversa-96.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />
-          <div class="faq-ajuda-txt">
-            <b>Ficou outra dúvida?</b>
-            <span>Manda no WhatsApp. Quem responde é a equipe do pátio.</span>
-            <a class="botao botao-laranja" href={whatsUrl('Olá! Tenho uma dúvida:')}>Perguntar no WhatsApp</a>
-          </div>
-        </aside>
       </div>
       <Acordeao itens={perguntas.map(([pergunta, resposta]) => ({ pergunta, resposta }))} />
+      <div class="faq-ajuda">
+        <img class="faq-ajuda-icone" src="/icones/conversa-96.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />
+        <div class="faq-ajuda-txt">
+          <b>Ficou outra dúvida?</b>
+          <span>Manda no WhatsApp. Quem responde é a equipe do pátio.</span>
+          <a class="botao botao-laranja" href={whatsUrl('Tenho uma dúvida:')}><Icone nome="whats" />Chamar no WhatsApp</a>
+        </div>
+      </div>
     </div>
   </section>
 </Pagina>
@@ -169,13 +174,13 @@ const ld = {
   .cabeca-secao { display: grid; gap: 8px; margin-bottom: 28px; max-width: 62ch; }
   .cabeca-secao.linha { max-width: none; grid-template-columns: 1fr; align-items: end; gap: 16px; }
   @media (min-width: 768px) { .cabeca-secao.linha { grid-template-columns: 1fr auto; } }
-  /* celular: o "Ver todas…" da seção vem DEPOIS dos cartões (antes ocupava a 1ª dobra de cada seção) */
-  @media (max-width: 767px) {
-    .moldura:has(> .cabeca-secao.linha) { display: flex; flex-direction: column; }
-    .cabeca-secao.linha { display: contents; }
-    .cabeca-secao.linha > div { margin-bottom: 24px; display: grid; gap: 8px; }
-    .cabeca-secao.linha > .botao { order: 2; align-self: stretch; margin-top: 10px; }
-  }
+  /* celular: o "Ver todas…" da seção vem DEPOIS dos cartões (antes ocupava a 1ª dobra de cada seção). Um link
+     em cada lugar, cada um só na sua largura: assim a ordem do Tab é a da tela nos dois (antes o CSS trocava a
+     ordem e o Tab passava pelo botão antes dos cartões) */
+  .cabeca-secao.linha > div { display: grid; gap: 8px; }
+  .secao-mais { display: flex; width: 100%; margin-top: 10px; }
+  @media (max-width: 767px) { .so-largo { display: none; } }
+  @media (min-width: 768px) { .so-celular { display: none; } }
   .cabeca-secao .lead { margin: 0; }
   .titulo-secao { margin: 0; }
   .faixa { background: var(--bg-2); }
@@ -209,7 +214,13 @@ const ld = {
 
 
   .faq { display: grid; gap: 8px; }
-  @media (min-width: 1024px) { .faq { grid-template-columns: .85fr 1.15fr; gap: 56px; align-items: start; } }
+  /* PC: título e a ajuda na coluna da esquerda, perguntas na direita (no HTML a ajuda vem depois das perguntas) */
+  @media (min-width: 1024px) {
+    .faq { grid-template-columns: .85fr 1.15fr; grid-template-rows: auto 1fr; column-gap: 56px; row-gap: 0; align-items: start; }
+    .faq > .cabeca-secao { grid-column: 1; grid-row: 1; }
+    .faq > :not(.cabeca-secao, .faq-ajuda) { grid-column: 2; grid-row: 1 / span 2; }
+    .faq > .faq-ajuda { grid-column: 1; grid-row: 2; }
+  }
   .faq-ajuda { margin-top: 18px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: start;
                padding: 20px 22px 22px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-1); }
   .faq-ajuda-icone { width: 52px; height: 52px; filter: drop-shadow(0 8px 14px rgb(200 70 0 / .22)); }
@@ -217,11 +228,9 @@ const ld = {
   .faq-ajuda b { font-stretch: 86%; font-weight: 800; font-size: 20px; }
   .faq-ajuda span { font-size: 15px; color: var(--ink-2); }
   .faq-ajuda .botao { margin-top: 10px; justify-self: start; }
-  @media (min-width: 1024px) { .faq .cabeca-secao { position: sticky; top: 110px; } }
-  /* celular e tablet: o "Ficou outra dúvida?" vem DEPOIS das perguntas */
+  /* celular e tablet: o "Ficou outra dúvida?" vem depois das perguntas */
   @media (max-width: 1023px) {
-    .faq .cabeca-secao { display: contents; }
     .faq .cabeca-secao .lead { margin-bottom: 20px; }
-    .faq-ajuda { order: 3; margin-top: 16px; }
+    .faq-ajuda { margin-top: 16px; }
   }
 </style>

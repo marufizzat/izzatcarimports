@@ -8,7 +8,8 @@ import {
   type FocusEvent as FE, type FormEvent as FormE, type KeyboardEvent as KE,
 } from 'react';
 import { Busca, capaItem, carroAnos, type Atalho, type Item, type Sugestoes } from '../../lib/busca';
-import { icone, linkWhats } from '../catalogo/etiqueta';
+import { icone } from '../catalogo/etiqueta';
+import { whatsUrl } from '../../lib/whats';
 import './sugestoes.css';
 
 type Props = {
@@ -105,6 +106,16 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     ...(!semResultado ? [{ tipo: 'ver' as const }] : []),
   ];
   const total = ops.length;
+  // Aviso para o leitor de tela, numa região viva que existe SEMPRE (a que nasce junto com a lista costuma ser pulada):
+  // quantas sugestões apareceram, ou que não achou nada.
+  const nSug = ops.filter((o) => o.tipo === 'item' || o.tipo === 'atalho').length;
+  const anuncio = !aberto ? ''
+    : mostraCarregando ? 'Carregando as peças…'
+    : erro ? 'Não deu para carregar a busca agora.'
+    : semResultado ? `Nada com “${termoTela}” no site.`
+    : !res ? ''
+    : res.aproximado ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}, use as setas.`
+    : `${nSug === 1 ? '1 sugestão' : `${nSug} sugestões`}, use as setas.`;
 
   useEffect(() => {
     setAtivo(-1);
@@ -150,11 +161,11 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     }
   }, []);
 
-  const msgWhats = `Olá! Procuro: ${textoBusca}. Tem no pátio?`;
+  const msgWhats = `Procuro: ${textoBusca}. Tem no pátio?`;
   const escolher = (op: Op) => {
     if (op.tipo === 'atalho') window.location.href = op.a.href;
     else if (op.tipo === 'item') window.location.href = `/peca/${op.it.h}.html`;
-    else if (op.tipo === 'whats') window.open(linkWhats(msgWhats), '_blank', 'noopener');
+    else if (op.tipo === 'whats') window.open(whatsUrl(msgWhats), '_blank', 'noopener');
     else form.current?.requestSubmit();
   };
 
@@ -322,22 +333,23 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
         </button>
       </form>
 
+      <p className="sr-only" role="status">{anuncio}</p>
       {aberto && (
         <div className="sb-lista" ref={lista}>
           {mostraCarregando && (
-            <p className="sb-status" aria-live="polite"><span className="sb-giro" aria-hidden="true" />Carregando as peças…</p>
+            <p className="sb-status"><span className="sb-giro" aria-hidden="true" />Carregando as peças…</p>
           )}
           {erro && (
-            <p className="sb-status sb-status-erro" aria-live="polite">
+            <p className="sb-status sb-status-erro">
               <span>Não deu para carregar a busca agora.</span>
               <button type="button" className="sb-tentar" onClick={carregar}>Tentar de novo</button>
             </p>
           )}
           {res?.aproximado && (
-            <p className="sb-status sb-status-aprox" aria-live="polite">Nada exato com “{termoTela}”. Veja as parecidas:</p>
+            <p className="sb-status sb-status-aprox">Nada exato com “{termoTela}”. Veja as parecidas:</p>
           )}
           {semResultado && (
-            <p className="sb-status" aria-live="polite">
+            <p className="sb-status">
               Nada com “{termoTela}” no site.{!res?.carros.length && ' Tente o modelo do carro ou o código gravado.'}
             </p>
           )}

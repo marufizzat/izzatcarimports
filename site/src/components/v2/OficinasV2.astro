@@ -3,19 +3,19 @@
 // Sem foto de pessoa (a arte com o Maruf fica só no banner "Não achou a peça?" da home).
 import Icone from '../Icone.astro';
 import { whatsUrl } from '../../lib/dados';
-const msg = 'Olá! Sou de oficina/revenda e quero mandar uma lista de peças. Carro e ano: ____. Peças: ____';
+const msg = 'Sou de oficina/revenda e quero mandar uma lista de peças. Carro e ano: ____. Peças: ____';
 const passos = ['Manda a lista com o carro e o ano', 'A gente confere no pátio', 'Responde com foto e código'];
 ---
-<aside class="faixa-escura ofi" aria-labelledby="ofi-titulo">
+<section class="faixa-escura ofi" aria-labelledby="ofi-titulo">
   <div class="ofi-texto">
     <p class="ofi-antes"><img src="/icones/oficina-96.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />Oficinas e revendas</p>
-    <h2 class="ofi-titulo" id="ofi-titulo">Separamos as peças pra sua oficina.</h2>
+    <h2 class="ofi-titulo" id="ofi-titulo">Separamos as peças para a sua oficina.</h2>
     <a class="botao botao-laranja ofi-botao" href={whatsUrl(msg)} rel="noopener"><Icone nome="whats" />Mandar a lista no WhatsApp</a>
   </div>
   <ul class="ofi-passos">
     {passos.map((t) => <li><Icone nome="check" /><span>{t}</span></li>)}
   </ul>
-</aside>
+</section>
 <style>
   .ofi { position: relative; isolation: isolate; overflow: hidden; display: grid; gap: 28px; align-items: center;
     padding: clamp(28px, 4.4vw, 56px); border-radius: 28px;

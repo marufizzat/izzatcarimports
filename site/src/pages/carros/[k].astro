@@ -30,6 +30,7 @@ const fmt = (n: number) => n.toLocaleString('pt-BR');
 const base = `/catalogo.html?marca=${encodeURIComponent(c.b)}&modelo=${encodeURIComponent(c.m)}`;
 const existe = (arq: string) => existsSync(join(process.cwd(), 'public', arq));
 
+const AVISO_ATE = 20;
 // sistemas: arte da família quando existir (a foto de uma peça qualquer nem sempre representa o grupo)
 const SISTEMAS_A_PARTIR_DE = 20;
 const arteFamilia = (n: string) => {
@@ -61,7 +62,7 @@ const og = existe(arteCarro) ? arteCarro : foto(c.capas[0], 'F');
 ---
 <Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta}>
   <TopoArte trilha={[['Início', '/index.html'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
-    antes={c.b} titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} encaixe="meio" lead={lead}>
+    antes={c.b} antesNoTitulo titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} encaixe="meio" lead={lead}>
     <Fragment slot="acoes">
       <div class="carro-acoes">
         <a class="botao botao-grafite" href={verTodas}>Ver as {fmt(N)} {N === 1 ? 'peça' : 'peças'}</a>
@@ -69,12 +70,15 @@ const og = existe(arteCarro) ? arteCarro : foto(c.capas[0], 'F');
           <Icone nome="carro" class="ic-carro" /><Icone nome="check" class="ic-ok" /><span data-este-txt>É o meu carro</span>
         </button>
       </div>
-      <a class="botao botao-linha carro-aviso" href={linkAviso(WHATS, nome)} rel="noopener" data-aviso data-whats={WHATS} data-nome={nome} data-b={c.b} data-m={c.m}>
-        <Icone nome="whats" /><span>Avise-me quando chegar peça para o meu {nome}</span>
-      </a>
+      {/* "Avise-me" só no carro com poucas peças (no XC60, com 515, ele só empurrava a grade para baixo) */}
+      {N < AVISO_ATE && (
+        <a class="botao botao-linha carro-aviso" href={linkAviso(WHATS, nome)} rel="noopener" data-aviso data-whats={WHATS} data-nome={nome} data-b={c.b} data-m={c.m}>
+          <Icone nome="whats" /><span>Avise-me quando chegar peça para o meu {nome}</span>
+        </a>
+      )}
     </Fragment>
     {fams.length > 0 && (
-      <AtalhosVisuais titulo="Peças por sistema" modo="tipo" itens={fams} limite={9} limitePc={4} minimo={3} id="sistemas" mais={`Ver os ${fams.length} sistemas`} />
+      <AtalhosVisuais titulo="Peças por categoria" modo="tipo" itens={fams} limite={9} limitePc={4} minimo={3} id="sistemas" mais={`Ver as ${fams.length} categorias`} />
     )}
   </TopoArte>
   <div class="moldura">
@@ -87,7 +91,7 @@ const og = existe(arteCarro) ? arteCarro : foto(c.capas[0], 'F');
     </section>
     {apoio.length > 0 && <div class="carro-apoio"><TextoApoio paragrafos={apoio} /></div>}
     <section class="carro-banner">
-      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Vim pelo site. Tenho um ${nome} ano ____ e quero confirmar se uma peça serve: ____`)}
+      <BannerV2 nome="banner-serve" href={whatsUrl(`Tenho um ${nome} ano ____ e quero confirmar se uma peça serve: ____`)}
         texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
     </section>
   </div>

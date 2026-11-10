@@ -116,6 +116,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 <script>
   import { lerMeuCarro, norm, EVENTO } from '../lib/meuCarro';
   import { linkAviso } from '../lib/aviso';
+  import { mensagem, linkWhats } from '../lib/whats';
 
   const form = document.getElementById('form-procuro') as HTMLFormElement | null;
   const status = document.getElementById('pc-status');
@@ -238,10 +239,10 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       }
 
       const v = (nome: string) => (campo(nome).value || '').trim();
-      const linhas = ['Olá! Procuro uma peça pelo site.', '', `Carro: ${v('marca')} ${v('modelo')} ${v('ano')}`, `Peça: ${v('peca')}`];
+      const linhas = [mensagem('Procuro uma peça:'), '', `Carro: ${v('marca')} ${v('modelo')} ${v('ano')}`, `Peça: ${v('peca')}`];
       if (v('codigo')) linhas.push(`Código gravado: ${v('codigo')}`);
       if (v('cidade')) linhas.push(`Cidade: ${v('cidade')}`);
-      const url = `https://wa.me/${form.dataset.whats}?text=${encodeURIComponent(linhas.join('\n'))}`;
+      const url = linkWhats(linhas.join('\n'));
 
       // link de verdade: o clique preserva o gesto e a rastreio.js conta o Contact
       const a = document.createElement('a');
@@ -267,7 +268,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 <style>
   .pc-pagina { padding-block: 14px clamp(56px, 8vw, 112px); }
   .pc-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: clamp(14px, 2vw, 22px); font-size: 13.5px; color: var(--ink-3); }
-  .pc-trilha a { color: var(--ink-2); padding-block: 6px; }
+  .pc-trilha a { color: var(--ink-2); padding: 12px 6px; margin: -6px -6px; }
   .pc-trilha a:hover { color: var(--ink); text-decoration: underline; }
 
   /* celular: título, formulário, dicas. PC: título e dicas à esquerda, formulário à direita */

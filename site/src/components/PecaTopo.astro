@@ -6,7 +6,8 @@
 // quando preço e botões saíram da tela (nunca dois preços à vista).
 // Gatilhos so com dado de verdade: estoque = p.q (ML), reputacao = resumo().reputacao, CDV/nota/garantia do site.
 import type { Peca } from '../lib/dados';
-import { foto, brl, whatsUrl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
+import { foto, brl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
+import { linkWhats, cabecaPeca, CAUDA_PECA } from '../lib/whats';
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
 import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
@@ -21,14 +22,15 @@ const carro = nomeModelos(p);
 const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
 const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
-// Mensagem do WhatsApp: sem carro salvo usa "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
-const cabeca = `Olá! Vi no site esta peça:\n\n${p.t}\nR$ ${brl(p.p)}\n${url}\n\n`;
-// peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
-const semCarro = !p.b ? '' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____. ` : `Meu carro é ${carro} ano ____. `;
-const cauda = 'Serve e ainda tem?';
-const msg = cabeca + semCarro + cauda;
 // só código com cara de código (lixo da extração, como "Par", não vira caixa com "Copiar")
 const cod = codigoDaPeca(p.oem);
+// Mensagem do WhatsApp (lib/whats.ts, a mesma do cartão): a abertura do site, o nome limpo, carro, anos, código, preço
+// e o link. Sem carro salvo vai "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
+const cabeca = cabecaPeca({ nome: p.n, carro, anos, cod, preco: brl(p.p), url });
+// peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
+const semCarro = !p.b ? '' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____. ` : `Meu carro é ${carro} ano ____. `;
+const cauda = CAUDA_PECA;
+const msg = cabeca + semCarro + cauda;
 // Estoque real do ML: 1 = peca unica (usada: quando vende, acabou); mais de 1 = so a quantidade, sem pressa inventada.
 const q = typeof p.q === 'number' && p.q >= 1 ? p.q : 0;
 // 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça.
@@ -37,6 +39,12 @@ const fotos: { g: string; m: string; e?: boolean }[] = [
   ...(est ? [{ g: est, m: est, e: true }] : []),
   ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'E') })),
 ];
+// 1ª tela do celular (CSS no fim): a altura que a foto pode ter depende de quantas linhas vêm abaixo dela. Contado no
+// build pelo tamanho do texto (sem script, sem pulo na tela): nome curto = 1 linha (a foto ganha); nome longo = letra
+// menor (cabe em 2); carro de 2+ modelos com nome comprido = anos na 2ª linha; preço de 5 dígitos + "Peça única" quebra
+// no celular de 320.
+const linhaCarro = [carro, anos].filter(Boolean).join(' · ');
+const dobra = { 'nome-1l': p.n.length <= 20, 'nome-3l': p.n.length > 50, 'carro-2l': linhaCarro.length > 34, 'preco-2l': q === 1 && p.p >= 10000 };
 // Objeções da compra, respondidas com o que o site ja diz (inicio, garantia, envios, como comprar). Nada novo.
 // A promessa "a gente confere antes" fica na lista dos botões e no banner do fim (não se repete aqui).
 const perguntas = [
@@ -66,17 +74,17 @@ const perguntas = [
   },
 ];
 ---
-<div class="peca-topo">
+<div class:list={['peca-topo', dobra]}>
   <div class="galeria" data-galeria data-titulo={p.n}>
     <div class="galeria-palco" data-palco>
       {/* o trilho é a parada do teclado da galeria: setas trocam a foto, Enter abre a tela cheia (script abaixo) */}
       <ul class="galeria-trilho" data-trilho tabindex="0" aria-label="Fotos da peça: setas trocam, Enter amplia">
         {fotos.map((f, i) => (
-          <li><img class:list={[{ estudio: f.e }]} src={f.g} alt={i === 0 ? p.t : `${p.n}, foto ${i + 1}`} width="1000" height="1000"
+          <li><img class:list={[{ estudio: f.e }]} src={f.g} alt={i === 0 ? `${p.n}${carro ? `, ${carro}` : ''}, foto 1 de ${fotos.length}` : `${p.n}, foto ${i + 1} de ${fotos.length}`} width="1000" height="1000"
                    loading={i === 0 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} decoding="async" /></li>
         ))}
       </ul>
-      <span class="galeria-contador num" data-contador>1 / {fotos.length}</span>
+      <span class="galeria-contador num" data-contador aria-live="polite">1 / {fotos.length}</span>
       <span class="galeria-dica galeria-dica-mouse" aria-hidden="true">Passe o mouse para ver de perto</span>
       <span class="galeria-dica galeria-dica-toque" aria-hidden="true">Toque para ampliar</span>
     </div>
@@ -96,8 +104,10 @@ const perguntas = [
 
   <div class="compra">
     <div class="compra-cabeca">
-      <Titulo class="compra-nome">{p.n}</Titulo>
-      {p.b && <p class="compra-carro"><b>{carro}</b>{anos && ` · ${anos}`}</p>}
+      <Titulo class:list={['compra-nome', { 'nome-longo': p.n.length > 36 }]}>{p.n}</Titulo>
+      {p.b && (dobra['carro-2l'] && anos
+        ? <p class="compra-carro"><b>{carro}</b><span class="compra-anos">{anos}</span></p>
+        : <p class="compra-carro"><b>{carro}</b>{anos && ` · ${anos}`}</p>)}
     </div>
 
     <div class="compra-caixa">
@@ -108,7 +118,7 @@ const perguntas = [
       </div>
       {q === 1 && <p class="estoque-txt">Peça usada: quando vende, acabou.</p>}
       <div class="compra-botoes" data-compra-botoes>
-        <a class="botao botao-laranja" href={whatsUrl(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir no WhatsApp</a>
+        <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir no WhatsApp</a>
         <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
       </div>
       <ul class="compra-facil">
@@ -147,7 +157,7 @@ const perguntas = [
       <Acordeao itens={perguntas} ld={false} compacto />
     </section>
 
-    <Compartilhar titulo={p.t} url={url} />
+    <Compartilhar titulo={[p.n, [carro, anos].filter(Boolean).join(' ')].filter(Boolean).join(' · ')} url={url} />
   </div>
 </div>
 
@@ -316,11 +326,29 @@ const perguntas = [
     }
   });
 
+  // Copiar o código: "Copiado" (e o aviso para o leitor de tela) só quando copiou de verdade; se o navegador não
+  // deixar, o código fica selecionado na tela para a pessoa copiar.
+  let aviso: HTMLElement | null = null;
+  const avisar = (txt: string) => {
+    if (!aviso) { aviso = Object.assign(document.createElement('p'), { className: 'sr-only' }); aviso.setAttribute('role', 'status'); document.body.append(aviso); }
+    aviso.textContent = '';
+    requestAnimationFrame(() => { aviso!.textContent = txt; });
+  };
   document.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((b) => {
+    const rot = b.querySelector('span') ?? b.lastChild!;
+    const antes = rot.textContent;
     b.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(b.dataset.copiar || ''); } catch {}
-      const t = b.lastChild!; const antes = t.textContent; t.textContent = 'Copiado';
-      setTimeout(() => (t.textContent = antes), 1600);
+      const cod = b.dataset.copiar || '';
+      try {
+        await navigator.clipboard.writeText(cod);
+        rot.textContent = 'Copiado';
+        avisar(`Código ${cod} copiado`);
+        setTimeout(() => { rot.textContent = antes; }, 1600);
+      } catch {
+        const alvo = b.parentElement?.querySelector('.oem') ?? b.parentElement;
+        if (alvo) { const r = document.createRange(); r.selectNodeContents(alvo); const s = getSelection(); s?.removeAllRanges(); s?.addRange(r); }
+        avisar('Não deu para copiar sozinho: o código ficou selecionado');
+      }
     });
   });
 </script>
@@ -420,6 +448,8 @@ const perguntas = [
   .confianca { display: grid; gap: 14px; padding: 16px; border-radius: 18px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
   .confianca-itens { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
   .confianca-itens li > * { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  /* o link da garantia com 44 px de alvo, sem afastar as linhas */
+  .confianca-itens li > a { padding-block: 5px; margin-block: -5px; }
   .confianca-itens img { width: 36px; height: 36px; flex: none; }
   .confianca-itens b { display: block; font-size: 14px; font-weight: 720; font-stretch: 92%; line-height: 1.2; color: var(--ink); }
   .confianca-itens small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--ink-3); }
@@ -442,10 +472,10 @@ const perguntas = [
   .compra-cod span { display: block; font-size: 12.5px; color: var(--ink-3); }
   .compra-cod b { display: block; font-size: 18px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
   .compra-cod > div { min-width: 0; }
-  .compra-cod .botao { --h: 40px; padding: 0 14px; font-size: 14px; }
+  .compra-cod .botao { --h: 44px; padding: 0 14px; font-size: 14px; }
   /* o link numa linha própria: o código acima é bloco (colado, "A045591 Onde fica..." lia como uma coisa só).
      inline-block e sem largura fixa: no celular de 320 px ele quebra em vez de alargar a coluna */
-  .compra-ajuda { display: inline-block; margin-top: 4px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .compra-ajuda { display: inline-block; padding-block: 12px; margin: -8px 0 -12px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
   .compra-ajuda:hover { color: var(--ink); }
 
   .compra-perguntas { margin-top: 6px; }
@@ -458,4 +488,25 @@ const perguntas = [
     .compra-preco { font-size: 44px; }
     .compra-preco small { font-size: 19px; }
   }
+  /* Celular: a 1ª tela SEMPRE mostra foto, nome, carro, preço E o botão laranja (no iPhone, a área útil do Safari com
+     as barras é 390×664; no SE, 375×667 e 320×568). A foto segue quadrada e inteira (sem corte: o selo da capa fica no
+     canto), só menor e centrada quando a tela é baixa, como no tablet: o que sobra da altura depois do cabeçalho (68),
+     trilha (45), nome em 2 linhas, carro, preço e botão (232) e uma folga (8). Tela alta (390×844, 412×915) não muda.
+     O contador "1 / 11" na foto faz o papel dos pontinhos; "quando vende, acabou" desce para baixo do botão.
+     Nome de 3 linhas ou celular muito baixo: a barra fixa (pages/peca/[slug].astro) já abre com o botão. */
+  .compra-anos::before { content: " · "; }
+  @media (max-width: 599px) {
+    .peca-topo { gap: 16px; }
+    .galeria { width: min(100%, max(200px, calc(100svh - 353px + var(--n1, 0px) - var(--n3, 0px) - var(--c2, 0px) - var(--p2, 0px)))); margin-inline: auto; }
+    .peca-topo.nome-1l { --n1: 29px; }
+    .peca-topo.carro-2l { --c2: 21px; }
+    .compra-nome.nome-longo { font-size: clamp(22px, 6.2vw, 28px); }
+    .compra-anos { display: block; }
+    .compra-anos::before { content: none; }
+    .galeria-pontos { display: none; }
+    .compra-botoes { margin-top: 4px; }
+    .estoque-txt { order: 1; margin-top: 0; }
+    .compra-facil { order: 2; }
+  }
+  @media (max-width: 340px) { .peca-topo.preco-2l { --p2: 38px; } .peca-topo.nome-3l { --n3: 26px; } }
 </style>

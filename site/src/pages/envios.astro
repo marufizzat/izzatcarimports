@@ -9,7 +9,7 @@ import TopoArte from '../components/TopoArte.astro';
 import Chamada from '../components/inst/Chamada.astro';
 import IconeInst from '../components/inst/IconeInst.astro';
 import Icone from '../components/Icone.astro';
-import { WHATS, SITE } from '../lib/dados';
+import { SITE } from '../lib/dados';
 
 const canonical = `${SITE}/envios.html`;
 const canonicalPath = '/envios.html';
@@ -46,7 +46,7 @@ const caminho = [
         </ul>
       </div>
 
-      <form class="env-cep" id="form-cep" novalidate data-whats={WHATS} aria-labelledby="h-cep">
+      <form class="env-cep" id="form-cep" novalidate aria-labelledby="h-cep">
         <h2 class="env-cep-titulo" id="h-cep">Quanto fica o frete para você?</h2>
         <p>Digite o CEP. O WhatsApp abre com a mensagem pronta e a gente responde com o valor.</p>
         <div class="campo">
@@ -78,11 +78,12 @@ const caminho = [
     id="h-chamada"
     titulo="Peça grande ou mais de uma peça?"
     texto="A gente combina o envio pelo WhatsApp. Manda a peça e o CEP."
-    mensagem="Olá! Vim pelo site e quero combinar o envio. A peça é: ____. Meu CEP: ____"
+    mensagem="Quero combinar o envio. A peça é: ____. Meu CEP: ____"
   />
 </Pagina>
 
 <script>
+  import { mensagem, linkWhats } from '../lib/whats';
   // CEP → WhatsApp com a mensagem pronta (link de verdade: preserva o gesto e o rastreio conta o Contact)
   const form = document.getElementById('form-cep') as HTMLFormElement | null;
   if (form) {
@@ -106,8 +107,8 @@ const caminho = [
         return;
       }
       const p = peca.value.trim();
-      const texto = `Olá! Vim pelo site e quero saber o frete para o CEP ${d.slice(0, 5)}-${d.slice(5)}.` + (p ? ` A peça é: ${p}` : ' A peça é: ____');
-      const url = `https://wa.me/${form.dataset.whats}?text=${encodeURIComponent(texto)}`;
+      const texto = mensagem(`Quero saber o frete para o CEP ${d.slice(0, 5)}-${d.slice(5)}.` + (p ? ` A peça é: ${p}` : ' A peça é: ____'));
+      const url = linkWhats(texto);
       const a = Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener' });
       document.body.appendChild(a);
       a.click();
@@ -144,6 +145,6 @@ const caminho = [
   .env-caminho { --colunas: 4; }
   .env-garantia { display: flex; align-items: center; gap: 10px; margin: clamp(20px, 3vw, 28px) 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
   .env-garantia :global(svg) { width: 22px; height: 22px; flex: none; color: var(--accent-text); }
-  .env-garantia a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; display: inline-block; padding-block: 8px; margin-block: -8px; }
+  .env-garantia a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; display: inline-block; padding-block: 12px; margin-block: -12px; }
   @media (min-width: 760px) and (max-width: 1059px) { .env-caminho { --colunas: 2; } .env-caminho > li:nth-child(2)::after { display: none; } }
 </style>

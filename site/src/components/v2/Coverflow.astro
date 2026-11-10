@@ -14,7 +14,7 @@ const n = pecas.length;
 const INICIO = Math.min(2, Math.max(0, n - 1));
 const posInicial = (i: number) => (Math.abs(i - INICIO) <= 2 ? String(i - INICIO) : 'x');
 ---
-<div class="cf" data-cf data-inicio={INICIO} role="region" aria-labelledby={id}>
+<div class="cf" data-cf data-inicio={INICIO}>
   <ul class="cf-lista trilho" data-trilho aria-label={rotulo}>
     {pecas.map((p, i) => (
       <li class="cf-item" data-o={posInicial(i)}>

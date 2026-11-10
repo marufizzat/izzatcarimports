@@ -39,7 +39,7 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
                 <span class="mm-dest-qtd num">{pecasTxt(c.c)}</span>
                 {destaque.length === 1 && c.fams.length > 0 && (
                   <span class="mm-dest-fams">
-                    <small>Sistemas com mais peças</small>
+                    <small>Categorias com mais peças</small>
                     {c.fams.slice(0, 4).map(([f, n]) => <span><span>{f}</span><span class="num">{n}</span></span>)}
                   </span>
                 )}

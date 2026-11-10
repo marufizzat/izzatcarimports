@@ -11,7 +11,7 @@ import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/contato.html`;
 const canonicalPath = '/contato.html';
-const msg = 'Olá! Vim pelo site e estou procurando uma peça.';
+const msg = 'Estou procurando uma peça.';
 const url = whatsUrl(msg);
 const trilha: [string, string][] = [['Início', '/index.html'], ['Contato', canonicalPath]];
 const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
@@ -106,7 +106,7 @@ const mandar = [
 <style>
   .con-pagina { padding-block: 14px clamp(56px, 8vw, 112px); }
   .con-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: clamp(14px, 2vw, 22px); font-size: 13.5px; color: var(--ink-3); }
-  .con-trilha a { color: var(--ink-2); padding-block: 6px; }
+  .con-trilha a { color: var(--ink-2); padding: 12px 6px; margin: -6px -6px; }
   .con-trilha a:hover { color: var(--ink); text-decoration: underline; }
 
   .con-topo { display: grid; gap: clamp(28px, 4vw, 64px); align-items: center; padding: var(--pad-cartao); border-radius: 32px;
@@ -145,7 +145,7 @@ const mandar = [
   .con-canal-txt b { font-stretch: 86%; font-weight: 800; font-size: 22px; line-height: 1.1; color: var(--ink); text-wrap: balance; }
   .con-canal-txt em, .con-link { font-style: normal; font-weight: 650; color: var(--accent-text); text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
   /* link de texto com alvo de toque de verdade (antes 23 px de altura) */
-  .con-link { display: inline-block; padding-block: 10px; margin-block: -8px; }
+  .con-link { display: inline-block; padding-block: 12px; margin-block: -10px; }
   .con-link:hover { color: var(--ink); }
   .con-selo { margin-top: 6px; }
   .con-selo:empty { display: none; }
