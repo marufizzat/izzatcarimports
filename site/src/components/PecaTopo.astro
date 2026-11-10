@@ -372,6 +372,9 @@ const perguntas = [
   /* no computador a foto acompanha a leitura da coluna de compra */
   @media (min-width: 960px) { .galeria { position: sticky; top: 100px; } }
   .galeria-palco { position: relative; border-radius: 22px; background: var(--plate); overflow: hidden; box-shadow: var(--shadow-1); }
+  /* foto pequena (celular baixinho): "Toque para ampliar" encostava no contador "1 / 11"; ali fica só o contador */
+  .galeria-palco { container: palco / inline-size; }
+  @container palco (max-width: 260px) { .galeria-palco .galeria-dica { display: none; } }
   .galeria-trilho { list-style: none; margin: 0; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; aspect-ratio: 1; border-radius: inherit; }
   .galeria-trilho::-webkit-scrollbar { display: none; }
   /* teclado: o anel por dentro do palco (o overflow do palco cortava o de fora) */

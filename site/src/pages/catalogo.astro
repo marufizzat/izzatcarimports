@@ -66,7 +66,7 @@ const confianca: [string, string][] = [
           {/* título com os filtros do endereço, antes da pintura (a MESMA regra de tituloCatalogo em Catalogo.tsx) */}
           <script is:inline>(function(){var u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},a=Number(g('ano'))||0,t=g('tipo'),sb=g('sub'),carro=[g('marca'),g('modelo')].filter(Boolean).join(' '),q=g('q'),base=sb?sb:t?(t==='Outros'?'Outras peças':/^peças/i.test(t)?t:'Peças de '+t.toLowerCase()):'Peças',h=q&&!carro&&!a&&!t&&!sb?'Resultados para “'+q+'”':carro?base+' para '+carro+(a?' '+a:''):a?base+' para carro ano '+a:t||sb?base:'';if(h){var e=document.querySelector('[data-cat-titulo]');if(e)e.textContent=h;document.title=h+' | Izzat Car Imports'}})();</script>
           <p class="cat-lead">Peças originais de desmanche legal <span class="cat-nowrap">(CDV Detran-RS nº 01060)</span>.<span class="cat-lead-extra"> Ache pelo nome, pelo carro ou pelo código gravado na peça.</span></p>
-          <ul class="cat-confianca" aria-label="Em toda peça">
+          <ul class="cat-confianca" aria-label="Em toda peça" data-rola>
             {confianca.map(([t, d]) => (
               <li><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={d} />{t}</li>
             ))}
@@ -91,6 +91,11 @@ const confianca: [string, string][] = [
     </div>
   </div>
 </Pagina>
+
+<script>
+  import { paradaSeRolar } from '../lib/trilhoFoco';
+  paradaSeRolar('[data-rola]');
+</script>
 
 <style is:global>
   /* ===== Catálogo (vitrine) ===== */
@@ -117,10 +122,13 @@ const confianca: [string, string][] = [
     box-shadow: inset 0 0 0 1px var(--line); font-size: 13.5px; font-weight: 620; line-height: 1.25; color: var(--ink); white-space: nowrap; }
   @media (max-width: 639px) {
     .cat-lead-extra { display: none; }
-    /* os 4 à vista em 2×2 (a fila que deslizava escondia o "Envio para todo o Brasil" e não tinha parada do teclado) */
-    .cat-confianca { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-    .cat-confianca li { padding: 7px 10px 7px 9px; gap: 7px; font-size: 12.5px; white-space: normal; text-wrap: balance; }
-    .cat-confianca svg { width: 16px; height: 16px; }
+    /* a fila desliza de lado (a 1ª tela fica para os cartões); a lista tem parada no Tab (tabindex) para quem usa
+       teclado chegar ao "Envio para todo o Brasil" (WCAG 2.1.1) */
+    .cat-confianca { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 2px 16px;
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
+    .cat-confianca::-webkit-scrollbar { display: none; }
+    .cat-confianca:focus-visible { outline-offset: -2px; -webkit-mask-image: none; mask-image: none; }
+    .cat-confianca li { padding: 8px 12px 8px 10px; font-size: 13px; }
   }
   .cat-nowrap { white-space: nowrap; }
   .cat-confianca svg { width: 18px; height: 18px; flex: none; color: var(--accent-text); }
@@ -336,7 +344,7 @@ const confianca: [string, string][] = [
   .cat-atalhos ul { list-style: none; margin: 0; padding: 0; columns: 2 150px; column-gap: 24px; }
   @media (min-width: 900px) { .cat-atalhos div + div ul { columns: 3 150px; } }
   .cat-atalhos li { break-inside: avoid; }
-  .cat-atalhos a { display: inline-flex; align-items: center; min-height: 44px; padding: 0; font-size: 14.5px; line-height: 1.3; color: var(--ink-2); }
+  .cat-atalhos a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0; font-size: 14.5px; line-height: 1.3; color: var(--ink-2); }
   .cat-atalhos a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
   .cat-atalhos .cat-atalhos-todos { font-weight: 650; color: var(--accent-text); }
 </style>

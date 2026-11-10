@@ -180,10 +180,13 @@ const ld = {
     // altura que a barra ocupa no pé da tela (com a folga de baixo e a área segura do iPhone)
     const zona = Math.round(barra.offsetHeight + (parseFloat(getComputedStyle(barra).bottom) || 0) + 8);
     const link = barra.querySelector('a');
-    let botaoInteiro = true, precoAVista = true;
+    let botaoInteiro = true, precoAVista = true, precoNaTela = true;
     const pintar = () => {
       const mostrar = !botaoInteiro;
       barra.classList.toggle('so-botao', precoAVista);
+      // celular muito baixo (320×480): o preço grande ficaria pela metade atrás da barra, que já mostra o preço:
+      // ele some enquanto estiver ali (volta assim que sobe para cima da barra)
+      preco.classList.toggle('sob-barra', mostrar && !precoAVista && precoNaTela);
       if (barra.classList.contains('visivel') === mostrar) return;
       barra.classList.toggle('visivel', mostrar);
       barra.setAttribute('aria-hidden', String(!mostrar));
@@ -194,6 +197,8 @@ const ld = {
       { rootMargin: `-${topo}px 0px 0px 0px`, threshold: [0, 0.5, 0.98, 1] }).observe(botao);
     new IntersectionObserver(([e]) => { precoAVista = inteiro(e); pintar(); },
       { rootMargin: `-${topo}px 0px -${zona}px 0px`, threshold: [0, 0.5, 0.98, 1] }).observe(preco);
+    new IntersectionObserver(([e]) => { precoNaTela = e.isIntersecting; pintar(); },
+      { rootMargin: `-${topo}px 0px 0px 0px` }).observe(preco);
   }
 </script>
 
@@ -204,14 +209,15 @@ const ld = {
   .trilha a:hover { color: var(--ink); text-decoration: underline; }
   .trilha [aria-current] { color: var(--ink-3); max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topo { padding-bottom: 32px; }
-  /* celular: trilha numa linha só, para a foto e a compra subirem. O nome desta peça (que o título logo abaixo já
-     mostra) cede o espaço e termina em "…"; se ainda faltar, o carro e a categoria também (antes a linha era cortada
-     no meio da palavra: "… / Fiat Toro / Ga") */
+  /* celular: trilha numa linha só, para a foto e a compra subirem. Sem o nome desta peça (o título logo abaixo já
+     mostra; antes a linha era cortada no meio da palavra: "… / Fiat Toro / Ga"); se o carro e a categoria não
+     couberem, eles terminam em "…" (Início e Catálogo ficam inteiros) */
   @media (max-width: 959px) {
-    .trilha { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; padding-block: 12px 12px; }
+    .trilha { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; padding: 12px 6px; margin-inline: -6px; }
     .trilha > * { flex: 0 0 auto; }
     .trilha > a { flex-shrink: 1; min-width: 4ch; overflow: hidden; text-overflow: ellipsis; }
-    .trilha [aria-current] { flex: 0 1000 auto; min-width: 0; max-width: none; }
+    .trilha > a:nth-of-type(-n+2) { flex-shrink: 0; }
+    .trilha [aria-current], .trilha > span[aria-hidden]:nth-last-child(2) { display: none; }
   }
 
   .barra-compra { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 40;
@@ -234,6 +240,7 @@ const ld = {
   .barra-compra.so-botao .barra-info { display: none; }
   .barra-compra.so-botao .botao { flex: 1 1 auto; font-size: 16px; }
   .barra-compra.so-botao .barra-pedir { display: inline; }
+  :global(.compra-preco-linha.sob-barra) { visibility: hidden; }
   /* celular estreito: o botão diz só "WhatsApp" (com o ícone) */
   @media (max-width: 379px) {
     .barra-compra { gap: 8px; padding-left: 14px; }

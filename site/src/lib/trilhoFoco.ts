@@ -16,3 +16,14 @@ export function focoNoTrilho(seletor: string, item = 'li'): void {
     });
   });
 }
+
+/** Faixa que desliza de lado SEM nada focável dentro (selos, passos): no celular, quando ela rola de verdade, ganha
+ *  uma parada no Tab (as setas rolam) para quem usa teclado chegar ao que está fora da tela (WCAG 2.1.1). No PC,
+ *  onde nada rola, não sobra parada à toa. */
+export function paradaSeRolar(seletor: string): void {
+  document.querySelectorAll<HTMLElement>(seletor).forEach((el) => {
+    const ver = () => { if (el.scrollWidth > el.clientWidth + 1) el.tabIndex = 0; else el.removeAttribute('tabindex'); };
+    ver();
+    if ('ResizeObserver' in window) new ResizeObserver(ver).observe(el);
+  });
+}
