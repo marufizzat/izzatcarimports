@@ -85,6 +85,11 @@ describe('quadro das fotos do ML na galeria', () => {
     confere([1200, 800, 0, 100, 1200, 700]);
   });
 
+  it('quadrado a um fio do lado da foto: sem fresta de 1 px do fundo (caso real 862606-MLB112506866525)', () => {
+    confere([656, 827, 28, 36, 616, 731]);
+    expect(problema([656, 827, 28, 36, 616, 731])).toBe('');
+  });
+
   it('sem peça achada: foto quadrada enche o quadro; deitada fica inteira a 88%', () => {
     expect(atributosQuadro(quadro([1200, 1200]))).toEqual({ style: '--w:1' });
     const a = atributosQuadro(quadro([1200, 900]));

@@ -51,6 +51,8 @@ export function quadro(m?: Medida | null): Quadro | null {
   } else {   // sem peça: quadrada enche o quadro; senão, inteira (como antes)
     L = Math.abs(W / H - 1) <= QUASE_QUADRADA && curto >= LADO_MIN ? curto : Math.max(longo / INTEIRA, LADO_MIN);
   }
+  // quadrado a menos de 2 px de um lado da foto (e a peça cabe nele): fica do tamanho dele (sem fresta de 1 px do fundo)
+  for (const T of [longo, curto]) if (L > T && L - T < 2 && maior <= T) L = T;
   // onde o quadrado passa da foto, ela fica no meio dele (o mesmo fundo dos dois lados)
   const x = eixo(cx, L, W), y = eixo(cy, L, H);
   return { w: W / L, h: H / L, x: x / L, y: y / L, borda: L > curto + 0.5 };
