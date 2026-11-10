@@ -42,7 +42,7 @@ const etapas = [
   <TopoArte trilha={[['Início', '/index.html'], ['O pátio', canonicalPath]]}
     titulo="O pátio"
     lead="Um desmanche credenciado pelo Detran-RS, na fronteira de Aceguá. Cada carro chega com baixa legal, e cada peça sai identificada."
-    arte="/arte/v2/topo-sobre.webp" />
+    arte="/arte/v2/topo-sobre.webp" arteFoco="100% 88%" />
 
   <div class="moldura">
     {/* linha do tempo: número em disco laranja (letra grafite) num fio laranja; no PC a arte alterna de lado */}
@@ -178,17 +178,18 @@ const etapas = [
   /* ---- prêmio: cartão branco; o troféu inteiro, com respiro, se desfaz no branco ---- */
   .sob-premio { position: relative; overflow: hidden; display: grid; align-items: center; margin-top: clamp(8px, 2vw, 16px);
     border-radius: 32px; background: var(--surface); box-shadow: var(--shadow-1); }
-  .sob-premio-arte { position: relative; align-self: stretch; }
-  .sob-premio-arte img { display: block; width: 100%; height: 100%; max-height: 420px; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 45%;
-    -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%); mask-image: linear-gradient(180deg, #000 70%, transparent 100%); }
-  .sob-premio-txt { display: grid; gap: 16px; justify-items: start; padding: 4px var(--pad-cartao) var(--pad-cartao); }
+  .sob-premio-arte { position: relative; display: grid; place-items: center; padding: clamp(16px, 2.4vw, 32px) clamp(16px, 2.4vw, 32px) 0; }
+  /* o troféu inteiro (sem corte em cima), com a borda da arte se desfazendo no branco por todos os lados */
+  .sob-premio-arte img { display: block; width: 100%; max-width: 520px; height: auto; aspect-ratio: 4 / 3; object-fit: cover;
+    -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 58%, transparent 100%);
+    mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 58%, transparent 100%); }
+  .sob-premio-txt { display: grid; gap: 16px; justify-items: start; padding: 0 var(--pad-cartao) var(--pad-cartao); }
   .sob-filete { display: block; width: 56px; height: 4px; border-radius: 4px; background: var(--accent); }
   .sob-premio-titulo { margin: 0; font-size: clamp(42px, 5.6vw, 76px); color: var(--ink); }
   .sob-premio-txt p { margin: 0; max-width: 40ch; font-size: clamp(16.5px, 1.4vw, 19px); line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
   @media (min-width: 900px) {
     .sob-premio.com-arte { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
-    .sob-premio-arte img { max-height: none; height: 100%; min-height: 360px;
-      -webkit-mask-image: linear-gradient(90deg, #000 72%, transparent 100%); mask-image: linear-gradient(90deg, #000 72%, transparent 100%); }
+    .sob-premio-arte { padding: clamp(20px, 2.6vw, 36px); }
     .sob-premio-txt { padding: var(--pad-cartao) var(--pad-cartao) var(--pad-cartao) clamp(8px, 1.6vw, 24px); }
   }
 
