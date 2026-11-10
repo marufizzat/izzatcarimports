@@ -1241,16 +1241,18 @@
   "foto": "754034-MLB109045789923_032026"
  },
  "MLB6487140016": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Difusor saida de ar painel",
   "carro": "Ford Ranger",
-  "foto": "983966-MLB109105438799_032026"
+  "foto": "983966-MLB109105438799_032026",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB4545878981": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fivela cinto seguranca traseiro",
   "carro": "Volvo XC60",
-  "foto": "666255-MLB108312371824_032026"
+  "foto": "666255-MLB108312371824_032026",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6491455360": {
   "status": "pulada",
@@ -1393,7 +1395,7 @@
   "foto": "882569-MLB108407014814_032026"
  },
  "MLB6495212196": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Bomba tanque",
   "carro": "Toyota Yaris",
   "foto": "689233-MLB109203148667_032026"
@@ -1483,7 +1485,7 @@
   "foto": "756138-MLB92048960813_092025"
  },
  "MLB6501121414": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Painel instrumentos pointer",
   "carro": "Volkswagen Logus",
   "foto": "887355-MLB92401517457_092025"
@@ -1496,7 +1498,7 @@
   "foto": "981033-MLB92515544959_092025"
  },
  "MLB6501120802": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Caixa filtro ar inferior",
   "carro": "Hyundai Azera",
   "foto": "630239-MLB92187965212_092025"
@@ -1509,16 +1511,17 @@
   "foto": "625983-MLB92519391755_092025"
  },
  "MLB6501072412": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão comando vidro dianteiro esquerdo elétrico",
   "carro": "Audi A3",
   "foto": "893524-MLB92050395407_092025"
  },
  "MLB6501071062": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Módulo imobilizador",
   "carro": "Hyundai Azera",
-  "foto": "839968-MLB92271883976_092025"
+  "foto": "839968-MLB92271883976_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501069922": {
   "status": "pulada",
@@ -1542,25 +1545,26 @@
   "foto": "913771-MLB91647847762_092025"
  },
  "MLB6501064084": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão interruptor vidro traseiro esquerdo",
   "carro": "Fiat Freemont",
   "foto": "820121-MLB91802070480_092025"
  },
  "MLB6501063680": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura acabamento botão chave de luz",
   "carro": "Fiat Toro",
-  "foto": "817424-MLB91976924868_092025"
+  "foto": "817424-MLB91976924868_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501063332": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura central painel difusor ar",
   "carro": "Fiat Uno",
   "foto": "831489-MLB92109347598_092025"
  },
  "MLB6501052654": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Luz teto cortesia dianteira",
   "carro": "Fiat Toro",
   "foto": "714730-MLB91928759119_092025"
@@ -1587,13 +1591,13 @@
   "foto": "705653-MLB91950353017_092025"
  },
  "MLB6501051874": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Máquina vidro elétrico dianteira direita",
   "carro": "Fiat Toro",
   "foto": "953503-MLB91645203914_092025"
  },
  "MLB6501051818": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Radiador ar frio",
   "carro": "Fiat Toro",
   "foto": "836129-MLB91619910276_092025"
@@ -1613,25 +1617,26 @@
   "foto": "812450-MLB91802533788_092025"
  },
  "MLB6501050410": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Sensor de temperatura interna",
   "carro": "Hyundai Azera",
   "foto": "676490-MLB92114401264_092025"
  },
  "MLB6501050388": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão pisca alerta azul-aço azul-aço",
   "carro": "Hyundai Azera",
-  "foto": "885774-MLB92519846121_092025"
+  "foto": "885774-MLB92519846121_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501029398": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar condicionado direito",
   "carro": "Hyundai Azera",
   "foto": "684997-MLB92517960931_092025"
  },
  "MLB6500967376": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Forro porta tras esquerda",
   "carro": "Volkswagen Golf",
   "foto": "990643-MLB93856853798_102025"
@@ -1658,13 +1663,14 @@
   "foto": "734044-MLB93894572793_102025"
  },
  "MLB6500931760": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Relé multifunção",
   "carro": "BMW",
-  "foto": "728897-MLB93750389403_092025"
+  "foto": "728897-MLB93750389403_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6500924112": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Esguicho farol direito",
   "carro": "Mercedes-Benz GLA200",
   "foto": "802417-MLB93749915923_092025"
@@ -1691,13 +1697,14 @@
   "foto": "711064-MLB92298208223_092025"
  },
  "MLB4552459765": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Painel instrumentos",
   "carro": "Land Rover Discovery",
-  "foto": "948557-MLB92385841261_092025"
+  "foto": "948557-MLB92385841261_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB4552449547": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Grade superior dianteira sporting brilhante",
   "carro": "Fiat Uno",
   "foto": "918944-MLB91901230338_092025"
@@ -1710,19 +1717,20 @@
   "foto": "896887-MLB92392571304_092025"
  },
  "MLB4552432053": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão desembaçador",
   "carro": "Ford Ecosport",
   "foto": "881568-MLB92207113683_092025"
  },
  "MLB4552428255": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Dobradiça porta traseira esquerda",
   "carro": "Fiat Toro",
-  "foto": "698326-MLB91350789532_092025"
+  "foto": "698326-MLB91350789532_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB4552426399": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Forro inferior painel interno",
   "carro": "Fiat Toro",
   "foto": "912745-MLB91997858508_092025"
@@ -1735,13 +1743,13 @@
   "foto": "977166-MLB93113521077_092025"
  },
  "MLB4552417717": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão desembaçador g2",
   "carro": "Volkswagen Gol",
   "foto": "835559-MLB91804925638_092025"
  },
  "MLB4552394451": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Duto de ar painel lado esquerdo",
   "carro": "Hyundai Azera",
   "foto": "803510-MLB92296792052_092025"
@@ -1768,22 +1776,24 @@
   "foto": "624461-MLB93329682868_092025"
  },
  "MLB6501238778": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Kit pega mão suporte oculos",
   "carro": "Fiat Toro",
-  "foto": "661240-MLB91927944201_092025"
+  "foto": "661240-MLB91927944201_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501237858": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Painel instrumentos",
   "carro": "Renault Clio",
   "foto": "818974-MLB91984780344_092025"
  },
  "MLB6501230160": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote elétrico caixa ar",
   "carro": "Fiat Toro",
-  "foto": "768390-MLB91617563694_092025"
+  "foto": "768390-MLB91617563694_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501229732": {
   "status": "pulada",
@@ -1793,10 +1803,11 @@
   "foto": "985252-MLB92584254581_092025"
  },
  "MLB6501207742": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Trava bomba tanque",
   "carro": "Fiat Toro",
-  "foto": "943769-MLB91348108132_092025"
+  "foto": "943769-MLB91348108132_092025",
+  "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501184930": {
   "status": "pronta",
