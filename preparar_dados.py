@@ -2245,6 +2245,33 @@ def chave_foto(url):
 
 
 # --------------------------------------------------------------------------
+# Ordem das fotos do anuncio: a MESMA de fotosGaleria() (site/src/lib/quadroFoto.ts), para o "i" do busca.json (a
+# foto do cartao quando a capa falha) ser a 1a foto da galeria: sem o marketing do vendedor (classe "m") e com a
+# montagem com o carro (classe "c") no fim. Classes em site/src/data/fotos-ml-caixas.json (ferramentas/medir_fotos_ml.py).
+# --------------------------------------------------------------------------
+CAIXAS_FOTOS = SAIDA_DADOS / "fotos-ml-caixas.json"
+
+
+def ler_classes_fotos(arq=CAIXAS_FOTOS):
+    """{chave da foto: classe (p|s|m|c)} pelo fotos-ml-caixas.json; sem o arquivo, {} (fotos na ordem do anuncio)."""
+    try:
+        dados = json.loads(Path(arq).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {k: c for k, e in dados.items()
+            for c in [next((v for v in e if isinstance(v, str) and len(v) == 1), None)] if c}
+
+
+def fotos_galeria(fotos, classes):
+    """As fotos na ordem da galeria (igual a fotosGaleria): sem "m" e com "c" no fim. Tudo marketing: a lista como veio
+    (nunca uma peca sem foto)."""
+    boas = [k for k in fotos if k and classes.get(k) != "m"]
+    if not boas:
+        return [k for k in fotos if k]
+    return [k for k in boas if classes.get(k) != "c"] + [k for k in boas if classes.get(k) == "c"]
+
+
+# --------------------------------------------------------------------------
 # Codigo gravado na peca (OEM). O campo do ML as vezes traz lixo: o titulo inteiro
 # ("Par Mola Valvula ..."), pedaco do codigo ("920 8K0920900"), anos, marca, "Nao
 # informado". Codigo de verdade: 5 a 16 letras/numeros, com letra E numero, ou so
@@ -3205,6 +3232,7 @@ def main():
     idx_fam = {f["n"]: i for i, f in enumerate(familias)}
     tipos = sorted({x["s"] for x in pecas if x["s"]})
     idx_tipo = {s: i for i, s in enumerate(tipos)}
+    classes_fotos = ler_classes_fotos()
     busca = {
         "v": 1,
         "updated": resumo["updated"],
@@ -3215,7 +3243,8 @@ def main():
         "t": [x["t"] for x in pecas],
         "n": [x["n"] for x in pecas],
         "p": [x["p"] for x in pecas],
-        "i": [x["fotos"][0] if x["fotos"] else "" for x in pecas],
+        # foto do cartao quando a capa falha: a 1a da galeria (sem marketing, montagem com o carro por ultimo)
+        "i": [(fotos_galeria(x["fotos"], classes_fotos) or [""])[0] for x in pecas],
         "h": [x["slug"] for x in pecas],
         "f": "".join("1" if x["f"] else "0" for x in pecas),
         "b": [idx_marca.get(x["b"], -1) for x in pecas],

@@ -1013,6 +1013,30 @@ def test_nome_sem_outro_carro_pedaco_de_codigo_nem_cor():
         pd._CONHECIDOS_GLOBAL.difference_update(novos)
 
 
+def test_foto_do_cartao_na_ordem_da_galeria():
+    """"i" do busca.json = a 1a foto da galeria (fotosGaleria do site): sem marketing, montagem com o carro no fim."""
+    from preparar_dados import fotos_galeria
+    cl = {"a": "c", "b": "m", "c1": "p", "d": "s"}
+    assert fotos_galeria(["a", "b", "c1", "d"], cl) == ["c1", "d", "a"]
+    assert fotos_galeria(["a"], cl) == ["a"]                    # so a montagem: fica (nunca peca sem foto)
+    assert fotos_galeria(["b"], cl) == ["b"]                    # tudo marketing: a lista como veio
+    assert fotos_galeria(["x", "a", "y"], {}) == ["x", "a", "y"]   # sem classe: a ordem do anuncio
+    assert fotos_galeria([], cl) == []
+    busca = ROOT / "site" / "public" / "dados" / "busca.json"
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if busca.exists() and pecas.exists():
+        from preparar_dados import ler_classes_fotos
+        classes = ler_classes_fotos()
+        b = json.loads(busca.read_text(encoding="utf-8"))
+        por_id = {x["id"]: x for x in json.loads(pecas.read_text(encoding="utf-8"))}
+        ruins = [i for i, f in zip(b["id"], b["i"])
+                 if f != (fotos_galeria(por_id[i]["fotos"], classes) or [""])[0]] if set(b["id"]) <= set(por_id) else []
+        assert not ruins, f"{len(ruins)} pecas com o 'i' fora da ordem da galeria: {ruins[:5]}"
+        monta = [i for i, f in zip(b["id"], b["i"]) if classes.get(f) == "c"
+                 and any(classes.get(k) != "c" for k in fotos_galeria(por_id[i]["fotos"], classes))]
+        assert not monta, f"{len(monta)} pecas com a montagem no 'i' tendo foto da peca: {monta[:5]}"
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

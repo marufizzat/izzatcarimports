@@ -52,7 +52,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      margem dos lados e o mesmo piso (`REGRA_CORTADA`), e entra no `_revisar.json` como "cortada na capa". A foto
      conferida (`ok`) e a escolhida a mão nunca são trocadas. As suspeitas vão para `_revisar.json`; a folha sai com
      `ferramentas/folha_revisar.py <pasta>`. Para o Google Shopping, a cópia sem logo
-     sai com `ESTUDIO_SAIDA_LIMPA` (o feed não aceita logo sobreposto). Maquiadas na v2: `ferramentas/marca_pro.py`
+     sai com `ESTUDIO_SAIDA_LIMPA` (o feed não aceita logo sobreposto). O feed usa as fotos do anúncio na ordem da
+     galeria; a peça que SÓ tem a montagem com o carro vai com a cópia limpa de `site/public/estudio-limpa/<MLB>.webp`
+     (no master; `ferramentas/capas_limpas_feed.py` põe/tira, rodar no Mac depois de reclassificar), senão a montagem. Maquiadas na v2: `ferramentas/marca_pro.py`
      (grava noutra pasta e nunca sobrescreve `estudio-pro`). Ao ligar a v2, pôr `ESTUDIO_VERSAO`/`ESTUDIO_LOGO` também no `atualizar.yml`.
    - **Ajustes manuais** (`capas_ajustes.json` na raiz, o robô respeita): por peça, a foto escolhida (`chave` do ML;
      `foto` = índice só para o olho humano), `corte` e `apagar` (frações da foto inteira) — nessa foto não valem os

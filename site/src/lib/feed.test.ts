@@ -82,6 +82,18 @@ describe('feed: item', () => {
     const x = xmlItem(itemFeed(base({ b: '' }), '/estudio/x.webp', SITE)!);
     expect(x).not.toContain('<g:brand>');
   });
+  it('so a montagem com o carro: a capa sem logo vira a imagem; sem ela, a montagem mesmo', () => {
+    const tab = { 'M1-MLB1': [1200, 900, 'c', '0'], 'P1-MLB2': [1200, 900, 'p', '0'] };
+    const so = base({ fotos: ['M1-MLB1'] });
+    const i = itemFeed(so, null, SITE, '/estudio-limpa/MLB7124139250.webp', tab)!;
+    expect(i.imagem).toBe(`${SITE}/estudio-limpa/MLB7124139250.webp`);
+    expect(i.extras).toEqual(['https://http2.mlstatic.com/D_M1-MLB1-F.webp']);
+    expect(itemFeed(so, null, SITE, null, tab)!.imagem).toMatch(/D_M1-MLB1-F/);
+    // com foto da peca: a foto da peca na frente, a capa limpa nao entra
+    const ok = itemFeed(base({ fotos: ['M1-MLB1', 'P1-MLB2'] }), null, SITE, '/estudio-limpa/x.webp', tab)!;
+    expect(ok.imagem).toMatch(/D_P1-MLB2-F/);
+    expect(ok.extras).toEqual(['https://http2.mlstatic.com/D_M1-MLB1-F.webp']);
+  });
   it('sem preco ou sem imagem: fica de fora', () => {
     expect(itemFeed(base({ p: 0 }), '/estudio/x.webp', SITE)).toBeNull();
     expect(itemFeed(base({ fotos: [] }), null, SITE)).toBeNull();
