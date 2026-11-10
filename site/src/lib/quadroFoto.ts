@@ -6,6 +6,8 @@
 //   [..., "incerta"] = a caixa pode não ter pegado a peça toda (teste da faixa de segurança): a foto aparece INTEIRA
 //   [W, H, classe, hash] = nenhuma peça achada. Classe: p peça | s sem peça | m marketing do anúncio | c carro inteiro
 //   (sem classe = ainda não classificada: conta como peça). fotosGaleria() tira "m" e põe "c" no fim.
+//   [..., "#"] = a foto mostra o código gravado que a página mostra (o OCR leu: a etiqueta): o atalho "Ver o código na
+//   foto" (fotoDoCodigo). Sempre depois da classe, só em foto p ou s.
 // Regras (nenhuma peça pode parecer cortada pelo site):
 //   1. nunca amplia além do quadrado da própria foto (lado do quadro >= lado curto da foto): o quadro só pode cortar a
 //      foto no eixo longo, e só onde a caixa medida diz que não há peça;
@@ -33,6 +35,8 @@ export const LADO_MIN = 560;
 export const INTEIRA = 0.88;
 /** marca da caixa incerta na entrada (medir_fotos_ml.py) */
 export const INCERTA = 'incerta';
+/** marca da foto do código (medir_fotos_ml.py: CODIGO_NA_FOTO) */
+export const CODIGO_NA_FOTO = '#';
 
 export type Medida = (number | string)[];
 /** Em lados do quadro: w/h = tamanho da foto, x/y = deslocamento (negativo = sobra fundo daquele lado).
@@ -121,8 +125,19 @@ export function quadroFoto(chave: string): { cls?: string; style?: string } {
 /** Classe da foto: p peça | s sem peça achada | m marketing do anúncio | c carro inteiro | null sem classe. */
 export function classeFoto(chave: string, tabela: Record<string, Medida> = medidas()): string | null {
   const e = tabela[chave];
-  const c = e && e.find((v) => typeof v === 'string' && v.length === 1);
+  const c = e && e.find((v) => typeof v === 'string' && /^[psmc]$/.test(v));
   return typeof c === 'string' ? c : null;
+}
+
+/** A foto mostra o código gravado da peça (a etiqueta, lida pelo OCR no medir_fotos_ml.py)? */
+export function temCodigo(chave: string, tabela: Record<string, Medida> = medidas()): boolean {
+  return !!chave && !!tabela[chave]?.includes(CODIGO_NA_FOTO);
+}
+
+/** "Ver o código na foto": a posição da 1ª foto com o código em `galeria` (as fotos do anúncio na ordem da galeria,
+ *  fotosGaleria); -1 = nenhuma (o atalho não aparece). Na página, some 1 quando a capa de estúdio vem antes. */
+export function fotoDoCodigo(galeria: string[], tabela: Record<string, Medida> = medidas()): number {
+  return galeria.findIndex((k) => temCodigo(k, tabela));
 }
 
 /** As fotos do anúncio que vão para a galeria, o JSON-LD e o feed: sem o marketing do vendedor (banner de entrega,
