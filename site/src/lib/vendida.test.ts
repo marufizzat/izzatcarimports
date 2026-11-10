@@ -165,6 +165,31 @@ describe('com o estoque do momento', () => {
       expect(r.itens.some((it) => it.id === p.id)).toBe(false);
     }
   });
+  it('"Ver parecidas"/"Ver todas" levam à MESMA lista dos cartões: todo cartão está nela e ela nunca é menor (revisão 10, P3)', () => {
+    const amostra = pecas.filter((_, i) => i % 41 === 0);
+    let cheias = 0;
+    for (const p of amostra) {
+      const v = lerEndereco(`/peca/${p.slug}.html`, montarDicionario(pecas.filter((x) => x.id !== p.id)))!;
+      const r = parecidas(busca, v);
+      if (!r.itens.length) continue;
+      const lista = busca.procurar(r.filtros);
+      expect(busca.aproximado, p.slug).toBe(false);
+      const ids = new Set(lista.filter((it) => it.id !== p.id).map((it) => it.id));
+      expect(r.itens.filter((it) => !ids.has(it.id)).map((it) => it.id), p.slug).toEqual([]);
+      expect(ids.size, p.slug).toBeGreaterThanOrEqual(r.itens.length);
+      if (r.itens.length === 6) cheias++;
+    }
+    expect(cheias / amostra.length).toBeGreaterThan(0.9);
+  });
+  it('o 1º degrau abre a fila: "airbag motorista" do C320 vendido mostra antes os airbags do C320', () => {
+    const c320 = pecas.filter((x) => x.b === 'Mercedes-Benz' && x.m === 'C320');
+    if (!c320.length) return;
+    const v = lerEndereco('/peca/airbag-motorista-mercedes-benz-c320-2001-2007-MLB4811340217.html', montarDicionario(pecas))!;
+    const r = parecidas(busca, v);
+    const lista = busca.procurar(r.filtros);
+    expect(lista.length).toBeGreaterThanOrEqual(r.itens.length);
+    expect(r.itens.every((it) => lista.some((x) => x.id === it.id))).toBe(true);
+  });
   it('a categoria pelo nome acerta a maioria', () => {
     const amostra = pecas.filter((p, i) => i % 23 === 0 && p.c && p.c !== 'Outros');
     const certas = amostra.filter((p) => categoriaDoNome(pecas.filter((x) => x.id !== p.id), p.n) === p.c).length;

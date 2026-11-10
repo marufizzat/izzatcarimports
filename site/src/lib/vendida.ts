@@ -319,9 +319,12 @@ export function categoriaDoNome(itens: Pick<Item, 'n' | 'c'>[], nome: string): s
 
 /** As parecidas, com o índice do catálogo (a mesma busca de lib/busca.ts). Escada, do mais perto para o mais longe:
  *  o nome no carro; o carro na mesma categoria; o nome em outros carros da marca; o carro inteiro; o nome em outros
- *  carros; a marca. "Ver parecidas" leva ao 1º degrau com peça (nunca a uma lista vazia) e os cartões seguem a escada
- *  até 6; dentro de cada degrau, primeiro as de nome mais parecido e as da mesma geração (nos anos da vendida). `doCarro` = o 1º degrau achado é só o carro (o título da
- *  seção diz "Mais peças do <carro>", não "parecidas"). */
+ *  carros; a marca. Os cartões e o "Ver parecidas"/"Ver todas" saem da MESMA lista (revisão 10, P3: 6 cartões e o link
+ *  levava a uma lista de 3): o 1º degrau com peça e, se ele não tem 6, o 1º degrau maior que CONTÉM ele (o carro, a
+ *  marca, o nome em toda a marca...; nunca o da categoria adivinhada, que pode não ter as do 1º degrau) com 6, senão o
+ *  maior deles. Dentro dessa lista, os cartões seguem a escada (as peças do 1º degrau abrem a fila) e, em cada degrau,
+ *  primeiro as de nome mais parecido e as da mesma geração (nos anos da vendida). Nunca leva a uma lista vazia nem menor
+ *  que a mostrada. `doCarro` = a lista é só o carro (o título da seção diz "Mais peças do <carro>", não "parecidas"). */
 export function parecidas(busca: Busca, v: Vendida, n = 6): { filtros: Filtros; itens: Item[]; doCarro: boolean } {
   const { nome: q, marca, modelo } = v;
   const exato = (f: Filtros) => { const r = busca.procurar(f); return busca.aproximado ? [] : r; };
@@ -341,22 +344,27 @@ export function parecidas(busca: Busca, v: Vendida, n = 6): { filtros: Filtros; 
   };
   const palavrasQ = new Set(q.split(' ').map(norm).filter((w) => w.length >= 3 && !POSICAO.has(w)));
   const comuns = (it: Item) => it.n.split(' ').reduce((k, w) => k + (palavrasQ.has(norm(w)) ? 1 : 0), 0);
-  let filtros: Filtros | null = null;
+  // a lista de cada degrau (o índice em cache, até 10 min, ainda pode ter a própria peça vendida)
+  const listas = degraus
+    .map(([f, soExato]) => [f, (soExato ? exato(f) : busca.procurar(f)).filter((it) => it.id !== v.mlb)] as const)
+    .filter(([, r]) => r.length > 0);
+  if (!listas.length) return { filtros: {}, itens: [], doCarro: false };
+  // a lista dos cartões e do link: o 1º degrau ou um maior que o contém (todo filtro dele está no 1º degrau)
+  const [primeiro] = listas[0];
+  const contem = (f: Filtros) => Object.entries(f).every(([k, x]) => primeiro[k as keyof Filtros] === x);
+  const candidatas = listas.filter(([f]) => contem(f));
+  const [filtros, base] = candidatas.find(([, r]) => r.length >= n) ?? candidatas.reduce((a, b) => (b[1].length > a[1].length ? b : a));
+  const naLista = new Set(base.map((it) => it.id));
   const vistos = new Set<string>();
   const itens: Item[] = [];
-  for (const [f, soExato] of degraus) {
-    // o índice em cache (até 10 min) ainda pode ter a própria peça vendida
-    const r = (soExato ? exato(f) : busca.procurar(f)).filter((it) => it.id !== v.mlb);
-    if (!r.length) continue;
-    filtros ??= f;
+  for (const [, r] of listas) {
     // dentro do degrau: mais palavras do nome em comum primeiro, depois a mesma geração (nos anos da vendida)
     const nota = (it: Item) => comuns(it) * 2 + (nosAnos(it) ? 1 : 0);
     for (const it of r.map((x, i) => [x, nota(x), i] as const).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(([x]) => x)) {
       if (itens.length >= n) break;
-      if (!vistos.has(it.id)) { vistos.add(it.id); itens.push(it); }
+      if (naLista.has(it.id) && !vistos.has(it.id)) { vistos.add(it.id); itens.push(it); }
     }
     if (itens.length >= n) break;
   }
-  const f = filtros ?? {};
-  return { filtros: f, itens, doCarro: !f.q && !f.tipo };
+  return { filtros, itens, doCarro: !filtros.q && !filtros.tipo };
 }
