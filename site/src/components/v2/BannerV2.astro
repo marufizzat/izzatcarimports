@@ -68,10 +68,10 @@ const icone = ICONE[nome] ?? 'conversa';
   .fw-texto { display: grid; gap: 6px; min-width: 0; }
   .fw-titulo { margin: 0; font-stretch: 80%; font-weight: 820; font-size: clamp(24px, 2.5vw, 32px); line-height: 1.02; letter-spacing: -.01em; color: var(--ink); text-wrap: balance; }
   .fw-apoio { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
-  .fw-botao { --h: 54px; padding: 0 24px; }
+  .fw-botao { --h: var(--botao-g); padding: 0 24px; }
   @media (max-width: 760px) {
     .faixa-whats { grid-template-columns: auto minmax(0, 1fr); padding: 20px 20px 20px 24px; gap: 14px 16px; }
     .fw-icone { width: 52px; height: 52px; align-self: start; }
-    .fw-botao { grid-column: 1 / -1; width: 100%; white-space: normal; height: auto; min-height: 52px; }
+    .fw-botao { grid-column: 1 / -1; width: 100%; white-space: normal; height: auto; min-height: var(--h); }
   }
 </style>

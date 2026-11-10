@@ -3,14 +3,20 @@
 // A grade de marcas já vem no HTML, gerada pela MESMA função do script e com os MESMOS dados do
 // /dados/meu-carro.json: a primeira tela nasce pronta, sem "carregando" e sem pulo de layout.
 // Quem já tem carro salvo: antes de pintar, o esqueleto do "cartão do seu carro" (mesmo desenho e mesma altura do
-// cartão de verdade, htmlEsqueletoGaragem) toma o lugar da grade, já com o nome do carro, o logo e o link das peças.
+// cartão de verdade, htmlEsqueletoGaragem) toma o lugar da grade, já com o nome do carro, o logo, o link das peças e a
+// arte (a chave dela vem guardada com o carro: lib/meuCarro.ts, a/as). Carro salvo que saiu do estoque (fora da lista
+// dos modelos, data-modelos): a grade fica e o aviso já nasce em cima dela (o mesmo do seletor, htmlAvisoSemPeca).
 // O mesmo seletor abre na caixa do cabeçalho (ui/meuCarroPicker.ts).
 import { garagem } from '../lib/garagem';
-import { htmlInicial, htmlEsqueletoGaragem } from './ui/meuCarroPicker';
-const html = htmlInicial(garagem());
+import { htmlInicial, htmlEsqueletoGaragem, htmlAvisoSemPeca, AVISO_CARRO } from './ui/meuCarroPicker';
+const g = garagem();
+const html = htmlInicial(g);
 const esqueleto = htmlEsqueletoGaragem();
+const aviso = htmlAvisoSemPeca(AVISO_CARRO);
+// os modelos com peça, por marca (~2 KB, só na home): o esqueleto do cartão só entra se o carro salvo ainda existe
+const modelos = JSON.stringify(Object.fromEntries(g.marcas.map((m) => [m.n, m.modelos.map((x) => x.n)])));
 ---
-<div class="mc-raiz" data-mc-raiz data-hero data-ssr><div class="mc-conteudo" data-mc-conteudo set:html={html} /><p class="mc-sr" aria-live="polite" data-mc-voz></p><template data-mc-esq set:html={esqueleto}></template></div>
+<div class="mc-raiz" data-mc-raiz data-hero data-ssr><div class="mc-conteudo" data-mc-conteudo set:html={html} /><p class="mc-sr" aria-live="polite" data-mc-voz></p><template data-mc-esq data-modelos={modelos} set:html={esqueleto}></template><template data-mc-aviso set:html={aviso}></template></div>
 <script is:inline>
   // Quem já escolheu o carro: o cartão do carro (esqueleto) entra no lugar da grade de marcas antes do script principal.
   // O nome e o link das peças já são os de verdade; contagem, anos e arte chegam com /dados/meu-carro.json.
@@ -22,6 +28,21 @@ const esqueleto = htmlEsqueletoGaragem();
       var alvo = r.querySelector('[data-mc-conteudo]');
       var t = r.querySelector('template[data-mc-esq]');
       if (!alvo || !t) return;
+      var lista = JSON.parse(t.getAttribute('data-modelos') || '{}');
+      if (!(lista[c.b] || []).some(function (m) { return m === c.m; })) {
+        // saiu do estoque: o aviso entra em cima da grade agora (o seletor redesenha o mesmo, sem a grade descer)
+        var ta = r.querySelector('template[data-mc-aviso]');
+        var corpo = alvo.querySelector('.mc-corpo');
+        if (!ta || !corpo) return;
+        var av = ta.content.cloneNode(true);
+        var p = av.querySelector('[data-mc-aviso]');
+        var nomeAviso = c.b + ' ' + c.m;
+        p.querySelector('b').textContent = nomeAviso;
+        var link = p.querySelector('a');
+        link.setAttribute('href', link.getAttribute('href').replace('__CARRO__', encodeURIComponent(nomeAviso)));
+        corpo.insertBefore(av, corpo.firstChild);
+        return;
+      }
       var f = t.content.cloneNode(true);
       var nome = f.querySelector('[data-esq-nome]');
       var marca = document.createElement('span');
@@ -29,8 +50,19 @@ const esqueleto = htmlEsqueletoGaragem();
       nome.textContent = '';
       nome.appendChild(marca);
       nome.appendChild(document.createTextNode(' ' + c.m));
-      // NOME_LONGO de ui/meuCarroPicker.ts
+      // NOME_LONGO e MODELO_LONGO de ui/meuCarroPicker.ts
       if ((c.b + ' ' + c.m).length > 16) nome.classList.add('mc-longo');
+      if (c.m.length > 8) nome.classList.add('mc-modelo-longo');
+      // a arte guardada com o carro (lib/meuCarro.ts: a/as), com o MESMO srcset do cartão (fonteArte): baixa uma vez só
+      var arte = f.querySelector('[data-esq-arte]');
+      if (typeof c.a === 'string' && /^[a-z0-9-]{1,80}$/.test(c.a)) {
+        var src = '/arte/v2/carro-' + c.a + '.webp';
+        var ws = Array.isArray(c.as) ? c.as.filter(function (w) { return w === (w | 0) && w > 0 && w <= 4000; }) : [];
+        if (ws.length) arte.setAttribute('srcset', ws.map(function (w, i) { return (i === ws.length - 1 ? src : src.replace(/\.webp$/, '-' + w + '.webp')) + ' ' + w + 'w'; }).join(', '));
+        else arte.removeAttribute('sizes');
+        arte.addEventListener('load', function () { arte.setAttribute('data-ok', ''); });
+        arte.setAttribute('src', src);
+      } else arte.parentNode.removeChild(arte);
       // o logo da marca, se ela está na grade de cara
       var tiles = r.querySelectorAll('.mc-marca');
       for (var i = 0; i < tiles.length; i++) {

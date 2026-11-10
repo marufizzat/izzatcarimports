@@ -114,8 +114,8 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     : erro ? 'Não deu para carregar a busca agora.'
     : semResultado ? `Nada com “${termoTela}” no site.`
     : !res ? ''
-    : res.aproximado ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}, use as setas.`
-    : `${nSug === 1 ? '1 sugestão' : `${nSug} sugestões`}, use as setas.`;
+    : res.aproximado ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}, usa as setas.`
+    : `${nSug === 1 ? '1 sugestão' : `${nSug} sugestões`}, usa as setas.`;
 
   useEffect(() => {
     setAtivo(-1);
@@ -324,7 +324,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
             </svg>
           </button>
         )}
-        <button type="submit" className="botao botao-laranja sb-btn" aria-label="Buscar">
+        <button type="submit" className="botao botao-laranja botao-buscar sb-btn" aria-label="Buscar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
             <circle cx="11" cy="11" r="6.5" />
             <path d="m20 20-3.6-3.6" />
@@ -346,11 +346,11 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
             </p>
           )}
           {res?.aproximado && (
-            <p className="sb-status sb-status-aprox">Nada exato com “{termoTela}”. Veja as parecidas:</p>
+            <p className="sb-status sb-status-aprox">Nada exato com “{termoTela}”. Estas são as parecidas:</p>
           )}
           {semResultado && (
             <p className="sb-status">
-              Nada com “{termoTela}” no site.{!res?.carros.length && ' Tente o modelo do carro ou o código gravado.'}
+              Nada com “{termoTela}” no site.{!res?.carros.length && ' Tenta o modelo do carro ou o código gravado.'}
             </p>
           )}
           <ul id={listaId} role="listbox" aria-label="Sugestões de peças">

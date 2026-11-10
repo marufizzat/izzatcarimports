@@ -1,6 +1,7 @@
 ---
 // Garantia e trocas: só o que o site já afirma (90 dias em toda peça, nota fiscal em toda venda, como acionar
-// pelo WhatsApp, troca ou devolução depois da avaliação, proteção de compra do Mercado Livre, CDV nº 01060).
+// pelo WhatsApp, a gente avalia e resolve, proteção de compra do Mercado Livre, CDV nº 01060). Sem "troca ou
+// devolução" até o Maruf definir a regra (prazo, frete, compra errada): auditoria 4, item 3.2.
 // Cada fato aparece UMA vez (antes o FAQ repetia a página palavra por palavra). Uma mensagem só para a garantia.
 // FALTA O MARUF CONFIRMAR, antes de virar perguntas aqui: o que a garantia cobre e o que não cobre, a partir de
 // quando conta o prazo, quem paga o frete da troca e em quantos dias a gente responde.
@@ -19,17 +20,17 @@ const canonicalPath = '/garantia.html';
 const msgBanner = 'Quero uma peça original com nota fiscal e garantia. Meu carro é ____ (modelo e ano) e a peça é: ____';
 const msgGarantia = 'Comprei uma peça e preciso de ajuda com a garantia. Número do pedido: ';
 const passos = [
-  { i: 'conversa', t: 'Chame pelo WhatsApp', s: 'Dentro do prazo de garantia. Informe o número do pedido e o que aconteceu com a peça.' },
-  { i: 'camera', t: 'Mande fotos', s: 'Fotos da peça, mostrando o problema. Se tiver, inclua também a etiqueta ou o código gravado.' },
-  { i: 'troca', t: 'A gente resolve', s: 'A gente avalia o caso e resolve com troca ou devolução.' },
+  { i: 'conversa', t: 'Chama no WhatsApp', s: 'Dentro do prazo de garantia. Informa o número do pedido e o que aconteceu com a peça.' },
+  { i: 'camera', t: 'Manda fotos', s: 'Fotos da peça, mostrando o problema. Se tiver, inclui também a etiqueta ou o código gravado.' },
+  { i: 'troca', t: 'A gente resolve', s: 'Em 90 dias, fala no WhatsApp com o número do pedido que a gente avalia e resolve.' },
 ];
 ---
 <Pagina
   titulo="Garantia e trocas | Izzat Car Imports"
-  descricao="90 dias de garantia em toda peça e nota fiscal em toda venda. Se algo der errado, fale pelo WhatsApp com o número do pedido e a gente resolve."
+  descricao="90 dias de garantia em toda peça e nota fiscal em toda venda. Se algo der errado, fala pelo WhatsApp com o número do pedido que a gente avalia e resolve."
   canonical={canonical}
 >
-  <TopoArte trilha={[['Início', '/index.html'], ['Garantia e trocas', canonicalPath]]}
+  <TopoArte trilha={[['Início', '/'], ['Garantia e trocas', canonicalPath]]}
     titulo="Garantia e trocas"
     lead="O que vale para toda peça que sai do pátio e o que fazer se ela der problema."
     arte="/arte/v2/topo-garantia.webp" />
@@ -51,14 +52,14 @@ const passos = [
     {/* o Maruf mostrando a peça: a garantia com rosto, logo depois do certificado dos 90 dias */}
     <div class="gar-banner">
       <BannerV2 formato="arte" nome="banner-garantia" href={whatsUrl(msgBanner)}
-        texto="90 dias de garantia. Peça original, conferida. Com nota fiscal e 90 dias de garantia. Chamar no WhatsApp" />
+        texto="Peça original, conferida. Com nota fiscal e 90 dias de garantia. Chamar no WhatsApp" />
     </div>
 
     <section class="inst-sec" aria-labelledby="h-problema">
       <div class="gar-cabeca">
         <div>
           <h2 class="titulo-secao inst-h2" id="h-problema">Se a peça der problema</h2>
-          <p class="inst-lead-sec">Fale com a gente dentro do prazo. Quanto mais fotos e detalhes você mandar, mais rápido a gente resolve.</p>
+          <p class="inst-lead-sec">Fala com a gente dentro do prazo. Quanto mais fotos e detalhes você mandar, mais rápido a gente resolve.</p>
         </div>
         <a class="botao botao-laranja inst-botao" href={whatsUrl(msgGarantia)} rel="noopener">
           <Icone nome="whats" />Chamar no WhatsApp
@@ -74,11 +75,11 @@ const passos = [
     <section class="inst-sec inst-sec--linha inst-duas gar-evitar" aria-labelledby="h-evitar">
       <div class="inst-texto">
         <h2 class="titulo-secao inst-h2" id="h-evitar">Evite a peça errada</h2>
-        <p>Antes de fechar a compra, confira estes pontos. Assim a peça chega certa na primeira vez.</p>
+        <p>Antes de fechar a compra, confere estes pontos. Assim a peça chega certa na primeira vez.</p>
         <ul class="inst-lista">
-          <li><Icone nome="check" /><span>Confirme o <b>modelo, o ano e o motor</b> do seu carro antes de comprar.</span></li>
-          <li><Icone nome="check" /><span>Compare o <b>código gravado</b> da sua peça velha com o código do anúncio.</span></li>
-          <li><Icone nome="check" /><span>Olhe as fotos e a ficha técnica da peça no anúncio ou no site.</span></li>
+          <li><Icone nome="check" /><span>Confirma o <b>modelo, o ano e o motor</b> do seu carro antes de comprar.</span></li>
+          <li><Icone nome="check" /><span>Compara o <b>código gravado</b> da sua peça velha com o código da página da peça.</span></li>
+          <li><Icone nome="check" /><span>Olha as fotos e a ficha técnica na página da peça.</span></li>
         </ul>
       </div>
       <BuscaCodigo />

@@ -39,6 +39,8 @@ const previa = process.env.PREVIA === '1';
   <meta property="og:url" content={canon} />
   <meta property="og:description" content={descricao} />
   <meta property="og:image" content={new URL(ogImagem, Astro.site).href} />
+  {/* X/Twitter (e quem lê o mesmo cartão): a imagem grande, com o título e a descrição de cima */}
+  <meta name="twitter:card" content="summary_large_image" />
   <slot name="head" />
 </head>
 <body>

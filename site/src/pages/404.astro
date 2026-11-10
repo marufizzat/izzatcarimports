@@ -8,14 +8,14 @@ const ld = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/index.html` },
+    { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE}/` },
     { '@type': 'ListItem', position: 2, name: 'Página não encontrada', item: canonical },
   ],
 };
 ---
 <Pagina
   titulo="Página não encontrada | Izzat Car Imports"
-  descricao="Essa página não existe ou saiu do ar. Busque a peça no catálogo ou fale com a gente pelo WhatsApp."
+  descricao="Essa página não existe ou saiu do ar. Busca a peça no catálogo ou fala com a gente pelo WhatsApp."
   canonical={canonical}
   noindex
 >
@@ -26,7 +26,7 @@ const ld = {
   {/* a trilha no topo à esquerda, como nas outras páginas (antes ficava no meio, embaixo da arte) */}
   <nav class="moldura nf-trilha-wrap" aria-label="Você está em">
     <ol class="nf-trilha">
-      <li><a href="/index.html">Início</a></li>
+      <li><a href="/">Início</a></li>
       <li><span aria-current="page">Página não encontrada</span></li>
     </ol>
   </nav>
@@ -37,12 +37,12 @@ const ld = {
 
     <div class="nf-texto">
       <h1 class="display nf-h1">Página não encontrada</h1>
-      <p class="lead nf-lead">O link pode estar errado ou a página mudou de lugar. Busque a peça ou fale com a gente.</p>
+      <p class="lead nf-lead">O link pode estar errado ou a página mudou de lugar. Busca a peça ou fala com a gente.</p>
 
       <form class="busca nf-busca" action="/catalogo.html" method="get" role="search">
         <Icone nome="busca" />
         <input type="search" name="q" placeholder="Peça ou código" aria-label="Buscar peça, carro ou código" autocomplete="off" enterkeyhint="search" />
-        <button type="submit" class="botao botao-laranja">Buscar</button>
+        <button type="submit" class="botao botao-laranja botao-buscar" aria-label="Buscar"><Icone nome="busca" /><span>Buscar</span></button>
       </form>
 
       <div class="nf-links">
@@ -77,6 +77,6 @@ const ld = {
   .nf-busca { margin-top: clamp(24px, 3.4vw, 36px); width: 100%; max-width: 560px; }
   .nf-busca .botao { padding: 0 18px; }
   .nf-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
-  .nf-botao { white-space: normal; height: auto; min-height: 52px; padding-block: 12px; text-align: center; line-height: 1.2; max-width: 100%; }
+  .nf-botao { white-space: normal; height: auto; min-height: var(--h); padding-block: 12px; text-align: center; line-height: 1.2; max-width: 100%; }
   @media (max-width: 600px) { .nf-botao { width: 100%; } }
 </style>

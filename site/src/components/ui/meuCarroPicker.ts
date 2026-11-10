@@ -14,7 +14,7 @@
 // Estilos: ui/MeuCarroEstilo.astro (globais, sempre dentro de .mc-raiz). Salva só no navegador (lib/meuCarro.ts).
 // Caixa aberta pela faixa da página da peça (raiz com data-origem="peca"): o resultado ganha "Conferir nesta peça"
 // e, ao escolher o ano, a raiz avisa (evento ESCOLHIDO) para a caixa fechar e mostrar a resposta na faixa.
-import { lerMeuCarro, salvarMeuCarro, carregarGaragem as baixarGaragem, linkCatalogo, EVENTO, ESCOLHIDO, type MeuCarro } from '../../lib/meuCarro';
+import { lerMeuCarro, salvarMeuCarro, lembrarArte, carregarGaragem as baixarGaragem, linkCatalogo, EVENTO, ESCOLHIDO, type MeuCarro } from '../../lib/meuCarro';
 import { whatsUrl } from '../../lib/whats';
 import { LINHA } from '../../lib/icones';
 
@@ -72,6 +72,20 @@ const SETA_LADO = (d: 1 | -1) => `<svg viewBox="0 0 24 24" aria-hidden="true"><p
 /** Nome do carro maior que isto (marca + espaço + modelo) usa a letra menor no cartão (o esqueleto da abertura,
  *  SeletorCarro.astro, usa o mesmo número). */
 export const NOME_LONGO = 16;
+/** No celular a marca vai numa linha pequena e o modelo em outra, grande: modelo com mais letras que isto ("Discovery",
+ *  "Palio Weekend") usa a letra menor (o esqueleto da abertura usa o mesmo número). */
+export const MODELO_LONGO = 8;
+/** Largura da arte no cartão do carro (MeuCarroEstilo.astro): no celular (seletor até 469 px, tela até ~539) a arte ocupa
+ *  até 80% da altura do cartão (~176 px de largura); no resto, ~232 px. O esqueleto da abertura usa o MESMO valor (o
+ *  navegador escolhe o mesmo arquivo do srcset e a arte não desce duas vezes). */
+export const SIZES_ARTE = '(max-width: 539px) 176px, 232px';
+/** src e srcset da arte do carro (a = chave, as = larguras do srcset; a última é a arte inteira). A MESMA conta está no
+ *  script do esqueleto (SeletorCarro.astro). */
+export function fonteArte(a: string, as: number[] = []): { src: string; srcset: string } {
+  const src = `/arte/v2/carro-${a}.webp`;
+  const srcset = as.map((w, i) => `${i === as.length - 1 ? src : src.replace(/\.webp$/, `-${w}.webp`)} ${w}w`).join(', ');
+  return { src, srcset };
+}
 const inicial = (): Estado => ({
   etapa: 'marca', marca: null, modelo: null, ano: null, todas: false, todosModelos: false, anoSemPeca: null, carroSemPeca: null, naPeca: false,
 });
@@ -106,13 +120,20 @@ function htmlCampos(e: Estado): string {
     : '<option value="">Todos os anos</option>';
   return `
   <div class="mc-campos" role="group" aria-label="Seu carro">
-    ${botao('marca', 'Marca', e.marca?.n ?? null, 'Escolha', true)}
-    ${botao('modelo', 'Modelo', mo?.n ?? null, e.marca?.modelos.length ? 'Escolha' : '—', !!e.marca?.modelos.length)}
+    ${botao('marca', 'Marca', e.marca?.n ?? null, 'Escolher', true)}
+    ${botao('modelo', 'Modelo', mo?.n ?? null, e.marca?.modelos.length ? 'Escolher' : '—', !!e.marca?.modelos.length)}
     <label class="mc-campo mc-campo-ano${e.ano != null ? ' mc-campo-cheio' : ''}"${mo ? '' : ' data-off'}>
       <small>Ano</small><b>${e.ano != null ? e.ano : mo ? 'Todos' : '—'}</b>${SETA}
       <select data-campo="ano" data-chave="campo:ano" aria-label="Ano do carro"${mo ? '' : ' disabled'}>${opcoes}</select>
     </label>
   </div>`;
+}
+
+/** Carro salvo que saiu do estoque. O esqueleto da abertura (SeletorCarro.astro) usa este HTML com o nome AVISO_CARRO
+ *  e troca pelo carro salvo antes de pintar: o aviso já nasce no lugar (a grade de marcas não desce depois). */
+export const AVISO_CARRO = '__CARRO__';
+export function htmlAvisoSemPeca(carro: string): string {
+  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolhe outro carro ou <a href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">pede no WhatsApp</a>.</p>`;
 }
 
 function htmlMarcas(g: Garagem, e: Estado): string {
@@ -123,9 +144,7 @@ function htmlMarcas(g: Garagem, e: Estado): string {
       <li><button type="button" class="mc-marca" data-acao="marca" data-n="${esc(m.n)}" data-chave="marca:${esc(m.n)}"${m.n === foco ? ' data-foco' : ''} aria-pressed="${e.marca?.n === m.n}" aria-label="${esc(m.n)}, ${pecasTxt(m.c)}" title="${esc(m.n)}">
         ${disco(m)}${nomeNoDisco(m) ? '' : `<span class="mc-marca-nome${m.n.length >= 9 ? ' mc-longo' : ''}" aria-hidden="true">${nomeMarca(m.n)}</span>`}</button></li>`)
     .join('');
-  const aviso = e.carroSemPeca
-    ? `<p class="mc-aviso-linha">Sem peças do <b>${esc(e.carroSemPeca)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Procuro peça para ${e.carroSemPeca}. Tem no pátio?`)}">peça no WhatsApp</a>.</p>`
-    : '';
+  const aviso = e.carroSemPeca ? htmlAvisoSemPeca(e.carroSemPeca) : '';
   return `${aviso}
     <ul class="mc-marcas"${e.todas ? ' data-todas' : ''} aria-label="Marcas">${tiles}</ul>
     <button type="button" class="mc-mais" data-acao="todas" data-chave="todas" aria-expanded="${e.todas}">${e.todas ? 'Mostrar menos marcas' : `Ver todas as ${g.marcas.length} marcas`}${SETA}</button>`;
@@ -139,7 +158,7 @@ function htmlModelos(e: Estado): string {
   if (!m.modelos.length)
     // marca sem modelo lido nos anúncios (ex.: Mini): vai direto para as peças dela
     return `
-    <p class="mc-frase"><b class="num">${fmt(m.c)}</b> ${m.c === 1 ? 'peça' : 'peças'} da <b>${esc(m.n)}</b>. Confira o modelo e o ano em cada peça.</p>
+    <p class="mc-frase"><b class="num">${fmt(m.c)}</b> ${m.c === 1 ? 'peça' : 'peças'} da <b>${esc(m.n)}</b>. Confere o modelo e o ano em cada peça.</p>
     <a class="botao botao-laranja mc-ver" href="${esc(todas)}" data-chave="ver" data-foco>${m.c === 1 ? 'Ver a peça' : `Ver as ${pecasTxt(m.c)} da ${esc(m.n)}`}</a>
     <p class="mc-pe">${procura}</p>`;
   const cortar = !e.todosModelos && m.modelos.length > MODELOS_DE_CARA + 1;
@@ -167,24 +186,26 @@ function htmlConta(e: Estado): string {
 const textoVer = (n: number) => (n === 1 ? 'Ver a peça' : `Ver as ${fmt(n)} peças`);
 const textoVerNaPeca = (n: number) => (n === 1 ? 'Ver a peça do seu carro' : `Ver as ${fmt(n)} peças do seu carro`);
 const carroDe = (e: Estado): MeuCarro => ({ b: e.marca!.n, m: e.modelo!.n, y: e.ano });
+/** a/as do carro salvo (lib/meuCarro.ts): a arte do modelo, para o esqueleto da abertura já nascer com ela. */
+const arteDo = (mo: Modelo): Pick<MeuCarro, 'a' | 'as'> => (mo.a ? { a: mo.a, ...(mo.as?.length ? { as: mo.as } : {}) } : {});
 
 /** Arte do carro (srcset só com as variantes em dia, lib/garagem.ts); sem arte, o logo grande da marca. */
 function htmlArte(m: Marca, mo: Modelo): string {
   if (!mo.a) return `<span class="mc-g-marca" aria-hidden="true">${disco(m)}</span>`;
-  const src = `/arte/v2/carro-${mo.a}.webp`;
-  const ws = mo.as ?? [];
-  const srcset = ws.length
-    ? ` srcset="${ws.map((w, i) => `${i === ws.length - 1 ? src : src.replace(/\.webp$/, `-${w}.webp`)} ${w}w`).join(', ')}" sizes="232px"`
-    : '';
-  return `<img class="mc-g-arte" src="${esc(src)}"${srcset} alt="" width="1200" height="800" decoding="async" />`;
+  const { src, srcset } = fonteArte(mo.a, mo.as);
+  // srcset e sizes antes do src: o navegador escolhe o arquivo uma vez só
+  return `<img class="mc-g-arte"${srcset ? ` srcset="${esc(srcset)}" sizes="${SIZES_ARTE}"` : ''} src="${esc(src)}" alt="" width="1200" height="800" decoding="async" />`;
 }
 
-/** Anos com peça em linha: Todos · 2011 · 2012 … (do mais velho para o mais novo; rolável quando não cabe). */
+/** Anos com peça em linha: Todos · 2011 · 2012 … (do mais velho para o mais novo; rolável quando não cabe).
+ *  Modelo sem ano nas peças: sem a linha. Um ano só: sem o "Todos" (daria as mesmas peças do ano). */
 function htmlAnos(e: Estado): string {
   const mo = e.modelo!;
+  if (!mo.ya.length) return '';
   const chip = (y: number | null, c: number) =>
     `<button type="button" class="mc-ano num" data-acao="ano" data-y="${y ?? ''}" data-chave="ano:${y ?? ''}" aria-pressed="${e.ano === y}" aria-label="${y ?? 'Todos os anos'}, ${pecasTxt(c)}">${y ?? 'Todos'}</button>`;
-  const chips = [chip(null, mo.c)].concat([...mo.ya].sort((a, b) => a[0] - b[0]).map(([y, c]) => chip(y, c))).join('');
+  const anos = [...mo.ya].sort((a, b) => a[0] - b[0]).map(([y, c]) => chip(y, c));
+  const chips = (mo.ya.length > 1 ? [chip(null, mo.c)] : []).concat(anos).join('');
   return `
     <div class="mc-anos" role="group" aria-label="Ano do carro">
       <span class="mc-anos-rot" aria-hidden="true">Ano</span>
@@ -201,6 +222,7 @@ function htmlGaragem(e: Estado): string {
   const m = e.marca!;
   const mo = e.modelo!;
   const longo = `${m.n} ${mo.n}`.length > NOME_LONGO;
+  const modeloLongo = mo.n.length > MODELO_LONGO;
   // logo pequeno num disco (letreiro largo demais, como Dodge, ou marca sem logo: o desenho do carro no lugar)
   const logo = `<span class="mc-g-logo">${nomeNoDisco(m) ? `<svg viewBox="0 0 24 24" aria-hidden="true">${LINHA.carro}</svg>` : `<img src="${esc(m.logo!)}" alt="" width="${m.lw}" height="${m.lh}" decoding="async" />`}</span>`;
   return `
@@ -208,7 +230,7 @@ function htmlGaragem(e: Estado): string {
       ${htmlArte(m, mo)}
       <div class="mc-g-txt">
         <p class="mc-g-olho">${logo}<span>Seu carro</span></p>
-        <p class="mc-g-nome${longo ? ' mc-longo' : ''}"><span>${esc(m.n)}</span> ${esc(mo.n)}</p>
+        <p class="mc-g-nome${longo ? ' mc-longo' : ''}${modeloLongo ? ' mc-modelo-longo' : ''}"><span>${esc(m.n)}</span> ${esc(mo.n)}</p>
         <p class="mc-g-conta" data-mc-conta>${htmlConta(e)}</p>
       </div>
     </div>`;
@@ -219,7 +241,7 @@ const htmlSalvo = (e: Estado | null) =>
   e?.anoSemPeca ? `${AVISO}Sem peças do ${e.anoSemPeca}` : `${CHECK}Salvo neste aparelho`;
 const htmlNota = (e: Estado | null) => `
     <div class="mc-nota"><span class="mc-salvo${e?.anoSemPeca ? ' mc-salvo-aviso' : ''}" data-mc-salvo>${htmlSalvo(e)}</span>
-      <span class="mc-nota-acoes"><button type="button" data-acao="trocar" data-chave="trocar">Trocar carro</button><span aria-hidden="true">·</span><button type="button" data-acao="tirar" data-chave="tirar">Esquecer</button></span></div>`;
+      <span class="mc-nota-acoes"><button type="button" data-acao="trocar" data-chave="trocar" aria-label="Trocar carro">Trocar<span class="mc-so-largo"> carro</span></button><span aria-hidden="true">·</span><button type="button" data-acao="tirar" data-chave="tirar">Esquecer</button></span></div>`;
 
 function htmlPronto(e: Estado): string {
   const n = contagem(e.modelo!, e.ano);
@@ -236,8 +258,9 @@ function htmlPronto(e: Estado): string {
  *  nome e o link antes de pintar); o desenho de verdade entra no mesmo lugar, com a mesma altura. */
 export function htmlEsqueletoGaragem(): string {
   const chips = '<span class="mc-ano mc-esq"></span>'.repeat(9);
+  // a arte (quando o carro salvo traz a chave dela): o script do esqueleto põe srcset e src; sem chave, sai
   return `<div class="mc-corpo" data-etapa="pronto" aria-busy="true">
-    <div class="mc-garagem mc-garagem-esq"><div class="mc-g-txt">
+    <div class="mc-garagem mc-garagem-esq"><img class="mc-g-arte" sizes="${SIZES_ARTE}" alt="" width="1200" height="800" decoding="async" data-esq-arte /><div class="mc-g-txt">
       <p class="mc-g-olho"><span class="mc-g-logo" data-esq-logo></span><span>Seu carro</span></p>
       <p class="mc-g-nome" data-esq-nome><span></span> </p>
       <p class="mc-g-conta"><span class="mc-esq mc-esq-linha"></span></p></div></div>
@@ -300,6 +323,8 @@ export function montarPicker(raiz: HTMLElement): Handle {
   function aplicarSalvo() {
     const salvo = lerMeuCarro();
     const a = g && achar(g, salvo);
+    // a arte guardada com o carro (para o esqueleto da próxima visita) fica em dia com a garagem, sem avisar ninguém
+    if (a) lembrarArte(a.marca.n, a.modelo.n, a.modelo.a, a.modelo.as);
     e.todas = false;
     e.todosModelos = false;
     e.naPeca = raiz.dataset.origem === 'peca';
@@ -326,7 +351,7 @@ export function montarPicker(raiz: HTMLElement): Handle {
   function anunciar() {
     if (!e.marca || !e.modelo) return;
     const n = contagem(e.modelo, e.ano);
-    voz.textContent = `${pecasTxt(n)} para o seu ${e.marca.n} ${e.modelo.n}${e.ano ? ` ${e.ano}` : ''}${e.ano ? '' : '. Escolha o ano para conferir o encaixe'}`;
+    voz.textContent = `${pecasTxt(n)} para o seu ${e.marca.n} ${e.modelo.n}${e.ano ? ` ${e.ano}` : ''}${e.ano ? '' : '. Escolhe o ano para conferir o encaixe'}`;
   }
 
   function salvar() {
@@ -334,7 +359,7 @@ export function montarPicker(raiz: HTMLElement): Handle {
     salvando = true;
     e.anoSemPeca = null;
     e.carroSemPeca = null;
-    salvarMeuCarro({ b: e.marca.n, m: e.modelo.n, y: e.ano });
+    salvarMeuCarro({ b: e.marca.n, m: e.modelo.n, y: e.ano, ...arteDo(e.modelo) });
     salvando = false;
     anunciar();
   }
@@ -350,7 +375,16 @@ export function montarPicker(raiz: HTMLElement): Handle {
     const ativo = document.activeElement as HTMLElement | null;
     const dentro = !!ativo && conteudo.contains(ativo);
     const chave = dentro ? ativo!.dataset.chave : undefined;
+    // a arte que já está na tela (a do esqueleto ou a do desenho anterior) continua a MESMA: nada de baixar de novo
+    // nem de piscar (a nova começaria transparente até carregar)
+    const arteVelha = conteudo.querySelector<HTMLImageElement>('img.mc-g-arte');
     conteudo.innerHTML = corpo();
+    const arteNova = conteudo.querySelector<HTMLImageElement>('img.mc-g-arte');
+    if (arteVelha && arteNova && arteVelha.getAttribute('src') === arteNova.getAttribute('src')
+        && (arteVelha.getAttribute('srcset') ?? '') === (arteNova.getAttribute('srcset') ?? '')) {
+      arteVelha.removeAttribute('data-esq-arte');
+      arteNova.replaceWith(arteVelha);
+    }
     raiz.removeAttribute('data-ssr');
     raiz.removeAttribute('data-salvo');
     if (dentro) {

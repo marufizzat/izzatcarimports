@@ -21,12 +21,12 @@ const msgProcura = 'Não achei a peça no site. Meu carro é ____ (modelo e ano)
 
 const perguntas = [
   ['A peça é original?', 'Sim. Toda peça sai de um carro com baixa legal no Detran-RS e é original de fábrica. Somos desmanche credenciado, CDV nº 01060.'],
-  ['Tem garantia?', 'Tem: 90 dias de garantia em toda peça. Se der problema nesse prazo, fale com a gente pelo WhatsApp com o número do pedido e fotos.'],
+  ['Tem garantia?', 'Tem: 90 dias de garantia em toda peça. Se der problema nesse prazo, fala com a gente pelo WhatsApp com o número do pedido e fotos.'],
   ['Vocês emitem nota fiscal?', 'Sim, em toda venda.'],
-  ['Como sei se a peça serve no meu carro?', 'Confira o carro e os anos na página da peça e o código gravado. Na dúvida, mande o modelo e o ano do seu carro no WhatsApp que a gente confere na peça antes de você comprar.'],
+  ['Como sei se a peça serve no meu carro?', 'Olha o carro e os anos na página da peça e o código gravado. Na dúvida, manda o modelo e o ano do seu carro no WhatsApp que a gente confere na peça antes de você comprar.'],
   ['Como faço para comprar?', 'Pelo Mercado Livre, no botão de cada peça, ou direto pelo WhatsApp, com a mensagem já pronta.'],
   ['Enviam para todo o Brasil?', 'Sim. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.'],
-  ['Não achei a peça. E agora?', 'Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp que a gente procura no pátio.'],
+  ['Não achei a peça. E agora?', 'Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp que a gente procura no pátio.'],
 ];
 const ld = {
   '@context': 'https://schema.org',
@@ -59,7 +59,7 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-destaques" class="titulo-secao">Destaques do pátio</h2>
-        <p class="lead">Peças originais com preço, nota fiscal e 90 dias de garantia. Abra a peça para ver as fotos e o código gravado.</p>
+        <p class="lead">Peças originais com preço, nota fiscal e 90 dias de garantia. Abre a peça para ver as fotos e o código gravado.</p>
       </div>
       <VitrineDestaques />
       <BannerV2 class="vitrine-serve" nome="banner-serve" href={whatsUrl(msgServe)}
@@ -71,7 +71,7 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-cat" class="titulo-secao">Peças por categoria</h2>
-        <p class="lead">Escolha a parte do carro e veja tudo o que tem no estoque.</p>
+        <p class="lead">Escolhe a parte do carro e confere tudo o que tem no estoque.</p>
       </div>
       <GradeCategorias />
     </div>
@@ -94,8 +94,8 @@ const ld = {
   <section class="secao cv" aria-labelledby="t-marcas">
     <div class="moldura">
       <div class="cabeca-secao">
-        <h2 id="t-marcas" class="titulo-secao">Escolha pela marca do seu carro</h2>
-        <p class="lead">{marcasVisiveis().length} marcas para escolher. Escolha a sua para ver só as peças dela.</p>
+        <h2 id="t-marcas" class="titulo-secao">Escolhe pela marca do seu carro</h2>
+        <p class="lead">{marcasVisiveis().length} marcas para escolher. Escolhe a sua para ver só as peças dela.</p>
       </div>
       <NuvemMarcas />
     </div>
@@ -113,7 +113,7 @@ const ld = {
       <div class="cabeca-secao linha">
         <div>
           <h2 id="t-carros" class="titulo-secao">Carros do pátio</h2>
-          <p class="lead">Escolha o carro e veja todas as peças que saíram dele.</p>
+          <p class="lead">Escolhe o carro e confere todas as peças que saíram dele.</p>
         </div>
         <a class="botao botao-linha so-largo" href="/carros.html">Ver os {r.carros.length} carros</a>
       </div>

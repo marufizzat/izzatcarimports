@@ -70,12 +70,12 @@ const carro = nomeModelos({ b, m, ms });
     // peça de 2+ carros: modelo e anos são os do carro salvo ([data-modelo-carro], [data-anos-carro], preenchidos em mostrar)
     const html: Record<string, string> = {
       sim: `<div class="enc-estado enc-sim" data-estado="sim"><span class="enc-icone">${CHECK}</span><p class="enc-txt"><span>Serve no seu <b data-nome-carro>carro</b></span><small>Peça de <span data-anos-carro>${anos}</span></small></p>${TROCAR}</div>`,
-      'confira-ano': `<div class="enc-estado enc-ano" data-estado="confira-ano"><span class="enc-icone" aria-hidden="true">!</span><p class="enc-txt"><span>Confira o ano: esta peça é de <b data-anos-carro>${anos}</b></span>${SALVO}</p>${TROCAR}</div>`,
+      'confira-ano': `<div class="enc-estado enc-ano" data-estado="confira-ano"><span class="enc-icone" aria-hidden="true">!</span><p class="enc-txt"><span>Confere o ano: esta peça é de <b data-anos-carro>${anos}</b></span>${SALVO}</p>${TROCAR}</div>`,
       // falta o ano: neutro (nada de verde). Peça com anos: pergunta o ano ali mesmo; peça sem anos: confira o código.
       'falta-ano': `<div class="enc-estado" data-estado="falta-ano"><span class="enc-icone">${iconeCarro}</span><p class="enc-txt">`
         + `<span data-com-anos>Serve no <b data-modelo-carro>${esc(p.m)}</b> de <span data-anos-carro>${anos}</span></span>`
         + `<small class="enc-pergunta" data-com-anos>Qual o ano do seu? <span class="enc-ano-campo"><span aria-hidden="true">Escolher</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><select data-ano-carro aria-label="Ano do seu carro"><option value="">Escolher</option>${ANOS}</select></span></small>`
-        + `<span data-sem-anos>Serve em <b>${carro}</b></span><small data-sem-anos>O anúncio não traz o ano. Confira o código gravado ou pergunte no WhatsApp.</small>`
+        + `<span data-sem-anos>Serve em <b>${carro}</b></span><small data-sem-anos>A peça não traz o ano. Confere o código gravado ou pergunta no WhatsApp.</small>`
         + `</p>${TROCAR}</div>`,
       outro: `<div class="enc-estado" data-estado="outro"><span class="enc-icone">${iconeCarro}</span><p class="enc-txt"><span>Serve em <b>${carro}</b>${anos ? `, ${anos}` : ''}</span>${SALVO}</p>${TROCAR}</div>`,
     };

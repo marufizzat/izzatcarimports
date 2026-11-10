@@ -18,7 +18,7 @@ const posInicial = (i: number) => (Math.abs(i - INICIO) <= 2 ? String(i - INICIO
   <ul class="cf-lista trilho" data-trilho aria-label={rotulo}>
     {pecas.map((p, i) => (
       <li class="cf-item" data-o={posInicial(i)}>
-        <CartaoPeca p={p} eager={i < 3} />
+        <CartaoPeca p={p} />
       </li>
     ))}
   </ul>

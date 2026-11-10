@@ -250,4 +250,24 @@ describe('termos do índice', () => {
     expect(termos('Para-choque dianteiro')).toContain('parachoque');
     expect(termos('Lanterna 18/24')).not.toContain('1824');
   });
+
+  // auditoria 4, 9.1 (5.2 da auditoria 3): sem farol do Compass, as parecidas começam pelas peças do Compass da mesma
+  // categoria da palavra (Faróis e Lanternas), não por fechaduras em ordem qualquer
+  it('"farol compass" sem farol do Compass: começa pelas luzes do Compass', (ctx) => {
+    const compass = b.itens.filter((i) => serveNoModelo(i, 'Compass'));
+    const farolCompass = compass.some((i) => /farol/i.test(i.n));
+    const luzCompass = compass.some((i) => i.c === 'Faróis e Lanternas');
+    if (farolCompass || !luzCompass) return ctx.skip();
+    const r = b.procurar({ q: 'farol compass' });
+    expect(b.aproximado).toBe(true);
+    expect(serveNoModelo(r[0], 'Compass')).toBe(true);
+    expect(r[0].c).toBe('Faróis e Lanternas');
+  });
+  it('"lanterna xc60" continua com o XC60 na frente', (ctx) => {
+    if (!temCarro('Volvo', 'XC60')) return ctx.skip();
+    const r = b.procurar({ q: 'lanterna xc60' });
+    if (!r.length) return ctx.skip();
+    expect(serveNoModelo(r[0], 'XC60')).toBe(true);
+  });
 });
+
