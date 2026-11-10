@@ -155,8 +155,69 @@ def test_classe_de():
     # peça escura (preta, com código gravado) não é cartão
     assert mf.classe_de(True, dict(base, l=30.0, t=0.0)) == "p"
     assert mf.classe_de(True, dict(base, l=54.0, t=0.09, x="CHERY | MADE IN CHINA")) == "p"
-    # carro inteiro
+    # carro inteiro (sinais antigos, sem os da montagem: a regra da foto inteira)
     assert mf.classe_de(True, dict(base, c=0.85)) == "c"
+
+
+def test_classe_carro_so_na_montagem():
+    """Revisão 7: lanterna, grade, farol e caixa de ar em foto de estúdio (fundo cinza) pareciam carro na foto
+    inteira; a montagem com o carro pequeno (coletor do Kicks, 0,03 na foto inteira) não era pega."""
+    base = {"t": 0.0, "x": "", "l": 190.0, "c": 0.0}
+    # foto de verdade da peça (borda cinza-clara do estúdio): nunca carro, por mais que o classificador diga
+    assert mf.classe_de(True, dict(base, c=0.93, b=221.0)) == "p"
+    assert mf.classe_de(True, dict(base, c=0.84, b=232.0)) == "p"
+    # montagem na tela branca: o carro pequeno achado nas janelas no formato de carro
+    assert mf.classe_de(True, dict(base, c=0.03, b=255.0, k=0.95, n=1)) == "c"
+    assert mf.classe_de(True, dict(base, c=0.05, b=242.0, k=0.93, n=1)) == "c"      # tela quase branca (242)
+    assert mf.classe_de(True, dict(base, c=0.85, b=255.0, k=0.2, n=2)) == "c"       # carro grande: a foto inteira
+    # peça sozinha na tela branca (para-choque, farol): janelas abaixo do limite
+    assert mf.classe_de(True, dict(base, c=0.2, b=255.0, k=0.55, n=1)) == "p"
+    # console de teto/lanterna sozinhos: a janela "carro" corta a peça (i baixo) e não há 2º objeto
+    assert mf.classe_de(True, dict(base, c=0.0, b=255.0, k=0.98, i=0.08, n=1)) == "p"
+    assert mf.classe_de(True, dict(base, c=0.0, b=255.0, k=0.98, i=0.08, n=2)) == "c"      # carro solto da peça
+    assert mf.classe_de(True, dict(base, c=0.0, b=255.0, k=0.95, i=0.80, n=1)) == "c"      # carro inteiro na janela
+    assert mf.classe_de(False, dict(base, c=0.0, b=255.0, k=0.0, n=0)) == "s"
+    # marketing continua na frente
+    assert mf.classe_de(True, dict(base, c=0.9, b=255.0, k=0.9, l=27.0, t=0.14, x="algo escrito")) == "m"
+
+
+def test_janelas_carro_cobrem_o_conteudo():
+    for cw, ch in ((480, 460), (500, 200), (300, 480), (60, 40)):
+        js = mf.janelas_carro(cw, ch)
+        assert js and all(0 <= x0 < x1 <= cw + 1e-6 and 0 <= y0 < y1 <= ch + 1e-6 for x0, y0, x1, y1 in js)
+        assert all(abs((x1 - x0) / (y1 - y0) - 1.9) < 0.01 or abs(y1 - y0 - ch) < 1e-6 for x0, y0, x1, y1 in js)
+        # os 4 cantos do conteúdo ficam dentro de alguma janela das duas escalas
+        for cx, cy in ((0, 0), (cw, 0), (0, ch), (cw, ch)):
+            assert any(x0 <= cx <= x1 and y0 <= cy <= y1 for x0, y0, x1, y1 in js)
+
+
+def test_montagem_sinais():
+    from PIL import ImageDraw
+    vistos = []
+
+    def lote(recortes):
+        vistos.append(len(recortes))
+        return [0.9 if r.size[0] < 200 else 0.1 for r in recortes]       # "carro" nas janelas pequenas
+    # foto de estúdio (fundo cinza): só a borda, sem rodar o classificador
+    assert mf.montagem(_foto(500, 400, (220, 220, 218)), lote) == {"b": 218.0} and not vistos
+    # tela branca da montagem: a peça e o carro separados (2 objetos); k = média das 3 melhores janelas
+    im = _foto(500, 400)
+    d = ImageDraw.Draw(im)
+    d.rectangle((30, 40, 260, 360), fill=(40, 40, 45))
+    d.rectangle((300, 60, 470, 160), fill=(200, 30, 30))
+    s = mf.montagem(im, lote)
+    assert s["b"] == 255.0 and s["n"] == 2 and s["k"] == 0.9 and 0 < s["i"] <= 0.9 and vistos, s
+    # tela branca vazia e sem o classificador
+    assert mf.montagem(_foto(300, 300), lote) == {"b": 255.0, "k": 0.0, "i": 0.0, "n": 0}
+    assert mf.montagem(im, None) == {"b": 255.0}
+
+
+def test_montagem_aparece_inteira():
+    h = "0123456789abcdef"
+    assert mf.com_classe([1200, 900, 50, 40, 1150, 860], "c", h) == [1200, 900, 50, 40, 1150, 860, "c", h, mf.INCERTA]
+    assert mf.com_classe([1200, 1200, 50, 40, 1150, 860], "c", h) == [1200, 1200, 50, 40, 1150, 860, "c", h]  # quadrada
+    assert mf.com_classe([1200, 900], "c", h) == [1200, 900, "c", h]
+    assert mf.com_classe([1200, 900, 50, 40, 1150, 860], "p", h, False) == [1200, 900, 50, 40, 1150, 860, "p", h]
 
 
 def test_entrada_com_classe():
@@ -294,6 +355,30 @@ def test_incerta_sobrevive_a_gravar_juntar_e_reclassificar():
             mf.ARQ, mf.PECAS, mf.SINAIS = antes
         final = json.loads(arq.read_text(encoding="utf-8"))
         assert final["a"][-1] == mf.INCERTA and final["b"] == [1200, 900, 400, 300, 800, 600, "p", h, mf.INCERTA], final
+
+
+def test_reclassificar_tira_o_falso_carro():
+    """O "carro" da regra antiga numa foto de estúdio volta a ser peça no --reclassificar; a montagem entra."""
+    with tempfile.TemporaryDirectory() as d:
+        arq, pecas, sinais = Path(d) / "caixas.json", Path(d) / "pecas.json", Path(d) / "sinais.json"
+        h = "0123456789abcdef"
+        caixa = [1200, 1200, 0, 10, 1200, 1085]
+        mf.gravar({"lanterna": caixa + ["c", h], "kicks": [1200, 559, 50, 24, 1150, 509, "p", h],
+                   "antiga": [1200, 900, 50, 40, 1150, 860, "c", h]}, arq)
+        pecas.write_text(json.dumps([{"id": "MLB1", "fotos": ["lanterna", "kicks", "antiga"]}]), encoding="utf-8")
+        base = {"t": 0.0, "x": "", "l": 180.0, "h": h, "f": [0.0, 0.0, 0.0, 0.0, 1.0]}
+        mf.gravar({"lanterna": dict(base, c=0.841, b=226.0), "kicks": dict(base, c=0.03, b=255.0, k=0.98, i=0.9, n=1),
+                   "antiga": dict(base, c=0.88)}, sinais)
+        antes = (mf.ARQ, mf.PECAS, mf.SINAIS)
+        try:
+            mf.ARQ, mf.PECAS, mf.SINAIS = arq, pecas, sinais
+            mf.main(["--reclassificar", "--so-juntar"])
+        finally:
+            mf.ARQ, mf.PECAS, mf.SINAIS = antes
+        final = json.loads(arq.read_text(encoding="utf-8"))
+        assert final["lanterna"] == caixa + ["p", h], final
+        assert final["kicks"] == [1200, 559, 50, 24, 1150, 509, "c", h, mf.INCERTA], final
+        assert final["antiga"] == [1200, 900, 50, 40, 1150, 860, "c", h, mf.INCERTA], final   # sem os sinais novos
 
 
 if __name__ == "__main__":
