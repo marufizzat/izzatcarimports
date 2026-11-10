@@ -116,6 +116,15 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    `.etiqueta-dif` ao lado do carro no cartão (catálogo e `CartaoPeca.astro`). O WhatsApp do cabeçalho/menu leva o carro
    salvo ("Procuro uma peça para Volvo XC60 2019.") via `data-whats-carro`.
 
+9. **10% no WhatsApp em toda peça (decisão do dono, 10/11)**: `DESCONTO_WHATS`, `precoWhats()` e `precoWhatsTxt()` em
+   `site/src/lib/whats.ts` (sempre calculado do preço do anúncio; nunca em arte). Na página da peça: a faixa "No WhatsApp
+   de R$ X por R$ Y" acima do botão laranja, o preço de cada caminho dentro do botão (WhatsApp com o desconto; Mercado
+   Livre o do anúncio) e a barra fixa do celular com o preço do WhatsApp. A mensagem do "Pedir no WhatsApp" (página,
+   cartões, barra) é um pedido organizado: `*PEDIDO DE PEÇA*`, nome em negrito, carro · anos, código, anúncio (MLB),
+   "Preço no site" + "No WhatsApp (10% de desconto)", "Meu carro: …", "Serve e ainda tem?" e o link por último
+   (`cabecaPeca` + `linhaMeuCarro` + `caudaPeca`; o frete pelo CEP usa a mesma ficha: `*COTAÇÃO DE FRETE*`). Só Brasil
+   (sem versão em espanhol).
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.

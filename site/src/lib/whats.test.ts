@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, blocoPeca, cabecaPeca, blocoDaCabeca, mensagemFrete, WHATS } from './whats';
+import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, blocoPeca, cabecaPeca, caudaPeca, fichaPeca, blocoDaCabeca, urlDaCauda, linhaMeuCarro, precoWhats, precoWhatsTxt, mensagemFrete, WHATS } from './whats';
 import { formatarCep, cepCompleto, digitosCep } from './cep';
 import { msgWhats } from '../components/catalogo/etiqueta';
 
@@ -19,19 +19,31 @@ describe('WhatsApp: uma abertura só ("Olá! Vim pelo site da Izzat Car.")', () 
     expect(texto(u)).toBe(`${ABERTURA} Tenho uma dúvida:`);
     expect(texto(linkWhats('x'))).toBe('x');
   });
-  it('a peça vai pelo nome limpo, carro, anos, código, preço e link', () => {
+  it('a peça vai em forma de pedido: nome, carro, anos, código, anúncio, preço de/por e o link por último', () => {
     const m = mensagemPeca({ nome: 'Lanterna esquerda tampa traseira', carro: 'Volvo XC60', anos: '2018 a 2024', cod: 'A045591', preco: '670,44',
-      url: 'https://izzatcarimports.com.br/peca/x-MLB1.html' }, 'Meu carro é Volvo XC60 ano ____. ', { desconto: true });
-    expect(m).toBe('Olá! Vim pelo site da Izzat Car. Tenho interesse nesta peça:\n\nLanterna esquerda tampa traseira · Volvo XC60 2018 a 2024 · Cód. A045591\n'
-      + 'R$ 670,44\nhttps://izzatcarimports.com.br/peca/x-MLB1.html\n\nVi que tem 10% de desconto pedindo por aqui.\nMeu carro é Volvo XC60 ano ____. Serve e ainda tem?');
+      url: 'https://izzatcarimports.com.br/peca/x-MLB1.html' }, linhaMeuCarro('Volvo XC60, ano ____'));
+    expect(m).toBe('Olá! Vim pelo site da Izzat Car.\n\n*PEDIDO DE PEÇA*\n*Lanterna esquerda tampa traseira*\nVolvo XC60 · 2018 a 2024\nCódigo: A045591\nAnúncio: MLB1\n\n'
+      + 'Preço no site: R$ 670,44\n*No WhatsApp (10% de desconto): R$ 603,40*\n\nMeu carro: Volvo XC60, ano ____\nServe e ainda tem?\n\nhttps://izzatcarimports.com.br/peca/x-MLB1.html');
+    // sem carro salvo e sem código: as linhas somem, sem buraco
+    expect(mensagemPeca({ nome: 'Fechadura', preco: '89,90', url: 'https://izzatcarimports.com.br/peca/f-MLB2.html' }))
+      .toBe('Olá! Vim pelo site da Izzat Car.\n\n*PEDIDO DE PEÇA*\n*Fechadura*\nAnúncio: MLB2\n\nPreço no site: R$ 89,90\n*No WhatsApp (10% de desconto): R$ 80,91*\n\nServe e ainda tem?\n\nhttps://izzatcarimports.com.br/peca/f-MLB2.html');
     expect(blocoPeca({ nome: 'Fechadura', url: 'u' })).toBe('Fechadura\nu');
     expect(blocoPeca({ linha: 'pronta', nome: 'x', url: 'u' })).toBe('pronta\nu');
   });
-  it('o cartão manda a MESMA mensagem da peça (nunca o título cru)', () => {
-    const m = msgWhats({ n: 'Retrovisor elétrico esquerdo', b: 'Volvo', m: 'XC60', y: [2018, 2024], o: 'a044297', p: 3785.77 }, 'https://izzatcarimports.com.br/peca/y.html');
-    expect(m).toContain('Retrovisor elétrico esquerdo · Volvo XC60 2018 a 2024 · Cód. A044297\nR$ 3.785,77\n');
+  it('10% no WhatsApp em toda peça: centavos inteiros, milhar com ponto', () => {
+    expect(precoWhats(244.64)).toBe(220.18);
+    expect(precoWhats(149.33)).toBe(134.4);
+    expect(precoWhats(3785.77)).toBe(3407.19);
+    expect(precoWhatsTxt('244,64')).toBe('220,18');
+    expect(precoWhatsTxt('3.785,77')).toBe('3.407,19');
+    expect(precoWhatsTxt('149,33')).toBe('134,40');
+    expect(precoWhatsTxt('x')).toBe('');
+  });
+  it('o cartão manda a MESMA mensagem da peça (nunca o título cru), com o de/por', () => {
+    const m = msgWhats({ n: 'Retrovisor elétrico esquerdo', b: 'Volvo', m: 'XC60', y: [2018, 2024], o: 'a044297', p: 3785.77 }, 'https://izzatcarimports.com.br/peca/y-MLB3.html');
+    expect(m).toContain('*Retrovisor elétrico esquerdo*\nVolvo XC60 · 2018 a 2024\nCódigo: A044297\nAnúncio: MLB3\n\nPreço no site: R$ 3.785,77\n*No WhatsApp (10% de desconto): R$ 3.407,19*\n');
     expect(m.startsWith(ABERTURA)).toBe(true);
-    expect(m).not.toContain('desconto');   // o cartão não mostra o selo do desconto
+    expect(m.endsWith('Serve e ainda tem?\n\nhttps://izzatcarimports.com.br/peca/y-MLB3.html')).toBe(true);
   });
   it('nenhum arquivo do site escreve a abertura à mão (todos passam pelo lib/whats.ts)', () => {
     const raiz = join(process.cwd(), 'src');
@@ -52,16 +64,18 @@ describe('WhatsApp: uma abertura só ("Olá! Vim pelo site da Izzat Car.")', () 
 });
 
 describe('frete pelo CEP (envios e "Como é o envio?" da peça)', () => {
-  const x = { linha: 'Caixa filtro ar · Renault Clio, Logan e Sandero 2007 a 2014 · Cód. 8200328856', preco: '244,64',
+  const x = { nome: 'Caixa filtro ar', carro: 'Renault Clio, Logan e Sandero', anos: '2007 a 2014', cod: '8200328856', preco: '244,64',
     url: 'https://izzatcarimports.com.br/peca/caixa-filtro-ar-renault-clio-logan-sandero-07-14-8200328856-MLB7862060624.html' };
-  it('o bloco da peça sai da cabeça do botão (com e sem a frase do desconto)', () => {
-    expect(blocoDaCabeca(cabecaPeca(x, { desconto: true }))).toBe(blocoPeca(x));
-    expect(blocoDaCabeca(cabecaPeca(x))).toBe(blocoPeca(x));
+  it('a ficha da peça e o link saem do botão "Pedir no WhatsApp" (data-cabeca e data-cauda)', () => {
+    expect(blocoDaCabeca(cabecaPeca(x))).toBe(fichaPeca(x));
+    expect(fichaPeca(x)).toBe('*Caixa filtro ar*\nRenault Clio, Logan e Sandero · 2007 a 2014\nCódigo: 8200328856\nAnúncio: MLB7862060624');
+    expect(urlDaCauda(caudaPeca(x.url))).toBe(x.url);
     expect(blocoDaCabeca('qualquer coisa')).toBe('');
+    expect(urlDaCauda('sem link')).toBe('');
   });
   it('a mensagem: o CEP e a peça (sem prazo nem valor)', () => {
-    expect(mensagemFrete('96445-000', { bloco: blocoPeca(x) })).toBe(`${ABERTURA} Quero saber o frete desta peça para o CEP 96445-000:\n\n`
-      + 'Caixa filtro ar · Renault Clio, Logan e Sandero 2007 a 2014 · Cód. 8200328856\nR$ 244,64\n' + x.url);
+    expect(mensagemFrete('96445-000', { bloco: fichaPeca(x), url: x.url })).toBe(`${ABERTURA}\n\n*COTAÇÃO DE FRETE*\nCEP: 96445-000\n\n`
+      + '*Caixa filtro ar*\nRenault Clio, Logan e Sandero · 2007 a 2014\nCódigo: 8200328856\nAnúncio: MLB7862060624\n\n' + x.url);
     expect(mensagemFrete('96445-000', { peca: 'farol do Cruze' })).toBe(`${ABERTURA} Quero saber o frete para o CEP 96445-000. A peça é: farol do Cruze`);
     expect(mensagemFrete('96445-000')).toBe(`${ABERTURA} Quero saber o frete para o CEP 96445-000. A peça é: ____`);
   });
