@@ -1,0 +1,73 @@
+---
+// "Você viu" na home: as últimas peças que a pessoa abriu (lib/vistos.ts), num trilho de cartões IGUAIS aos do catálogo.
+// Só com 2 peças ou mais. ANTES da 1ª pintura (o script logo abaixo, sem nada de fora): conta as peças guardadas, marca
+// html[data-vistos] (o CSS mostra a seção) e põe o esqueleto dos cartões com a altura deles; quem não tem histórico não
+// vê nada e nada se mexe. Quando a página carregou e o navegador folgou: confere em /dados/ativas.json (a peça que
+// vendeu some e sai da lista guardada; preço e capa de hoje) e troca o esqueleto pelos cartões. "Limpar" apaga o histórico.
+import { contarVistos, MIN_HOME, CHAVE_VISTOS } from '../../lib/vistos';
+import { ESQ_CARTAO, SETAS_HTML } from './trilhoPessoal';
+import './trilhoPessoal.css';
+const antes = `(function(){try{var n=(${contarVistos.toString()})(localStorage.getItem(${JSON.stringify(CHAVE_VISTOS)}));`
+  + `if(n<${MIN_HOME})return;document.documentElement.setAttribute('data-vistos',n);`
+  + `document.currentScript.previousElementSibling.querySelector('[data-tp-trilho]').innerHTML=${JSON.stringify(ESQ_CARTAO)}.repeat(Math.min(n,7))}catch(e){}})()`;
+---
+<section class="tp tp-vistos" data-tp-vistos aria-labelledby="tp-vistos-titulo">
+  <div class="moldura">
+    <div class="tp-cabeca">
+      <div>
+        <h2 id="tp-vistos-titulo" class="titulo-secao tp-titulo">Você viu</h2>
+        <p class="tp-lead">As últimas peças que você abriu, guardadas só neste aparelho.</p>
+      </div>
+      <div class="tp-acoes">
+        <button type="button" class="tp-limpar" data-tp-limpar aria-label="Limpar as peças que você viu">Limpar</button>
+        <div class="tp-setas" set:html={SETAS_HTML} />
+      </div>
+    </div>
+    <div class="trilho tp-trilho" data-tp-trilho aria-busy="true" aria-label="Peças que você viu"></div>
+  </div>
+</section>
+<script is:inline set:html={antes} />
+
+<script>
+  import { lerVistos, salvarVistos, carregarAtivas, paraMostrar, itemDoVisto, MIN_HOME } from '../../lib/vistos';
+  import { depoisDaCarga, porCartoes, ligarSetas, avisar, SIZES_PESSOAL } from './trilhoPessoal';
+
+  const secao = document.querySelector<HTMLElement>('[data-tp-vistos]');
+  const raiz = document.documentElement;
+  const esconder = () => raiz.removeAttribute('data-vistos');
+  if (secao && raiz.hasAttribute('data-vistos')) {
+    depoisDaCarga(async () => {
+      const guardados = lerVistos();
+      const ativas = await carregarAtivas();
+      // a peça que vendeu sai também da lista guardada (a página da peça não sabe que ela vendeu)
+      if (ativas && guardados.some((v) => !ativas.has(v.id))) salvarVistos(guardados.filter((v) => ativas.has(v.id)));
+      const mostrar = paraMostrar(guardados, ativas);
+      if (mostrar.length < MIN_HOME) { esconder(); return; }
+      const trilho = secao.querySelector<HTMLElement>('[data-tp-trilho]');
+      if (!trilho) return;
+      try {
+        const { cartaoHtml, vigiarFotos } = await import('../../lib/vendidaCartoes');
+        vigiarFotos(trilho);
+        porCartoes(trilho, mostrar.map((v) => cartaoHtml(itemDoVisto(v, ativas?.get(v.id)?.r ?? true), SIZES_PESSOAL)).join(''));
+        ligarSetas(secao);
+      } catch {
+        esconder();   // sem os cartões (rede caiu no meio): a seção sai, nunca fica o esqueleto parado
+      }
+    });
+
+    // "Limpar": apaga o histórico deste aparelho; o foco vai para a próxima seção (o botão some)
+    secao.querySelector('[data-tp-limpar]')?.addEventListener('click', () => {
+      salvarVistos([]);
+      esconder();
+      avisar('Pronto: as peças que você viu foram apagadas deste aparelho.');
+      const proximo = secao.nextElementSibling?.querySelector<HTMLElement>('h2');
+      if (proximo) { proximo.tabIndex = -1; proximo.focus({ preventScroll: true }); }
+    });
+  }
+</script>
+
+<style>
+  :global(html[data-vistos]) .tp-vistos { display: block; }
+  /* logo depois do "Chegou para o seu carro": menos ar entre os dois */
+  :global(html[data-chegou]) .tp-vistos { padding-top: clamp(12px, 2vw, 28px); }
+</style>

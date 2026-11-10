@@ -201,9 +201,12 @@ const perguntas = [
   import { ligarCampoCep, cepCompleto, formatarCep, salvarCep } from '../lib/cep';
   import { linkWhats, mensagemFrete, blocoDaCabeca, urlDaCauda, linhaMeuCarro, carroSalvoTxt, abrirWhats } from '../lib/whats';
   import { ligarListaPeca, ligarVaiJunto } from './peca/listaPeca';
+  import { ligarVistos } from './peca/vistosPeca';
 
   // "Adicionar à lista de orçamento" (o 3º botão da compra) e o "+ lista" dos cartões do "Vai junto" (peca/VaiJunto.astro)
   ligarListaPeca();
+  // "Vistos recentemente": grava esta peça e, com outras já vistas, o "Você também viu" no fim (peca/vistosPeca.ts)
+  ligarVistos();
   const vaiJunto = document.querySelector<HTMLElement>('[data-vj-raiz]');
   if (vaiJunto) ligarVaiJunto(vaiJunto);
 

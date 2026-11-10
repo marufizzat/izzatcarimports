@@ -10,6 +10,7 @@ import BannerV2 from '../components/v2/BannerV2.astro';
 import VitrineDestaques from '../components/v2/VitrineDestaques.astro';
 import OficinasV2 from '../components/v2/OficinasV2.astro';
 import Coverflow from '../components/v2/Coverflow.astro';
+import VoceViu from '../components/v2/VoceViu.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
 import Icone from '../components/Icone.astro';
@@ -51,6 +52,9 @@ const ld = {
   <section class="selos-faixa" aria-label="Garantias da Izzat Car">
     <div class="moldura"><SelosV2 /></div>
   </section>
+
+  {/* da pessoa (só no navegador dela; sem histórico, nada aparece e nada se mexe) */}
+  <VoceViu />
 
   <section class="secao vitrine-secao" aria-labelledby="t-destaques">
     <div class="moldura">

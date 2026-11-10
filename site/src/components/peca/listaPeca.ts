@@ -32,8 +32,8 @@ export function capaPequenaDe(src: string, id: string): string {
   return src.replace(/-[A-Z]\.webp$/, '-V.webp');
 }
 
-/** A peça desta página, lida do HTML que já existe. */
-function itemDaPagina(): ItemLista | null {
+/** A peça desta página, lida do HTML que já existe (também o "Você viu": peca/vistosPeca.ts). */
+export function itemDaPagina(): ItemLista | null {
   const caminho = location.pathname;
   const id = /MLB\d+/.exec(caminho)?.[0];
   const slug = /\/peca\/([^/]+)\.html$/.exec(caminho)?.[1] ?? '';
