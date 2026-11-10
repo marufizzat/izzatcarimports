@@ -5,28 +5,32 @@
 // A ação rápida "Pedir no WhatsApp" (só aparece com mouse; no toque o CSS esconde) é criada pelo script abaixo,
 // com a mensagem pronta lida do próprio cartão: não se repete no HTML de cada página. Ícones pelo sprite /icones.svg.
 import type { Peca } from '../lib/dados';
-import { foto, fotoSrcset, capaEstudio, resumo, brl } from '../lib/dados';
-import { fotosGaleria } from '../lib/quadroFoto';
+import { fotoCartaoPeca, resumo, brl } from '../lib/dados';
+import { SIZES_CARTAO } from '../lib/busca';
 import { linhaCarro, codigoPeca, precoPartes, dadosCarro, CLASSE_CARTAO, icone } from './catalogo/etiqueta';
-interface Props { p: Peca; base?: string; eager?: boolean; /** selo "Chegou agora"; sem a prop, vale resumo().chegou */ novo?: boolean; }
-const { p, base = '/peca/', eager = false } = Astro.props;
+interface Props {
+  p: Peca; base?: string; eager?: boolean; /** selo "Chegou agora"; sem a prop, vale resumo().chegou */ novo?: boolean;
+  /** largura da foto do cartão em cada tela (SIZES_CARTAO de lib/busca.ts); sem a prop, a da grade de 2/3/4 colunas */
+  sizes?: string;
+}
+const { p, base = '/peca/', eager = false, sizes = SIZES_CARTAO.grade } = Astro.props;
 const { carro, anos } = linhaCarro(p.b, p.m, p.y, p.ms);
 const cod = codigoPeca(p.o);
 const [reais, cent] = precoPartes(p.p);
-const est = capaEstudio(p.id);
+// capa de estúdio com as versões leves de 400/640 px no srcset (o celular não baixa a de 1000 px); sem capa, a foto do ML
+const f = fotoCartaoPeca(p, sizes);
 const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
 ---
 <div class={CLASSE_CARTAO}>
   <a class="etiqueta" href={`${base}${p.slug}.html`} {...dadosCarro(p.b, p.m, p.y, p.ms, p.ys)}>
     <div class="etiqueta-foto">
-      <img src={est ?? foto(fotosGaleria(p.fotos)[0], 'O')} srcset={est ? undefined : fotoSrcset(fotosGaleria(p.fotos)[0])}
-           sizes={est ? undefined : '(min-width:1024px) 240px, (min-width:640px) 30vw, 46vw'} class:list={[{ estudio: !!est }]}
+      <img srcset={f.srcset} sizes={f.sizes} src={f.src} class:list={[{ estudio: f.estudio }]}
            alt="" loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} decoding="async" width="800" height="800" />
       {novo && <span class="etiqueta-novo">Chegou agora</span>}
     </div>
     <div class="etiqueta-dados">
       <span class="etiqueta-serve" hidden></span>
-      {carro && <span class="etiqueta-carro"><span class="etiqueta-modelo">{carro}{p.dif && <> <span class="etiqueta-dif">{p.dif}</span></>}</span>{anos && <span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>{anos}</span>}</span>}
+      {carro && <span class="etiqueta-carro"><span class="etiqueta-modelo">{carro}</span>{p.dif && <> <span class="etiqueta-dif">{p.dif}</span></>}{anos && <span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>{anos}</span>}</span>}
       <h3 class="etiqueta-nome">{p.n}</h3>
       {cod && <span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">{cod}</span></span>}
       <span class="sr-only">R$ {brl(p.p)}</span>
@@ -90,8 +94,12 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
   }
   acoes();
 
-  // foto que não carregou: some e fica a placa clara (sem o ícone quebrado e o título cru do anúncio no lugar)
-  const semFoto = (img: HTMLImageElement) => img.classList.add('sem-capa');
+  // foto que não carregou: a capa leve (srcset) dá lugar à capa inteira (src); se essa também falhar, some e fica a
+  // placa clara (sem o ícone quebrado e o título cru do anúncio no lugar)
+  const semFoto = (img: HTMLImageElement) => {
+    if (img.hasAttribute('srcset')) { img.removeAttribute('srcset'); img.removeAttribute('sizes'); }
+    else img.classList.add('sem-capa');
+  };
   document.querySelectorAll<HTMLImageElement>('.etiqueta-foto img').forEach((img) => {
     if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) semFoto(img);
   });

@@ -56,8 +56,9 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
             </div>
             <div class="campo">
               <label for="f-ano">Ano</label>
-              <input id="f-ano" name="ano" type="text" inputmode="numeric" autocomplete="off" placeholder="Ex.: 2015" required aria-describedby="e-ano" />
+              <input id="f-ano" name="ano" type="text" inputmode="numeric" autocomplete="off" placeholder="Ex.: 2015" required aria-describedby="e-ano d-ano" />
               <p class="erro" id="e-ano" hidden></p>
+              <p class="pc-dica-ano" id="d-ano" hidden></p>
             </div>
           </div>
         </fieldset>
@@ -218,6 +219,14 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       const salvo = lerMeuCarro();
       const anoSalvo = salvo && norm(salvo.b) === norm(marca) && norm(salvo.m) === norm(campo('modelo').value) ? salvo.y : null;
       if (ano || anoSalvo) campo('ano').value = String(ano || anoSalvo);
+      // o endereço trouxe o carro sem o ano e o ano veio do "Meu carro": a nota do campo diz de onde (revisão 10, P3)
+      const dicaAno = document.getElementById('d-ano');
+      if (!ano && anoSalvo && salvo && dicaAno) {
+        dicaAno.textContent = `Veio do seu carro salvo: ${salvo.b} ${salvo.m} ${anoSalvo}`;
+        dicaAno.hidden = false;
+        // a pessoa trocou o ano: a nota não vale mais
+        campo('ano').addEventListener('input', () => { dicaAno.hidden = true; }, { once: true });
+      }
       sugerirModelos();
     }
 
@@ -330,6 +339,8 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   .pc-form-topo span { font-size: 15px; color: var(--ink-2); text-wrap: balance; }
   .pc-salvo { margin: -6px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); font-size: 14.5px; line-height: 1.45; color: var(--ink); }
   .pc-salvo[hidden] { display: none; }
+  .pc-dica-ano { margin: 0; font-size: 13.5px; line-height: 1.4; color: var(--ink-2); }
+  .pc-dica-ano[hidden] { display: none; }
 
   .pc-grupo { margin: 0; padding: 0; border: 0; min-width: 0; }
   .pc-grupo legend { padding: 0; margin-bottom: 12px; font-stretch: 80%; font-weight: 820; font-size: 21px; line-height: 1.1; color: var(--ink); }

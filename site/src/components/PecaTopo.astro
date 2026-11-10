@@ -8,7 +8,7 @@
 import type { Peca } from '../lib/dados';
 import { foto, brl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
 import { quadroFoto, fotosGaleria } from '../lib/quadroFoto';
-import { linkWhats, cabecaPeca, CAUDA_PECA, DESCONTO_WHATS } from '../lib/whats';
+import { linkWhats, cabecaPeca, caudaPeca, linhaMeuCarro, conviteCarro, precoWhats, DESCONTO_WHATS } from '../lib/whats';
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
 import FaixaMeuCarro from './peca/FaixaMeuCarro.astro';
@@ -29,10 +29,12 @@ const cod = codigoDaPeca(p.oem);
 // Mensagem do WhatsApp (lib/whats.ts, a mesma do cartão): a abertura do site, a peça pelo nome limpo + carro + anos +
 // código (nomeMensagem, lib/nomePeca.ts; nunca o título cru do ML), o preço e o link (que leva o MLB).
 // Sem carro salvo vai "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
-const cabeca = cabecaPeca({ linha: nomeMensagem(p), preco: brl(p.p), url }, { desconto: true });
+const cabeca = cabecaPeca({ nome: p.n, carro, anos, cod, linha: nomeMensagem(p), preco: brl(p.p), url });
 // peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
-const semCarro = !p.b ? '' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____. ` : `Meu carro é ${carro} ano ____. `;
-const cauda = CAUDA_PECA;
+const semCarro = linhaMeuCarro(conviteCarro(p.b, p.m, modelosDa(p).length > 1 ? '|' : ''));
+const cauda = caudaPeca(url);
+// 10% de desconto em toda peça pedida pelo WhatsApp (decisão do dono, 10/11): "de X por Y", calculado do preço do anúncio
+const precoW = brl(precoWhats(p.p));
 const msg = cabeca + semCarro + cauda;
 // Estoque real do ML: 1 = peca unica (usada: quando vende, acabou); mais de 1 = so a quantidade, sem pressa inventada.
 const q = typeof p.q === 'number' && p.q >= 1 ? p.q : 0;
@@ -78,6 +80,8 @@ const perguntas = [
     // regra do dono (09/11): frete a combinar pelo site; frete e prazo do ML são os do anúncio (sem prazo próprio)
     resposta: 'A gente envia para todo o Brasil. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.',
     link: { href: '/envios.html', texto: 'Ver envios' },
+    // o campo de CEP ("Cotar o frete no WhatsApp") é montado pelo script, na 1ª vez que a pergunta abre (HTML mínimo)
+    attrs: { 'data-cep': '' },
   },
   {
     pergunta: 'Tem nota fiscal?',
@@ -137,9 +141,11 @@ const perguntas = [
       <div class="compra-botoes" data-compra-botoes>
         {/* desconto pelo WhatsApp (pedido do dono): selo claro colado no canto do botão laranja, sem ocupar altura
             (a 1ª tela do celular continua com o botão à vista). Só no WhatsApp, nunca no Mercado Livre. */}
-        <p class="compra-desconto"><Icone nome="etiqueta" /><span>{DESCONTO_WHATS}% de desconto<span class="compra-desconto-onde"> pelo WhatsApp</span></span></p>
-        <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir no WhatsApp</a>
-        <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
+        <p class="compra-de-por num"><span class="cdp-onde"><Icone nome="etiqueta" />No WhatsApp</span>
+          <span class="cdp-precos"><span class="sr-only">de </span><s>R$ {brl(p.p)}</s> <span class="cdp-por">por</span> <b>R$ {precoW}</b></span>
+          <span class="cdp-selo">−{DESCONTO_WHATS}%</span></p>
+        <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" /><span>Pedir no WhatsApp<span class="botao-preco num"> · R$ {precoW}</span></span></a>
+        <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra><span>Comprar no Mercado Livre<span class="botao-preco num"> · R$ {brl(p.p)}</span></span></a>
       </div>
       <ul class="compra-facil">
         <li><b>Na dúvida se serve?</b> A gente confere na peça antes de você comprar.</li>
@@ -183,17 +189,21 @@ const perguntas = [
 
 <script>
   import { lerMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
+  import { ligarCampoCep, cepCompleto, formatarCep, salvarCep } from '../lib/cep';
+  import { linkWhats, mensagemFrete, blocoDaCabeca, urlDaCauda, linhaMeuCarro, carroSalvoTxt, abrirWhats } from '../lib/whats';
 
   // WhatsApp leva o carro salvo na mensagem (troca só a linha "Meu carro é ...").
   // [data-whats-espelho] (o botão da barra fixa do celular) recebe o mesmo link do botão principal.
   const pedidos = [...document.querySelectorAll<HTMLAnchorElement>('[data-whats]')];
   const espelhos = [...document.querySelectorAll<HTMLAnchorElement>('[data-whats-espelho]')];
   const principal = document.querySelector<HTMLAnchorElement>('[data-compra-botoes] [data-whats]') ?? pedidos[0];
-  const avisos = [...document.querySelectorAll<HTMLElement>('[data-whats-carro]')];
+  // só o <span> da lista "WhatsApp: mensagem pronta com a peça…": o WhatsApp do cabeçalho e do menu também leva
+  // data-whats-carro (é um <a>, o Cabecalho troca o link dele) e não pode ter o texto trocado aqui
+  const avisos = [...document.querySelectorAll<HTMLElement>('span[data-whats-carro]')];
   const atualizarWhats = (c: MeuCarro | null) => {
     pedidos.forEach((a) => {
       const base = a.getAttribute('href')!.split('?')[0];
-      const linha = c ? `Meu carro é ${nomeCarro(c)}. ` : (a.dataset.sem || '');
+      const linha = c ? linhaMeuCarro(carroSalvoTxt(c)) : (a.dataset.sem || '');
       a.href = `${base}?text=${encodeURIComponent((a.dataset.cabeca || '') + linha + (a.dataset.cauda || ''))}`;
     });
     if (principal) espelhos.forEach((a) => { a.href = principal.href; });
@@ -201,6 +211,63 @@ const perguntas = [
   };
   atualizarWhats(lerMeuCarro());
   window.addEventListener(EVENTO, (e) => atualizarWhats((e as CustomEvent<MeuCarro | null>).detail ?? null));
+
+  // "Comprar no Mercado Livre": no computador (tela larga e mouse) abre noutra aba, e o site continua aberto atrás
+  // (cliente oculto, melhoria 4); no celular, na mesma aba (aba nova lá perde o "voltar"). O evento do GA4 não muda.
+  const ml = document.querySelector<HTMLAnchorElement>('[data-compra]');
+  const pc = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
+  const abaDoMl = () => { if (ml) { if (pc.matches) ml.target = '_blank'; else ml.removeAttribute('target'); } };
+  abaDoMl();
+  pc.addEventListener('change', abaDoMl);
+
+  // "Como é o envio?": o CEP para cotar o frete no WhatsApp (cliente oculto, melhoria 10), o mesmo de /envios.html
+  // (lib/cep.ts: máscara, 8 números e o CEP lembrado). Montado na 1ª vez que a pergunta abre: no HTML de cada peça vai só
+  // o data-cep. Sem promessa de prazo nem de valor: a gente responde com o frete. O WhatsApp abre com o CEP e o bloco da
+  // peça (o mesmo do "Pedir no WhatsApp", tirado do data-cabeca dele) e conta no GA4 como data-botao="frete-cep".
+  const envio = document.querySelector<HTMLDetailsElement>('details[data-cep]');
+  if (envio) {
+    let montado = false;
+    const montar = () => {
+      if (montado) return;
+      montado = true;
+      const f = document.createElement('form');
+      f.className = 'cep-peca';
+      f.noValidate = true;
+      f.innerHTML = '<div class="campo"><label for="cep-peca">Seu CEP</label><div class="cep-peca-linha">'
+        + '<input id="cep-peca" name="cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" aria-describedby="cep-peca-nota cep-peca-erro">'
+        + '<button class="botao botao-laranja" type="submit">Cotar o frete no WhatsApp</button></div>'
+        + '<p class="erro" id="cep-peca-erro" hidden>Confira o CEP: são 8 números.</p></div>'
+        + '<p class="cep-peca-nota" id="cep-peca-nota">A gente responde no WhatsApp com o valor do frete para o seu CEP.</p>'
+        + '<p class="cep-peca-status" role="status" aria-live="polite"></p>';
+      // o ícone do WhatsApp: a cópia do que já está no botão "Pedir no WhatsApp" (o sprite com a versão certa)
+      const ic = principal?.querySelector('svg')?.cloneNode(true);
+      if (ic) f.querySelector('button')!.prepend(ic);
+      envio.append(f);
+      const cep = f.querySelector<HTMLInputElement>('input')!;
+      const erro = f.querySelector<HTMLElement>('.erro')!;
+      const status = f.querySelector<HTMLElement>('.cep-peca-status')!;
+      ligarCampoCep(cep, () => { if (!erro.hidden) { erro.hidden = true; cep.setAttribute('aria-invalid', 'false'); } });
+      f.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!cepCompleto(cep.value)) {
+          erro.hidden = false;
+          cep.setAttribute('aria-invalid', 'true');
+          cep.focus();
+          return;
+        }
+        const c = formatarCep(cep.value);
+        salvarCep(c);
+        const url = linkWhats(mensagemFrete(c, { bloco: blocoDaCabeca(principal?.dataset.cabeca || ''), url: urlDaCauda(principal?.dataset.cauda || '') }));
+        abrirWhats(url, 'frete-cep');
+        const a = Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener', textContent: 'abra por aqui' });
+        a.dataset.botao = 'frete-cep';
+        status.replaceChildren('A gente abriu o WhatsApp com o seu CEP. Se não abriu, ', a, '.');
+      });
+    };
+    // antes de abrir (o clique no título vem antes da troca): o campo já está lá quando a altura anima
+    envio.querySelector('summary')?.addEventListener('click', montar);
+    envio.addEventListener('toggle', () => { if (envio.open) montar(); });
+  }
 
   // Galeria em tela cheia: módulo pequeno e sem React (ui/GaleriaTelaCheia.ts). Pré-busca quando o navegador folga
   // e no 1º toque na foto; o HTML dela só é montado na 1ª vez que abre.
@@ -539,16 +606,35 @@ const perguntas = [
   .estoque-unica i { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 78%); }
   .estoque-txt { margin: -2px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
   .compra-botoes { position: relative; display: grid; gap: 10px; margin-top: 6px; }
-  /* selo do desconto: pílula clara com letra grafite, presa no canto de cima do botão laranja (metade fora dele) */
-  .compra-desconto { position: absolute; z-index: 1; top: 0; right: 14px; transform: translateY(-50%); margin: 0;
-                     display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px 0 9px; border-radius: 999px;
-                     background: #fff; color: #1d1d1f; font-size: 12.5px; font-weight: 700; font-stretch: 94%; line-height: 1; white-space: nowrap;
-                     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%), 0 4px 12px -6px rgb(140 50 0 / .45);
-                     pointer-events: none; }
-  .compra-desconto svg { width: 15px; height: 15px; flex: none; color: var(--accent-text); }
-  /* celular estreito: só "10% de desconto" (o botão logo abaixo já diz WhatsApp), longe do "Peça única" que quebra
-     para a 2ª linha nos preços de 5 dígitos */
-  @media (max-width: 379px) { .compra-desconto-onde { display: none; } }
+  /* "No WhatsApp: de R$ X por R$ Y  −10%" (10% em toda peça pelo WhatsApp). Um elemento só, dois desenhos:
+     - celular e tablet (uma coluna): selo claro preso no canto de cima do botão laranja (metade fora dele), SEM ocupar
+       altura: o botão continua na 1ª tela (revisão 11, P1: a faixa empurrava o botão e a barra fixa passava por cima);
+     - PC (duas colunas): faixa clara logo acima do botão, e cada botão diz o preço do seu caminho.
+     Letra grafite sempre; o preço cheio riscado, o do WhatsApp em destaque. Nunca quebra de linha (sem salto quando a
+     fonte chega). */
+  .compra-de-por { position: absolute; z-index: 1; top: 0; right: 12px; transform: translateY(-50%); margin: 0; display: inline-flex; align-items: center; gap: 7px;
+                   height: 28px; padding: 0 11px 0 4px; border-radius: 999px; background: #fff; color: #1d1d1f; font-size: 13px; line-height: 1; white-space: nowrap;
+                   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%), 0 4px 12px -6px rgb(140 50 0 / .45); pointer-events: none; }
+  .compra-de-por .cdp-onde { display: none; align-items: center; gap: 6px; font-weight: 750; font-stretch: 94%; }
+  .compra-de-por .cdp-onde svg { width: 16px; height: 16px; flex: none; color: var(--accent-text); }
+  .compra-de-por s { color: var(--ink-2); text-decoration-thickness: 1.5px; }
+  .compra-de-por .cdp-por { color: var(--ink-2); }
+  .compra-de-por b { font-size: 14.5px; font-weight: 850; font-stretch: 88%; }
+  .compra-de-por .cdp-selo { order: -1; padding: 4px 7px; border-radius: 999px; background: var(--accent-soft); color: #1d1d1f; font-size: 12px; font-weight: 800; }
+  .compra-botoes .botao-preco { display: none; font-weight: 750; white-space: nowrap; }
+  .compra-botoes .botao-linha .botao-preco { color: var(--ink-2); }
+  @media (min-width: 960px) {
+    .compra-de-por { position: static; transform: none; display: flex; gap: 10px; height: auto; margin: 0 0 -4px; padding: 10px 12px 10px 13px; border-radius: 14px;
+                     background: var(--accent-soft); font-size: 14.5px; pointer-events: auto;
+                     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
+    .compra-de-por .cdp-onde { display: inline-flex; }
+    .compra-de-por b { font-size: 17px; }
+    .compra-de-por .cdp-selo { order: 0; margin-left: auto; background: #fff; font-size: 12.5px; padding: 4px 8px;
+                               box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%); }
+    .compra-botoes .botao-preco { display: inline; }
+  }
+  /* PC estreito (coluna de ~400 px): sem o selo, para a faixa caber numa linha também com preço de 5 dígitos */
+  @media (min-width: 960px) and (max-width: 1199px) { .compra-de-por .cdp-selo { display: none; } }
   .compra-botoes .botao { --h: var(--botao-g); font-size: 16.5px; }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .compra-facil b { font-weight: 650; color: var(--ink-2); }
@@ -589,6 +675,20 @@ const perguntas = [
 
   .compra-perguntas { margin-top: 6px; }
   .compra-perguntas-titulo { margin: 0 0 6px; font-stretch: 84%; font-weight: 800; font-size: 22px; line-height: 1.1; }
+  /* "Como é o envio?": o CEP (montado pelo script). Campo e botão lado a lado quando cabem; senão, um embaixo do outro */
+  .cep-peca { display: grid; gap: 8px; margin: -4px 0 0; padding: 14px; border-radius: 16px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .acd-item[open] > .cep-peca { margin-bottom: 16px; }
+  .cep-peca .campo { gap: 6px; }
+  .cep-peca label { font-size: 14px; }
+  .cep-peca-linha { display: flex; flex-wrap: wrap; gap: 8px; }
+  /* o campo é o .campo do site (borda, foco e erro iguais aos de /envios.html); aqui só o jeito do CEP */
+  .cep-peca input { flex: 1 1 128px; width: auto; min-width: 0; height: var(--botao-p); padding: 0 14px; font-size: 18px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+  .cep-peca .botao { --h: var(--botao-p); flex: 1 1 auto; padding: 0 16px; gap: 8px; font-size: 15px; }
+  .cep-peca .botao svg { width: 19px; height: 19px; }
+  .cep-peca-nota, .cep-peca-status { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+  .cep-peca-status:empty { display: none; }
+  .cep-peca-status a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
 
   @media (max-width: 959px) {
     .compra { gap: 14px; }

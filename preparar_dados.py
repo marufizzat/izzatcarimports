@@ -1312,7 +1312,9 @@ _PRODUCAO = {
     "Nissan": {"Kicks": (2016, None), "Murano": (2002, 2016), "Frontier": (2002, None), "Versa": (2011, None),
                "March": (2011, 2020), "Livina": (2009, 2014), "Tiida": (2007, 2013)},
     "Chery": {"Arrizo": (2016, None), "Tiggo": (2009, None)},
-    "Toyota": {"Yaris": (2018, None), "Corolla": (1992, None), "Camry": (1992, None), "Hilux": (1992, None),
+    # Yaris: no Brasil so a partir de 2018, mas o patio tem Yaris importado (1999-2017 la fora): "Bomba Tanque Toyota
+    # Yaris 06/12" com a lista de anos do anuncio 2006-2012. O 208 (2013) fica: "C4 Peugeot 208 04/11" e do C4.
+    "Toyota": {"Yaris": (1999, None), "Corolla": (1992, None), "Camry": (1992, None), "Hilux": (1992, None),
                "Corona": (1990, 1998), "Etios": (2012, 2021)},
     "Dodge": {"Journey": (2008, 2020)},
     "Land Rover": {"Discovery": (1990, None)},
@@ -1360,6 +1362,13 @@ def _ler_anos(titulo, marca="", desde=0):
             if par and par[1] - par[0] <= 30:
                 return par + (pos,)
             continue
+        m = re.fullmatch(r"((?:19|20)\d{2})(\d{2})", tl)                  # "201924" = 2019 a 2024 (a barra sumiu)
+        if m and m.group(1) not in nums:                                  # "200819" do Peugeot 2008: nunca ano
+            a = int(m.group(1))
+            b = a // 100 * 100 + int(m.group(2))
+            if 1950 <= a < b <= ANO_MAX and b - a <= 30:
+                return a, b, pos
+            continue
         if re.fullmatch(r"(?:19|20)\d{2}", tl) and tl not in nums and 1950 <= int(tl) <= ANO_MAX:
             anos, ultimo, conector = [int(tl)], int(tl), False
             for _, u in toks[i + 1:]:
@@ -1401,9 +1410,43 @@ def _anos_pn(pn):
     return None, None
 
 
-def anos_do_titulo(titulo, marca="", modelo="", pn=""):
+# Ano solto de 2 algarismos logo depois do carro ("Volvo Xc60 19 31425768", "Fiat Toro 23 Original", "Volvo Xc60 T8 21",
+# "Honda Fit Lx 15"): entre o carro e o ano so cabe versao/motor. Nunca medida ("Xc60 12 v", "Gol 16 pinos").
+_VERSAO_ANTES_DO_ANO = re.compile(r"\d\.\d|\d{1,2}v|[a-z]\d{1,2}|lx|lxs|lxl|ex|exl|dx|lt|ltz|ls|gl|glx|gls|gli|xei|xli|se|sel"
+                                  r"|sport|hatch|sedan|turbo|flex|tsi|tfsi|thp|cvt|at|mt")
+_MEDIDA_DEPOIS_DO_ANO = re.compile(r"v|volts?|vias?|pinos?|furos?|dentes|mm|cm|m|mts?|pol(egadas)?|l|litros?|kg|cv|w|a|amp"
+                                   r"|x|%|polos?|bar|psi|graus?|lugares|portas|kms?|mil|un|unid(ades)?|pcs|pecas|peças")
+
+
+def _ano_depois_do_carro(titulo, modelos):
+    """'... Volvo Xc60 T8 21 32326628' -> 2021: o 1o numero de 2 algarismos logo depois do carro (pulando ate 2
+    palavras de versao/motor). O carro e o modelo lido (ou um dos carros da peca); medida logo depois nao e ano."""
+    toks = [t.strip(".,;:()[]") for t in (titulo or "").split()]
+    chaves = [[gi.chave_modelo(w) for w in m.split()] for m in modelos if m]
+    for i in range(len(toks) - 1, -1, -1):
+        if not any(len(c) and i + 1 >= len(c) and [gi.chave_modelo(t) for t in toks[i + 1 - len(c):i + 1]] == c
+                   for c in chaves):
+            continue
+        k = i + 1
+        while k < len(toks) and k - i <= 2 and not re.fullmatch(r"\d{2}", toks[k]) \
+                and _VERSAO_ANTES_DO_ANO.fullmatch(toks[k].lower()):
+            k += 1
+        if k >= len(toks) or not re.fullmatch(r"\d{2}", toks[k]):
+            return None
+        depois = toks[k + 1].lower() if k + 1 < len(toks) else ""
+        if depois.startswith("/") or re.fullmatch(r"\d{1,2}", depois) or _MEDIDA_DEPOIS_DO_ANO.fullmatch(depois):
+            return None
+        a = _ano2(toks[k])
+        return a if 1950 <= a <= ANO_MAX else None
+    return None
+
+
+def anos_do_titulo(titulo, marca="", modelo="", pn="", outros=()):
     """Faixa de anos da peca: o titulo ("18/24" e os outros jeitos); sem ano no titulo,
-    a lista de anos do part_number do ML. Depois limita ao periodo do carro no Brasil."""
+    a lista de anos do part_number do ML; sem nada disso, o ano de 2 algarismos logo depois do carro
+    ("Fiat Toro 23"). Depois limita ao periodo do carro no Brasil. outros = os carros da peca de 2+ carros
+    ("ms"): quando a faixa fica toda fora do periodo do 1o carro, mas cabe noutro ("Fiat Punto Strada 18/23":
+    o Punto acabou em 2017), vale a faixa desse outro (anos_por_modelo tira o ano do 1o)."""
     a0, a1 = gi.anos(titulo)
     if a0 and (a1 - a0) > 40:  # "98/24" mal lido: descarta
         return None, None
@@ -1414,9 +1457,16 @@ def anos_do_titulo(titulo, marca="", modelo="", pn=""):
             a0, a1 = p0, p1    # "Wr-v 2026" + part_number 2024-2025-2026: a faixa do vendedor
     if not a0 and marca:
         a0, a1 = _anos_pn(pn)
+    if not a0 and marca and modelo:
+        a0 = a1 = _ano_depois_do_carro(titulo, [modelo, *outros])
     if not a0:
         return None, None
-    return limitar_anos(a0, a1, marca, modelo)
+    r0, r1 = limitar_anos(a0, a1, marca, modelo)
+    if not r0:
+        cabem = [f for f in (limitar_anos(a0, a1, marca, m) for m in outros if m != modelo) if f[0]]
+        if cabem:
+            return min(f[0] for f in cabem), max(f[1] for f in cabem)
+    return r0, r1
 
 
 def limitar_anos(a0, a1, marca="", modelo=""):
@@ -3037,7 +3087,8 @@ def diferencas(pecas):
     - versao/geracao diferente (T5 x T8, B6 x nada): a versao inteira da peca ("T5 2.0", "3.6 V6", "T5/T6 2.0");
     - mesma versao em todas (T8 e T8; T5 e "T5 2.0"): nada;
     - sem versao em nenhuma, motor diferente (1.0/1.4 x 1.0; 2.0 x nada): o motor;
-    - sem nada disso, cores diferentes nos titulos: "Cor: cinza e preto".
+    - sem nada disso, cores diferentes nos titulos: a cor, sem prefixo ("Cinza e preto", "Preto": ao lado do carro,
+      "Cor:" ficava estranho e roubava espaco no cartao de 2 colunas).
     Devolve quantas pecas ganharam "dif"."""
     for g in grupos_mesma_peca(pecas):
         partes = [versao_do_titulo(x["t"]) for x in g]
@@ -3050,7 +3101,7 @@ def diferencas(pecas):
         elif not any(prim) and not any(sec):
             cores = [cores_do_titulo(x["t"]) for x in g]
             distintas = {tuple(c) for c in cores if c}
-            marcar = ([(x, "Cor: " + " e ".join(c)) for x, c in zip(g, cores) if c] if len(distintas) > 1 else [])
+            marcar = ([(x, " e ".join(c).capitalize()) for x, c in zip(g, cores) if c] if len(distintas) > 1 else [])
         else:
             marcar = []
         for x, t in marcar:
@@ -3124,15 +3175,23 @@ def modelos_do_titulo(marca, ws, principal, validos):
 def anos_por_modelo(ms, marca, a0, a1):
     """(carros, anos de cada um) da peca de 2+ carros. A faixa do titulo vale para todos, cortada no
     periodo de venda de cada carro ("Fit Wr-v 15/21": WR-V so a partir de 2017). Carro cuja faixa fica
-    toda fora do periodo dele sai (leitura impossivel). anos = None quando todos ficam com a mesma faixa."""
+    toda fora do periodo dele sai (leitura impossivel). anos = None quando todos ficam com a mesma faixa.
+    Faixa que nao cabe no 1o carro, so noutro ("Fiat Punto Idea Strada 18/23": Punto e Idea acabaram antes de 2018):
+    a faixa e desse outro, que passa a ser o 1o (o cartao diz "Strada / Punto / Idea · 2018–2023", nunca ano
+    impossivel no carro principal); os de fora ficam, sem ano (a peca nao perde carro que o titulo diz)."""
     if len(ms) < 2 or not a0:
         return ms, None
-    carros, anos = [ms[0]], [[a0, a1]]
+    p0, p1 = limitar_anos(a0, a1, marca, ms[0])
+    carros, anos = [ms[0]], [[p0, p1] if p0 else None]
     for mod in ms[1:]:
         r0, r1 = limitar_anos(a0, a1, marca, mod)
-        if r0:
+        if r0 or not p0:
             carros.append(mod)
-            anos.append([r0, r1])
+            anos.append([r0, r1] if r0 else None)
+    if not p0:
+        k = next((i for i, a in enumerate(anos) if a), 0)
+        carros = [carros[k]] + carros[:k] + carros[k + 1:]
+        anos = [anos[k]] + anos[:k] + anos[k + 1:]
     return carros, (anos if any(a != [a0, a1] for a in anos) and len(carros) > 1 else None)
 
 
@@ -3271,8 +3330,10 @@ def main():
             mod = ""
         # Peca que serve em mais de um carro ("Volvo S60 Xc60"): todos os carros da marca, o principal primeiro
         ms_titulo = modelos_do_titulo(mc, ws, mod, validos) if mod else []
-        a0, a1 = anos_do_titulo(p["title"], mc, mod, p.get("part_number"))
+        a0, a1 = anos_do_titulo(p["title"], mc, mod, p.get("part_number"), ms_titulo)
         ms, ys = anos_por_modelo(ms_titulo, mc, a0, a1)
+        if len(ms) > 1 and ms[0] != mod:
+            mod = ms[0]   # a faixa do titulo e de outro carro da peca: ele vira o carro principal
         cat = cats.get(p.get("category_id"))
         n = nome_limpo(p["title"], mc, mod, ms_titulo)
         fam, tipo, chave_bloco = classificar_peca(n, cat, p.get("category_id") or "")

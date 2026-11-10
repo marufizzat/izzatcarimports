@@ -27,3 +27,19 @@ export function descricaoPeca(p: PecaDescricao, codigo: string, preco: string): 
     `${encurtar(p.n, DESCRICAO_MAX - fim.length - 11)} original. ${fim}`,
   ]);
 }
+
+/** Prévia do link (og:description, a que o WhatsApp mostra em 2 linhas): começa pelo que vende, o preço e o código, e
+ *  depois o carro. "R$ 244,64 · Cód. 8200328856 · Renault Clio, Logan e Sandero 2007 a 2014 · Peça original usada, com
+ *  nota fiscal e 90 dias de garantia." Sem código, sem carro ou sem anos: a parte sai. A meta description (Google) é a
+ *  de descricaoPeca. `codigo` e `preco` já prontos (codigoDaPeca e brl de lib/dados.ts: preço sempre com 2 casas). */
+export function descricaoLink(p: PecaDescricao, codigo: string, preco: string): string {
+  const carro = [nomeModelos(p), anosDaPeca(p.y ?? null, ' a ')].filter(Boolean).join(' ');
+  return [`R$ ${preco}`, codigo && `Cód. ${codigo}`, carro, 'Peça original usada, com nota fiscal e 90 dias de garantia.']
+    .filter(Boolean).join(' · ');
+}
+
+/** Título da prévia do link (og:title): curto, o nome limpo e o carro ("Caixa filtro de ar Renault Clio, Logan e
+ *  Sandero"). O <title> da aba (com anos, código e a loja) não muda. */
+export function tituloLink(p: PecaDescricao): string {
+  return [p.n, nomeModelos(p)].filter(Boolean).join(' ');
+}

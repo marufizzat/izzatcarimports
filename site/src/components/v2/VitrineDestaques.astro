@@ -6,6 +6,7 @@
 // Uma peça aparece numa aba só (a 1ª em que entra: Em destaque > Mais procuradas > sistemas); cada aba pede peças de
 // sobra para continuar com 8 depois de tirar as repetidas.
 import CartaoPeca from '../CartaoPeca.astro';
+import { SIZES_CARTAO } from '../../lib/busca';
 import { abasVitrine } from '../../lib/destaques';
 const POR_ABA = 8;
 const sobra = new Map(abasVitrine(POR_ABA * 2).map((a) => [a.k, a.pecas]));
@@ -30,7 +31,7 @@ const abas = abasVitrine(POR_ABA)
     </div>
     {abas.map((a, i) => (
       <div class="vit-painel" role="tabpanel" id={`vit-painel-${a.k}`} aria-labelledby={`vit-aba-${a.k}`} hidden={i !== 0}>
-        <div class="vit-grade">{a.pecas.map((p) => <CartaoPeca p={p} />)}</div>
+        <div class="vit-grade">{a.pecas.map((p) => <CartaoPeca p={p} sizes={SIZES_CARTAO.vitrine} />)}</div>
         <div class="vit-mais"><a class="botao botao-linha" href={a.link}>{a.linkRotulo}</a></div>
       </div>
     ))}

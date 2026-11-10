@@ -3,6 +3,9 @@
 // <details> no fim da página. A grade mostra 48 cartões; o resto só existia no sitemap e o Google não chegava por
 // link (auditoria 3, item 9.1: 170 peças sem nenhum link interno). Agrupada por tipo, na ordem dos cartões "Por tipo".
 // Peso: ~150 bytes por peça, só nas 25 páginas de categoria e no pé do catálogo — nunca na página da peça.
+// Fluidez (XC60, 515 peças, CPU 6x): abrir a lista desenhava as 515 linhas em colunas de uma vez (quadro de 66–89 ms).
+// Cada grupo tem content-visibility: auto: só os grupos perto da tela são desenhados; os outros guardam o lugar pela
+// altura estimada (linhas por coluna × 29 px + o título), --l1/--l2/--l3 = linhas com 1, 2 e 3 colunas.
 import type { Peca } from '../../lib/dados';
 import { nomeModelos } from '../../lib/meuCarro';
 import { anosDaPeca } from '../../lib/nomePeca';
@@ -25,7 +28,7 @@ const grupos = [...porTipo.entries()]
   <details class="todas-pecas" id={id}>
     <summary>{titulo}</summary>
     {grupos.map((g) => (
-      <div class="todas-pecas-grupo">
+      <div class="todas-pecas-grupo" style={`--l1:${g.ps.length};--l2:${Math.ceil(g.ps.length / 2)};--l3:${Math.ceil(g.ps.length / 3)}`}>
         {g.n && <h3>{g.n}{' '}<span class="todas-pecas-n">({fmt(g.ps.length)})</span></h3>}
         <ul>{g.ps.map((p) => <li><a href={`/peca/${p.slug}.html`}>{rotulo(p)}</a></li>)}</ul>
       </div>
@@ -37,9 +40,12 @@ const grupos = [...porTipo.entries()]
   .todas-pecas summary { display: list-item; padding-block: 11px; cursor: pointer; font-stretch: 86%; font-weight: 800; font-size: 18px; line-height: 1.3; color: var(--ink); }
   .todas-pecas summary:hover { color: var(--accent-text); }
   .todas-pecas-n { margin-left: 4px; font-weight: 500; color: var(--ink-3); }
-  .todas-pecas-grupo { margin-top: 18px; }
+  .todas-pecas-grupo { margin-top: 18px; content-visibility: auto; contain-intrinsic-size: auto calc(var(--l1) * 29px + 28px); }
+  @media (min-width: 700px) { .todas-pecas-grupo { contain-intrinsic-size: auto calc(var(--l2) * 29px + 28px); } }
+  @media (min-width: 1100px) { .todas-pecas-grupo { contain-intrinsic-size: auto calc(var(--l3) * 29px + 28px); } }
   .todas-pecas h3 { margin: 0 0 6px; font-size: 15.5px; font-weight: 750; color: var(--ink); }
-  .todas-pecas ul { list-style: none; margin: 0; padding: 0; columns: 1; column-gap: 28px; }
+  /* uma coluna = sem multicol (o layout de colunas custa mais e no celular não serve para nada) */
+  .todas-pecas ul { list-style: none; margin: 0; padding: 0; column-gap: 28px; }
   @media (min-width: 700px) { .todas-pecas ul { columns: 2; } }
   @media (min-width: 1100px) { .todas-pecas ul { columns: 3; } }
   .todas-pecas li { break-inside: avoid; }

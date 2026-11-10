@@ -6,7 +6,7 @@ import Catalogo from '../components/catalogo/Catalogo';
 import SeloReputacao from '../components/SeloReputacao.astro';
 import { resumo, logoInfo, SITE, pecas } from '../lib/dados';
 import TodasAsPecas from '../components/categoria/TodasAsPecas.astro';
-import { Busca, capaItem, foto, type Indice } from '../lib/busca';
+import { Busca, SIZES_CARTAO, fotoCartao, type Indice } from '../lib/busca';
 import { idsMaisNovos } from '../components/catalogo/etiqueta';
 const r = resumo();
 // peças do bloco "Outros" (sem página de categoria): o único link delas fica no pé do catálogo
@@ -23,10 +23,11 @@ const novos = [...idsMaisNovos(motor.itens.map((i) => i.id), 8)];
 // Fotos dos 2 primeiros cartões: pedidas já no <head> (só no catálogo sem busca). Os cartões da 1ª tela vêm com
 // loading="lazy": num endereço com busca, a vitrine padrão fica escondida e as fotos dela nem são baixadas
 // (no 4G, a banda vai inteira para o índice).
-const fotosTopo = iniciais.slice(0, 2).map((it) => (it.e !== '0' || !it.i ? { href: capaItem(it) } : {
-  href: foto(it.i, 'O'), imagesrcset: `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`,
-  imagesizes: '(min-width:1280px) 240px, (min-width:768px) 28vw, 46vw',
-}));
+// O srcset/sizes do pedido é o MESMO do cartão (fotoCartao): o navegador escolhe a mesma capa leve e não baixa duas vezes.
+const fotosTopo = iniciais.slice(0, 2).map((it) => {
+  const f = fotoCartao(it, SIZES_CARTAO.catalogo);
+  return f.srcset ? { href: f.src, imagesrcset: f.srcset, imagesizes: f.sizes ?? '' } : { href: f.src };
+});
 // ?tipo= antigo (família do Mercado Livre, que o Google conhece: "Iluminação", "Peças de Interior") -> o bloco novo.
 // Com sub= junto ("Carroceria" + "Retrovisores Externos"), o tipo sai: o sub sozinho já filtra certo.
 const tiposAntigos = Object.fromEntries((r.antigas ?? []).map((a) => [a.n, r.familias.find((f) => f.k === a.para && f.c > 0)?.n ?? '']));

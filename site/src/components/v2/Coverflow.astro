@@ -7,6 +7,7 @@
 // Com mouse, as setas valem também no trilho ("reduzir movimento" e aparelho fraco): dá para chegar às 14.
 import type { Peca } from '../../lib/dados';
 import CartaoPeca from '../CartaoPeca.astro';
+import { SIZES_CARTAO } from '../../lib/busca';
 
 interface Props { pecas: Peca[]; id: string; rotulo: string }
 const { pecas, id, rotulo } = Astro.props;
@@ -18,7 +19,7 @@ const posInicial = (i: number) => (Math.abs(i - INICIO) <= 2 ? String(i - INICIO
   <ul class="cf-lista trilho" data-trilho aria-label={rotulo}>
     {pecas.map((p, i) => (
       <li class="cf-item" data-o={posInicial(i)}>
-        <CartaoPeca p={p} />
+        <CartaoPeca p={p} sizes={SIZES_CARTAO.carrossel} />
       </li>
     ))}
   </ul>

@@ -16,6 +16,7 @@
 // e, ao escolher o ano, a raiz avisa (evento ESCOLHIDO) para a caixa fechar e mostrar a resposta na faixa.
 import { lerMeuCarro, salvarMeuCarro, lembrarArte, carregarGaragem as baixarGaragem, linkCatalogo, EVENTO, ESCOLHIDO, type MeuCarro } from '../../lib/meuCarro';
 import { whatsUrl } from '../../lib/whats';
+import { rolarFila } from '../../lib/anosFila';
 import { LINHA } from '../../lib/icones';
 
 /** a/as: arte do carro e as larguras do srcset (lib/garagem.ts). */
@@ -205,7 +206,8 @@ function htmlAnos(e: Estado): string {
   const chip = (y: number | null, c: number) =>
     `<button type="button" class="mc-ano num" data-acao="ano" data-y="${y ?? ''}" data-chave="ano:${y ?? ''}" aria-pressed="${e.ano === y}" aria-label="${y ?? 'Todos os anos'}, ${pecasTxt(c)}">${y ?? 'Todos'}</button>`;
   const anos = [...mo.ya].sort((a, b) => a[0] - b[0]).map(([y, c]) => chip(y, c));
-  const chips = (mo.ya.length > 1 ? [chip(null, mo.c)] : []).concat(anos).join('');
+  // o "Todos" num invólucro fixo à esquerda (sticky, MeuCarroEstilo): a linha corre por baixo dele
+  const chips = (mo.ya.length > 1 ? [`<span class="mc-fixo">${chip(null, mo.c)}</span>`] : []).concat(anos).join('');
   return `
     <div class="mc-anos" role="group" aria-label="Ano do carro">
       <span class="mc-anos-rot" aria-hidden="true">Ano</span>
@@ -403,17 +405,23 @@ export function montarPicker(raiz: HTMLElement): Handle {
   }
 
   /** Linha dos anos: o ano escolhido à vista (pelo scrollLeft da própria linha: a página nunca rola junto) e as
-   *  bordas esmaecidas / setas só do lado em que ainda há anos. */
+   *  bordas esmaecidas / setas só do lado em que ainda há anos. Sem ano escolhido, a linha abre nos anos com mais peças
+   *  (lib/anosFila.ts, a mesma regra da página do carro); o "Todos" fica fixo à esquerda (sticky). */
   function arrumarAnos(centrar: boolean) {
     const lista = conteudo.querySelector<HTMLElement>('[data-mc-anos]');
     if (!lista) return;
-    const sel = lista.querySelector<HTMLElement>('[aria-pressed="true"]');
-    if (sel) {
+    const fixo = lista.querySelector<HTMLElement>('.mc-ano[data-y=""]');
+    const anos = [...lista.querySelectorAll<HTMLElement>('.mc-ano[data-y]')].filter((c) => c.dataset.y);
+    const sel = anos.find((c) => c.getAttribute('aria-pressed') === 'true') ?? null;
+    if (centrar) {
+      const ya = new Map(e.modelo?.ya ?? []);
+      rolarFila(lista, fixo, anos, anos.map((c) => ya.get(Number(c.dataset.y)) ?? 0), sel);
+    } else if (sel) {
       const ini = sel.offsetLeft; // a lista é position: relative (offsetParent dos anos): conta sem a rolagem
       const fim = ini + sel.offsetWidth;
       const folga = 28;
-      if (centrar) lista.scrollLeft = ini - (lista.clientWidth - sel.offsetWidth) / 2;
-      else if (ini - folga < lista.scrollLeft) lista.scrollLeft = ini - folga;
+      const tampa = fixo ? fixo.offsetWidth + 6 : 0; // o "Todos" fixo cobre o começo da linha
+      if (ini - folga - tampa < lista.scrollLeft) lista.scrollLeft = ini - folga - tampa;
       else if (fim + folga > lista.scrollLeft + lista.clientWidth) lista.scrollLeft = fim + folga - lista.clientWidth;
     }
     bordasAnos(lista);
