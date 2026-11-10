@@ -21,7 +21,7 @@ export function cartaoHtml(it: Item): string {
   const img = estudio
     ? `<img src="${esc(src)}" class="estudio" data-ml="${esc(it.i ? foto(it.i, 'O') : '')}" alt="" width="800" height="800" loading="lazy" decoding="async">`
     : `<img src="${esc(src)}" srcset="${esc(`${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`)}" sizes="(min-width:1280px) 200px, (min-width:1024px) 30vw, 208px" alt="" width="800" height="800" loading="lazy" decoding="async">`;
-  const linha = carro ? `<span class="etiqueta-carro"><span class="etiqueta-modelo">${esc(carro)}</span>${anos ? `<span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>${esc(anos)}</span>` : ''}</span>` : '';
+  const linha = carro ? `<span class="etiqueta-carro"><span class="etiqueta-modelo">${esc(carro)}${it.dif ? ` <span class="etiqueta-dif">${esc(it.dif)}</span>` : ''}</span>${anos ? `<span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>${esc(anos)}</span>` : ''}</span>` : '';
   return `<div class="${CLASSE_CARTAO}"><a class="etiqueta" href="/peca/${esc(it.h)}.html"${atributos(dadosCarro(it.b, it.m, it.y, it.ms, it.ys))}>`
     + `<div class="etiqueta-foto">${img}</div><div class="etiqueta-dados">${linha}<h3 class="etiqueta-nome">${esc(it.n)}</h3>`
     + (cod ? `<span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">${esc(cod)}</span></span>` : '')

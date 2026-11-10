@@ -90,7 +90,7 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
     </div>
   </div>
 
-  <section class="nf-vendida nf-v-grade" aria-labelledby="h-parecidas" data-v-grade hidden>
+  <section class="nf-vendida nf-v-grade" aria-labelledby="h-parecidas" data-v-grade>
     <div class="moldura">
       <div class="nf-v-cabeca">
         <h2 class="titulo-secao" id="h-parecidas" data-v-titulo>Parecidas à venda</h2>
@@ -116,7 +116,7 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
     const nome = $('[data-v-nome]'), carro = $('[data-v-carro]');
     if (nome) nome.textContent = v.nome || (v.carro ? 'Peça' : `Anúncio ${v.mlb}`);
     if (carro) carro.textContent = v.carro ? [v.carro, anosCurto(v.anos)].filter(Boolean).join(' · ') : 'Anúncio do Mercado Livre';
-    if (v.nome) document.title = `${v.nome} ${v.carro} já foi vendida | Izzat Car Imports`;
+    if (v.nome) document.title = `Vendida: ${[v.nome, v.carro].filter(Boolean).join(' ')} | Izzat Car Imports`;
     // a arte é só enfeite aqui (o texto dela fala da página que não existe)
     document.querySelector('.nf-arte img')?.setAttribute('alt', '');
     const avise = $<HTMLAnchorElement>('[data-v-avise]');
@@ -132,13 +132,13 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
       import('../lib/vendidaCartoes').then(async ({ carregarParecidas, cartaoHtml, vigiarFotos }) => {
         const r = await carregarParecidas(v);
         link(linkFiltros(r.filtros));
-        if (!r.itens.length) return;
+        if (!r.itens.length) { grade.classList.add('nf-v-fora'); return; }
         if (titulo && r.doCarro) titulo.textContent = `Mais peças ${r.filtros.modelo ? `do ${r.filtros.marca} ${r.filtros.modelo}` : r.filtros.marca}`;
         vigiarFotos(cartoes);
         cartoes.innerHTML = r.itens.map(cartaoHtml).join('');
-        grade.hidden = false;
-      }).catch(() => { /* sem o índice: ficam os botões, que já levam ao catálogo */ });
-    }
+        grade.classList.add('nf-v-pronta');
+      }).catch(() => { grade.classList.add('nf-v-fora'); /* sem o índice: ficam os botões, que já levam ao catálogo */ });
+    } else grade?.classList.add('nf-v-fora');
   }
 </script>
 
@@ -184,6 +184,13 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
 
   .nf-v-grade { padding-block: clamp(36px, 5vw, 64px) clamp(56px, 8vw, 96px); background: var(--bg-2); }
   .nf-v-cabeca { display: grid; gap: 14px; margin-bottom: 18px; align-items: end; }
+  /* o lugar das parecidas fica guardado desde o 1º desenho (html.nf-peca vem do <head>): quando os cartões chegam, o rodapé
+     não desce (CLS 0,15 no celular lento). Sem carro reconhecido ou sem parecidas, o script tira a seção (.nf-v-fora). */
+  .nf-v-grade:not(.nf-v-pronta) { visibility: hidden; }   /* sem o atributo hidden: o do Tailwind é display:none !important numa camada, não dá para reservar o lugar */
+  .nf-v-grade.nf-v-fora { display: none !important; }
+  .nf-v-cartoes:empty { min-height: 435px; }
+  @media (min-width: 1024px) { .nf-v-cartoes:empty { min-height: 985px; } }
+  @media (min-width: 1280px) { .nf-v-cartoes:empty { min-height: 419px; } }
   @media (min-width: 768px) { .nf-v-cabeca { grid-template-columns: 1fr auto; } }
   .nf-v-cabeca .titulo-secao { margin: 0; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.05; }
   @media (max-width: 767px) { .nf-v-cabeca .botao { justify-self: start; } }
