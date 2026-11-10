@@ -3,7 +3,7 @@
 // reais de src/data/fotos-ml-caixas.json.
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { quadro, atributosQuadro, MARGEM, INTEIRA } from '../src/lib/quadroFoto';
+import { quadro, atributosQuadro, fotosGaleria, classeFoto, MARGEM, INTEIRA } from '../src/lib/quadroFoto';
 
 /** lê o style gerado de volta (como o CSS faz: --h cai no --w, --x/--y no 0) */
 function ler(style: string) {
@@ -117,6 +117,19 @@ describe('quadro das fotos do ML na galeria', () => {
     expect(1200 / baixa.w).toBeCloseTo(700, -1);
   });
 
+  it('classe no fim da entrada não muda o quadro', () => {
+    expect(quadro([900, 1200, 100, 300, 800, 1000, 'p', '0123456789abcdef'])).toEqual(quadro([900, 1200, 100, 300, 800, 1000]));
+    expect(quadro([1200, 900, 's', '0123456789abcdef'])).toEqual(quadro([1200, 900]));
+  });
+
+  it('galeria: tira o marketing, põe o carro no fim, mantém a ordem e nunca fica sem foto', () => {
+    const t = { a: [1, 1, 'p'], b: [1, 1, 'm'], c: [1, 1, 'c'], d: [1, 1], e: [1, 1, 's'], f: [1, 1, 'm'] };
+    expect(fotosGaleria(['c', 'a', 'b', 'd', 'e'], t)).toEqual(['a', 'd', 'e', 'c']);
+    expect(fotosGaleria(['b', 'f'], t)).toEqual(['b', 'f']);            // tudo marketing: fica como veio
+    expect(fotosGaleria(['x', '', 'a'], t)).toEqual(['x', 'a']);         // sem medida conta como peça
+    expect(classeFoto('d', t)).toBeNull();
+  });
+
   it('style curto: sem zeros nem valores repetidos', () => {
     expect(atributosQuadro(quadro([1200, 1200, 0, 0, 1200, 1200])).style).toBe('--w:1');
     const s = atributosQuadro(quadro([900, 1200, 100, 300, 800, 1000])).style!;
@@ -140,9 +153,13 @@ describe('quadro das fotos do ML na galeria', () => {
   it('todas as medidas reais (src/data/fotos-ml-caixas.json)', (ctx) => {
     const arq = 'src/data/fotos-ml-caixas.json';
     if (!existsSync(arq)) return ctx.skip();
-    const medidas: Record<string, number[]> = JSON.parse(readFileSync(arq, 'utf-8'));
+    const medidas: Record<string, (number | string)[]> = JSON.parse(readFileSync(arq, 'utf-8'));
     const ruins: string[] = [];
-    for (const [k, m] of Object.entries(medidas)) if (!(m.length === 2 || m.length === 6) || problema(m)) ruins.push(`${k} ${JSON.stringify(m)} ${problema(m)}`);
+    for (const [k, e] of Object.entries(medidas)) {
+      const m = e.filter((v): v is number => typeof v === 'number');
+      const c = classeFoto(k, medidas);
+      if (!(m.length === 2 || m.length === 6) || (c !== null && !'psmc'.includes(c)) || problema(m)) ruins.push(`${k} ${JSON.stringify(e)} ${problema(m)}`);
+    }
     expect(ruins.slice(0, 5)).toEqual([]);
   }, 30000);
 });

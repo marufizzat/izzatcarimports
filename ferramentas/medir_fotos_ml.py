@@ -1,39 +1,54 @@
 #!/usr/bin/env python3
-"""Mede onde está a PEÇA em cada foto do Mercado Livre que aparece na galeria da página da peça.
+"""Mede e classifica cada foto do Mercado Livre que aparece na galeria da página da peça.
 
-Para cada foto do anúncio (a capa de estúdio já é enquadrada pelo capas_estudio.py) grava em
-site/src/data/fotos-ml-caixas.json:
-    "<chave>": [W, H, x0, y0, x1, y1]   tamanho da foto grande (-F) e a caixa da peça, em px dela
-    "<chave>": [W, H]                   nenhuma peça achada (a galeria mostra a foto inteira)
-O site (src/lib/quadroFoto.ts) usa isso no build para enquadrar a foto no quadro quadrado com a peça
-centrada e ocupando ~84%, sem cortar a peça e sem copiar nem alterar a foto (só CSS). A "caixa da peça" é a de tudo
-o que está em primeiro plano na foto (nada fica cortado ao meio).
+Grava em site/src/data/fotos-ml-caixas.json, por chave da foto:
+    [W, H, x0, y0, x1, y1, classe, hash]   tamanho da foto grande (-F), a caixa da peça (px dela), classe e assinatura
+    [W, H, classe, hash]                   nenhuma peça achada
+(classe e hash faltam enquanto a foto não foi classificada; entrada antiga só com números = sem classe).
+A "caixa da peça" é a de tudo o que está em primeiro plano (nada fica cortado ao meio). O site (src/lib/quadroFoto.ts)
+enquadra a foto no quadro quadrado com a peça centrada e ocupando ~84%, só com CSS.
 
-Só mede o que falta no JSON (nunca baixa de novo o que já tem); grava aos poucos (pode parar e retomar).
-Baixa a foto média (-O, até 500 px, ~9 KB) só na memória, e os 64 primeiros bytes da grande (-F) para o tamanho.
+Classes (a galeria, o JSON-LD e o feed tiram "m" e põem "c" no fim):
+    p  peça                     s  sem peça achada (aparece inteira)
+    m  marketing do anúncio: banner de entrega/garantia/dicas (2+ palavras de propaganda no texto lido pelo OCR, com
+       texto de banner, 5%+ da foto), cartão escuro com texto, ou a MESMA foto (assinatura idêntica) em 3+ anúncios
+       diferentes. O selo pequeno "produto seminovo original" e o lacre da loja colados na foto da peça NÃO contam.
+    c  carro inteiro (classificador prob_carro do capas_estudio.py > 0,6): vai para o fim da galeria
+Muito texto sozinho NÃO é marketing: nas fotos do catálogo, mais de 15% de texto é quase sempre a etiqueta da peça
+(nome, carro e código do vendedor, ou a etiqueta de fábrica), que mostra o código ao comprador.
 
-Motor (MEDIR_MOTOR): vision (Mac, recorte nativo; ferramentas/caixa_vision.swift aberto em cada uma das 8 linhas de
-trabalho, ou o ~/.local/bin/recorta-fundo a cada foto) | rembg (robô).
+Só mede/classifica o que falta (nunca baixa de novo o que já tem); grava aos poucos (pode parar e retomar).
+Baixa a foto média (-O, até 500 px) só na memória, e os 64 primeiros bytes da grande (-F) para o tamanho.
+Os sinais brutos de cada foto (texto, luz, carro, hash) ficam num cache local (MEDIR_SINAIS, fora do repositório):
+--reclassificar refaz as classes por eles, sem baixar nada.
+
+Motor (MEDIR_MOTOR): vision (Mac: ferramentas/caixa_vision.swift aberto em cada uma das 8 linhas de trabalho, recorte
+e OCR do Vision; sem swiftc, o ~/.local/bin/recorta-fundo e sem classe) | rembg (robô: recorte rembg e OCR rapidocr;
+sem rapidocr, mede e deixa a classe para a próxima rodada).
 Variáveis: MEDIR_PARALELO (8), MEDIR_TEMPO_MAX (s, 0 = sem limite), MEDIR_IDS (MLBs que vão primeiro),
-MEDIR_LIMITE (fotos por rodada, 0 = todas).
-Opções: --extra ARQ   junta o JSON do robô (cache entre rodadas) e grava o resultado nele também
-        --podar       tira do JSON as fotos que não estão mais em nenhum anúncio
-        --so-juntar   não mede nada: só junta o JSON do robô e grava (rodada sem tempo)
+MEDIR_LIMITE (fotos por rodada, 0 = todas), MEDIR_SINAIS (cache dos sinais).
+Opções: --extra ARQ       junta o JSON do robô (cache entre rodadas) e grava o resultado nele também
+        --podar           tira do JSON as fotos que não estão mais em nenhum anúncio
+        --so-juntar       não mede nada: só junta o JSON do robô e grava (rodada sem tempo)
+        --reclassificar   refaz as classes pelos sinais em cache (depois de mudar uma regra)
 Teste: python testes/test_medir_fotos_ml.py
 """
 import io
 import json
 import os
+import re
 import struct
 import sys
 import threading
 import time
+import unicodedata
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PECAS = ROOT / "site" / "src" / "data" / "pecas.json"
 ARQ = Path(os.getenv("MEDIR_ARQ") or ROOT / "site" / "src" / "data" / "fotos-ml-caixas.json")
+SINAIS = Path(os.getenv("MEDIR_SINAIS") or Path.home() / ".cache" / "izzatcar" / "fotos-ml-sinais.json")
 CDN = "https://http2.mlstatic.com/D_{}-{}.webp"
 UA = {"User-Agent": "Mozilla/5.0 (izzatcar-site)"}
 LADO_MEDIDA = 500          # a foto -O já vem com até 500 px: a caixa sai em fração, a resolução basta
@@ -106,34 +121,38 @@ def _ajudante_vision():
     return str(prog) if r.returncode == 0 and prog.exists() else None
 
 
-def motor_vision():
-    """Recorte nativo do Mac (o mesmo do capas_estudio.py: VNGenerateForegroundInstanceMaskRequest, todas as
-    instâncias). Com o ajudante em Swift, cada linha de trabalho tem o seu processo aberto; sem ele, o
-    ~/.local/bin/recorta-fundo a cada foto (saída 5 = nenhum primeiro plano)."""
-    import subprocess
-    import tempfile
-    from PIL import Image
-    ajudante = _ajudante_vision()
-    local = threading.local()
+class Vision:
+    """O Vision do Mac: recorte do primeiro plano (o mesmo do capas_estudio.py, todas as instâncias) e OCR. Com o
+    ajudante em Swift, cada linha de trabalho tem o seu processo aberto; sem ele, o ~/.local/bin/recorta-fundo a cada
+    foto (saída 5 = nenhum primeiro plano) e sem OCR (sem classe)."""
 
-    def _processo():
-        pr = getattr(local, "pr", None)
+    def __init__(self):
+        self.ajudante = _ajudante_vision()
+        self.local = threading.local()
+
+    def _pedir(self, linha):
+        import subprocess
+        pr = getattr(self.local, "pr", None)
         if pr is None or pr.poll() is not None:
-            pr = local.pr = subprocess.Popen([ajudante], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
-        return pr
+            pr = self.local.pr = subprocess.Popen([self.ajudante], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                                  text=True, bufsize=1)
+        pr.stdin.write(linha + "\n")
+        pr.stdin.flush()
+        resp = pr.stdout.readline().rstrip("\n")
+        if not resp:                       # o processo caiu: abre outro na próxima foto
+            self.local.pr = None
+            raise RuntimeError("vision: o ajudante parou")
+        return resp
 
-    def recortar(img):
+    def recortar(self, img):
+        import subprocess
+        import tempfile
+        from PIL import Image
         with tempfile.TemporaryDirectory() as d:
             ent, sai = os.path.join(d, "e.png"), os.path.join(d, "s.png")
             img.save(ent)
-            if ajudante:
-                pr = _processo()
-                pr.stdin.write(f"{ent}\t{sai}\n")
-                pr.stdin.flush()
-                resp = pr.stdout.readline().strip()
-                if not resp:                       # o processo caiu: abre outro na próxima foto
-                    local.pr = None
-                    raise RuntimeError("vision: o ajudante parou")
+            if self.ajudante:
+                resp = self._pedir(f"{ent}\t{sai}")
                 cod = 5 if resp == "SEM" else 0 if resp == "OK" else 1
             else:
                 cod = subprocess.run([os.path.expanduser("~/.local/bin/recorta-fundo"), ent, sai],
@@ -143,22 +162,82 @@ def motor_vision():
             if cod != 0 or not os.path.exists(sai):
                 raise RuntimeError(f"vision falhou ({cod})")
             return Image.open(sai).split()[3].copy()
-    return recortar, int(os.getenv("MEDIR_PARALELO", "8"))
+
+    def texto(self, img):
+        """(área de texto em fração da foto, texto lido)."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            ent = os.path.join(d, "e.png")
+            img.save(ent)
+            resp = self._pedir(f"TEXTO\t{ent}")
+        partes = resp.split(" ", 3)
+        if partes[0] != "T":
+            raise RuntimeError(f"vision: OCR falhou ({resp[:20]})")
+        return float(partes[1]), (partes[3] if len(partes) > 3 else "")
 
 
-def motor_rembg():
+def texto_rapidocr():
+    """OCR do robô (rapidocr, o mesmo do filtro de etiqueta das capas); None sem ele."""
+    sys.path.insert(0, str(ROOT))
+    import capas_estudio as ce
+    ocr = ce._ocr()
+    if ocr is None:
+        return None
+
+    def ler(img):
+        import numpy as np
+        res, _ = ocr(np.asarray(img.convert("RGB")))
+        area, lidas = 0.0, []
+        for box, txt, conf in res or []:
+            if float(conf) < 0.5 or sum(ch.isalnum() for ch in txt) < 3:
+                continue
+            xs, ys = [q[0] for q in box], [q[1] for q in box]
+            area += (max(xs) - min(xs)) * (max(ys) - min(ys))
+            lidas.append(txt.replace("|", "/"))
+        return min(1.0, area / (img.size[0] * img.size[1])), " | ".join(lidas)
+    return ler
+
+
+def prob_carro_foto():
+    """prob_carro do capas_estudio.py na foto inteira (MobileNetV2, 14 MB, CPU)."""
+    sys.path.insert(0, str(ROOT))
+    import capas_estudio as ce
+    from PIL import Image
+    ce.prob_carro(Image.new("RGBA", (32, 32), (255, 255, 255, 255)))     # carrega o modelo antes das linhas
+    return lambda img: ce.prob_carro(img.convert("RGBA"))
+
+
+def motores(nome):
+    """(recortar, ler_texto ou None, prob_carro ou None, linhas de trabalho)."""
+    try:
+        prob = prob_carro_foto()
+    except Exception as e:  # noqa: BLE001  (sem onnxruntime/modelo: mede, classifica depois)
+        print(f"sem o classificador de carro: {str(e)[:80]}", flush=True)
+        prob = None
+    if nome == "vision":
+        v = Vision()
+        return v.recortar, (v.texto if v.ajudante else None), prob, int(os.getenv("MEDIR_PARALELO", "8"))
     from rembg import new_session, remove
     sessao = new_session(os.getenv("MEDIR_MODELO", "isnet-general-use"), providers=["CPUExecutionProvider"])
-    return (lambda img: remove(img, session=sessao, only_mask=True, post_process_mask=True)), 1
-
-
-def medir_uma(chave, recortar):
-    """[W, H, x0, y0, x1, y1] (px da foto -F), [W, H] sem peça, ou None (rede: tenta na próxima rodada)."""
-    from PIL import Image
     try:
-        media = Image.open(io.BytesIO(_get(CDN.format(chave, "O")))).convert("RGB")
+        ler = texto_rapidocr()
+    except Exception:  # noqa: BLE001
+        ler = None
+    return (lambda img: remove(img, session=sessao, only_mask=True, post_process_mask=True)), ler, prob, 1
+
+
+def baixar_media(chave):
+    from PIL import Image
+    return Image.open(io.BytesIO(_get(CDN.format(chave, "O")))).convert("RGB")
+
+
+def medir_uma(chave, recortar, classificar=None):
+    """Mede a foto nova: [W, H, x0, y0, x1, y1] (px da foto -F) ou [W, H] sem peça, com classe e assinatura se
+    `classificar` (img -> sinais) foi dado. Devolve (entrada, sinais) ou (None, None) se a rede/recorte falhou."""
+    try:
+        media = baixar_media(chave)
     except Exception:  # noqa: BLE001  (rede, foto que saiu do ar)
-        return None
+        return None, None
     try:
         grande = tamanho_webp(_get(CDN.format(chave, "F"), faixa=64))
     except Exception:  # noqa: BLE001
@@ -173,12 +252,116 @@ def medir_uma(chave, recortar):
     except SemPeca:
         cx = None
     except Exception:  # noqa: BLE001  (recorte falhou: não grava, tenta na próxima rodada)
-        return None
-    if not cx:
-        return [W, H]
-    kx, ky = W / media.size[0], H / media.size[1]
-    x0, y0, x1, y1 = cx
-    return [W, H, round(x0 * kx), round(y0 * ky), min(W, round(x1 * kx)), min(H, round(y1 * ky))]
+        return None, None
+    if cx:
+        kx, ky = W / media.size[0], H / media.size[1]
+        x0, y0, x1, y1 = cx
+        e = [W, H, round(x0 * kx), round(y0 * ky), min(W, round(x1 * kx)), min(H, round(y1 * ky))]
+    else:
+        e = [W, H]
+    if classificar is None:
+        return e, None
+    try:
+        s = classificar(media)
+    except Exception:  # noqa: BLE001  (OCR falhou: fica medida, a classe vem depois)
+        return e, None
+    return com_classe(e, classe_de(bool(cx), s), s["h"]), s
+
+
+def classificar_uma(chave, entrada, classificar):
+    """Classe de uma foto já medida: (entrada com classe, sinais) ou (None, None) se a rede/OCR falhou."""
+    try:
+        s = classificar(baixar_media(chave))
+    except Exception:  # noqa: BLE001
+        return None, None
+    return com_classe(entrada, classe_de(len(numeros(entrada)) >= 6, s), s["h"]), s
+
+
+# ---------- a classe da foto ----------
+ESCURO = 45            # luz média (0-255) abaixo disso + texto = cartão escuro de propaganda
+TEXTO_ESCURO = 0.08    # área de texto mínima (fração da foto) no cartão escuro (peça preta com código gravado: menos)
+TEXTO_BANNER = 0.05    # área de texto mínima para as palavras de propaganda valerem (selo pequeno na foto da peça: menos)
+CARRO = 0.6            # prob_carro (capas_estudio.py) acima disso = foto do carro inteiro
+MODELO_ANUNCIOS = 3    # a mesma foto (assinatura idêntica) em tantos anúncios diferentes = modelo do vendedor
+MODELO_BYTES = 5       # assinatura com menos bytes diferentes que isso é simples demais para dizer "a mesma foto"
+# palavras de propaganda (nunca aparecem na etiqueta da peça: nome, carro, anos e código). Banner = 2 delas ou mais
+PROPAGANDA = re.compile(
+    r"\b(ENTREGA|ENTREGAMOS|ENVIO|ENVIAMOS|FRETE|GARANTIA|DICAS?|SEMI-? ?NOVO|SEMINOVA?|COMPRA|COMPRE|PEDIDO|"
+    r"QUALIDADE|PROCEDENCIA|ATENDIMENTO|DUVIDAS?|VERIFIQUE|CONFIRA|WHATS ?APP|INSTAGRAM|NOTA FISCAL|DESMANCHE|"
+    r"CREDENCIAD[OA]|AGILIDADE|CUIDADO|SATISFACAO|PRONTA ENTREGA|ESTOQUE|INSTALACAO|MECANICO|PRAZO)\b")
+# o selo/lacre da loja colado na peça é foto da peça (não esconde)
+LACRE = re.compile(r"\b(LACRE|SELO|NAO REMOVA|VIOLAD[OA])\b")
+
+
+def _normal(t):
+    return unicodedata.normalize("NFKD", t or "").encode("ascii", "ignore").decode().upper()
+
+
+def assinatura(img):
+    """Assinatura de 64 bits da foto (dHash 9x8): fotos quase iguais têm quase os mesmos bits."""
+    import numpy as np
+    from PIL import Image
+    g = np.asarray(img.convert("L").resize((9, 8), Image.BILINEAR), dtype="int16")
+    bits = (g[:, 1:] > g[:, :-1]).ravel()
+    return "%016x" % int("".join("1" if b else "0" for b in bits), 2)
+
+
+def sinais(img, ler_texto, prob_carro):
+    """Os sinais brutos de uma foto: t = área de texto (0-1), x = texto lido, l = luz média, c = carro, h = assinatura."""
+    import numpy as np
+    area, texto = ler_texto(img)
+    return {"t": round(float(area), 4), "x": (texto or "")[:300], "l": round(float(np.asarray(img.convert("L")).mean()), 1),
+            "c": round(float(prob_carro(img)), 3), "h": assinatura(img)}
+
+
+def classe_de(tem_caixa, s):
+    """p | s | m | c pelos sinais de UMA foto (o modelo repetido em vários anúncios é marcado depois, em modelos())."""
+    x = _normal(s.get("x"))
+    palavras = {m.group(1) for m in PROPAGANDA.finditer(x)}
+    if len(palavras) >= 2 and s["t"] >= TEXTO_BANNER and not LACRE.search(x):
+        return "m"
+    if s["l"] < ESCURO and s["t"] > TEXTO_ESCURO:
+        return "m"
+    if s["c"] > CARRO:
+        return "c"
+    return "p" if tem_caixa else "s"
+
+
+def numeros(e):
+    return [v for v in e if not isinstance(v, str)]
+
+
+def classe_da(e):
+    return next((v for v in e if isinstance(v, str) and len(v) == 1), None)
+
+
+def hash_da(e):
+    return next((v for v in e if isinstance(v, str) and len(v) == 16), None)
+
+
+def com_classe(e, classe, h):
+    return numeros(e) + [classe] + ([h] if h else [])
+
+
+def modelos(dados, pecas):
+    """Chaves das fotos que são a MESMA imagem (assinatura idêntica) em MODELO_ANUNCIOS+ anúncios diferentes: banner ou
+    cartão do vendedor. Assinatura simples demais (menos de MODELO_BYTES bytes diferentes, como 0f0f0f0f0f0f0f0f de
+    tanta foto de peça clara no meio) não conta: aí fotos diferentes coincidem. Só igualdade exata: com "quase igual"
+    (3 bits) as coincidências se encadeavam e levavam 1,5 mil fotos de peça (conferido na folha)."""
+    anuncios = {}
+    for p in pecas:
+        for k in p.get("fotos") or []:
+            anuncios.setdefault(k, set()).add(p["id"])
+    grupos = {}
+    for k, e in dados.items():
+        h = hash_da(e)
+        if h and len({h[i:i + 2] for i in range(0, 16, 2)}) >= MODELO_BYTES:
+            grupos.setdefault(h, []).append(k)
+    saida = set()
+    for g in grupos.values():
+        if len(set().union(*(anuncios.get(k, set()) for k in g))) >= MODELO_ANUNCIOS:
+            saida.update(g)
+    return saida
 
 
 # ---------- JSON ----------
@@ -216,55 +399,96 @@ def main(argv):
     t0 = time.time()
     pecas = json.loads(PECAS.read_text(encoding="utf-8"))
     dados = ler(extra) if extra else {}
-    dados.update(ler(ARQ))                       # o do repositório (medido no Mac) manda
+    for k, e in ler(ARQ).items():                # o do repositório (medido no Mac) manda, mas não perde a classe
+        dados[k] = e if classe_da(e) or not dados.get(k) or numeros(dados[k]) != numeros(e) else dados[k]
     if "--podar" in argv:
         usadas = {k for p in pecas for k in (p.get("fotos") or [])}
         dados = {k: v for k, v in dados.items() if k in usadas}
+    cache = ler(SINAIS)
+    if "--reclassificar" in argv:                # regra nova: refaz pelos sinais guardados, sem baixar nada
+        for k, e in dados.items():
+            if k in cache:
+                dados[k] = com_classe(e, classe_de(len(numeros(e)) >= 6, cache[k]), cache[k]["h"])
     primeiro = set(filter(None, os.getenv("MEDIR_IDS", "").split(",")))
     fila = fila_de(pecas, dados, primeiro)
+    sem_classe = [k for k in fila_de(pecas, {}, primeiro) if k in dados and not classe_da(dados[k])]
+    for k in [k for k in sem_classe if k in cache]:   # sinais já guardados: classe sem baixar de novo
+        dados[k] = com_classe(dados[k], classe_de(len(numeros(dados[k])) >= 6, cache[k]), cache[k]["h"])
+    sem_classe = [k for k in sem_classe if not classe_da(dados[k])]
     limite = int(os.getenv("MEDIR_LIMITE", "0") or 0)
     if limite:
-        fila = fila[:limite]
+        fila, sem_classe = fila[:limite], sem_classe[:max(0, limite - len(fila))]
     if "--so-juntar" in argv:
-        fila = []
-    print(f"fotos da galeria: {len(dados)} medidas | {len(fila)} nesta rodada", flush=True)
+        fila, sem_classe = [], []
+    print(f"fotos da galeria: {len(dados)} medidas | {len(fila)} a medir | {len(sem_classe)} a classificar", flush=True)
     motor = os.getenv("MEDIR_MOTOR") or ("vision" if sys.platform == "darwin" else "rembg")
-    try:
-        recortar, n = (motor_vision() if motor == "vision" else motor_rembg()) if fila else (None, 0)
-    except Exception as e:  # noqa: BLE001  (sem rembg/onnx: grava só a junção, mede na próxima rodada)
-        print(f"sem o recorte ({motor}): {str(e)[:80]} — fica para a próxima rodada", flush=True)
-        fila = []
-    if fila:
-        tempo_max = float(os.getenv("MEDIR_TEMPO_MAX", "0") or 0)
-        trava = threading.Lock()
-        cont = {"i": 0, "ok": 0, "sem": 0, "erro": 0}
+    recortar = ler_texto = prob = None
+    n = 1
+    if fila or sem_classe:
+        try:
+            recortar, ler_texto, prob, n = motores(motor)
+        except Exception as e:  # noqa: BLE001  (sem rembg/onnx: grava só a junção, mede na próxima rodada)
+            print(f"sem o recorte ({motor}): {str(e)[:80]} — fica para a próxima rodada", flush=True)
+            fila, sem_classe = [], []
+    classificar = (lambda img: sinais(img, ler_texto, prob)) if ler_texto and prob else None
+    if not classificar:
+        sem_classe = []
+    tempo_max = float(os.getenv("MEDIR_TEMPO_MAX", "0") or 0)
+    trava = threading.Lock()
+    cont = {"i": 0, "ok": 0, "sem": 0, "classe": 0, "erro": 0}
+    total = len(fila) + len(sem_classe)
 
-        def uma(k):
-            if tempo_max and time.time() - t0 > tempo_max:
-                return
-            r = medir_uma(k, recortar)
-            with trava:
-                cont["i"] += 1
-                if r is None:
-                    cont["erro"] += 1
-                else:
-                    dados[k] = r
-                    cont["ok" if len(r) == 6 else "sem"] += 1
-                if cont["i"] % 500 == 0:
-                    gravar(dados, ARQ)
-                    seg = time.time() - t0
-                    print(f"  {cont['i']}/{len(fila)}  {seg:.0f}s  ({cont['i'] / seg:.1f}/s)", flush=True)
+    def guardar(k, e, s):
+        with trava:
+            cont["i"] += 1
+            if e is None:
+                cont["erro"] += 1
+            else:
+                if k in fila_set:
+                    cont["ok" if len(numeros(e)) == 6 else "sem"] += 1
+                if classe_da(e):
+                    cont["classe"] += 1
+                dados[k] = e
+            if s is not None:
+                cache[k] = s
+            if cont["i"] % 500 == 0:
+                gravar(dados, ARQ)
+                gravar(cache, SINAIS)
+                seg = time.time() - t0
+                print(f"  {cont['i']}/{total}  {seg:.0f}s  ({cont['i'] / seg:.1f}/s)", flush=True)
 
+    def uma(k):
+        if tempo_max and time.time() - t0 > tempo_max:
+            return
+        if k in fila_set:
+            guardar(k, *medir_uma(k, recortar, classificar))
+        else:
+            guardar(k, *classificar_uma(k, dados[k], classificar))
+
+    fila_set = set(fila)
+    if total:
+        trabalho = fila + sem_classe
         if n > 1:
             import concurrent.futures as cf
             with cf.ThreadPoolExecutor(n) as ex:
-                list(ex.map(uma, fila))
+                list(ex.map(uma, trabalho))
         else:
-            for k in fila:
+            for k in trabalho:
                 uma(k)
-        print(f"medidas: +{cont['ok']} com a peça, +{cont['sem']} sem peça achada, {cont['erro']} erro de rede"
-              f" | {time.time() - t0:.0f}s", flush=True)
+        print(f"medidas: +{cont['ok']} com a peça, +{cont['sem']} sem peça achada, +{cont['classe']} classificadas, "
+              f"{cont['erro']} erro de rede | {time.time() - t0:.0f}s", flush=True)
+    rep = modelos(dados, pecas)                  # a mesma foto em vários anúncios: modelo do vendedor (marketing)
+    for k in rep:
+        dados[k] = com_classe(dados[k], "m", hash_da(dados[k]))
+    contagem = {}
+    for e in dados.values():
+        c = classe_da(e) or "-"
+        contagem[c] = contagem.get(c, 0) + 1
+    print("classes: " + ", ".join(f"{c} {n}" for c, n in sorted(contagem.items())) + f" (modelo repetido: {len(rep)})",
+          flush=True)
     gravar(dados, ARQ)
+    if cache and (fila or sem_classe):
+        gravar(cache, SINAIS)
     if extra:
         gravar(dados, extra)
 

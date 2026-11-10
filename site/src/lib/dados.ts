@@ -1,6 +1,7 @@
 // Le os dados gerados por ../preparar_dados.py (uma vez por build).
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fotosGaleria } from './quadroFoto';
 
 export type Peca = {
   id: string; slug: string; t: string; n: string; limpa?: boolean; p: number; fotos: string[]; ml: string;
@@ -93,7 +94,7 @@ export function temEstudio(id: string): boolean {
   return capaEstudio(id) !== null;
 }
 export function capa(p: { id: string; fotos: string[] }, tam: Tam = 'O'): string {
-  return capaEstudio(p.id) ?? foto(p.fotos[0], tam);
+  return capaEstudio(p.id) ?? foto(fotosGaleria(p.fotos)[0], tam);
 }
 export function logoMarca(k: string): string | null {
   for (const ext of ['svg', 'png']) if (existsSync(join(process.cwd(), 'public', 'marcas', `${k}.${ext}`))) return `/marcas/${k}.${ext}`;
