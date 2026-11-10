@@ -4724,7 +4724,7 @@
   "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte fora da foto"
  },
  "MLB4617130355": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa alto-falante painel direito",
   "carro": "Chevrolet Cruze",
   "foto": "889410-MLB109705926564_042026"
@@ -4737,10 +4737,11 @@
   "foto": "949939-MLB110592205893_042026"
  },
  "MLB4617026365": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte chaves coluna direção",
   "carro": "Chevrolet Cruze",
-  "foto": "881162-MLB110592162825_042026"
+  "foto": "881162-MLB110592162825_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4617023655": {
   "status": "pulada",
@@ -4750,10 +4751,11 @@
   "foto": "696881-MLB110592146283_042026"
  },
  "MLB4617000391": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Acabamento console traseiro",
   "carro": "Chevrolet Cruze",
-  "foto": "800489-MLB110591738285_042026"
+  "foto": "800489-MLB110591738285_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6652342154": {
   "status": "pulada",
@@ -4763,31 +4765,32 @@
   "foto": "668100-MLB110721116803_042026"
  },
  "MLB6652327278": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Válvula expansão ar condicionado",
   "carro": "Chevrolet Cruze",
   "foto": "854845-MLB110720278407_042026"
  },
  "MLB6652303910": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura botoneira puxador porta",
   "carro": "Ford Focus",
-  "foto": "810438-MLB110720242075_042026"
+  "foto": "810438-MLB110720242075_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6652016678": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura painel controle tração",
   "carro": "Audi Q3",
   "foto": "821420-MLB110717961051_042026"
  },
  "MLB6652014592": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Motor ventilação",
   "carro": "Volvo XC60",
   "foto": "850767-MLB109823925172_042026"
  },
  "MLB6651854760": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado digital",
   "carro": "Audi Q3",
   "foto": "619070-MLB110718430001_042026"
@@ -4800,58 +4803,62 @@
   "foto": "732672-MLB109822136016_042026"
  },
  "MLB6651739236": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tomada porta-malas",
   "carro": "Jaguar E-Pace",
   "foto": "866351-MLB110715841063_042026"
  },
  "MLB6651738942": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Capa coluna direção",
   "carro": "Peugeot 208",
   "foto": "924163-MLB110715870025_042026"
  },
  "MLB6651681154": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar central",
   "carro": "Peugeot 208",
   "foto": "701725-MLB109820707698_042026"
  },
  "MLB6651681116": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Acabamento vidro porta traseira direita",
   "carro": "Ford Focus",
-  "foto": "965577-MLB110714978809_042026"
+  "foto": "965577-MLB110714978809_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6651673138": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento coluna porta direita",
   "carro": "Audi Q3",
   "foto": "818036-MLB109821024050_042026"
  },
  "MLB6651082206": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Radiador ar quente",
   "carro": "Chery Arrizo",
-  "foto": "808656-MLB110708368813_042026"
+  "foto": "808656-MLB110708368813_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6651076118": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar painel lateral direito rh",
   "carro": "Ford Ranger",
   "foto": "692153-MLB110707130825_042026"
  },
  "MLB6651061058": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão partida start stop",
   "carro": "Hyundai Genesis",
-  "foto": "830859-MLB110707897805_042026"
+  "foto": "830859-MLB110707897805_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6650903830": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Retrovisor interno",
   "carro": "Peugeot 2008",
-  "foto": "609203-MLB110706788359_042026"
+  "foto": "609203-MLB110706788359_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6650864510": {
   "status": "pulada",
@@ -4861,43 +4868,46 @@
   "foto": "847503-MLB109812323936_042026"
  },
  "MLB6650525328": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento coluna S3 esquerda",
   "carro": "Audi A3",
   "foto": "801605-MLB110703628479_042026"
  },
  "MLB6650522368": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento porta-malas S3 esquerdo",
   "carro": "Audi A3",
   "foto": "625676-MLB109809089492_042026"
  },
  "MLB4624085939": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta interna dianteira esquerda",
   "carro": "Ford Focus",
   "foto": "970626-MLB110717155861_042026"
  },
  "MLB4624049041": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Radiador ar quente calefator",
   "carro": "Chevrolet Cruze",
-  "foto": "915703-MLB109822605590_042026"
+  "foto": "915703-MLB109822605590_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4624046539": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura alavanca câmbio",
   "carro": "Audi Q3",
-  "foto": "662214-MLB109821578106_042026"
+  "foto": "662214-MLB109821578106_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4624040377": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote porta dianteira direita",
   "carro": "Volvo XC60",
-  "foto": "829321-MLB110715928209_042026"
+  "foto": "829321-MLB110715928209_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4624031975": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Interruptor vidro motorista",
   "carro": "Ford Focus",
   "foto": "771767-MLB109821322038_042026"
@@ -4910,40 +4920,43 @@
   "foto": "772857-MLB109821380298_042026"
  },
  "MLB4624023473": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Capa coluna direção",
   "carro": "Audi Q3",
-  "foto": "909690-MLB110715461065_042026"
+  "foto": "909690-MLB110715461065_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4624023033": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Triângulo segurança",
   "carro": "Volvo XC60",
   "foto": "811404-MLB110917423745_042026"
  },
  "MLB4623667049": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura painel comando ar",
   "carro": "Peugeot 208",
   "foto": "913147-MLB110707223209_042026"
  },
  "MLB4623665939": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Evaporador ar condicionado",
   "carro": "Chery Arrizo",
   "foto": "820771-MLB110707478153_042026"
  },
  "MLB4623650315": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Motor ventilador interno",
   "carro": "Hyundai HB20",
-  "foto": "888188-MLB110706678051_042026"
+  "foto": "888188-MLB110706678051_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4623645905": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Mangueira água arrefecimento",
   "carro": "Volvo XC60",
-  "foto": "856096-MLB109813282158_042026"
+  "foto": "856096-MLB109813282158_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4623634737": {
   "status": "pulada",
@@ -5151,199 +5164,246 @@
   "foto": "600002-MLB110746374385_042026"
  },
  "MLB6654398530": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Motor ventilador interno",
-  "carro": "Volkswagen Golf"
+  "carro": "Volkswagen Golf",
+  "foto": "601006-MLB110745854149_042026"
  },
  "MLB6654398438": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor atuador ar",
-  "carro": "Volkswagen Golf"
+  "carro": "Volkswagen Golf",
+  "motivo": "etiqueta impressa: código impresso (500907, T915256, R2NMNOE)",
+  "foto": "858447-MLB109849862356_042026"
  },
  "MLB6654398434": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor atuador ar",
-  "carro": "Volkswagen Jetta"
+  "carro": "Volkswagen Jetta",
+  "motivo": "etiqueta impressa: código impresso (500907511L, 340FT3, T915266)",
+  "foto": "949425-MLB110745859045_042026"
  },
  "MLB6654237244": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Chicote caixa evaporadora",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "etiqueta impressa: código impresso (18218186, 8809002)",
+  "foto": "749783-MLB110743950115_042026"
  },
  "MLB6654235910": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Motor atuador ar",
-  "carro": "Volkswagen Golf"
+  "carro": "Volkswagen Golf",
+  "foto": "779803-MLB110743888043_042026"
  },
  "MLB6653814932": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Retrovisor externo elétrico esquerdo",
-  "carro": "Ford Ranger"
+  "carro": "Ford Ranger",
+  "foto": "810309-MLB109843391986_042026"
  },
  "MLB6653799056": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Triângulo emergência sinalização",
-  "carro": "Audi A4"
+  "carro": "Audi A4",
+  "foto": "652535-MLB110739160313_042026"
  },
  "MLB4626174549": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Relé bomba combustível",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "664440-MLB109856420418_042026"
  },
  "MLB4625959957": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Suporte base caixa reles",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "714493-MLB110750428659_042026"
  },
  "MLB4625941533": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Triângulo para-lama retrovisor direito",
-  "carro": "Chery Arrizo"
+  "carro": "Chery Arrizo",
+  "foto": "934699-MLB110750162957_042026"
  },
  "MLB4625937347": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Soleira traseira direita",
-  "carro": "Chery Arrizo"
+  "carro": "Chery Arrizo",
+  "foto": "699524-MLB109853421864_042026"
  },
  "MLB4625933803": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Difusor ar traseiro console central",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "892698-MLB109853555638_042026"
  },
  "MLB4625933751": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Chicote chassis B200 W246",
-  "carro": "Mercedes-Benz"
+  "carro": "Mercedes-Benz",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4625924637": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Friso porta dianteira direita madeira",
-  "carro": "Citroën C5"
+  "carro": "Citroën C5",
+  "foto": "799308-MLB109853478868_042026"
  },
  "MLB4625913063": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão ajuste retrovisor elétrico",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "857403-MLB109853185056_042026"
  },
  "MLB4625791899": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura friso painel esquerdo",
-  "carro": "Audi A3"
+  "carro": "Audi A3",
+  "foto": "970169-MLB110747671895_042026"
  },
  "MLB4625779179": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Tampa alto-falante painel esquerdo",
-  "carro": "Audi A3"
+  "carro": "Audi A3",
+  "foto": "685757-MLB110747612325_042026"
  },
  "MLB4625446569": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Acabamento lanterna esquerda",
-  "carro": "Peugeot 2008"
+  "carro": "Peugeot 2008",
+  "foto": "898435-MLB110743078661_042026"
  },
  "MLB4625424609": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura multimídia central",
-  "carro": "Audi A4"
+  "carro": "Audi A4",
+  "foto": "721554-MLB110743144875_042026"
  },
  "MLB4625410947": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Acabamento lateral painel esquerdo",
-  "carro": "Ford Ranger"
+  "carro": "Ford Ranger",
+  "foto": "964623-MLB110742195967_042026"
  },
  "MLB6657393840": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Sensor qualidade ar",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "etiqueta impressa: código impresso (291020, 31418282, CA504003)",
+  "foto": "682125-MLB110780113223_042026"
  },
  "MLB6657084878": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Sensor temperatura interna com",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "819704-MLB110779283421_042026"
  },
  "MLB6657083508": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Bloco expansão ar condicionado",
-  "carro": "Citroën C3"
+  "carro": "Citroën C3",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "904525-MLB110777982931_042026"
  },
  "MLB4627337645": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão desativa sensor alarme",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "708650-MLB110777741145_042026"
  },
  "MLB4627336843": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura coluna direita",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "788986-MLB109879543854_042026"
  },
  "MLB4627336487": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura seletor câmbio",
-  "carro": "Nissan Murano"
+  "carro": "Nissan Murano",
+  "foto": "679633-MLB110779328045_042026"
  },
  "MLB4627333879": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Tampa acabamento",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "foto": "790557-MLB109855643110_042026"
  },
  "MLB4627333841": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Atuador trava tampa tanque A6",
-  "carro": "Audi"
+  "carro": "Audi",
+  "motivo": "etiqueta impressa: código impresso (ALO862153D, 204034, 140414)",
+  "foto": "834023-MLB109826073428_042026"
  },
  "MLB4627329261": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Mangueira respiro canister",
-  "carro": "Peugeot 2008"
+  "carro": "Peugeot 2008",
+  "foto": "808692-MLB110720235345_042026"
  },
  "MLB4627323839": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão duplo tanque porta-malas",
-  "carro": "Volkswagen Passat"
+  "carro": "Volkswagen Passat",
+  "foto": "702180-MLB109879393348_042026"
  },
  "MLB4627316579": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão controle tração ESP",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "972288-MLB110718436781_042026"
  },
  "MLB4627312637": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura puxador porta dianteira esquerda",
-  "carro": "Volkswagen Polo"
+  "carro": "Volkswagen Polo",
+  "foto": "654046-MLB109878734386_042026"
  },
  "MLB4627311739": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo BSI",
-  "carro": "Citroën C4 Picasso"
+  "carro": "Citroën C4 Picasso",
+  "motivo": "etiqueta impressa: código impresso (0315872)",
+  "foto": "696149-MLB109878766540_042026"
  },
  "MLB4627311591": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Acabamento lateral banco traseiro direito",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "988163-MLB110780065229_042026"
  },
  "MLB4627311585": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Acabamento lateral banco traseiro esquerdo",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "925780-MLB109880928688_042026"
  },
  "MLB4627307891": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Acabamento inferior coluna direção",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "foto": "940424-MLB109853198560_042026"
  },
  "MLB4627306031": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Sirene alarme",
-  "carro": "Volkswagen Jetta"
+  "carro": "Volkswagen Jetta",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "758410-MLB109823719078_042026"
  },
  "MLB4627234939": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Acabamento tabelier direito painel",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "636720-MLB109822606158_042026"
  },
  "MLB4627231419": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Gancho fixação porta-malas",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "foto": "640898-MLB110746269141_042026"
  },
  "MLB6667275302": {
   "status": "fila",

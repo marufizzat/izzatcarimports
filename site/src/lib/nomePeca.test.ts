@@ -59,4 +59,21 @@ describe('título da aba (<title>) da peça', () => {
     expect(new Set(t.values()).size).toBe(lista.length);
     for (const v of t.values()) expect(v.length).toBeLessThanOrEqual(TITULO_MAX);
   });
+  it('desempate nunca tira o carro: o código só com o carro inteiro; o MLB passa de 65 antes de o carro sair', () => {
+    // rodada 8: as 2 fechaduras gêmeas do Up perdiam o carro inteiro ("Fechadura ... direita MLB7076694904")
+    const f = { n: 'Fechadura trava elétrica traseira direita', b: 'Volkswagen', m: 'Up', y: [2014, 2021] as [number, number], oem: '1sb839016f' };
+    // e a maçaneta do Xsara Picasso perdia o modelo para o código caber ("... Citroën 9631487677 | Izzat Car")
+    const m = { n: 'Maçaneta interna dianteira direita', b: 'Citroën', m: 'Xsara Picasso', y: [2000, 2004] as [number, number] };
+    const t = titulosPecas([
+      { ...f, id: 'MLB7076694904' }, { ...f, id: 'MLB7085082218' },
+      { ...m, id: 'MLB6909000856', oem: '9631487677' }, { ...m, id: 'MLB4741914939', oem: '303966' },
+    ]);
+    expect(t.get('MLB7076694904')).toBe('Fechadura trava elétrica traseira direita Volkswagen Up MLB7076694904');
+    expect(t.get('MLB6909000856')).toBe('Maçaneta interna dianteira direita Citroën Xsara Picasso');
+    expect(t.get('MLB4741914939')).toBe('Maçaneta interna dianteira direita Citroën Xsara Picasso 303966');
+    expect(new Set(t.values()).size).toBe(4);
+    // 2+ carros com o MLB: os outros carros saem, a marca e o 1º modelo ficam
+    const v = tituloPeca({ n: 'Módulo sensor nível combustível tanque', b: 'Volkswagen', m: 'Virtus', ms: ['Virtus', 'Polo'], y: null, oem: '' }, { extra: 'MLB7085082218' });
+    expect(v).toBe('Módulo sensor nível combustível tanque Volkswagen Virtus MLB7085082218');
+  });
 });

@@ -90,6 +90,11 @@ export function capaEstudio(id: string): string | null {
   if (arquivos('estudio').has(id)) return `/estudio/${id}.webp`;
   return null;
 }
+/** Capa de estudio SEM o logo (capas_estudio.py com ESTUDIO_SAIDA_LIMPA, posta em public/estudio-limpa/ por
+ *  ferramentas/capas_limpas_feed.py): so o feed do Google usa, e so na peca que nao tem outra foto alem da montagem. */
+export function capaLimpa(id: string): string | null {
+  return arquivos('estudio-limpa').has(id) ? `/estudio-limpa/${id}.webp` : null;
+}
 export function temEstudio(id: string): boolean {
   return capaEstudio(id) !== null;
 }

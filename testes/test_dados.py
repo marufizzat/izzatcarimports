@@ -1013,6 +1013,76 @@ def test_nome_sem_outro_carro_pedaco_de_codigo_nem_cor():
         pd._CONHECIDOS_GLOBAL.difference_update(novos)
 
 
+def test_foto_do_cartao_na_ordem_da_galeria():
+    """"i" do busca.json = a 1a foto da galeria (fotosGaleria do site): sem marketing, montagem com o carro no fim."""
+    from preparar_dados import fotos_galeria
+    cl = {"a": "c", "b": "m", "c1": "p", "d": "s"}
+    assert fotos_galeria(["a", "b", "c1", "d"], cl) == ["c1", "d", "a"]
+    assert fotos_galeria(["a"], cl) == ["a"]                    # so a montagem: fica (nunca peca sem foto)
+    assert fotos_galeria(["b"], cl) == ["b"]                    # tudo marketing: a lista como veio
+    assert fotos_galeria(["x", "a", "y"], {}) == ["x", "a", "y"]   # sem classe: a ordem do anuncio
+    assert fotos_galeria([], cl) == []
+    busca = ROOT / "site" / "public" / "dados" / "busca.json"
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if busca.exists() and pecas.exists():
+        from preparar_dados import ler_classes_fotos
+        classes = ler_classes_fotos()
+        b = json.loads(busca.read_text(encoding="utf-8"))
+        por_id = {x["id"]: x for x in json.loads(pecas.read_text(encoding="utf-8"))}
+        ruins = [i for i, f in zip(b["id"], b["i"])
+                 if f != (fotos_galeria(por_id[i]["fotos"], classes) or [""])[0]] if set(b["id"]) <= set(por_id) else []
+        assert not ruins, f"{len(ruins)} pecas com o 'i' fora da ordem da galeria: {ruins[:5]}"
+        monta = [i for i, f in zip(b["id"], b["i"]) if classes.get(f) == "c"
+                 and any(classes.get(k) != "c" for k in fotos_galeria(por_id[i]["fotos"], classes))]
+        assert not monta, f"{len(monta)} pecas com a montagem no 'i' tendo foto da peca: {monta[:5]}"
+
+
+def test_palavra_cortada_no_fim_e_modelo_colado():
+    """Rodada 8: "AT9 die" (diesel cortado pelo limite do ML), "multimedia" sem acento e o "X32.0" (X3 2.0) sem modelo."""
+    import preparar_dados as pd
+    assert pd.nome_limpo("Engrenagem Planetaria Câmbio At9 Fiat Toro 2.0 2.2 15/21 Die", "Fiat", "Toro") \
+        == "Engrenagem planetária câmbio AT9 diesel"
+    assert pd.palavra_cortada("Die") == "diesel" and pd.palavra_cortada("gasol") == "gasolina"
+    assert pd.palavra_cortada("gas") is None          # palavra conhecida ("gás"), nunca pedaço
+    assert pd.palavra_cortada("compl") is None        # abreviação: o nome resolve ("completa")
+    assert pd.palavra_cortada("Bosch") is None
+    # título curto: a última palavra não foi cortada pelo ML
+    assert pd.nome_limpo("Bico Injetor Fiat Toro Die", "Fiat", "Toro").endswith("die")
+    assert pd.nome_limpo("Central Multimedia Peugeot 208 13/18 9809503580 Original", "Peugeot", "208") == "Central multimídia"
+    k = {"x3", "q5", "xc60"}
+    assert pd.limpar_titulo("Mangueira Ventilação Cárter Bmw X32.0 18/24 11157623746", k) \
+        == "Mangueira Ventilação Cárter Bmw X3 2.0 18/24 11157623746"
+    assert pd.palavras(pd.limpar_titulo("Mangueira Cárter Bmw X32.0 18/24", k), "BMW") == ["X3"]
+    assert pd.limpar_titulo("Sensor Abc12.0 Vw Gol", k) == "Sensor Abc12.0 Vw Gol"   # não é carro: não parte
+
+
+def test_descricao_sem_espanhol_e_sem_tu():
+    """Rodada 8: descrição copiada em espanhol (câmera de ré do WR-V) e "quando tu freia" no texto do vendedor."""
+    import preparar_dados as pd
+    es = ("La cámara de reversa para Honda WR-V 2017 a 2021 es un accesorio esencial para mejorar la seguridad y la "
+          "comodidad al conducir. Su instalación es sencilla.")
+    assert pd.descricao(es) == ""                                  # tudo em espanhol: só a ficha
+    misto = "Peça original do Honda WR-V, conferida.\n" + es
+    assert pd.descricao(misto) == "<p>Peça original do Honda WR-V, conferida.</p>"
+    # português com palavras que o espanhol também usa: fica
+    pt = "Para garantir a compatibilidade exata, recomendamos conferir o código da peça antes de comprar."
+    assert not pd._espanhol(pt) and pd.descricao(pt).startswith("<p>Para garantir")
+    assert "você freia" in pd.descricao("A lanterna serve pra sinalizar pro carro de tras quando tu freia, da re ou liga o pisca.")
+    assert pd.sem_tu("Tu tens a peça certa. Confira teu carro e tua nota.") == "Você tem a peça certa. Confira seu carro e sua nota."
+    assert pd.sem_tu("pronto pra te ajudar") == "pronto pra ajudar você"
+    assert pd.sem_tu("Peça para Hyundai Tucson tubo") == "Peça para Hyundai Tucson tubo"
+    assert not pd._espanhol("módulo câmbio automático AL4, Peugeot 307 módulo câmbio, Citroën C4 módulo câmbio AL4 EN590 ES9")
+    # estoque real: só AVISA (o estoque muda a cada rodada; não pode travar a publicação)
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        import re
+        por = json.loads(pecas.read_text(encoding="utf-8"))
+        es = [x["id"] for x in por if pd._espanhol(re.sub(r"<[^>]+>", " ", x["desc"]))]
+        tu = [x["id"] for x in por if re.search(r"\b(tu|teu|tua|teus|tuas)\b", re.sub(r"<[^>]+>", " ", x["desc"]))]
+        if es or tu:
+            print(f"AVISO: descrição com cara de espanhol {es[:5]} | com 'tu' {tu[:5]}")
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):
