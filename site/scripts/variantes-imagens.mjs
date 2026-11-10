@@ -43,8 +43,15 @@ async function principal() {
   const antes = existsSync(MANIFESTO) ? JSON.parse(readFileSync(MANIFESTO, 'utf-8')) : {};
   const manifesto = {};
   const arquivos = readdirSync(DIR);
-  const originais = arquivos.filter((f) => grupoDe(f) && !ehVariante(f)).sort();
   let feitas = 0, iguais = 0, apagadas = 0;
+  // variante cuja arte sumiu: só a que ESTE script fez (está no manifesto como variante da arte). Arte de verdade com
+  // número no fim (um "carro-fiat-600.webp") nunca está ali, então nunca sai nem vira variante.
+  const orfas = new Set(arquivos.filter((f) => {
+    const m = /^(.+)-(\d+)\.webp$/.exec(f);
+    return !!m && !!antes[`${m[1]}.webp`]?.v?.includes(Number(m[2])) && !existsSync(join(DIR, `${m[1]}.webp`));
+  }));
+  for (const f of orfas) { unlinkSync(join(DIR, f)); apagadas++; }
+  const originais = arquivos.filter((f) => grupoDe(f) && !ehVariante(f) && !orfas.has(f)).sort();
   for (const f of originais) {
     const g = grupoDe(f);
     const buf = readFileSync(join(DIR, f));
@@ -61,13 +68,6 @@ async function principal() {
     // largura que deixou de valer (arte trocada por uma menor): a variante sai
     for (const w of g.larguras) if (!larguras.includes(w) && existsSync(join(DIR, nomeV(w)))) { unlinkSync(join(DIR, nomeV(w))); apagadas++; }
     manifesto[f] = { h, w: W, v: larguras };
-  }
-  // variante cuja arte sumiu
-  for (const f of arquivos) {
-    const m = /^(.+)-(\d+)\.webp$/.exec(f);
-    if (!m || !existsSync(join(DIR, f))) continue;
-    const base = `${m[1]}.webp`, g = grupoDe(base);
-    if (g && g.larguras.includes(Number(m[2])) && !existsSync(join(DIR, base))) { unlinkSync(join(DIR, f)); apagadas++; }
   }
   // uma arte por linha (o diff mostra só a que mudou)
   writeFileSync(MANIFESTO, `{\n${Object.entries(manifesto).map(([k, e]) => `  ${JSON.stringify(k)}: ${JSON.stringify(e)}`).join(',\n')}\n}\n`);
