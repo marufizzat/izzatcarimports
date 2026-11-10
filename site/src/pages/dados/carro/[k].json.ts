@@ -2,18 +2,24 @@
 // carro montam a grade do ano com ele (AnosDoCarro.astro). Antes o 1º toque num ano baixava e lia o índice inteiro
 // (1,4 MB, 5 mil peças): um quadro de 70–110 ms num celular lento. No XC60 são 515 peças (~10%). Só para os carros com
 // mais de 48 peças (os outros já têm todas na grade). Sai do MESMO public/dados/busca.json (com o "r" das capas leves).
+// Rodada 13: um arquivo para CADA carro da garagem do "Meu carro" (todo modelo que o seletor oferece, também os de menos
+// de 8 peças, sem página própria): o "Chegou para o seu carro" da home lê o do carro salvo (lib/chegouCarro.ts, a chave é
+// chaveCarro(marca, modelo), a mesma das páginas /carros/<k>.html).
 import type { APIRoute } from 'astro';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resumo } from '../../../lib/dados';
+import { garagem } from '../../../lib/garagem';
 import { serveNoModelo } from '../../../lib/meuCarro';
+import { chaveCarro } from '../../../lib/chegouCarro';
 import type { Indice } from '../../../lib/busca';
 
 let ix: Indice | null = null;
 const indice = (): Indice => (ix ??= JSON.parse(readFileSync(join(process.cwd(), 'public', 'dados', 'busca.json'), 'utf-8')));
 
 export function getStaticPaths() {
-  return resumo().carros.filter((c) => c.c > 48).map((c) => ({ params: { k: c.k }, props: { b: c.b, m: c.m } }));
+  const vistos = new Set<string>();
+  return garagem().marcas.flatMap((mc) => mc.modelos.map((mo) => ({ params: { k: chaveCarro(mc.n, mo.n) }, props: { b: mc.n, m: mo.n } })))
+    .filter((x) => !vistos.has(x.params.k) && !!vistos.add(x.params.k));
 }
 
 /** As colunas do índice só nas posições `ks` (listas e textos de uma letra por peça; os mapas esparsos renumerados). */
