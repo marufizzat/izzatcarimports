@@ -2,7 +2,9 @@
 // estúdio: o mesmo quadro quadrado, cheio, com a peça centrada ocupando ~84%. Só CSS (a foto do ML não é copiada nem
 // alterada) e sem script: o quadro sai pronto no HTML (nada pula na tela).
 // Medidas: ferramentas/medir_fotos_ml.py -> src/data/fotos-ml-caixas.json, por chave da foto:
-//   [W, H, x0, y0, x1, y1] = tamanho da foto grande (-F) e a caixa da peça (px)  |  [W, H] = nenhuma peça achada.
+//   [W, H, x0, y0, x1, y1, classe, hash] = tamanho da foto grande (-F), a caixa da peça (px), classe e assinatura
+//   [W, H, classe, hash] = nenhuma peça achada. Classe: p peça | s sem peça | m marketing do anúncio | c carro inteiro
+//   (sem classe = ainda não classificada: conta como peça). fotosGaleria() tira "m" e põe "c" no fim.
 // Saída (CSS em PecaTopo.astro): variáveis em lados do quadro: --w/--h (largura/altura da foto), --x/--y (quanto dela
 // fica para fora à esquerda/em cima). Peça mais comprida que o lado menor da foto (não cabe num quadrado dela): o
 // quadrado passa da foto só nesse lado, a foto fica centrada nele e ganha a classe "i" (bordas que se desfazem no
@@ -26,7 +28,7 @@ export const INTEIRA = 0.88;
 /** foto quase quadrada sem peça medida: enche o quadro (perde no máximo 1,5% de cada lado) */
 const QUASE_QUADRADA = 0.03;
 
-export type Medida = number[];
+export type Medida = (number | string)[];
 /** Em lados do quadro: w/h = tamanho da foto, x/y = deslocamento (negativo = sobra fundo daquele lado).
  *  borda = a foto não cobre o quadro todo (as bordas dela ficam à vista e se desfazem no fundo). */
 export type Quadro = { w: number; h: number; x: number; y: number; borda: boolean };
@@ -36,8 +38,9 @@ const entre = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const eixo = (c: number, L: number, T: number) => (L <= T ? entre(c - L / 2, 0, T - L) : (T - L) / 2);
 
 /** O quadro de uma foto: um quadrado com a peça inteira, centrada e ocupando ~84% (menos se ampliar demais). */
-export function quadro(m?: Medida | null): Quadro | null {
-  if (!m || m.length < 2) return null;
+export function quadro(e?: Medida | null): Quadro | null {
+  const m = (e || []).filter((v): v is number => typeof v === 'number');   // a classe e a assinatura vêm no fim
+  if (m.length < 2) return null;
   const [W, H] = m;
   if (!(W > 0 && H > 0)) return null;
   const curto = Math.min(W, H), longo = Math.max(W, H);
@@ -93,4 +96,20 @@ function medidas(): Record<string, Medida> {
 /** Atributos de quadro da foto do ML pela chave (vazio = foto sem medida, mostrada como antes). */
 export function quadroFoto(chave: string): { cls?: string; style?: string } {
   return chave ? atributosQuadro(quadro(medidas()[chave])) : {};
+}
+
+/** Classe da foto: p peça | s sem peça achada | m marketing do anúncio | c carro inteiro | null sem classe. */
+export function classeFoto(chave: string, tabela: Record<string, Medida> = medidas()): string | null {
+  const e = tabela[chave];
+  const c = e && e.find((v) => typeof v === 'string' && v.length === 1);
+  return typeof c === 'string' ? c : null;
+}
+
+/** As fotos do anúncio que vão para a galeria, o JSON-LD e o feed: sem o marketing do vendedor (banner de entrega,
+ *  garantia, dicas, cartão repetido em vários anúncios) e com a foto do carro inteiro no fim. Se tudo fosse marketing,
+ *  fica a lista como veio (nunca uma peça sem foto). */
+export function fotosGaleria(fotos: string[], tabela: Record<string, Medida> = medidas()): string[] {
+  const boas = fotos.filter((k) => k && classeFoto(k, tabela) !== 'm');
+  if (!boas.length) return fotos.filter(Boolean);
+  return [...boas.filter((k) => classeFoto(k, tabela) !== 'c'), ...boas.filter((k) => classeFoto(k, tabela) === 'c')];
 }

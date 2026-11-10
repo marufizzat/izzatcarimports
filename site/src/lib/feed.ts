@@ -1,6 +1,7 @@
 // Feed do Google Shopping (gratis): cada peca vira um item RSS 2.0 com o namespace g:.
 // Funcoes puras (recebem a capa de estudio e o dominio), para os testes rodarem sem o build.
 import { foto, type Peca } from './dados';
+import { fotosGaleria } from './quadroFoto';
 import { nomeCompleto } from './nomePeca';
 
 const CONTROLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g;
@@ -62,7 +63,8 @@ export type ItemFeed = {
 /** Monta os campos do item. capa = capa de estudio (caminho relativo) ou null; site = dominio com https. */
 export function itemFeed(p: Peca, capa: string | null, site: string): ItemFeed | null {
   if (!(p.p > 0)) return null;
-  const fotosMl = p.fotos.filter(Boolean).map((k) => foto(k, 'F'));
+  // sem o marketing do vendedor e com o carro inteiro no fim (as mesmas fotos da galeria)
+  const fotosMl = fotosGaleria(p.fotos).map((k) => foto(k, 'F'));
   const imagem = capa ? site + capa : fotosMl[0];
   if (!imagem) return null;
   const extras = (capa ? fotosMl : fotosMl.slice(1)).filter((u) => u && u !== imagem).slice(0, 5);

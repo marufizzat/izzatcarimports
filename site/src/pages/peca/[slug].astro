@@ -14,6 +14,7 @@ import { nomeModelos } from '../../lib/meuCarro';
 import { nomeCompleto, nomeMensagem } from '../../lib/nomePeca';
 import { descricaoPeca } from '../../lib/descricao';
 import type { Peca } from '../../lib/dados';
+import { fotosGaleria } from '../../lib/quadroFoto';
 
 export function getStaticPaths() {
   return pecas().map((p) => ({ params: { slug: p.slug }, props: { id: p.id } }));
@@ -98,6 +99,8 @@ if (fam && fam.n !== 'Outros') trilha.push([fam.n, `/categoria/${fam.k}.html`]);
 if (carro) trilha.push([`${carro.b} ${carro.m}`, `/carros/${carro.k}.html`]);
 else if (marca) trilha.push([marca.n, `/marca/${marca.k}.html`]);
 const capa = capaEstudio(p.id);
+// fotos do anúncio sem o marketing do vendedor e com o carro inteiro no fim (as mesmas da galeria e do feed)
+const fotosMl = fotosGaleria(p.fotos);
 // WhatsApp (lib/whats.ts): a peça pelo nome limpo, carro, anos e código (nunca o título cru do anúncio); o carro da
 // pessoa já vem com a marca e o modelo da peça (só o ano em branco), como no botão "Pedir no WhatsApp".
 const pecaMsg = blocoPeca({ linha: linhaPeca, url });
@@ -106,7 +109,7 @@ const meuCarroMsg = !p.b ? 'Meu carro é ____ (modelo) ____ (ano).' : modelosDa(
 const ld = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'Product', name: nomeFora, image: [...(capa ? [SITE + capa] : []), ...p.fotos.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
+    { '@type': 'Product', name: nomeFora, image: [...(capa ? [SITE + capa] : []), ...fotosMl.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
       mpn: codigo || p.id,
       description: `${descricao} Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
       brand: { '@type': 'Brand', name: p.b || 'Original' },
@@ -119,14 +122,14 @@ const ld = {
   ],
 };
 ---
-<Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(p.fotos[0], 'F') || undefined}
+<Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(fotosMl[0], 'F') || undefined}
         produto={{ id: p.id, name: nomeFora, price: p.p, category: p.c }} rodapeSelos={false}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   {/* prévia do link (WhatsApp, Facebook): a capa de estúdio tem sempre 1000×1000 (capas_estudio.py) */}
   {capa && <meta slot="head" property="og:image:width" content="1000" />}
   {capa && <meta slot="head" property="og:image:height" content="1000" />}
   {capa && <meta slot="head" property="og:image:type" content="image/webp" />}
-  <link slot="head" rel="preload" as="image" href={capa ?? foto(p.fotos[0], 'F')} fetchpriority="high" />
+  <link slot="head" rel="preload" as="image" href={capa ?? foto(fotosMl[0], 'F')} fetchpriority="high" />
 
   <div class="moldura">
     <nav class="trilha" aria-label="Você está em">

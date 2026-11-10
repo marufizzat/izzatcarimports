@@ -7,7 +7,7 @@
 // Gatilhos so com dado de verdade: estoque = p.q (ML), reputacao = resumo().reputacao, CDV/nota/garantia do site.
 import type { Peca } from '../lib/dados';
 import { foto, brl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
-import { quadroFoto } from '../lib/quadroFoto';
+import { quadroFoto, fotosGaleria } from '../lib/quadroFoto';
 import { linkWhats, cabecaPeca, CAUDA_PECA, DESCONTO_WHATS } from '../lib/whats';
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
@@ -37,11 +37,13 @@ const msg = cabeca + semCarro + cauda;
 // Estoque real do ML: 1 = peca unica (usada: quando vende, acabou); mais de 1 = so a quantidade, sem pressa inventada.
 const q = typeof p.q === 'number' && p.q >= 1 ? p.q : 0;
 // 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça, no mesmo
-// quadro da capa (lib/quadroFoto.ts: peça centrada ocupando ~84%, ou a foto inteira num fundo de estúdio).
+// quadro da capa (lib/quadroFoto.ts: peça centrada ocupando ~84%, ou a foto inteira num fundo de estúdio). Sem o
+// marketing do vendedor (banner de entrega, garantia, dicas) e com a foto do carro inteiro no fim (fotosGaleria).
 const est = capaEstudio(p.id);
+const doAnuncio = fotosGaleria(p.fotos);
 const fotos: { g: string; m: string; e?: boolean; q?: { cls?: string; style?: string } }[] = [
   ...(est ? [{ g: est, m: est, e: true }] : []),
-  ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'A'), q: quadroFoto(f) })),
+  ...(doAnuncio.length ? doAnuncio : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'A'), q: quadroFoto(f) })),
 ];
 // 1ª tela do celular (CSS no fim): a altura que a foto pode ter depende de quantas linhas vêm abaixo dela. Contado no
 // build pelo tamanho do texto (sem script, sem pulo na tela): nome curto = 1 linha (a foto ganha); nome longo = letra
