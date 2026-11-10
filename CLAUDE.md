@@ -210,6 +210,16 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   (`:active-view-transition`). Nada de `unload`/`no-store`: o voltar (bfcache) continua instantâneo.
   Teste no Playwright: o Chromium dele desliga `PaintHolding` e `RenderDocument` (a página nova nem pinta com a
   transição); religar os dois (`_r12fluido/scripts/chromium-real.cjs`). O WebKit confere a transição inteira.
+- **A próxima página já carregada** (nov/2026): `<script type="speculationrules">` no `<head>` do `Base.astro` (o MESMO
+  bloco de ~170 bytes em toda página): `prerender` com `eagerness: "moderate"` (no celular, no toque; no PC, com o mouse
+  parado 200 ms) só para `/peca/*`, `/carros/*`, `/carros.html`, `/categoria/*`, `/marca/*` e `/catalogo.html` (com ou sem
+  filtro); WhatsApp, Mercado Livre e o resto ficam de fora por não estarem na lista. Quem não faz prerender (Safari,
+  Firefox; `'prerendering' in document` só existe no Chrome/Edge) baixa o HTML no `pointerdown`/`touchstart`
+  (`public/navegar.js`, 2 por vez, nunca com economia de dados nem em `html.leve`). **Métrica**: `rastreio.js` não mede
+  nada enquanto `document.prerendering` (espera o `prerenderingchange`; a busca que o catálogo mandar antes fica na
+  fila): 1 visita = 1 `page_view`/`PageView`, página preparada e não aberta = 0; `contato_whatsapp` igual.
+  Teste do prerender: o Playwright faz o Chrome recusar ("PrerenderingDisabledByDevTools"); usar o CDP cru preso na aba
+  (`_r12fluido/scripts/cdp-cru.cjs`).
 - Catálogo: a 1ª tela (24 cartões e os filtros) vem pronta no HTML, feita no build com o MESMO `busca.json`; o índice só
   desce depois das fotos dela, ou já se o endereço traz busca/filtro (`html.cat-url`, marcado no `<head>` de
   `catalogo.astro`, que também guarda o lugar das fichas e do "Seu carro"). Lotes de 48 (2 entram sozinhos, depois o
