@@ -106,6 +106,11 @@ export default function Gaveta({ aberta, aoFechar, titulo, children, rodape }: P
     const html = document.documentElement;
     const antes = html.style.overflow;
     html.style.overflow = 'hidden';
+    // o fundo (cabeçalho, conteúdo e rodapé) fica inerte enquanto a gaveta está aberta: o leitor de tela e o Tab
+    // só andam dentro dela (o painel é montado no <body>, fora deles)
+    const fundo = [...document.querySelectorAll<HTMLElement>('header, main, footer')]
+      .filter((el) => !el.inert && !el.contains(painel.current) && !el.parentElement?.closest('header, main, footer'));
+    fundo.forEach((el) => { el.inert = true; });
     botaoFechar.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -119,6 +124,7 @@ export default function Gaveta({ aberta, aoFechar, titulo, children, rodape }: P
     return () => {
       document.removeEventListener('keydown', onKey);
       html.style.overflow = antes;
+      fundo.forEach((el) => { el.inert = false; });
     };
   }, [aberta, montada]);
 

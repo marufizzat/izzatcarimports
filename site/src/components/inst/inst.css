@@ -92,7 +92,7 @@
 .inst-chamada-cw { width: 100%; max-width: 440px; justify-self: center; }
 @media (min-width: 900px) { .inst-chamada-cw { justify-self: end; } }
 /* o número embaixo do botão: alvo de toque de verdade (antes 24 px de altura) */
-a.inst-fone { display: inline-block; padding-block: 10px; margin-block: -6px; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
+a.inst-fone { display: inline-block; padding-block: 12px; margin-block: -8px; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
 a.inst-fone:hover { color: var(--ink); text-decoration-color: currentColor; }
 
 /* disco laranja com o ícone em grafite (regra: laranja sempre com grafite) */

@@ -11,7 +11,7 @@ import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/contato.html`;
 const canonicalPath = '/contato.html';
-const msg = 'Olá! Vim pelo site e estou procurando uma peça.';
+const msg = 'Estou procurando uma peça.';
 const url = whatsUrl(msg);
 const trilha: [string, string][] = [['Início', '/index.html'], ['Contato', canonicalPath]];
 const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
@@ -68,7 +68,7 @@ const mandar = [
         </a>
         <div class="con-canal">
           <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
-          <div class="con-canal-txt"><b>Mercado Livre</b><span>As peças anunciadas, com frete no anúncio e a proteção de compra do Mercado Livre.</span>
+          <div class="con-canal-txt"><b>Mercado Livre</b><span>As peças anunciadas, com o frete e o prazo calculados no anúncio e a proteção de compra do Mercado Livre.</span>
             <a class="con-link" href="https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS" target="_blank" rel="noopener">Loja IZZAT_CAR_IMPORTS</a>
             <div class="con-selo"><SeloReputacao variante="compacto" /></div>
           </div>
@@ -106,7 +106,7 @@ const mandar = [
 <style>
   .con-pagina { padding-block: 14px clamp(56px, 8vw, 112px); }
   .con-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: clamp(14px, 2vw, 22px); font-size: 13.5px; color: var(--ink-3); }
-  .con-trilha a { color: var(--ink-2); padding-block: 6px; }
+  .con-trilha a { color: var(--ink-2); padding: 12px 6px; margin: -6px -6px; }
   .con-trilha a:hover { color: var(--ink); text-decoration: underline; }
 
   .con-topo { display: grid; gap: clamp(28px, 4vw, 64px); align-items: center; padding: var(--pad-cartao); border-radius: 32px;
@@ -116,7 +116,8 @@ const mandar = [
   .con-h1 { margin: 0; font-size: var(--h1-pagina); }
   .con-lead { margin: 0; max-width: 42ch; }
   /* o número nunca parte no hífen ("(53) 99117-" / "0950" a 320 px): uma linha só, a letra encolhe com a tela */
-  .con-numero { margin-top: 8px; font-stretch: 78%; font-weight: 820; font-size: clamp(30px, 9.4vw, 68px); line-height: 1; letter-spacing: -.01em; color: var(--ink); white-space: nowrap;
+  /* 44 px de alvo também no celular (o número tem 34 px de altura de letra): o padding cresce, a margem devolve */
+  .con-numero { padding-block: 6px; margin-block: 2px -6px; font-stretch: 78%; font-weight: 820; font-size: clamp(30px, 9.4vw, 68px); line-height: 1; letter-spacing: -.01em; color: var(--ink); white-space: nowrap;
     text-decoration: underline; text-decoration-thickness: 3px; text-decoration-color: color-mix(in oklab, var(--accent), transparent 40%); text-underline-offset: 8px; }
   .con-numero:hover { text-decoration-color: var(--accent); }
   .con-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
@@ -145,7 +146,7 @@ const mandar = [
   .con-canal-txt b { font-stretch: 86%; font-weight: 800; font-size: 22px; line-height: 1.1; color: var(--ink); text-wrap: balance; }
   .con-canal-txt em, .con-link { font-style: normal; font-weight: 650; color: var(--accent-text); text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
   /* link de texto com alvo de toque de verdade (antes 23 px de altura) */
-  .con-link { display: inline-block; padding-block: 10px; margin-block: -8px; }
+  .con-link { display: inline-block; padding-block: 12px; margin-block: -10px; }
   .con-link:hover { color: var(--ink); }
   .con-selo { margin-top: 6px; }
   .con-selo:empty { display: none; }

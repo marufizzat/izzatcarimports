@@ -41,14 +41,14 @@ const icone = ICONE[nome] ?? 'conversa';
     </picture>
   </Caixa>
 ) : (
-  <aside class:list={['faixa-whats', cls]} aria-label={titulo}>
+  <div class:list={['faixa-whats', cls]}>
     <img class="fw-icone" src={`/icones/${icone}-192.webp`} alt="" width="192" height="192" loading="lazy" decoding="async" />
     <div class="fw-texto">
       <p class="fw-titulo">{titulo}</p>
       {apoio && <p class="fw-apoio">{apoio}</p>}
     </div>
     <a class="botao botao-laranja fw-botao" href={href} rel="noopener"><Icone nome="whats" />{rotulo}</a>
-  </aside>
+  </div>
 )}
 <style>
   .banner-v2 { display: block; margin: 0; border-radius: 26px; overflow: hidden; background: #efeeeb; box-shadow: var(--shadow-2); transition: transform .35s cubic-bezier(.2,.7,.2,1); }

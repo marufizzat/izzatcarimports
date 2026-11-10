@@ -18,7 +18,7 @@ const POUCAS = 30;
 const b4 = bento(fams.length, 4);
 const b5 = bento(fams.length, 5);
 ---
-<div class:list={['cats', { 'sem-todas-4': !b4.todas, 'sem-todas-5': !b5.todas }]} data-cats data-whats={whatsUrl('Olá! Procuro peça para o meu carro: ')}>
+<div class:list={['cats', { 'sem-todas-4': !b4.todas, 'sem-todas-5': !b5.todas }]} data-cats data-whats={whatsUrl('Procuro peça para o meu carro:') + '%20'}>
   <p class="cats-carro" data-cats-carro hidden>
     <span data-cats-msg></span>
     <span class="cats-carro-acoes">

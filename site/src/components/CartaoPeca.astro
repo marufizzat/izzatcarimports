@@ -5,7 +5,7 @@
 // A ação rápida "Pedir no WhatsApp" (só aparece com mouse; no toque o CSS esconde) é criada pelo script abaixo,
 // com a mensagem pronta lida do próprio cartão: não se repete no HTML de cada página. Ícones pelo sprite /icones.svg.
 import type { Peca } from '../lib/dados';
-import { foto, fotoSrcset, capaEstudio, resumo } from '../lib/dados';
+import { foto, fotoSrcset, capaEstudio, resumo, brl } from '../lib/dados';
 import { linhaCarro, codigoPeca, precoPartes, dadosCarro, CLASSE_CARTAO, icone } from './catalogo/etiqueta';
 interface Props { p: Peca; base?: string; eager?: boolean; /** selo "Chegou agora"; sem a prop, vale resumo().chegou */ novo?: boolean; }
 const { p, base = '/peca/', eager = false } = Astro.props;
@@ -20,15 +20,16 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
     <div class="etiqueta-foto">
       <img src={est ?? foto(p.fotos[0], 'O')} srcset={est ? undefined : fotoSrcset(p.fotos[0])}
            sizes={est ? undefined : '(min-width:1024px) 240px, (min-width:640px) 30vw, 46vw'} class:list={[{ estudio: !!est }]}
-           alt={p.t} loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} decoding="async" width="800" height="800" />
+           alt="" loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} decoding="async" width="800" height="800" />
       {novo && <span class="etiqueta-novo">Chegou agora</span>}
     </div>
     <div class="etiqueta-dados">
       <span class="etiqueta-serve" hidden></span>
       {carro && <span class="etiqueta-carro"><span class="etiqueta-modelo">{carro}</span>{anos && <span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>{anos}</span>}</span>}
-      <span class="etiqueta-nome">{p.n}</span>
+      <h3 class="etiqueta-nome">{p.n}</h3>
       {cod && <span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">{cod}</span></span>}
-      <span class="etiqueta-preco num"><small>R$</small>{reais}<small><span class="sr-only">,</span>{cent}</small></span>
+      <span class="sr-only">R$ {brl(p.p)}</span>
+      <span class="etiqueta-preco num" aria-hidden="true"><small>R$</small>{reais}<small>{cent}</small></span>
       <span class="etiqueta-confia"><svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone('garantia')} /></svg><span><span class="etiqueta-confia-longo">Original · </span>90 dias de garantia</span></span>
     </div>
   </a>
@@ -36,36 +37,49 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
 
 <script>
   // selo "Serve no seu ..." quando o carro salvo bate com a peça (regra do contrato meuCarro.ts)
-  import { lerMeuCarro, serveNoMeuCarro, lerModelos, EVENTO } from '../lib/meuCarro';
-  import { linkWhats, msgWhatsTexto, SITE, icone } from './catalogo/etiqueta';
+  import { lerMeuCarro, serveNoMeuCarro, lerModelos, nomeModelos, norm, EVENTO } from '../lib/meuCarro';
+  import { SITE, icone } from './catalogo/etiqueta';
+  import { linkWhats, mensagemPeca, anosTexto } from '../lib/whats';
+  // Na página do PRÓPRIO carro salvo (/carros/<k>, botão "É o meu carro"), o verde em quase todo cartão era ruído:
+  // ali só aparece o aviso âmbar "Confira o ano" nas peças de outros anos.
   function marcar() {
     const c = lerMeuCarro();
+    const pag = document.querySelector<HTMLElement>('[data-este-carro]');
+    const naPagina = !!c && !!pag && norm(pag.dataset.b || '') === norm(c.b) && norm(pag.dataset.m || '') === norm(c.m);
     document.querySelectorAll<HTMLElement>('a.etiqueta[data-b]').forEach((el) => {
       const d = el.dataset;
       const y = d.a0 ? [Number(d.a0), Number(d.a1)] as [number, number] : null;
-      const serve = !!c && serveNoMeuCarro({ b: d.b, m: d.m, y, ...lerModelos(d.ms, d.ys) }, c) === 'sim';
+      const s = c ? serveNoMeuCarro({ b: d.b, m: d.m, y, ...lerModelos(d.ms, d.ys) }, c) : null;
       const selo = el.querySelector<HTMLElement>('.etiqueta-serve');
       if (!selo) return;
-      selo.hidden = !serve;
-      if (serve) selo.textContent = `Serve no seu ${c!.m}`;
+      const ano = naPagina && s === 'confira-ano';
+      const txt = ano ? 'Confira o ano' : s === 'sim' && !naPagina ? `Serve no seu ${c!.m}` : '';
+      selo.hidden = !txt;
+      selo.classList.toggle('etiqueta-serve-ano', ano);
+      if (txt) selo.textContent = txt;
     });
   }
   marcar();
   window.addEventListener(EVENTO, marcar);
 
   // "Pedir no WhatsApp" do cartão (o mesmo link do cartão do catálogo): criado aqui, no fim do cartão, com a mesma
-  // mensagem do botão da peça. Título = alt da foto, nome = o do cartão, preço = o do cartão, endereço = o link dele.
+  // mensagem do botão da peça (lib/whats.ts), lida do próprio cartão: nome limpo, carro, anos (data-a0/a1), código,
+  // preço (o texto do leitor de tela) e o endereço do link. A foto tem alt vazio: o nome já está no link.
   function acoes() {
     document.querySelectorAll<HTMLElement>('.etiqueta-cx').forEach((cx) => {
       if (cx.querySelector('.etiqueta-acao')) return;
       const cartao = cx.querySelector<HTMLAnchorElement>('a.etiqueta');
-      const titulo = cartao?.querySelector('img')?.alt;
-      const nome = cartao?.querySelector('.etiqueta-nome')?.textContent;
-      const preco = cartao?.querySelector('.etiqueta-preco')?.textContent?.replace(/^\s*R\$\s*/, '').trim();
-      if (!cartao || !titulo || !nome || !preco) return;
+      const txt = (s: string) => cartao?.querySelector(s)?.textContent?.trim() || '';
+      const nome = txt('.etiqueta-nome');
+      const preco = txt('.etiqueta-dados > .sr-only').replace(/^R\$\s*/, '');
+      if (!cartao || !nome || !preco) return;
+      const d = cartao.dataset;
       const a = document.createElement('a');
       a.className = 'etiqueta-acao';
-      a.href = linkWhats(msgWhatsTexto(titulo, preco, SITE + cartao.getAttribute('href')));
+      a.href = linkWhats(mensagemPeca({
+        nome, carro: nomeModelos({ b: d.b || '', m: d.m || '', ...lerModelos(d.ms, d.ys) }), anos: d.a0 ? anosTexto([Number(d.a0), Number(d.a1)]) : '',
+        cod: txt('.etiqueta-cod .oem'), preco, url: SITE + cartao.getAttribute('href'),
+      }));
       a.target = '_blank';
       a.rel = 'noopener';
       a.setAttribute('aria-label', `Pedir no WhatsApp: ${nome}`);

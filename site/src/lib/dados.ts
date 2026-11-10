@@ -67,11 +67,9 @@ export function fotoSrcset(chave: string): string {
 
 export const brl = (v: number) =>
   v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-export const WHATS = '5553991170950';
 export const SITE = 'https://izzatcarimports.com.br';
-export function whatsUrl(texto: string) {
-  return `https://wa.me/${WHATS}?text=${encodeURIComponent(texto)}`;
-}
+// WhatsApp: número, abertura única e links em lib/whats.ts (whatsUrl recebe SÓ o contexto da mensagem)
+export { WHATS, whatsUrl } from './whats';
 
 // Capa de ESTÚDIO quando existir; senão a foto do ML no tamanho pedido.
 // public/estudio-pro/<id>.webp = foto maquiada no ChatGPT e conferida (peças em destaque) — tem preferência;

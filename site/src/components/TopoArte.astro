@@ -9,10 +9,12 @@ import { join } from 'node:path';
 import { SITE } from '../lib/dados';
 import { srcArte } from '../lib/variantes';
 interface Logo { src: string; w: number; h: number; png: boolean }
+// antesNoTitulo: o "antes" (a marca, na página do carro) faz parte do H1 para o leitor de tela ("Volvo XC60");
+// na tela ele segue em cima, com o logo.
 // arteSizes: o tamanho da arte na tela (lib/variantes.ts: SIZES); com ele, o srcset das variantes menores da arte
 // (scripts/variantes-imagens.mjs) entra quando elas estão em dia.
-interface Props { trilha: [string, string][]; antes?: string; titulo: string; lead?: string; arte?: string; arteW?: number; arteH?: number; arteSizes?: string; logo?: Logo | null; encaixe?: 'cobre' | 'contem' | 'meio'; }
-const { trilha, antes, titulo, lead, arte, arteW = 1536, arteH = 640, arteSizes, logo, encaixe = 'cobre' } = Astro.props;
+interface Props { trilha: [string, string][]; antes?: string; antesNoTitulo?: boolean; titulo: string; lead?: string; arte?: string; arteW?: number; arteH?: number; arteSizes?: string; logo?: Logo | null; encaixe?: 'cobre' | 'contem' | 'meio'; }
+const { trilha, antes, antesNoTitulo = false, titulo, lead, arte, arteW = 1536, arteH = 640, arteSizes, logo, encaixe = 'cobre' } = Astro.props;
 const temArte = !!arte && existsSync(join(process.cwd(), 'public', arte));
 const temAcoes = Astro.slots.has('acoes');
 // slot "lado": o que fica à direita do texto quando não há arte (/carros: três carros de verdade do pátio)
@@ -29,10 +31,10 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
     <div class="topo-caixa">
       <div class="topo-texto">
         {temArte && logo && (
-          <p class="topo-marca"><img src={logo.src} alt="" width={logo.w} height={logo.h} class:list={[{ svg: !logo.png }]} />{antes}</p>
+          <p class="topo-marca" aria-hidden={antesNoTitulo ? 'true' : undefined}><img src={logo.src} alt="" width={logo.w} height={logo.h} class:list={[{ svg: !logo.png }]} />{antes}</p>
         )}
-        {!(temArte && logo) && antes && <p class="topo-antes">{antes}</p>}
-        <h1 class="display">{titulo}</h1>
+        {!(temArte && logo) && antes && <p class="topo-antes" aria-hidden={antesNoTitulo ? 'true' : undefined}>{antes}</p>}
+        <h1 class="display">{antesNoTitulo && antes && <span class="sr-only">{antes} </span>}{titulo}</h1>
         {lead && <p class="lead">{lead}</p>}
         {temAcoes && <div class="topo-acoes"><slot name="acoes" /></div>}
       </div>
@@ -48,7 +50,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 <style>
   .topo-arte-wrap { padding-block: 14px 8px; }
   .trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 13.5px; color: var(--ink-3); margin-bottom: 14px; }
-  .trilha a { color: var(--ink-2); padding-block: 6px; } .trilha a:hover { color: var(--ink); text-decoration: underline; }
+  .trilha a { color: var(--ink-2); padding: 12px 6px; margin: -6px -6px; } .trilha a:hover { color: var(--ink); text-decoration: underline; }
   .topo-caixa { display: grid; gap: 22px; align-items: center; }
   .topo-texto { position: relative; z-index: 2; display: grid; gap: 12px; min-width: 0; justify-items: start; }
   .topo-texto h1 { margin: 0; font-size: var(--h1-pagina); }
