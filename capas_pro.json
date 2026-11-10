@@ -1783,10 +1783,11 @@
   "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501237858": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Painel instrumentos",
   "carro": "Renault Clio",
-  "foto": "818974-MLB91984780344_092025"
+  "foto": "818974-MLB91984780344_092025",
+  "motivo": "versão maquiada tapava a capa corrigida e mostrava a peça cortada"
  },
  "MLB6501230160": {
   "status": "reprovada",
@@ -2507,10 +2508,11 @@
   "foto": "979826-MLB90542941215_082025"
  },
  "MLB4555365133": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Comando vidro dianteiro esquerdo",
   "carro": "Volkswagen Amarok",
-  "foto": "776376-MLB90545184147_082025"
+  "foto": "776376-MLB90545184147_082025",
+  "motivo": "versão maquiada tapava a capa corrigida e mostrava a peça cortada"
  },
  "MLB4555342197": {
   "status": "reprovada",
