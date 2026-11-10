@@ -3,10 +3,22 @@
 
 Grava em site/src/data/fotos-ml-caixas.json, por chave da foto:
     [W, H, x0, y0, x1, y1, classe, hash]   tamanho da foto grande (-F), a caixa da peça (px dela), classe e assinatura
+    [W, H, x0, y0, x1, y1, classe, hash, "incerta"]   a caixa pode não ter pegado a peça toda: a galeria mostra a foto
+                                           inteira (teste da faixa de segurança, abaixo)
     [W, H, classe, hash]                   nenhuma peça achada
 (classe e hash faltam enquanto a foto não foi classificada; entrada antiga só com números = sem classe).
 A "caixa da peça" é a de tudo o que está em primeiro plano (nada fica cortado ao meio). O site (src/lib/quadroFoto.ts)
-enquadra a foto no quadro quadrado com a peça centrada e ocupando ~84%, só com CSS.
+enquadra a foto no quadro quadrado com a peça centrada e ocupando ~84%, só com CSS, e nunca amplia além do quadrado da
+própria foto: o quadro só corta a foto no eixo LONGO.
+
+Caixa incerta (teste da faixa de segurança, `faixas()`): o recorte às vezes pega só um pedaço — a montagem com o carro
+colado (pega o carro), o plástico branco/transparente (pega só a parte preta), o zoom na etiqueta (pega a etiqueta).
+Então, em toda a região da foto além de cada lado da caixa (a partir de 2% dela, na altura/largura inteira da foto),
+procura "coisa": pixel que difere 25+ do fundo (pega o plástico branco). Mancha de 0,1% da foto ou mais além da caixa,
+num lado do eixo longo (onde o quadro corta) = "incerta"; também a caixa que vai de uma borda à outra no lado curto e a
+borda da foto escura ou bagunçada (close da peça ou etiqueta na frente: não há fundo para conferir). Foto quadrada nunca
+é cortada: nunca fica incerta.
+A medida de cada lado fica no cache dos sinais ("f"): mudar o limite = --reclassificar, sem baixar nada.
 
 Classes (a galeria, o JSON-LD e o feed tiram "m" e põem "c" no fim):
     p  peça                     s  sem peça achada (aparece inteira)
@@ -26,11 +38,14 @@ Motor (MEDIR_MOTOR): vision (Mac: ferramentas/caixa_vision.swift aberto em cada 
 e OCR do Vision; sem swiftc, o ~/.local/bin/recorta-fundo e sem classe) | rembg (robô: recorte rembg e OCR rapidocr;
 sem rapidocr, mede e deixa a classe para a próxima rodada).
 Variáveis: MEDIR_PARALELO (8), MEDIR_TEMPO_MAX (s, 0 = sem limite), MEDIR_IDS (MLBs que vão primeiro),
-MEDIR_LIMITE (fotos por rodada, 0 = todas), MEDIR_SINAIS (cache dos sinais).
+MEDIR_LIMITE (fotos por rodada, 0 = todas), MEDIR_SINAIS (cache dos sinais), MEDIR_FOTOS_O (pasta com <chave>.webp da
+foto -O já baixada: usada no lugar da rede).
 Opções: --extra ARQ       junta o JSON do robô (cache entre rodadas) e grava o resultado nele também
         --podar           tira do JSON as fotos que não estão mais em nenhum anúncio
         --so-juntar       não mede nada: só junta o JSON do robô e grava (rodada sem tempo)
-        --reclassificar   refaz as classes pelos sinais em cache (depois de mudar uma regra)
+        --reclassificar   refaz as classes (e a caixa incerta) pelos sinais em cache (depois de mudar uma regra)
+        --faixas          faz o teste da faixa nas fotos com caixa que ainda não têm ("f" no cache, ou o antigo de 4
+                          números): baixa a -O de novo
 Teste: python testes/test_medir_fotos_ml.py
 """
 import io
@@ -99,6 +114,81 @@ def caixa_da_mascara(alfa, sujeira=0.002):
         return None
     ys, xs = np.nonzero(manter[rot])
     return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+
+
+FAIXA_DIF = 25         # diferença do fundo (0-255, no canal que mais muda) que já é "coisa": pega o plástico branco
+FAIXA_GAP = 0.02       # a procura começa a 2% (do lado menor da foto) da caixa: sombra colada e borda do recorte fora
+FAIXA_MANCHA = 0.001   # mancha de "coisa" com 0,1% da foto ou mais além da caixa = a caixa não pegou tudo
+FUNDO_LISO = 0.85      # menos que isso da borda da foto com cara de fundo de estúdio = a peça enche a foto (close):
+                       # não dá para conferir a caixa (conferido na folha: de 0,6 a 0,85 são todas closes)
+FUNDO_ESCURO = 110     # borda da foto mais escura que isso (0-255) = não é o fundo claro do estúdio (close da peça)
+INCERTA = "incerta"    # marca na entrada: a galeria mostra a foto inteira (lib/quadroFoto.ts)
+
+
+def faixas(img, caixa):
+    """Teste da faixa de segurança. `img` é a foto (PIL, a -O na memória), `caixa` (x0, y0, x1, y1) em px dela.
+    Para cada lado da caixa [esq, topo, dir, base]: a maior mancha de "coisa" em TODA a região da foto além daquele
+    lado (de FAIXA_GAP da caixa até a borda da foto, na altura/largura inteira dela: pega também o que está na
+    diagonal), em fração da área da foto; -1 = a caixa chega na borda da foto (nada além). E no fim, `fundo`: a fração
+    da borda da foto com cara de fundo de estúdio (0 se a borda é escura): close da peça, etiqueta em cima da peça ou
+    fundo bagunçado não deixam conferir nada (a "coisa" é medida contra a borda).
+    "Coisa" = pixel que difere FAIXA_DIF+ de três estimativas do fundo: a borda da foto daquele lado, a borda inteira e
+    o perfil linha a linha das bordas laterais (o degradê do fundo de estúdio não conta). O fechamento (~1,4% da foto)
+    junta as letras de uma etiqueta numa mancha só; depois a abertura 3x3 tira os pontinhos soltos (ruído do JPEG)."""
+    import numpy as np
+    from scipy import ndimage
+    a = np.asarray(img.convert("RGB"), dtype=np.int16)
+    h, w = a.shape[:2]
+    s = min(w, h)
+    b, g, k = max(2, round(0.02 * s)), max(1, round(FAIXA_GAP * s)), max(3, round(0.014 * s))
+    bordas = {"esq": a[:, :b], "topo": a[:b, :], "dir": a[:, -b:], "base": a[-b:, :]}
+    fundo = np.median(np.concatenate([v.reshape(-1, 3) for v in bordas.values()]), axis=0)
+    perfil = np.median(np.concatenate([a[:, :b], a[:, -b:]], axis=1), axis=1)            # fundo de cada linha
+    perfil = ndimage.median_filter(perfil, size=(max(3, h // 50), 1))
+    dif = np.minimum(np.abs(a - fundo).max(axis=2), np.abs(a - perfil[:, None, :]).max(axis=2))
+    na_borda = np.ones((h, w), dtype=bool)
+    na_borda[b:-b, b:-b] = False
+    luz = np.median(a[na_borda].mean(axis=1))
+    liso = 0.0 if luz < FUNDO_ESCURO else float((dif[na_borda] < FAIXA_DIF).mean())
+    x0, y0, x1, y1 = caixa
+    regioes = {"esq": (0, x0 - g, 0, h), "topo": (0, w, 0, y0 - g), "dir": (x1 + g, w, 0, h), "base": (0, w, y1 + g, h)}
+    saida = []
+    for lado, (xa, xb, ya, yb) in regioes.items():
+        xa, xb, ya, yb = max(0, xa), min(w, xb), max(0, ya), min(h, yb)
+        if xb - xa < 3 or yb - ya < 3:
+            saida.append(-1)
+            continue
+        do_lado = np.abs(a[ya:yb, xa:xb] - np.median(bordas[lado].reshape(-1, 3), axis=0)).max(axis=2)
+        coisa = ndimage.binary_closing(np.minimum(dif[ya:yb, xa:xb], do_lado) >= FAIXA_DIF, structure=np.ones((k, k)))
+        coisa = ndimage.binary_opening(coisa, structure=np.ones((3, 3)))
+        rot, n = ndimage.label(coisa, structure=np.ones((3, 3)))
+        maior = int(np.bincount(rot.ravel())[1:].max()) if n else 0
+        saida.append(round(maior / (w * h), 4))
+    return saida + [round(liso, 3)]
+
+
+def incerta(W, H, f, caixa=None):
+    """A caixa não é confiável onde o quadro corta a foto: só no eixo longo (o quadro nunca corta o lado curto,
+    lib/quadroFoto.ts), se há mancha além dela (f = faixas() ou None), se a borda da foto não tem cara de fundo de
+    estúdio, ou se a caixa vai de uma borda à outra no lado curto (x0, y0, x1, y1 em px da foto -F): nesses dois a foto
+    não tem fundo para conferir a caixa (close da peça, que continua além da foto, ou etiqueta na frente dela). Foto
+    quadrada nunca é cortada: nunca incerta."""
+    if W == H:
+        return False
+    if caixa and (caixa[1] <= 0.01 * H and caixa[3] >= 0.99 * H if W > H else caixa[0] <= 0.01 * W and caixa[2] >= 0.99 * W):
+        return True
+    if f and len(f) > 4 and f[4] < FUNDO_LISO:
+        return True
+    return bool(f) and any(f[i] > FAIXA_MANCHA for i in ((0, 2) if W > H else (1, 3)))
+
+
+def caixa_na_foto(e, img):
+    """A caixa da entrada (px da foto -F) em px da foto `img` (a -O), ou None sem caixa."""
+    n = numeros(e)
+    if len(n) < 6:
+        return None
+    kx, ky = img.size[0] / n[0], img.size[1] / n[1]
+    return round(n[2] * kx), round(n[3] * ky), round(n[4] * kx), round(n[5] * ky)
 
 
 class SemPeca(Exception):
@@ -228,6 +318,9 @@ def motores(nome):
 
 def baixar_media(chave):
     from PIL import Image
+    local = os.getenv("MEDIR_FOTOS_O")
+    if local and (Path(local) / f"{chave}.webp").exists():
+        return Image.open(Path(local) / f"{chave}.webp").convert("RGB")
     return Image.open(io.BytesIO(_get(CDN.format(chave, "O")))).convert("RGB")
 
 
@@ -253,28 +346,49 @@ def medir_uma(chave, recortar, classificar=None):
         cx = None
     except Exception:  # noqa: BLE001  (recorte falhou: não grava, tenta na próxima rodada)
         return None, None
+    f = None
     if cx:
         kx, ky = W / media.size[0], H / media.size[1]
         x0, y0, x1, y1 = cx
         e = [W, H, round(x0 * kx), round(y0 * ky), min(W, round(x1 * kx)), min(H, round(y1 * ky))]
+        f = faixas(media, cx)
     else:
         e = [W, H]
+    inc = len(e) == 6 and incerta(W, H, f, e[2:6])
     if classificar is None:
-        return e, None
+        return e + ([INCERTA] if inc else []), None
     try:
         s = classificar(media)
     except Exception:  # noqa: BLE001  (OCR falhou: fica medida, a classe vem depois)
-        return e, None
-    return com_classe(e, classe_de(bool(cx), s), s["h"]), s
+        return e + ([INCERTA] if inc else []), None
+    if f is not None:
+        s["f"] = f
+    return com_classe(e, classe_de(bool(cx), s), s["h"], inc), s
 
 
 def classificar_uma(chave, entrada, classificar):
-    """Classe de uma foto já medida: (entrada com classe, sinais) ou (None, None) se a rede/OCR falhou."""
+    """Classe de uma foto já medida (e o teste da faixa): (entrada com classe, sinais) ou (None, None) se a rede/OCR
+    falhou."""
     try:
-        s = classificar(baixar_media(chave))
+        media = baixar_media(chave)
+        s = classificar(media)
     except Exception:  # noqa: BLE001
         return None, None
-    return com_classe(entrada, classe_de(len(numeros(entrada)) >= 6, s), s["h"]), s
+    cx = caixa_na_foto(entrada, media)
+    if cx:
+        s["f"] = faixas(media, cx)
+    n = numeros(entrada)
+    return com_classe(entrada, classe_de(len(n) >= 6, s), s["h"], len(n) >= 6 and incerta(n[0], n[1], s.get("f"), n[2:6])), s
+
+
+def faixa_uma(chave, entrada):
+    """Só o teste da faixa (--faixas) numa foto já medida: a lista do faixas() ou None se a rede falhou."""
+    try:
+        media = baixar_media(chave)
+    except Exception:  # noqa: BLE001
+        return None
+    cx = caixa_na_foto(entrada, media)
+    return faixas(media, cx) if cx else None
 
 
 # ---------- a classe da foto ----------
@@ -339,8 +453,23 @@ def hash_da(e):
     return next((v for v in e if isinstance(v, str) and len(v) == 16), None)
 
 
-def com_classe(e, classe, h):
-    return numeros(e) + [classe] + ([h] if h else [])
+def incerta_da(e):
+    return INCERTA in e
+
+
+def com_classe(e, classe, h, inc=None):
+    """Os números da entrada + classe + assinatura (+ a marca de caixa incerta). inc None = mantém a marca de `e`."""
+    if inc is None:
+        inc = incerta_da(e)
+    return numeros(e) + [classe] + ([h] if h else []) + ([INCERTA] if inc and len(numeros(e)) >= 6 else [])
+
+
+def incerta_pelo_cache(e, s):
+    """A caixa incerta pelos sinais guardados (None = sem o teste da faixa no cache: mantém a marca da entrada)."""
+    n = numeros(e)
+    if not s or "f" not in s or len(n) < 6:
+        return None
+    return incerta(n[0], n[1], s["f"], n[2:6])
 
 
 def modelos(dados, pecas):
@@ -394,6 +523,37 @@ def fila_de(pecas, feitas, primeiro=()):
     return fila
 
 
+def fazer_faixas(dados, cache, chaves):
+    """--faixas: o teste da faixa nas `chaves` (baixa a -O de novo, ou lê de MEDIR_FOTOS_O), grava a medida no cache
+    ("f") e a marca de caixa incerta na entrada. MEDIR_PARALELO linhas; respeita MEDIR_TEMPO_MAX."""
+    import concurrent.futures as cf
+    t0, tempo_max = time.time(), float(os.getenv("MEDIR_TEMPO_MAX", "0") or 0)
+    trava, cont = threading.Lock(), {"i": 0, "erro": 0}
+    print(f"teste da faixa: {len(chaves)} fotos", flush=True)
+
+    def uma(k):
+        if tempo_max and time.time() - t0 > tempo_max:
+            return
+        f = faixa_uma(k, dados[k])
+        with trava:
+            cont["i"] += 1
+            if f is None:
+                cont["erro"] += 1
+                return
+            cache.setdefault(k, {})["f"] = f
+            e = dados[k]
+            dados[k] = com_classe(e, classe_da(e), hash_da(e), incerta_pelo_cache(e, cache[k])) if classe_da(e) \
+                else numeros(e) + ([INCERTA] if incerta_pelo_cache(e, cache[k]) else [])
+            if cont["i"] % 2000 == 0:
+                gravar(cache, SINAIS)
+                print(f"  {cont['i']}/{len(chaves)}  {time.time() - t0:.0f}s", flush=True)
+
+    with cf.ThreadPoolExecutor(int(os.getenv("MEDIR_PARALELO", "8"))) as ex:
+        list(ex.map(uma, chaves))
+    print(f"teste da faixa: {cont['i'] - cont['erro']} feitas, {cont['erro']} erro de rede | {time.time() - t0:.0f}s",
+          flush=True)
+
+
 def main(argv):
     extra = argv[argv.index("--extra") + 1] if "--extra" in argv else None
     t0 = time.time()
@@ -405,16 +565,24 @@ def main(argv):
         usadas = {k for p in pecas for k in (p.get("fotos") or [])}
         dados = {k: v for k, v in dados.items() if k in usadas}
     cache = ler(SINAIS)
+    tem_sinais = lambda k: k in cache and "h" in cache[k]     # noqa: E731  (só "f" = teste da faixa sem os sinais)
     if "--reclassificar" in argv:                # regra nova: refaz pelos sinais guardados, sem baixar nada
         for k, e in dados.items():
-            if k in cache:
-                dados[k] = com_classe(e, classe_de(len(numeros(e)) >= 6, cache[k]), cache[k]["h"])
+            if tem_sinais(k):
+                dados[k] = com_classe(e, classe_de(len(numeros(e)) >= 6, cache[k]), cache[k]["h"],
+                                      incerta_pelo_cache(e, cache[k]))
+            elif k in cache and classe_da(e):
+                dados[k] = com_classe(e, classe_da(e), hash_da(e), incerta_pelo_cache(e, cache[k]))
     primeiro = set(filter(None, os.getenv("MEDIR_IDS", "").split(",")))
     fila = fila_de(pecas, dados, primeiro)
     sem_classe = [k for k in fila_de(pecas, {}, primeiro) if k in dados and not classe_da(dados[k])]
-    for k in [k for k in sem_classe if k in cache]:   # sinais já guardados: classe sem baixar de novo
-        dados[k] = com_classe(dados[k], classe_de(len(numeros(dados[k])) >= 6, cache[k]), cache[k]["h"])
+    for k in [k for k in sem_classe if tem_sinais(k)]:   # sinais já guardados: classe sem baixar de novo
+        dados[k] = com_classe(dados[k], classe_de(len(numeros(dados[k])) >= 6, cache[k]), cache[k]["h"],
+                              incerta_pelo_cache(dados[k], cache[k]))
     sem_classe = [k for k in sem_classe if not classe_da(dados[k])]
+    if "--faixas" in argv:                       # o teste da faixa nas fotos com caixa que ainda não têm
+        fazer_faixas(dados, cache, [k for k in fila_de(pecas, {}, primeiro)       # sem o teste ou com o de 4 lados só
+                                    if k in dados and len(numeros(dados[k])) >= 6 and len(cache.get(k, {}).get("f", [])) < 5])
     limite = int(os.getenv("MEDIR_LIMITE", "0") or 0)
     if limite:
         fila, sem_classe = fila[:limite], sem_classe[:max(0, limite - len(fila))]
@@ -484,10 +652,10 @@ def main(argv):
     for e in dados.values():
         c = classe_da(e) or "-"
         contagem[c] = contagem.get(c, 0) + 1
-    print("classes: " + ", ".join(f"{c} {n}" for c, n in sorted(contagem.items())) + f" (modelo repetido: {len(rep)})",
-          flush=True)
+    print("classes: " + ", ".join(f"{c} {n}" for c, n in sorted(contagem.items())) + f" (modelo repetido: {len(rep)})"
+          + f" | caixa incerta: {sum(1 for e in dados.values() if incerta_da(e))}", flush=True)
     gravar(dados, ARQ)
-    if cache and (fila or sem_classe):
+    if cache and (fila or sem_classe or "--faixas" in argv):
         gravar(cache, SINAIS)
     if extra:
         gravar(dados, extra)
