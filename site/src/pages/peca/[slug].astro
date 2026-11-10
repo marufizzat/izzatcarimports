@@ -163,14 +163,14 @@ const ld = {
   )}
   {!temCarro && daMarca.length > 0 && (
     <DoMesmoCarro titulo={marca ? `Mais peças ${marca.n}` : 'Mais peças'} carro={marca ? marca.n : ''}
-                  sub={marca ? `De outros modelos ${marca.n}: confere o carro e o ano em cada cartão.` : 'Do nosso estoque: confere o carro e o ano em cada cartão.'}
+                  sub={marca ? `De outros modelos ${marca.n}: confira o carro e o ano em cada cartão.` : 'Do nosso estoque: confira o carro e o ano em cada cartão.'}
                   link={marca ? `/marca/${marca.k}.html` : '/catalogo.html'} total={marca ? marca.c : r.total} pecas={daMarca} />
   )}
 
   <section class="secao">
     <div class="moldura">
       <BannerV2 nome="banner-serve" href={whatsUrl(`Quero confirmar se esta peça serve no meu carro:\n\n${pecaMsg}\n\n${meuCarroMsg}`)}
-        texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
+        texto="Serve no meu carro? Mande o modelo e o ano. A gente confere no pátio e responde com foto. Chamar no WhatsApp" />
     </div>
   </section>
 </Pagina>

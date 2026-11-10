@@ -495,7 +495,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
     ? whatsUrl(`Procuro ${oQue === 'peça' ? 'peças' : oQue} para ${carroAviso}. Quero ser avisado quando chegar no pátio.`)
     : '';
   const botaoAvise = avise ? (
-    <a className="botao botao-linha cat-avise" href={avise} target="_blank" rel="noopener"><Sino />Me avisa quando chegar</a>
+    <a className="botao botao-linha cat-avise" href={avise} target="_blank" rel="noopener"><Sino />Me avise quando chegar</a>
   ) : null;
 
   const blocos = !!busca && aproximado && (f.ordem || 'rel') === 'rel' && nDoCarro > 0 && nDoCarro < resultado.length && !!carroDaBusca;
@@ -563,7 +563,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
               <img src="/icones/conversa-96.webp" alt="" width={44} height={44} />
               <div>
                 <b>Não deu para carregar {busca ? 'mais peças' : 'a busca e os filtros'} agora.</b>
-                <span>Pode ser a conexão. Tenta de novo ou fala com a gente: a gente procura a peça no pátio.</span>
+                <span>Pode ser a conexão. Tente de novo ou fale com a gente: a gente procura a peça no pátio.</span>
               </div>
               <div className="cat-erro-botoes">
                 <button type="button" className="botao botao-laranja" onClick={carregar}>Tentar de novo</button>
@@ -576,7 +576,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             <div className="cat-vazio">
               <img src="/arte/v2/vazio-busca.webp" alt="" width={360} height={360} loading="lazy" decoding="async" />
               <h2>Nada {f.q ? <>com “{f.q}”</> : 'com esses filtros'} no site.</h2>
-              <p>Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp que a gente procura no pátio.</p>
+              <p>Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp que a gente procura no pátio.</p>
               <div className="cat-vazio-botoes">
                 <a className="botao botao-laranja" href={whatsUrl(`Procuro ${procuro}. Tem no pátio?`)} target="_blank" rel="noopener"><Whats /><span>Procurar no pátio<span className="cat-so-largo"> pelo WhatsApp</span></span></a>
                 {botaoAvise}

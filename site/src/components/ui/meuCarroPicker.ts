@@ -133,7 +133,7 @@ function htmlCampos(e: Estado): string {
  *  e troca pelo carro salvo antes de pintar: o aviso já nasce no lugar (a grade de marcas não desce depois). */
 export const AVISO_CARRO = '__CARRO__';
 export function htmlAvisoSemPeca(carro: string): string {
-  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolhe outro carro ou <a href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">pede no WhatsApp</a>.</p>`;
+  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">pede no WhatsApp</a>.</p>`;
 }
 
 function htmlMarcas(g: Garagem, e: Estado): string {
@@ -158,7 +158,7 @@ function htmlModelos(e: Estado): string {
   if (!m.modelos.length)
     // marca sem modelo lido nos anúncios (ex.: Mini): vai direto para as peças dela
     return `
-    <p class="mc-frase"><b class="num">${fmt(m.c)}</b> ${m.c === 1 ? 'peça' : 'peças'} da <b>${esc(m.n)}</b>. Confere o modelo e o ano em cada peça.</p>
+    <p class="mc-frase"><b class="num">${fmt(m.c)}</b> ${m.c === 1 ? 'peça' : 'peças'} da <b>${esc(m.n)}</b>. Confira o modelo e o ano em cada peça.</p>
     <a class="botao botao-laranja mc-ver" href="${esc(todas)}" data-chave="ver" data-foco>${m.c === 1 ? 'Ver a peça' : `Ver as ${pecasTxt(m.c)} da ${esc(m.n)}`}</a>
     <p class="mc-pe">${procura}</p>`;
   const cortar = !e.todosModelos && m.modelos.length > MODELOS_DE_CARA + 1;
@@ -351,7 +351,7 @@ export function montarPicker(raiz: HTMLElement): Handle {
   function anunciar() {
     if (!e.marca || !e.modelo) return;
     const n = contagem(e.modelo, e.ano);
-    voz.textContent = `${pecasTxt(n)} para o seu ${e.marca.n} ${e.modelo.n}${e.ano ? ` ${e.ano}` : ''}${e.ano ? '' : '. Escolhe o ano para conferir o encaixe'}`;
+    voz.textContent = `${pecasTxt(n)} para o seu ${e.marca.n} ${e.modelo.n}${e.ano ? ` ${e.ano}` : ''}${e.ano ? '' : '. Escolha o ano para conferir o encaixe'}`;
   }
 
   function salvar() {
