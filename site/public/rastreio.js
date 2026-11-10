@@ -24,6 +24,9 @@
   function carregarGA() { var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID; document.head.appendChild(s); }
   if ('requestIdleCallback' in window) requestIdleCallback(carregarGA, { timeout: 2500 }); else setTimeout(carregarGA, 1200);
 
+  /* Peca vendida: o link velho de uma peca que saiu do site (a 404 de /peca/<slug>-<MLB>.html guarda o MLB) */
+  if (window.IZZAT_VENDIDA) gtag('event', 'peca_vendida', { mlb: window.IZZAT_VENDIDA, pagina: location.pathname });
+
   var prod = window.IZZAT_PRODUCT;
   if (prod && prod.id) {
     fbq('track', 'ViewContent', { content_ids: [prod.id], content_name: prod.name, content_type: 'product',

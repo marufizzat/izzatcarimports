@@ -1,21 +1,25 @@
 ---
 import SeloReputacao from '../SeloReputacao.astro';
+import { DETRAN_CDV } from '../../lib/dados';
 // Selos de confiança: 4 ícones-arte 3D (ChatGPT, mesmo estúdio) + texto vivo. Só fatos confirmados.
 // A reputação do Mercado Livre entra como mais um selo da fileira (no PC, 5 iguais; antes ela vinha numa faixa
 // de 1240 px quase vazia). Os nós não quebram no meio: "CDV nº 01060" fica junto.
-const selos = [
+// O selo do CDV leva a prova de fora: a lista oficial do Detran-RS, onde a Izzat aparece com o mesmo WhatsApp.
+const selos: [string, string, string, string?][] = [
   ['garantia', '90 dias de garantia', 'Em toda peça'],
   ['nota-fiscal', 'Nota fiscal', 'Em toda venda'],
-  ['cdv', 'Desmanche credenciado', 'Detran-RS\u00a0· CDV\u00a0nº\u00a001060'],
+  ['cdv', 'Desmanche credenciado', 'Detran-RS\u00a0· CDV\u00a0nº\u00a001060', DETRAN_CDV],
   ['envio', 'Envio para todo o Brasil', 'Frete pelo seu CEP'],
 ];
 interface Props { class?: string }
 ---
 <ul class:list={['selos-v2', Astro.props.class]} aria-label="Por que comprar com a gente">
-  {selos.map(([k, t, s]) => (
+  {selos.map(([k, t, s, href]) => (
     <li class="selo-v2">
       <img src={`/arte/v2/selo-${k}.webp`} alt="" width="84" height="84" loading="lazy" decoding="async" />
-      <span><b>{t}</b><small>{s}</small></span>
+      <span><b>{t}</b><small>{s}</small>{href && (
+        <a class="selo-v2-link" href={href} target="_blank" rel="noopener">Confira na lista do Detran-RS<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg></a>
+      )}</span>
     </li>
   ))}
   <SeloReputacao variante="faixa" />
@@ -27,6 +31,12 @@ interface Props { class?: string }
   @media (min-width: 1000px) { .selo-v2 { display: flex; align-items: center; padding: 14px 18px 14px 10px; gap: 12px; } .selo-v2 img { width: 84px; height: 84px; margin: 0; flex: none; } }
   .selo-v2 b { display: block; font-stretch: 86%; font-weight: 800; font-size: clamp(15px, 1.25vw, 18.5px); line-height: 1.15; text-wrap: balance; }
   .selo-v2 small { display: block; margin-top: 3px; font-size: clamp(12.5px, 1vw, 14.5px); color: var(--ink-2); line-height: 1.3; text-wrap: balance; }
+  /* a prova de fora: texto (nunca laranja), sublinhado, com área de toque boa */
+  .selo-v2-link { display: inline-block; margin-top: 6px; padding-block: 2px 4px; font-size: clamp(12.5px, 1vw, 14px); font-weight: 650;
+    line-height: 1.3; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; text-wrap: balance; }
+  .selo-v2-link:hover { text-decoration-color: currentColor; }
+  .selo-v2-link svg { display: inline-block; width: 13px; height: 13px; margin-left: 3px; vertical-align: -1px; fill: none; stroke: currentColor;
+    stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   /* PC largo: a reputação do ML vira o 5º selo, do mesmo tamanho dos outros (antes, uma faixa de 1240 px quase vazia) */
   @media (min-width: 1180px) {
     :global(ul.selos-v2:has(> li.rep-cartao)) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
