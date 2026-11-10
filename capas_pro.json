@@ -3067,19 +3067,19 @@
   "foto": "992463-MLB110134068207_042026"
  },
  "MLB6584859498": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Módulo onstar chevystar",
   "carro": "Chevrolet Onix",
   "foto": "837647-MLB110134436907_042026"
  },
  "MLB6583701506": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Módulo sensor estacionamento",
   "carro": "Chevrolet Spin",
   "foto": "958590-MLB109280968238_042026"
  },
  "MLB6583698822": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Módulo injeção",
   "carro": "Chevrolet Cobalt",
   "foto": "738894-MLB109280317992_042026"
@@ -3092,31 +3092,31 @@
   "foto": "799281-MLB109275668402_042026"
  },
  "MLB6582738732": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado",
   "carro": "Chevrolet Spin",
   "foto": "706789-MLB110126809461_042026"
  },
  "MLB6582714768": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Chicote porta dianteira esquerda",
   "carro": "Volvo XC60",
   "foto": "920166-MLB109275384810_042026"
  },
  "MLB6582707600": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Apoio braço banco traseiro",
   "carro": "Hyundai Genesis",
   "foto": "781718-MLB109275392100_042026"
  },
  "MLB6582695410": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar central painel",
   "carro": "Volkswagen Passat",
   "foto": "802144-MLB109275536806_042026"
  },
  "MLB6582678182": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Sensor fase comando válvulas",
   "carro": "Volvo XC60",
   "foto": "834461-MLB109275122936_042026"
@@ -3129,7 +3129,7 @@
   "foto": "995656-MLB109275618480_042026"
  },
  "MLB6582677864": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão trava memória banco esquerdo",
   "carro": "Volvo XC60",
   "foto": "776238-MLB109275413844_042026"
@@ -3149,10 +3149,11 @@
   "foto": "997023-MLB109275435560_042026"
  },
  "MLB6582505948": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Painel instrumentos",
   "carro": "Volkswagen Polo",
-  "foto": "633224-MLB110125270287_042026"
+  "foto": "633224-MLB110125270287_042026",
+  "motivo": "ChatGPT redesenhou/girou a peça"
  },
  "MLB4590357227": {
   "status": "pulada",
@@ -3162,7 +3163,7 @@
   "foto": "771770-MLB109282968654_042026"
  },
  "MLB4590329621": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Módulo airbag",
   "carro": "Chevrolet Cobalt",
   "foto": "762960-MLB110133836799_042026"
@@ -3175,7 +3176,7 @@
   "foto": "788432-MLB110127304167_042026"
  },
  "MLB4589866513": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Pedal acelerador eletrônico",
   "carro": "Honda Fit",
   "foto": "821861-MLB110127389021_042026"
@@ -3188,31 +3189,32 @@
   "foto": "638095-MLB110127654841_042026"
  },
  "MLB4589824541": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado",
   "carro": "Volkswagen Passat",
   "foto": "747625-MLB109275596314_042026"
  },
  "MLB4589818323": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura tomada",
   "carro": "Honda Fit",
   "foto": "752864-MLB109275758744_042026"
  },
  "MLB4589811689": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Guarnição duto coluna direita",
   "carro": "Hyundai Genesis",
-  "foto": "832757-MLB110127088761_042026"
+  "foto": "832757-MLB110127088761_042026",
+  "motivo": "ChatGPT redesenhou/girou a peça"
  },
  "MLB4589782129": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Chave seta limpador",
   "carro": "Honda Fit",
   "foto": "656643-MLB109275759340_042026"
  },
  "MLB4589775941": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Porta-objetos central painel",
   "carro": "Volkswagen Passat",
   "foto": "966740-MLB109275746426_042026"
@@ -3225,7 +3227,7 @@
   "foto": "649170-MLB110125969873_042026"
  },
  "MLB4589752737": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar painel",
   "carro": "Hyundai Genesis",
   "foto": "827486-MLB109275506078_042026"
@@ -3238,13 +3240,13 @@
   "foto": "996520-MLB109275714942_042026"
  },
  "MLB4589723691": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Motor vidro traseiro esquerdo",
   "carro": "Ford New Fiesta",
   "foto": "614994-MLB109273513060_042026"
  },
  "MLB4589715431": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Carcaça mylink",
   "carro": "Chevrolet Onix",
   "foto": "786030-MLB110125686799_042026"
@@ -3271,61 +3273,62 @@
   "foto": "648208-MLB109384900833_032026"
  },
  "MLB6590757754": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento lateral painel",
   "carro": "Volkswagen Polo",
   "foto": "620837-MLB109386060771_032026"
  },
  "MLB6590694474": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar digital",
   "carro": "BMW",
   "foto": "629322-MLB109275434002_042026"
  },
  "MLB6590652710": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Dobradiça direita capô",
   "carro": "Jaguar E-Pace",
   "foto": "791774-MLB109317389452_042026"
  },
  "MLB6590644968": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Amortecedor capô",
   "carro": "Jaguar E-Pace",
-  "foto": "780471-MLB110174019217_042026"
+  "foto": "780471-MLB110174019217_042026",
+  "motivo": "ChatGPT redesenhou/girou a peça"
  },
  "MLB6590546074": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura aro painel central",
   "carro": "Renault Scenic",
   "foto": "745957-MLB109327149162_042026"
  },
  "MLB6590545940": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão pisca-alerta trava portas",
   "carro": "Hyundai HB20",
   "foto": "885871-MLB109327681618_042026"
  },
  "MLB6590533144": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Chave roda 17mm",
   "carro": "Volkswagen",
   "foto": "757739-MLB109327442354_042026"
  },
  "MLB6590463066": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento porta dianteira direita",
   "carro": "Volvo XC60",
   "foto": "818253-MLB109315754274_042026"
  },
  "MLB6590420368": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa fechadura porta",
   "carro": "Volvo XC60",
   "foto": "949978-MLB109316566720_042026"
  },
  "MLB6590420130": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Solenoide comando válvulas",
   "carro": "Volvo XC60",
   "foto": "747767-MLB110172252885_042026"
@@ -3462,159 +3465,191 @@
   "foto": "611486-MLB110173075837_042026"
  },
  "MLB4592971275": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Chicote elétrico porta",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "995599-MLB110171962099_042026"
  },
  "MLB4592955905": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Acabamento coluna",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "684127-MLB110172273921_042026"
  },
  "MLB4592410335": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Sensor posição comando",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "979554-MLB110172928065_042026"
  },
  "MLB4592377249": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura superior pilar",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "887173-MLB109315870774_042026"
  },
  "MLB4592339719": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão vidro elétrico traseiro",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "765935-MLB110171957773_042026"
  },
  "MLB4592324595": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Chave seta limpador",
-  "carro": "Renault Kwid"
+  "carro": "Renault Kwid",
+  "foto": "726214-MLB110171764055_042026"
  },
  "MLB6596554798": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Encosto cabeça traseiro couro costura az",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "foto": "934189-MLB109383927906_042026"
  },
  "MLB6596554498": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão limitador alarme velocidade",
-  "carro": "Chevrolet Astra"
+  "carro": "Chevrolet Astra",
+  "foto": "931579-MLB109383867218_042026"
  },
  "MLB6596491894": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Encosto cabeça traseiro couro",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "foto": "846630-MLB110245840437_042026"
  },
  "MLB6596424724": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão pisca-alerta triangular ver",
-  "carro": "Kia Picanto"
+  "carro": "Kia Picanto",
+  "foto": "628210-MLB110243958821_042026"
  },
  "MLB6596406504": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Encosto cabeça traseiro couro banco traseiro",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "foto": "783074-MLB109383434290_042026"
  },
  "MLB6596401106": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão start stop engine",
-  "carro": "Volkswagen Passat"
+  "carro": "Volkswagen Passat",
+  "foto": "869328-MLB110245382611_042026"
  },
  "MLB6596400534": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Difusor ar painel central duplo",
-  "carro": "Geely GC2"
+  "carro": "Geely GC2",
+  "foto": "878673-MLB110245469331_042026"
  },
  "MLB6596398946": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Tampa cega obturador console",
-  "carro": "Kia Picanto"
+  "carro": "Kia Picanto",
+  "foto": "814889-MLB110244284285_042026"
  },
  "MLB6596380144": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura triângulo porta traseira esquerda",
-  "carro": "Fiat Argo"
+  "carro": "Fiat Argo",
+  "foto": "825866-MLB110245298197_042026"
  },
  "MLB6596376970": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Display sensor estacionamento ml",
-  "carro": "Mercedes-Benz"
+  "carro": "Mercedes-Benz",
+  "foto": "719229-MLB110244287917_042026"
  },
  "MLB6596376418": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão farol milha reostato",
-  "carro": "Kia Picanto"
+  "carro": "Kia Picanto",
+  "foto": "918357-MLB110245378011_042026"
  },
  "MLB6596362922": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Conjunto botões painel",
-  "carro": "Fiat Palio"
+  "carro": "Fiat Palio",
+  "foto": "683700-MLB110244278907_042026"
  },
  "MLB6596362158": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Difusor ar painel",
-  "carro": "Nissan Kicks"
+  "carro": "Nissan Kicks",
+  "foto": "686392-MLB110243980665_042026"
  },
  "MLB6596360578": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão pisca-alerta",
-  "carro": "Honda Fit"
+  "carro": "Honda Fit",
+  "foto": "715961-MLB110243918367_042026"
  },
  "MLB6596318092": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Chave seta alavanca pisca",
-  "carro": "Volkswagen Gol"
+  "carro": "Volkswagen Gol",
+  "foto": "699730-MLB110244203011_042026"
  },
  "MLB6596206888": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Amortecedor tampa traseira",
-  "carro": "Hyundai Azera"
+  "carro": "Hyundai Azera",
+  "foto": "658217-MLB109382125152_042026"
  },
  "MLB6596205376": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão pisca-alerta panda",
-  "carro": "Geely GC2"
+  "carro": "Geely GC2",
+  "foto": "930383-MLB110243845067_042026"
  },
  "MLB6596204564": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura painel central carbono",
-  "carro": "Geely GC2"
+  "carro": "Geely GC2",
+  "foto": "621267-MLB109381361306_042026"
  },
  "MLB6596190314": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Luz teto cortesia",
-  "carro": "Mercedes-Benz CLA"
+  "carro": "Mercedes-Benz CLA",
+  "foto": "960417-MLB109381875642_042026"
  },
  "MLB6596172804": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão pisca-alerta trava",
-  "carro": "Renault Megane"
+  "carro": "Renault Megane",
+  "foto": "870052-MLB109382155936_042026"
  },
  "MLB6596142198": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Chave seta",
-  "carro": "Chevrolet Celta"
+  "carro": "Chevrolet Celta",
+  "motivo": "etiqueta impressa: código impresso (8888838284868)",
+  "foto": "850203-MLB109381371068_042026"
  },
  "MLB4596084437": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão start stop engine",
-  "carro": "Renault Captur"
+  "carro": "Renault Captur",
+  "foto": "614022-MLB110245660347_042026"
  },
  "MLB4596083809": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão vidro elétrico",
-  "carro": "Volkswagen Gol"
+  "carro": "Volkswagen Gol",
+  "foto": "975866-MLB110246430173_042026"
  },
  "MLB4596078485": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Tampa cega obturador aquecimento assento",
-  "carro": "Kia"
+  "carro": "Kia",
+  "foto": "877821-MLB110244374835_042026"
  },
  "MLB4596048407": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão farol milha",
-  "carro": "Volkswagen Gol"
+  "carro": "Volkswagen Gol",
+  "foto": "923928-MLB109381933292_042026"
  },
  "MLB4596047819": {
   "status": "fila",
