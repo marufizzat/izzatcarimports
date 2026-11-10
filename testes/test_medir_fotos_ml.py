@@ -4,6 +4,7 @@ Sem rede e sem o recorte do Mac: cabeçalhos WebP montados à mão, máscaras si
 Tudo em pasta temporária (nunca no site/). O enquadramento em si (lib/quadroFoto.ts) é testado no vitest.
 """
 import json
+import os
 import struct
 import sys
 import tempfile
@@ -497,6 +498,34 @@ def test_codigo_sobrevive_a_reclassificar_e_sai_no_marketing():
         final = json.loads(arq.read_text(encoding="utf-8"))
         assert final["a"] == caixa + ["p", h, mf.INCERTA, "#"], final
         assert final["b"] == caixa + ["m", h], final
+
+
+def test_codigo_so_com_o_texto_do_vision():
+    """No robô (rapidocr), as marcas da foto do código ficam como estão (o limite foi conferido no texto do Vision)."""
+    with tempfile.TemporaryDirectory() as d:
+        arq, pecas, sinais = Path(d) / "caixas.json", Path(d) / "pecas.json", Path(d) / "sinais.json"
+        h = "0123456789abcdef"
+        caixa = [1200, 900, 100, 100, 1100, 800]
+        mf.gravar({"a": caixa + ["p", h], "b": caixa + ["p", h, "#"]}, arq)
+        pecas.write_text(json.dumps([{"id": "MLB1", "oem": "31476671", "fotos": ["a", "b"]}]), encoding="utf-8")
+        mf.gravar({"a": _cod(0.3, "31476671"), "b": _cod(0.0, "")}, sinais)
+        antes = (mf.ARQ, mf.PECAS, mf.SINAIS, os.environ.get("MEDIR_MOTOR"))
+        try:
+            mf.ARQ, mf.PECAS, mf.SINAIS = arq, pecas, sinais
+            os.environ["MEDIR_MOTOR"] = "rembg"
+            mf.main(["--so-juntar"])
+            robo = json.loads(arq.read_text(encoding="utf-8"))
+            os.environ["MEDIR_MOTOR"] = "vision"
+            mf.main(["--so-juntar"])
+            mac = json.loads(arq.read_text(encoding="utf-8"))
+        finally:
+            mf.ARQ, mf.PECAS, mf.SINAIS = antes[:3]
+            if antes[3] is None:
+                os.environ.pop("MEDIR_MOTOR", None)
+            else:
+                os.environ["MEDIR_MOTOR"] = antes[3]
+        assert robo == {"a": caixa + ["p", h], "b": caixa + ["p", h, "#"]}, robo
+        assert mac == {"a": caixa + ["p", h, "#"], "b": caixa + ["p", h]}, mac
 
 
 def test_preparar_dados_le_a_classe_com_a_marca_do_codigo():

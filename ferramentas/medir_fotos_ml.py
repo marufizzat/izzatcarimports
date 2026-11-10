@@ -40,8 +40,8 @@ Foto do código ("#" no fim da entrada, só em foto de classe p ou s): o atalho 
 (lib/quadroFoto.ts: fotoDoCodigo) leva a galeria para ela. É a foto em que o OCR leu o código que a página mostra
 (codigo_da_peca, o mesmo de codigoDaPeca no site), inteiro e começando num pedaço do texto (codigo_no_texto), com 4%+ de
 texto na foto (TEXTO_CODIGO: abaixo disso o código aparece miúdo na galeria); com várias, a de mais texto (a etiqueta de
-perto). Foto em 2+ anúncios só se o código de todos estiver nela. Recalculada no fim de toda rodada, só nas fotos com os
-sinais no cache (no robô, as fotos novas): as outras ficam como estão.
+perto). Foto em 2+ anúncios só se o código de todos estiver nela. Recalculada no fim de toda rodada do Mac (o texto do
+Vision, onde o limite foi conferido), só nas fotos com os sinais no cache; no robô (rapidocr) as marcas ficam como estão.
 
 Só mede/classifica o que falta (nunca baixa de novo o que já tem); grava aos poucos (pode parar e retomar).
 Baixa a foto média (-O, até 500 px) só na memória, e os 64 primeiros bytes da grande (-F) para o tamanho.
@@ -1037,7 +1037,10 @@ def main(argv):
     rep = modelos(dados, pecas)                  # a mesma foto em vários anúncios: modelo do vendedor (marketing)
     for k in rep:
         dados[k] = com_classe(dados[k], "m", hash_da(dados[k]))
-    n_cod = marcar_codigos(dados, cache, pecas)  # "Ver o código na foto" (só nas fotos com o texto lido no cache)
+    # "Ver o código na foto": só com o texto do Vision (o limite de texto foi conferido nele, folha de 10/11). No robô
+    # (rapidocr) as marcas ficam como estão: a foto nova ganha o atalho na próxima rodada do Mac (falso positivo é pior
+    # que não mostrar). MEDIR_CODIGO=1 força.
+    n_cod = marcar_codigos(dados, cache, pecas) if motor == "vision" or os.getenv("MEDIR_CODIGO") == "1" else 0
     contagem = {}
     for e in dados.values():
         c = classe_da(e) or "-"
