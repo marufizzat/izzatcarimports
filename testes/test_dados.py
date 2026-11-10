@@ -251,8 +251,43 @@ def test_anos_e_modelos():
         # ano-modelo do ano que vem ja esta a venda (Kardian 2027); nunca passa de ANO_MAX
         ("Moldura Console Central Renault Kardian 24/27 969132370r", "Renault", "Kardian", "", (2024, min(2027, ANO_MAX))),
     ]
+    casos += [
+        # "AAAAaa" colado (a barra sumiu): 2019 a 2024; o 2008 da Peugeot continua carro
+        ("Moldura Retrovisor Interno Volvo Xc60 2.0 T8 201924 32244473", "Volvo", "XC60", "32244473", (2019, 2024)),
+        ("Botão Trava Portas Peugeot 2008 201719 96750883zd Original", "Peugeot", "2008", "96750883zd", (2017, 2019)),
+        ("Botão Trava Portas Peugeot 2008 200819 96750883zd Original", "Peugeot", "2008", "", (None, None)),
+        # "aa/aa" fora do periodo do Brasil, mas o Yaris de fora existe (o patio tem importado)
+        ("Bomba Tanque Toyota Yaris 06/12 770200d370 Original", "Toyota", "Yaris", "", (2006, 2012)),
+        # 2 algarismos logo depois do carro (ou da versao/motor) = o ano; modelo numerico nunca e ano
+        ("Acabamento Bagagito Traseiro Esquerdo Volvo Xc60 19 31425768 Preto", "Volvo", "XC60", "31425768", (2019, 2019)),
+        ("Central Multimidia Radio Volvo Xc60 T8 21  32326628 Original Prata", "Volvo", "XC60", "", (2021, 2021)),
+        ("Moldura Botao Vidro Dianteiro Direito Honda Fit Lx 15", "Honda", "Fit", "83545T5N", (2015, 2015)),
+        ("Quebra Sol Lado Esquerdo Fiat Toro 23 Original", "Fiat", "Toro", "Não", (2023, 2023)),
+        ("Lanterna Traseira Peugeot 208 15 Original", "Peugeot", "208", "", (2015, 2015)),
+        ("Painel Instrumentos Fiat 500 12 Original", "Fiat", "500", "", (2012, 2012)),
+        # ... mas medida, outra palavra no meio, numero seguido, ano aberto ou carro fora do periodo nao
+        ("Lampada Farol Volvo Xc60 12 V 55w", "Volvo", "XC60", "", (None, None)),
+        ("Chicote Porta Vw Gol 16 Pinos", "Volkswagen", "Gol", "", (None, None)),
+        ("Kit Parafusos Volvo Xc60 Kit 12 Pecas", "Volvo", "XC60", "", (None, None)),
+        ("Moldura Coluna Porta Esquerda Fiat Toro 1.8 16v Vermelho 16/ Vermelho", "Fiat", "Toro", "Não", (None, None)),
+        ("Farol Fiat Toro 16 17 Original", "Fiat", "Toro", "", (None, None)),
+        ("Botao Fiat Toro 12 Original", "Fiat", "Toro", "", (None, None)),
+        ("Chave Seta Limpador Parabrisa Volkswagen G8 21 10076793", "Volkswagen", "", "", (None, None)),
+    ]
     for titulo, marca, modelo, pn, esperado in casos:
         assert anos_do_titulo(titulo, marca, modelo, pn) == esperado, (titulo, anos_do_titulo(titulo, marca, modelo, pn))
+    # a faixa e de outro carro da peca ("Punto" acabou em 2017; "Strada" 18/23): vale a dele, ele vem 1o, e o Punto
+    # e o Idea ficam sem ano (continuam na peca)
+    from preparar_dados import anos_por_modelo, _ler_anos
+    tit = "Suporte Bobina Ignicao Fiat Punto Idea Strada 18/23 55189638"
+    assert anos_do_titulo(tit, "Fiat", "Punto", "", ["Punto", "Idea", "Strada"]) == (2018, 2023)
+    assert anos_do_titulo(tit, "Fiat", "Punto", "") == (None, None)
+    assert anos_por_modelo(["Punto", "Idea", "Strada"], "Fiat", 2018, 2023) == (["Strada", "Punto", "Idea"], [[2018, 2023], None, None])
+    # a regra de sempre continua: o 2o carro fora do periodo sai; o que cabe e cortado
+    assert anos_por_modelo(["Fit", "WR-V"], "Honda", 2015, 2021) == (["Fit", "WR-V"], [[2015, 2021], [2017, 2021]])
+    assert anos_por_modelo(["Toro", "Punto"], "Fiat", 2019, 2023) == (["Toro"], None)
+    # colado que nao e ano (codigo "193145": 1931 nao)
+    assert _ler_anos("Botao Vidro Passageiro Toyota Yaris Hilux 193145", "Toyota")[:2] == (None, None)
     # modelo nunca e outra marca; apelido/chassi vira o carro
     assert modelo_canonico("Volkswagen", "Audi") == ""
     assert modelo_canonico("BMW", "E60") == "Série 5"
