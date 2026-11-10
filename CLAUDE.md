@@ -23,7 +23,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      na página, no filtro, na contagem e no Meu carro dos dois (`site/src/lib/meuCarro.ts`: `modelosDa`,
      `serveNoModelo`, `anosNoModelo`). A URL da peça não muda.
    - **Descrição**: só as seções sobre a peça; "chat do anúncio" vira WhatsApp; sai o dado repetido e a medida-padrão
-     do modelo de anúncio (`DIM_PADRAO_MIN`).
+     do modelo de anúncio (`DIM_PADRAO_MIN`); o que está em espanhol sai (`_espanhol`: tudo em espanhol = só a ficha) e
+     o "tu/teu" do vendedor vira "você/seu" (`sem_tu`).
    Testes: `python testes/test_dados.py`.
 3. `site/` é um projeto **Astro**: `npm --prefix site run build` gera `site/dist/`.
 4. O workflow `.github/workflows/atualizar.yml` faz 1→2→3, confere os links e publica `site/dist` no GitHub Pages

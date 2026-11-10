@@ -1056,6 +1056,29 @@ def test_palavra_cortada_no_fim_e_modelo_colado():
     assert pd.limpar_titulo("Sensor Abc12.0 Vw Gol", k) == "Sensor Abc12.0 Vw Gol"   # não é carro: não parte
 
 
+def test_descricao_sem_espanhol_e_sem_tu():
+    """Rodada 8: descrição copiada em espanhol (câmera de ré do WR-V) e "quando tu freia" no texto do vendedor."""
+    import preparar_dados as pd
+    es = ("La cámara de reversa para Honda WR-V 2017 a 2021 es un accesorio esencial para mejorar la seguridad y la "
+          "comodidad al conducir. Su instalación es sencilla.")
+    assert pd.descricao(es) == ""                                  # tudo em espanhol: só a ficha
+    misto = "Peça original do Honda WR-V, conferida.\n" + es
+    assert pd.descricao(misto) == "<p>Peça original do Honda WR-V, conferida.</p>"
+    # português com palavras que o espanhol também usa: fica
+    pt = "Para garantir a compatibilidade exata, recomendamos conferir o código da peça antes de comprar."
+    assert not pd._espanhol(pt) and pd.descricao(pt).startswith("<p>Para garantir")
+    assert "você freia" in pd.descricao("A lanterna serve pra sinalizar pro carro de tras quando tu freia, da re ou liga o pisca.")
+    assert pd.sem_tu("Tu tens a peça certa. Confira teu carro e tua nota.") == "Você tem a peça certa. Confira seu carro e sua nota."
+    assert pd.sem_tu("pronto pra te ajudar") == "pronto pra ajudar você"
+    assert pd.sem_tu("Peça para Hyundai Tucson tubo") == "Peça para Hyundai Tucson tubo"
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        import re
+        por = json.loads(pecas.read_text(encoding="utf-8"))
+        assert not [x["id"] for x in por if pd._espanhol(re.sub(r"<[^>]+>", " ", x["desc"]))]
+        assert not [x["id"] for x in por if re.search(r"\b(tu|teu|tua|teus|tuas)\b", re.sub(r"<[^>]+>", " ", x["desc"]))]
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

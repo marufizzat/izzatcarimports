@@ -597,6 +597,58 @@ def _sem_repetidos(blocos):
     return saida
 
 
+# Texto do vendedor em outro idioma (anúncio copiado em espanhol: "La cámara de reversa ... es un accesorio"): não vai
+# para o site nem para o feed. Conta as palavras que só o espanhol usa contra as que só o português usa (PT e ES dividem
+# muitas: "para", "de", "que", "modelo"); a linha (ou a frase, numa linha misturada) com 3+ do espanhol e mais que o
+# dobro das do português sai. Conferido no estoque de nov/2026: só a descrição da câmera de ré do WR-V cai.
+_SO_ES = set("""el la los las lo del y con una es su sus muy pero sin más puede pueden hay nuevo nueva nuevos al en un
+cuenta además garantiza funcionamiento instalación seguridad conducir mejor mejorar quienes buscan diseñada diseño
+cámara vehículo vehículos lámparas visión condiciones sencilla manejar estacionamiento cuando donde desde hasta ese
+esa eso estos estas otro otra otros todos todas usted ustedes""".split())
+_SO_PT = set("""o os do da dos das no na nos nas um uma com em ao não é você pelo pela mais peça peças são também muito
+sem seu sua seus suas pra pro quando""".split())
+
+
+def _espanhol(texto):
+    ws = re.findall(r"[a-záéíóúñüâêôãõçà]+", (texto or "").lower())
+    es = sum(1 for w in ws if w in _SO_ES or "ñ" in w or re.search(r"(ción|ciones|dad)$", w))
+    pt = sum(1 for w in ws if w in _SO_PT or re.search(r"(ção|ções|ões|ã|õ)", w))
+    return es >= 3 and es > 2 * pt
+
+
+def _sem_espanhol(linhas):
+    """As linhas sem o que está em espanhol (a linha inteira, ou só as frases dela)."""
+    saida = []
+    for linha in linhas:
+        if _espanhol(linha):
+            continue
+        frases = re.split(r"(?<=[.!?])\s+", linha)
+        if len(frases) > 1 and any(_espanhol(f) for f in frases):
+            linha = " ".join(f for f in frases if not _espanhol(f))
+        saida.append(linha)
+    return saida
+
+
+# "tu"/"teu" no texto do vendedor ("quando tu freia"): o site fala com "você" (o tom das páginas). Só a 2ª pessoa muda;
+# o verbo vai para a forma de "você" ("tu freias" -> "você freia", "tu tens" -> "você tem"). "te ajudar" -> "ajudar você".
+_POSSE_TU = {"teu": "seu", "tua": "sua", "teus": "seus", "tuas": "suas"}
+_VERBO_TU = {"tens": "tem", "és": "é", "vais": "vai", "queres": "quer", "estás": "está", "fazes": "faz",
+             "dizes": "diz", "trazes": "traz", "podes": "pode", "sabes": "sabe", "vês": "vê", "lês": "lê"}
+
+
+def sem_tu(texto):
+    def verbo(m):
+        v = m.group(2)
+        lv = v.lower()
+        novo = _VERBO_TU.get(lv) or (v[:-1] if re.fullmatch(r"[a-zçãõáéíóúâê]{3,}[ae]s", lv) else v)
+        return ("Você " if m.group(1)[0].isupper() else "você ") + novo
+    t = re.sub(r"\b([Tt]u) ([A-Za-zçãõáéíóúâêÇ]+)", verbo, texto or "")
+    t = re.sub(r"\b([Tt]u)\b", lambda m: "Você" if m.group(1)[0] == "T" else "você", t)
+    t = re.sub(r"\b([Tt])(eu|ua|eus|uas)\b",
+               lambda m: (lambda p: p.capitalize() if m.group(1) == "T" else p)(_POSSE_TU["t" + m.group(2)]), t)
+    return re.sub(r"\b([Tt]e) ([a-zçã]{2,}(?:ar|er|ir))\b", r"\2 você", t)
+
+
 def descricao(texto, nome=""):
     """Descricao do ML em HTML limpo: so secoes sobre a peca, titulos com acento,
     sem promessas nao confirmadas, sem CAIXA ALTA, com as listas em lista, sem o
@@ -605,7 +657,7 @@ def descricao(texto, nome=""):
     from html import escape
     blocos, par = [], []
     manter = True          # texto antes do 1o titulo: so se nao tiver promessa
-    linhas = (texto or "").splitlines()
+    linhas = [sem_tu(x) for x in _sem_espanhol((texto or "").splitlines())]
     if _dimensoes(texto) in _DIM_PADRAO:            # medida do modelo, nao da peca
         linhas = [x for x in linhas if not (_DIM_LINHA.match(x.strip()) or _PESO_LINHA.match(x.strip()))]
 
