@@ -1,12 +1,16 @@
 // "Meu carro" — a garagem do cliente. Fica SÓ no navegador dele (localStorage), sem cadastro.
 // Contrato único usado pela abertura, cabeçalho, cartões, catálogo e página da peça:
-//   localStorage['izzatcar.meuCarro'] = {"b":"Volvo","m":"XC60","y":2019}   (y pode ser null)
+//   localStorage['izzatcar.meuCarro'] = {"b":"Volvo","m":"XC60","y":2019,"a":"volvo-xc60","as":[600,900,1200]}
+//   (y pode ser null; a/as são opcionais)
 //   ao mudar: window.dispatchEvent(new CustomEvent('meu-carro', { detail: carro | null }))
 // b = marca e m = modelo EXATAMENTE como nos dados (p.b / p.m); y = ano escolhido.
+// a/as (opcionais) = a arte do carro (/arte/v2/carro-<a>.webp) e as larguras do srcset, guardadas junto para a abertura
+// pôr a arte já no esqueleto, antes do /dados/meu-carro.json chegar (auditoria 4, 2.2). Quem só sabe b/m/y salva sem
+// elas; o seletor completa (lembrarArte) quando a garagem chega. Valor antigo, sem a/as, continua valendo.
 // A peça que serve em 2+ carros traz ms (e ys): ela vale para o carro salvo se ele estiver no ms.
 // Roda em toda página: nada de lib/dados.ts ou lib/garagem.ts aqui (puxariam o pecas.json inteiro).
 
-export type MeuCarro = { b: string; m: string; y: number | null };
+export type MeuCarro = { b: string; m: string; y: number | null; a?: string; as?: number[] };
 /** Resposta de serveNoMeuCarro (a regra está lá). */
 export type Serve = 'sim' | 'confira-ano' | 'falta-ano' | null;
 
@@ -19,10 +23,26 @@ export const ESCOLHIDO = 'meu-carro-escolhido';
 /** A garagem (marca -> modelo -> peças por ano), gerada no build por lib/garagem.ts. */
 export const ARQUIVO_GARAGEM = '/dados/meu-carro.json';
 
+/** Chave de arte válida (só o que vira nome de arquivo: letras minúsculas, números e hífen). */
+export const arteValida = (a: unknown): a is string => typeof a === 'string' && /^[a-z0-9-]{1,80}$/.test(a);
+const largurasValidas = (as: unknown): as is number[] =>
+  Array.isArray(as) && as.length > 0 && as.length <= 6 && as.every((w) => Number.isInteger(w) && w > 0 && w <= 4000);
+
+/** O carro salvo, conferido campo a campo (a/as só entram se forem válidos). */
+export function carroDe(c: unknown): MeuCarro | null {
+  const x = c as Partial<MeuCarro> | null;
+  if (!x || typeof x.b !== 'string' || typeof x.m !== 'string') return null;
+  const r: MeuCarro = { b: x.b, m: x.m, y: typeof x.y === 'number' ? x.y : null };
+  if (arteValida(x.a)) {
+    r.a = x.a;
+    if (largurasValidas(x.as)) r.as = x.as;
+  }
+  return r;
+}
+
 export function lerMeuCarro(): MeuCarro | null {
   try {
-    const c = JSON.parse(localStorage.getItem(CHAVE) || 'null');
-    return c && typeof c.b === 'string' && typeof c.m === 'string' ? { b: c.b, m: c.m, y: typeof c.y === 'number' ? c.y : null } : null;
+    return carroDe(JSON.parse(localStorage.getItem(CHAVE) || 'null'));
   } catch {
     return null;
   }
@@ -36,6 +56,21 @@ export function salvarMeuCarro(c: MeuCarro | null) {
     /* navegador sem armazenamento: segue sem lembrar */
   }
   window.dispatchEvent(new CustomEvent(EVENTO, { detail: c }));
+}
+
+/** Guarda a arte do carro salvo SEM avisar o resto do site (nada muda para quem mostra peças): só a abertura usa,
+ *  na próxima visita. Sem carro salvo, ou outro carro salvo, não faz nada. */
+export function lembrarArte(b: string, m: string, a?: string, as?: number[]) {
+  const c = lerMeuCarro();
+  if (!c || c.b !== b || c.m !== m) return;
+  const novo = carroDe({ ...c, a, as });
+  if (!novo || (novo.a === c.a && String(novo.as) === String(c.as))) return;
+  if (!novo.a) { delete novo.a; delete novo.as; }
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(novo));
+  } catch {
+    /* sem armazenamento */
+  }
 }
 
 /** "xc60" = "XC 60" = "XC-60" */

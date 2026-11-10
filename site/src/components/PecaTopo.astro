@@ -54,18 +54,20 @@ const perguntas = [
     pergunta: 'Como sei que serve no meu carro?',
     resposta: [
       carro ? `Esta peça é ${p.m ? 'do' : 'de'} ${carro}${anos ? `, ${anos}` : ''}.` : '',
-      cod ? `Compare o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.`
-          : 'Ela não tem código gravado: para conferir, mande o modelo e o ano do seu carro no WhatsApp.',
+      cod ? `Compara o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.`
+          : 'Ela não tem código gravado: para conferir, manda o modelo e o ano do seu carro no WhatsApp.',
     ].filter(Boolean).join(' '),
     link: cod ? { href: '#como-achar-codigo', texto: 'Onde achar o código' } : undefined,
   },
   {
     pergunta: 'E se não servir?',
-    // Só o que o site já afirma (90 dias, WhatsApp, a gente resolve). A regra de troca por incompatibilidade
-    // (prazo, frete) ainda não foi definida pelo Maruf: nada de "troca ou devolução" aqui (auditoria 3, item 1.2).
-    resposta: 'Toda peça tem 90 dias de garantia: fale no WhatsApp com o número do pedido que a gente resolve. '
+    // Só o que o site já afirma (a gente confere antes, 90 dias, WhatsApp, a gente avalia e resolve). A regra de troca por
+    // incompatibilidade (prazo, frete, compra errada) ainda não foi definida pelo Maruf: nada de "troca ou devolução"
+    // aqui nem na garantia (auditorias 3, item 1.2, e 4, item 3.2).
+    resposta: 'Na dúvida, manda o modelo e o ano antes de comprar: a gente confere na peça. Depois da compra, são 90 dias '
+      + 'de garantia: fala no WhatsApp com o número do pedido que a gente avalia e resolve. '
       + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
-    link: { href: '/garantia.html', texto: 'Ver garantia e trocas' },
+    link: { href: '/garantia.html', texto: 'Ver a garantia' },
   },
   {
     pergunta: 'Como é o envio?',
@@ -125,7 +127,7 @@ const perguntas = [
       <div class="compra-botoes" data-compra-botoes>
         {/* desconto pelo WhatsApp (pedido do dono): selo claro colado no canto do botão laranja, sem ocupar altura
             (a 1ª tela do celular continua com o botão à vista). Só no WhatsApp, nunca no Mercado Livre. */}
-        <p class="compra-desconto"><Icone nome="etiqueta" />{DESCONTO_WHATS}% de desconto<span class="compra-desconto-onde">&nbsp;pelo WhatsApp</span></p>
+        <p class="compra-desconto"><Icone nome="etiqueta" /><span>{DESCONTO_WHATS}% de desconto<span class="compra-desconto-onde"> pelo WhatsApp</span></span></p>
         <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" />Pedir no WhatsApp</a>
         <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra>Comprar no Mercado Livre</a>
       </div>

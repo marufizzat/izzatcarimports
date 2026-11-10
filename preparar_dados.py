@@ -432,7 +432,8 @@ _TROCAS = [
 # Estado prometido sem olhar a peca ("Em excelente estado de conservação", "semi nova", "perfeito funcionamento"):
 # a frase vira o fato neutro. O rotulo fica ("Condição: Peça usada conferida; ...").
 ESTADO_NEUTRO = "Peça usada conferida; o estado aparece nas fotos"
-_PROMESSA_ESTADO = re.compile(r"\b(excelente estado|estado excelente|[oó]timo estado|perfeito funcionamento|"
+_PROMESSA_ESTADO = re.compile(r"\b(excelente estado|estado excelente|[oó]timo estado|perfeito estado|estado perfeito|"
+                              r"perfeito funcionamento|"
                               r"funcionamento perfeito|funcionando perfeitamente|semi ?nov[ao]|seminov[ao]|"
                               r"sem defeitos?|zero defeitos?|nenhum defeito)\b", re.I)
 # Promessa que sai com a frase: "100% testado", "garantido/a", "encaixe perfeito" fora do modelo, o "testada e
@@ -1005,8 +1006,26 @@ def nome_limpo(titulo, marca, modelo, outros=()):
             frase.append(w.replace(nucleo, _NOMES_PROPRIOS[gi.chave_modelo(nucleo)]))
         else:
             frase.append(w)
-    nome = _brake_light(" ".join(frase).strip(" -/"))
+    nome = _brake_light(_sem_palavra_repetida(" ".join(frase).strip(" -/")))
     return nome if len(nome) >= 4 or nome.lower() in SIGLAS else titulo
+
+
+# grafia de marca para versoes que o titulo escreve em minusculas (auditoria 4, 3.3)
+_GRAFIA_VERSAO = {"xdrive": "xDrive", "sdrive": "sDrive", "thp": "THP", "tsi": "TSI", "tfsi": "TFSI", "tdi": "TDI"}
+
+
+def _sem_palavra_repetida(nome):
+    """A mesma palavra (5+ letras) de novo mais adiante sai ("Jogo bancos terracota interior xdrive kit terracota"
+    -> "Jogo bancos terracota interior xDrive kit"); versao com a grafia da marca (xDrive, THP, TSI)."""
+    vistas, saida = set(), []
+    for w in nome.split(" "):
+        k = w.lower().strip("(),.")
+        if len(k) >= 5 and k.isalpha() and k in vistas:
+            continue
+        vistas.add(k)
+        g = _GRAFIA_VERSAO.get(k)
+        saida.append(w.replace(w.strip("(),."), g) if g else w)
+    return " ".join(saida)
 
 
 # Codigo de motor, chassi ou versao escrito no nome ("m270", "w246", "p250", "yd25", "g6da"): em MAIUSCULA.
@@ -2454,6 +2473,10 @@ _PALAVRAS_TEXTO = {
     "periodo": "período", "conteudo": "conteúdo", "citroen": "citroën", "serie": "série", "camara": "câmara",
     "duvida": "dúvida", "logistica": "logística", "plasticos": "plásticos", "metalicos": "metálicos",
     "versoes": "versões", "versao": "versão", "forca": "força", "gas": "gás", "pe": "pé",
+    # auditoria 4, 7.3: as que ainda saíam sem acento nas descrições
+    "botoes": "botões", "saidas": "saídas", "alem": "além", "genuino": "genuíno", "genuina": "genuína",
+    "genuinos": "genuínos", "genuinas": "genuínas", "estetico": "estético", "estetica": "estética",
+    "esteticos": "estéticos", "esteticas": "estéticas", "eletrico": "elétrico", "eletrica": "elétrica",
 }
 # "-avel/-aveis" e sempre "-ável/-áveis" ("ajustavel", "memorizaveis")
 _REGRAS_TEXTO = [(re.compile(r"(?<=[a-z]{2})aveis\b"), "áveis"), (re.compile(r"(?<=[a-z]{2})avel\b"), "ável")]

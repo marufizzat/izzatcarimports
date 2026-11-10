@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   serveNoMeuCarro, estoqueDoCarro, linkCatalogo, nomeCarro, modelosDa, serveNoModelo, anosNoModelo, nomeModelos,
-  atributosModelos, lerModelos, type MeuCarro, type GaragemMin,
+  atributosModelos, lerModelos, carroDe, lerMeuCarro, lembrarArte, salvarMeuCarro, CHAVE, type MeuCarro, type GaragemMin,
 } from './meuCarro';
 
 const lanterna = { b: 'Volvo', m: 'XC60', y: [2018, 2024] as [number, number] }; // 2ª geração
@@ -126,5 +126,42 @@ describe('links e nomes', () => {
   it('nome do carro', () => {
     expect(nomeCarro(xc60(2019))).toBe('Volvo XC60 2019');
     expect(nomeCarro(xc60(null))).toBe('Volvo XC60');
+  });
+});
+
+// auditoria 4, 2.2: a arte do carro (a/as) vai junto do carro salvo, opcional; valor antigo continua valendo
+describe('carro salvo com a arte', () => {
+  const mem = new Map<string, string>();
+  const g = globalThis as any;
+  g.localStorage = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) };
+  g.window = g.window ?? { dispatchEvent: () => true };
+  g.CustomEvent = g.CustomEvent ?? class { constructor(public type: string, public init?: unknown) {} };
+
+  it('valor antigo, sem a/as: lido como antes', () => {
+    mem.set(CHAVE, JSON.stringify({ b: 'Volvo', m: 'XC60', y: 2019 }));
+    expect(lerMeuCarro()).toEqual({ b: 'Volvo', m: 'XC60', y: 2019 });
+  });
+  it('a/as válidos ficam; inválidos saem (nunca vira caminho estranho)', () => {
+    expect(carroDe({ b: 'Volvo', m: 'XC60', y: null, a: 'volvo-xc60', as: [600, 900, 1200] }))
+      .toEqual({ b: 'Volvo', m: 'XC60', y: null, a: 'volvo-xc60', as: [600, 900, 1200] });
+    expect(carroDe({ b: 'Volvo', m: 'XC60', y: null, a: '../x"><img', as: [600] })).toEqual({ b: 'Volvo', m: 'XC60', y: null });
+    expect(carroDe({ b: 'Volvo', m: 'XC60', y: null, a: 'volvo-xc60', as: ['600'] })).toEqual({ b: 'Volvo', m: 'XC60', y: null, a: 'volvo-xc60' });
+    expect(carroDe({ b: 1, m: 'XC60' })).toBeNull();
+  });
+  it('lembrarArte completa o carro salvo sem mudar o resto; outro carro: não mexe', () => {
+    mem.set(CHAVE, JSON.stringify({ b: 'Volvo', m: 'XC60', y: 2019 }));
+    lembrarArte('Volvo', 'XC60', 'volvo-xc60', [600, 900, 1200]);
+    expect(lerMeuCarro()).toEqual({ b: 'Volvo', m: 'XC60', y: 2019, a: 'volvo-xc60', as: [600, 900, 1200] });
+    lembrarArte('Fiat', 'Toro', 'fiat-toro', [600]);
+    expect(lerMeuCarro()?.a).toBe('volvo-xc60');
+    // a arte saiu do site: a chave sai também
+    lembrarArte('Volvo', 'XC60', undefined, undefined);
+    expect(lerMeuCarro()).toEqual({ b: 'Volvo', m: 'XC60', y: 2019 });
+  });
+  it('a faixa da peça salva o ano sem perder a arte ({...c, y})', () => {
+    mem.set(CHAVE, JSON.stringify({ b: 'Volvo', m: 'XC60', y: null, a: 'volvo-xc60', as: [600, 1200] }));
+    const c = lerMeuCarro()!;
+    salvarMeuCarro({ ...c, y: 2020 });
+    expect(JSON.parse(mem.get(CHAVE)!)).toEqual({ b: 'Volvo', m: 'XC60', y: 2020, a: 'volvo-xc60', as: [600, 1200] });
   });
 });

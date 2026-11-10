@@ -17,7 +17,7 @@
 @media (min-width: 900px) { .inst-duas { grid-template-columns: 1fr 1fr; align-items: center; } }
 
 .inst-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-.inst-botao { white-space: normal; height: auto; min-height: 52px; padding-block: 12px; text-align: center; line-height: 1.2; max-width: 100%; }
+.inst-botao { white-space: normal; height: auto; min-height: var(--h); padding-block: 12px; text-align: center; line-height: 1.2; max-width: 100%; }
 .inst-quebra { overflow-wrap: anywhere; }
 
 /* listas com check (linha Lucide, so o icone) */

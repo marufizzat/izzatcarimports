@@ -20,4 +20,7 @@ const { produto, rodapeSelos = true, ...resto } = Astro.props;
 <style is:global>
   .pular { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: 10px; background: var(--ink); color: var(--bg); }
   .pular:focus { top: 12px; }
+  /* rede de segurança (auditoria 4, 1.1): o que vazar do conteúdo não alarga a página no celular. clip (e não hidden)
+     não cria caixa de rolagem: o sticky do catálogo e da galeria continua funcionando */
+  main#conteudo { overflow-x: clip; }
 </style>

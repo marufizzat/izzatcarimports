@@ -31,7 +31,7 @@ const reputacao = !!r.reputacao && !COM_REPUTACAO.has(caminho);
       <a href="/catalogo.html">Catálogo completo</a>
       <a href="/carros.html">Peças por carro</a>
       {marcas.map((m) => { const l = logoInfo(m.k, 20, 15); return <a class="rodape-marca-link" href={`/marca/${m.k}.html`}><span class="rodape-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} loading="lazy" />}</span>{m.n}</a>; })}
-      <a class="rodape-todas" href="/index.html#t-marcas">Todas as marcas<span aria-hidden="true"> →</span></a>
+      <a class="rodape-todas" href="/#t-marcas">Todas as marcas<span aria-hidden="true"> →</span></a>
     </nav>
     <nav aria-label="Comprar"><b>Comprar</b>
       <a href="/como-comprar.html">Como comprar</a>

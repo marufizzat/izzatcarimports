@@ -43,7 +43,7 @@ const logos = Object.fromEntries(r.marcas.flatMap((m) => {
 }));
 const ld = {
   '@context': 'https://schema.org', '@type': 'BreadcrumbList',
-  itemListElement: [['Início', '/index.html'], ['Catálogo', '/catalogo.html']].map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })),
+  itemListElement: [['Início', '/'], ['Catálogo', '/catalogo.html']].map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })),
 };
 // Linha de confiança do topo (só fatos). Ícones de linha (desenho Lucide, licença ISC).
 const confianca: [string, string][] = [
@@ -54,13 +54,13 @@ const confianca: [string, string][] = [
 ];
 ---
 <Pagina titulo="Catálogo de peças originais | Izzat Car Imports"
-        descricao={`Busque entre ${r.total.toLocaleString('pt-BR')} peças originais de desmanche legalizado: pelo nome, pelo carro ou pelo código gravado. Nota fiscal e 90 dias de garantia.`}>
+        descricao={`Busca entre ${r.total.toLocaleString('pt-BR')} peças originais de desmanche legalizado: pelo nome, pelo carro ou pelo código gravado. Nota fiscal e 90 dias de garantia.`}>
   <script is:inline slot="head" set:html={scriptTopo} />
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <div class="cat-pagina">
     <div class="moldura">
       <div class="cat-cabeca">
-        <nav class="cat-trilha" aria-label="Você está em"><a href="/index.html">Início</a><span aria-hidden="true">/</span><span aria-current="page">Catálogo</span></nav>
+        <nav class="cat-trilha" aria-label="Você está em"><a href="/">Início</a><span aria-hidden="true">/</span><span aria-current="page">Catálogo</span></nav>
         <div class="cat-cabeca-linha">
           <h1 class="display" data-cat-titulo>Catálogo de peças</h1>
           {/* título com os filtros do endereço, antes da pintura (a MESMA regra de tituloCatalogo em Catalogo.tsx) */}
@@ -146,7 +146,7 @@ const confianca: [string, string][] = [
   .cat-busca input { font-size: 16px; }
   /* só o "×" do site (o do navegador some) */
   .cat-busca input::-webkit-search-cancel-button, .cat-busca input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
-  @media (min-width: 1024px) { .cat-busca { height: 58px; padding-left: 18px; } .cat-busca input { font-size: 17px; } .cat-busca .botao { --h: 44px; } }
+  @media (min-width: 1024px) { .cat-busca { height: 58px; padding-left: 18px; } .cat-busca input { font-size: 17px; } .cat-busca .botao { --h: var(--botao-p); } }
   .cat-buscar { display: none; }
   @media (min-width: 1024px) { .cat-buscar { display: inline-flex; } }
   .cat-limpar-texto { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ink-3); }
@@ -223,7 +223,7 @@ const confianca: [string, string][] = [
   .gv .com-logo .cat-opcao { min-height: 50px; }
   .gv .cat-nada { padding-inline: 2px; font-size: 15px; }
   .cat-gaveta-rodape { display: grid; grid-template-columns: auto 1fr; gap: 10px; }
-  .cat-gaveta-rodape .botao { width: auto; --h: 52px; }
+  .cat-gaveta-rodape .botao { width: auto; --h: var(--botao-p); }
   .cat-gaveta-rodape .botao[disabled] { opacity: .45; cursor: default; }
 
   /* topo dos resultados: a linha do total tem altura fixa (o número chega depois sem empurrar a grade) */
@@ -317,7 +317,7 @@ const confianca: [string, string][] = [
   .cat-aviso b, .cat-erro b { display: block; font-size: 16.5px; line-height: 1.3; overflow-wrap: anywhere; }
   .cat-aviso span, .cat-erro span { display: block; font-size: 14.5px; line-height: 1.45; color: var(--ink-2); }
   .cat-aviso-botoes, .cat-erro-botoes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; }
-  .cat-aviso .botao, .cat-erro .botao { --h: 46px; }
+  .cat-aviso .botao, .cat-erro .botao { --h: var(--botao-p); }
   @media (min-width: 900px) { .cat-aviso, .cat-erro { grid-template-columns: auto minmax(0, 1fr) auto; } .cat-aviso-botoes, .cat-erro-botoes { grid-column: auto; } }
   @media (max-width: 560px) { .cat-aviso-botoes .botao, .cat-erro-botoes .botao { flex: 1 1 100%; } }
   .cat-avise svg { color: var(--accent-text); }
