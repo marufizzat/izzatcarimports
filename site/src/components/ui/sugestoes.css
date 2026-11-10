@@ -71,3 +71,19 @@
 @keyframes sb-entrar{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @keyframes sb-girar{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.sb-lista,.sb-giro{animation:none!important}}
+/* buscas recentes (campo vazio): título e "Limpar" em cima, cada busca com o relógio e a seta */
+.sb-rec-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 8px 4px 12px;font-size:13px;font-weight:650;color:var(--ink-3)}
+.sb-rec-limpar{min-height:40px;padding:0 10px;border:0;border-radius:10px;background:transparent;color:var(--accent-text);font-weight:650;font-size:14px;cursor:pointer}
+.sb-rec-limpar:hover{background:var(--surface-2)}
+.sb-rec-limpar:focus-visible{outline:3px solid var(--foco);outline-offset:-3px}
+.sb-op.sb-recente{grid-template-columns:40px minmax(0,1fr) auto;grid-template-areas:"foto txt preco";min-height:52px;padding:6px 12px 6px 8px}
+.sb-rec-ic{grid-area:foto;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-3)}
+.sb-rec-ic svg{width:19px;height:19px}
+.sb-rec-txt{grid-area:txt;min-width:0;font-size:15px;font-weight:560;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-recente .sb-ir svg{width:18px;height:18px}
+/* a versão ("T8", "2.0") ao lado do carro, como a pílula do cartão (.etiqueta-dif); o carro encolhe com "…", a pílula e os anos não */
+.sb-txt small.sb-carro{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+.sb-carro-nome{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sb-dif{flex:none;padding:1px 5px;border-radius:5px;background:rgb(16 16 20 / .06);box-shadow:inset 0 0 0 1px rgb(16 16 20 / .09);font-size:11px;font-weight:700;font-stretch:94%;line-height:1.3;letter-spacing:.01em;color:var(--ink)}
+.sb-carro-anos{flex:none}
+@media (max-width:400px){.sb-op.sb-recente{grid-template-columns:36px minmax(0,1fr) auto;grid-template-areas:"foto txt preco";min-height:50px}}

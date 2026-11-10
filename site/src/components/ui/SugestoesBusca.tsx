@@ -5,6 +5,8 @@
 // No topo, o carro (ou a marca, ou o sistema) que a pessoa digitou, com a contagem. No pé, preso, "Ver todos" e, por
 // último, "Não achou? A gente procura no pátio" (WhatsApp com o digitado + o carro, a MESMA mensagem do bloco do catálogo:
 // lib/patio.ts), sempre que há 3+ letras, também sem nenhuma sugestão (cliente oculto 10/11, melhoria 2).
+// Campo vazio: as últimas buscas da pessoa (até 5, só no navegador dela: lib/buscasRecentes.ts), com "Limpar".
+// Peça com a mesma versão de outra ("T8", "2.0": campo dif) leva a pílula ao lado do carro, como no cartão.
 import {
   useEffect, useId, useLayoutEffect, useMemo, useRef, useState,
   type FocusEvent as FE, type FormEvent as FormE, type KeyboardEvent as KE,
@@ -14,6 +16,7 @@ import { icone } from '../catalogo/etiqueta';
 import { whatsUrl } from '../../lib/whats';
 import { pedidoPatio } from '../../lib/patio';
 import { lerMeuCarro } from '../../lib/meuCarro';
+import { guardarBusca, lerRecentes, limparRecentes } from '../../lib/buscasRecentes';
 import './sugestoes.css';
 
 type Props = {
@@ -62,8 +65,15 @@ const IconeSeta = () => (
   </svg>
 );
 const IconeSprite = ({ nome }: { nome: string }) => <svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone(nome)} /></svg>;
+const IconeRelogio = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l3 2" />
+  </svg>
+);
+const anosTxt = (y: Item['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}–${y[1]}`) : '');
 
 type Op =
+  | { tipo: 'recente'; q: string }
   | { tipo: 'atalho'; a: Atalho }
   | { tipo: 'item'; it: Item }
   | { tipo: 'patio' }
@@ -78,6 +88,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   const [estado, setEstado] = useState<'parado' | 'carregando' | 'erro' | 'pronto'>('parado');
   const [foco, setFoco] = useState(false);
   const [ativo, setAtivo] = useState(-1);
+  const [recentes, setRecentes] = useState<string[]>([]);
   const raiz = useRef<HTMLDivElement>(null);
   const form = useRef<HTMLFormElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -96,6 +107,9 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   );
   const aberto = foco && q.trim().length >= 2;
   const textoBusca = q.trim();
+  // campo vazio: as buscas recentes (se houver)
+  const abertoRecentes = foco && !textoBusca && recentes.length > 0;
+  const listaAberta = aberto || abertoRecentes;
   const termoTela = curto(termo.trim() || textoBusca);
   const atalhos = res?.atalhos ?? [];
   const semResultado = estado === 'pronto' && !!res && res.total === 0;
@@ -106,7 +120,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   // com atalho no topo, na busca aproximada ou com a linha do pátio no pé, menos peças: a lista quase cabe sem rolar
   const itens = res ? res.itens.slice(0, (res.aproximado ? 4 : atalhos.length ? 5 : 6) - (comPatio ? 1 : 0)) : [];
 
-  const ops: Op[] = [
+  const ops: Op[] = abertoRecentes ? recentes.map((r) => ({ tipo: 'recente' as const, q: r })) : [
     ...atalhos.map((a) => ({ tipo: 'atalho' as const, a })),
     ...itens.map((it) => ({ tipo: 'item' as const, it })),
     ...(!semResultado ? [{ tipo: 'ver' as const }] : []),
@@ -116,7 +130,8 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   // Aviso para o leitor de tela, numa região viva que existe SEMPRE (a que nasce junto com a lista costuma ser pulada):
   // quantas sugestões apareceram, ou que não achou nada.
   const nSug = ops.filter((o) => o.tipo === 'item' || o.tipo === 'atalho').length;
-  const anuncio = !aberto ? ''
+  const anuncio = abertoRecentes ? `${recentes.length === 1 ? '1 busca recente' : `${recentes.length} buscas recentes`}, usa as setas.`
+    : !aberto ? ''
     : mostraCarregando ? 'Carregando as peças…'
     : erro ? 'Não deu para carregar a busca agora.'
     : semResultado ? `Nada com “${termoTela}” no site.`
@@ -131,7 +146,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   // celular com o teclado aberto: a lista termina acima do teclado (o "Ver todos" preso no pé fica à vista)
   useLayoutEffect(() => {
     const el = lista.current;
-    if (!aberto || !el) return;
+    if (!listaAberta || !el) return;
     const vv = window.visualViewport;
     const ajustar = () => {
       const r = raiz.current?.getBoundingClientRect();
@@ -147,7 +162,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       vv?.removeEventListener('resize', ajustar);
       vv?.removeEventListener('scroll', ajustar);
     };
-  }, [aberto]);
+  }, [listaAberta]);
 
   const carregar = () => {
     if (busca || estado === 'carregando') return;
@@ -164,6 +179,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   useEffect(() => {
     if (autoFoco) {
       setFoco(true);
+      setRecentes(lerRecentes());
       carregar();
     }
   }, []);
@@ -173,6 +189,13 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     ? whatsUrl(pedidoPatio({ q: textoBusca, carroDaBusca: res?.carros[0] ?? null, meuCarro: lerMeuCarro() }).texto)
     : '';
   const escolher = (op: Op) => {
+    if (op.tipo === 'recente') {
+      guardarBusca(op.q);
+      window.location.href = `/catalogo.html?${new URLSearchParams({ q: op.q })}`;
+      return;
+    }
+    // o que a pessoa digitou vira busca recente (também quando ela escolhe uma sugestão)
+    if (op.tipo !== 'patio') guardarBusca(textoBusca);
     if (op.tipo === 'atalho') window.location.href = op.a.href;
     else if (op.tipo === 'item') window.location.href = `/peca/${op.it.h}.html`;
     // link de verdade (o clique conta no GA4 com o data-botao e abre noutra aba), nunca window.open
@@ -189,12 +212,12 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       e.preventDefault();
       setAtivo((a) => (a <= 0 ? total - 1 : a - 1));
     } else if (e.key === 'Enter') {
-      if (aberto && ativo >= 0 && ops[ativo]) {
+      if (listaAberta && ativo >= 0 && ops[ativo]) {
         e.preventDefault();
         escolher(ops[ativo]);
       }
       // sem opcao marcada: o formulario envia para /catalogo.html?q=
-    } else if (e.key === 'Escape' && aberto) {
+    } else if (e.key === 'Escape' && listaAberta) {
       e.preventDefault();
       setFoco(false);
       setAtivo(-1);
@@ -216,6 +239,13 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
 
   const onSubmit = (e: FormE<HTMLFormElement>) => {
     if (!textoBusca) e.preventDefault();
+    else guardarBusca(textoBusca);
+  };
+  const limparHistorico = () => {
+    limparRecentes();
+    setRecentes([]);
+    setAtivo(-1);
+    input.current?.focus();
   };
 
   const opcao = (op: Op, k: number) => {
@@ -228,6 +258,15 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       onClick: () => escolher(op),
     } as const;
     const on = ativo === k ? ' on' : '';
+    if (op.tipo === 'recente') {
+      return (
+        <li key={`r-${op.q}`} {...comum} className={`sb-op sb-recente${on}`}>
+          <span className="sb-rec-ic"><IconeRelogio /></span>
+          <span className="sb-rec-txt">{op.q}</span>
+          <span className="sb-ir"><IconeSeta /></span>
+        </li>
+      );
+    }
     if (op.tipo === 'atalho') {
       return (
         <li key={`a-${op.a.href}`} {...comum} className={`sb-op sb-atalho${on}`}>
@@ -249,7 +288,13 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
           </span>
           <span className="sb-txt">
             <b>{it.n}</b>
-            <small>{carroAnos(it)}</small>
+            {it.dif ? (
+              <small className="sb-carro">
+                <span className="sb-carro-nome">{carroAnos({ ...it, y: null })}</span>
+                <span className="sb-dif">{it.dif}</span>
+                {it.y && <span className="sb-carro-anos">· {anosTxt(it.y)}</span>}
+              </small>
+            ) : <small>{carroAnos(it)}</small>}
           </span>
           <span className="sb-preco">{moeda.format(it.p)}</span>
         </li>
@@ -302,10 +347,10 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
           value={q}
           role="combobox"
           aria-label="Buscar peças"
-          aria-expanded={aberto}
+          aria-expanded={listaAberta}
           aria-controls={listaId}
           aria-autocomplete="list"
-          aria-activedescendant={aberto && ativo >= 0 ? `${uid}-op-${ativo}` : undefined}
+          aria-activedescendant={listaAberta && ativo >= 0 ? `${uid}-op-${ativo}` : undefined}
           placeholder={placeholder}
           autoComplete="off"
           autoCapitalize="none"
@@ -319,6 +364,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
           }}
           onFocus={() => {
             setFoco(true);
+            setRecentes(lerRecentes());
             carregar();
           }}
           onKeyDown={onKey}
@@ -349,6 +395,17 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       </form>
 
       <p className="sr-only" role="status">{anuncio}</p>
+      {abertoRecentes && (
+        <div className="sb-lista" ref={lista}>
+          <div className="sb-rec-topo">
+            <span id={`${uid}-rec`}>Buscas recentes</span>
+            <button type="button" className="sb-rec-limpar" aria-label="Limpar as buscas recentes" onMouseDown={(e) => e.preventDefault()} onClick={limparHistorico}>Limpar</button>
+          </div>
+          <ul id={listaId} role="listbox" aria-labelledby={`${uid}-rec`}>
+            {ops.map((op, k) => opcao(op, k))}
+          </ul>
+        </div>
+      )}
       {aberto && (
         <div className="sb-lista" ref={lista}>
           {mostraCarregando && (

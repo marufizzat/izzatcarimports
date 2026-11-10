@@ -1203,6 +1203,34 @@ def _lado(w):
     return lados.pop() if partes and len(lados) == 1 and None not in lados else None
 
 
+# Lado e posição da peça: as fichas "Esquerdo · Direito" e "Dianteiro · Traseiro" do catálogo (colunas "l" e "pos" do
+# busca.json), lidos do NOME LIMPO. No Brasil o motorista vai à esquerda: "motorista" = esquerdo, "passageiro" = direito
+# (menos na luz do airbag do passageiro, que fica no meio do painel). Os dois lados no nome ("Acabamento trilho esquerdo
+# banco direito") = sem lado; as duas posições ("dianteira/traseira") = sem posição. "Tampa traseira" é a porta-malas:
+# o que vai nela fica atrás do carro ("Lanterna tampa traseira esquerda" = esquerda e traseira; "Amortecedor tampa
+# traseira" = traseiro, e na busca "amortecedor traseiro" o nome que diz "traseiro" vem antes: lib/busca.ts).
+_LADO_NOME = {"esquerdo": "E", "esquerda": "E", "esquerdos": "E", "esquerdas": "E", "motorista": "E",
+              "direito": "D", "direita": "D", "direitos": "D", "direitas": "D", "passageiro": "D"}
+_POS_NOME = {"dianteiro": "D", "dianteira": "D", "dianteiros": "D", "dianteiras": "D", "frontal": "D",
+             "traseiro": "T", "traseira": "T", "traseiros": "T", "traseiras": "T"}
+
+
+def lado_posicao(nome, tipo=""):
+    """('E' | 'D' | '', 'D' | 'T' | 'A' | ''): o lado (esquerdo/direito) e a posição (dianteiro/traseiro) que o nome diz.
+    As duas posições no nome ("dianteira/traseira") = 'A' (serve nas duas: entra nas duas fichas). O nome sem posição
+    usa a do tipo da peça ("Lanternas Traseiras": "Lanterna mala esquerda" é traseira; a busca antiga achava pelo tipo)."""
+    ws = re.findall(r"[a-z0-9]+", _sem(nome or ""))
+    luz_airbag = "luz" in ws and "airbag" in ws
+    lados = {_LADO_NOME[w] for w in ws
+             if w in _LADO_NOME and not (luz_airbag and w in ("motorista", "passageiro"))}
+    posicoes = {_POS_NOME[w] for w in ws if w in _POS_NOME}
+    if not posicoes and tipo:
+        do_tipo = {_POS_NOME[w] for w in re.findall(r"[a-z0-9]+", _sem(tipo)) if w in _POS_NOME}
+        posicoes = do_tipo if len(do_tipo) == 1 else set()
+    pos = posicoes.pop() if len(posicoes) == 1 else "A" if len(posicoes) == 2 else ""
+    return (lados.pop() if len(lados) == 1 else ""), pos
+
+
 def _sem_lado_repetido(ws):
     """'Lanterna traseira esquerda esquerdo/motorista' -> 'Lanterna traseira esquerda';
     'Maçaneta interna esquerda cromada lado esquerdo (motorista)' -> 'Maçaneta interna esquerda cromada'.
@@ -3503,6 +3531,9 @@ def main():
         "ys": {str(i): x["ys"] for i, x in enumerate(pecas) if x.get("ys")},
         # mesma peca com preco diferente: a versao que o titulo diz ("T8", "2.0"), so nas que tem: {indice: "T8"}
         "dif": {str(i): x["dif"] for i, x in enumerate(pecas) if x.get("dif")},
+        # lado e posição pelo nome (lado_posicao; a posição, senão, pelo tipo): uma letra por peça, '0' quando não diz
+        "l": "".join(lado_posicao(x["n"], x["s"])[0] or "0" for x in pecas),
+        "pos": "".join(lado_posicao(x["n"], x["s"])[1] or "0" for x in pecas),
     }
 
     marcar_datas(pecas, prods)
