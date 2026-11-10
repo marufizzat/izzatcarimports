@@ -194,7 +194,7 @@ type ComoFiltrar = { derivado?: boolean; semLado?: boolean; semPos?: boolean };
 const codigosDa = (it: Item) => (it.o ? it.o.split(' ') : []);
 
 // o peso das outras formas de dizer (lib/sinonimos.ts) perto da palavra digitada
-const PESO_SINONIMO = 0.4;
+const PESO_SINONIMO = 0.25;
 
 // palavras que não dizem qual é a peça ("peça original para xc60", VAZIAS em lib/sinonimos.ts): não precisam estar no
 // anúncio (tudo no site é peça original); só contam se a busca tiver só elas

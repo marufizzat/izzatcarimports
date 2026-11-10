@@ -210,7 +210,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   busca.json custaria em toda peça): "sinaleira" = lanterna, "máquina de vidro" = motor/máquina vidro, "pisca" = seta,
   "farolete" = farol de milha, "frente" = grade/farol/capô/para-choque dianteiro, "central"/"ECU" = módulo, "TBI" = corpo
   de borboleta, "caneta" = bobina, "mola a gás" = amortecedor da tampa/capô, "tapete" = carpete, "estepe"/"roda"... Só
-  ACRESCENTA alternativas (a palavra digitada continua valendo), a frase mais longa primeiro, sem as palavras vazias
+  ACRESCENTA alternativas (a palavra digitada continua valendo e pesa mais: sinônimo × 0,25, nome que diz o digitado
+  × 1,5), a frase mais longa primeiro, sem as palavras vazias
   ("de", "da"...); o plural vale sozinho ("faróis" = farol, só a palavra inteira). Cada linha aponta para um nome que
   EXISTE no estoque (`sinonimos.test.ts` confere); tipo novo no estoque = conferir a tabela. O "começa pela palavra" e o
   `bate()` (bloco "Não achou?") usam as mesmas formas.
