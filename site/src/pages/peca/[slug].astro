@@ -5,11 +5,12 @@ import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import AbasDetalhes from '../../components/peca/AbasDetalhes.astro';
 import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
+import VaiJunto from '../../components/peca/VaiJunto.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
 import { blocoPeca, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
 import { modelosDa } from '../../lib/meuCarro';
-import { doMesmoCarro } from '../../lib/relacionadas';
+import { doMesmoCarro, vaiJunto } from '../../lib/relacionadas';
 import { nomeModelos } from '../../lib/meuCarro';
 import { nomeCompleto, nomeMensagem, titulosPecas } from '../../lib/nomePeca';
 import { descricaoPeca, descricaoLink, tituloLink } from '../../lib/descricao';
@@ -34,6 +35,24 @@ function porCarro(): Map<string, Peca[]> {
     }
   }
   return _porCarro;
+}
+
+// Peças por modelo, contando as de 2+ carros em cada um (o "Vai junto" de um XC60 vê a capa que serve no S60 e no XC60).
+let _porModelo: Map<string, Peca[]> | null = null;
+function porModelo(): Map<string, Peca[]> {
+  if (!_porModelo) {
+    _porModelo = new Map();
+    for (const x of pecas()) {
+      if (!x.b) continue;
+      for (const m of x.ms && x.ms.length ? x.ms : x.m ? [x.m] : []) {
+        const k = `${x.b}|${m}`;
+        const lista = _porModelo.get(k) ?? [];
+        lista.push(x);
+        _porModelo.set(k, lista);
+      }
+    }
+  }
+  return _porModelo;
 }
 
 // <title>: nome + carro + anos + código. O "MLB…" só entra quando duas peças dariam o MESMO título (várias
@@ -64,7 +83,13 @@ const marca = r.marcas.find((m) => m.n === p.b);
 // aqui esse resto vai pelo preço mais parecido com o desta peça, e cada página mostra peças diferentes.
 const nivel = (x: Peca) => (x.c === p.c ? (x.s && x.s === p.s ? 0 : 1) : 2);
 const perto = (x: Peca) => Math.abs(Math.log((x.p || 1) / (p.p || 1)));
-const doCarroBruto = p.b && p.m ? doMesmoCarro(p, porCarro().get(`${p.b}|${p.m}`) ?? [], 9999) : { mesma: [], outras: [], semAno: false };
+// "Vai junto" (lib/relacionadas.ts): até 4 do mesmo carro e geração que costumam ser trocadas com esta. Elas saem do
+// "Do mesmo carro" (a mesma peça duas vezes na página, não), a não ser que ele ficasse vazio.
+const junto = p.b && p.m ? vaiJunto(p, porModelo().get(`${p.b}|${p.m}`) ?? []) : { pecas: [], com: '' };
+const idsJunto = new Set(junto.pecas.map((x) => x.id));
+const doModelo = p.b && p.m ? porCarro().get(`${p.b}|${p.m}`) ?? [] : [];
+const semJunto = doModelo.filter((x) => !idsJunto.has(x.id));
+const doCarroBruto = p.b && p.m ? doMesmoCarro(p, semJunto.some((x) => x.id !== p.id) ? semJunto : doModelo, 9999) : { mesma: [], outras: [], semAno: false };
 const doCarro = {
   ...doCarroBruto,
   mesma: doCarroBruto.mesma
@@ -152,6 +177,8 @@ const ld = {
     </nav>
     <section class="topo"><PecaTopo p={p} /></section>
   </div>
+
+  {junto.pecas.length > 0 && <VaiJunto pecas={junto.pecas as Peca[]} carro={nomeCarro} anos={anosTxt} com={junto.com} />}
 
   <div class="barra-compra" data-barra-compra aria-hidden="true">
     <div class="barra-info">
