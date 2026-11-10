@@ -1810,16 +1810,17 @@
   "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501184930": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento interno retrovisor esq",
   "carro": "Fiat Toro",
   "foto": "832102-MLB91744813227_092025"
  },
  "MLB6501207288": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Ventilador caixa evaporadora",
   "carro": "Fiat Toro",
-  "foto": "625120-MLB91948529221_092025"
+  "foto": "625120-MLB91948529221_092025",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6501184082": {
   "status": "pulada",
@@ -1829,28 +1830,31 @@
   "foto": "872162-MLB91951397605_092025"
  },
  "MLB6501184730": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta puxador externo tras dir traseira",
   "carro": "Fiat Toro",
   "foto": "947450-MLB91925059939_092025"
  },
  "MLB6501152684": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Quebra sol lado esquerdo",
   "carro": "Fiat Toro",
-  "foto": "613300-MLA108487875542_032026"
+  "foto": "613300-MLA108487875542_032026",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6501174970": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Borracha porta esquerda trasera",
   "carro": "Fiat Toro",
-  "foto": "683471-MLB91921676441_092025"
+  "foto": "683471-MLB91921676441_092025",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6501152566": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Quebra sol quebra lado esquerdo",
   "carro": "Hyundai Azera",
-  "foto": "659385-MLB92353666284_092025"
+  "foto": "659385-MLB92353666284_092025",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6501174700": {
   "status": "pulada",
@@ -1874,25 +1878,26 @@
   "foto": "659672-MLB92036976071_092025"
  },
  "MLB6501183678": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Comando botão vidro diant esq",
   "carro": "Chevrolet Celta",
-  "foto": "697031-MLB91802074056_092025"
+  "foto": "697031-MLB91802074056_092025",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6501175022": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura coluna porta esquerda 16",
   "carro": "Fiat Toro",
   "foto": "758690-MLB91525915380_092025"
  },
  "MLB4552499277": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta interna dir",
   "carro": "Hyundai Azera",
   "foto": "775740-MLB92800739003_092025"
  },
  "MLB4552500945": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta externa tras dir traseira",
   "carro": "Fiat Toro",
   "foto": "799874-MLB91546565232_092025"
@@ -1905,10 +1910,11 @@
   "foto": "863413-MLB92020836779_092025"
  },
  "MLB4552499875": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura caixa fusível",
   "carro": "Hyundai Azera",
-  "foto": "879479-MLB92594461629_092025"
+  "foto": "879479-MLB92594461629_092025",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB4552484737": {
   "status": "pulada",
@@ -1918,13 +1924,14 @@
   "foto": "743617-MLB92393259078_092025"
  },
  "MLB4552469109": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Atuador motor caixa ar condicionado",
   "carro": "Hyundai Azera",
-  "foto": "791405-MLB92276187348_092025"
+  "foto": "791405-MLB92276187348_092025",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB4552458661": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Luz interna console teto",
   "carro": "Hyundai Azera",
   "foto": "756026-MLB92682647571_092025"
@@ -1937,13 +1944,13 @@
   "foto": "999425-MLB107876447708_032026"
  },
  "MLB6502048158": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta interna direita",
   "carro": "Fiat Toro",
   "foto": "802951-MLB91550072040_092025"
  },
  "MLB6502048296": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta interna esquerda",
   "carro": "Fiat Toro",
   "foto": "880330-MLB91949636297_092025"
@@ -1956,16 +1963,18 @@
   "foto": "997025-MLB108119252585_032026"
  },
  "MLB4553161805": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão abertura portinhola tanque",
   "carro": "Volkswagen Golf",
-  "foto": "639145-MLB107464482834_032026"
+  "foto": "639145-MLB107464482834_032026",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB4553162187": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura painel instrum",
   "carro": "Hyundai Genesis",
-  "foto": "779858-MLB108966854181_032026"
+  "foto": "779858-MLB108966854181_032026",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB4553127815": {
   "status": "pulada",
@@ -2002,22 +2011,24 @@
   "motivo": "ChatGPT reescreveu o código da etiqueta (13.601 -> 13.801)"
  },
  "MLB6502246960": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Mangueira ar condicionado",
   "carro": "Volvo XC60",
-  "foto": "902340-MLB109298352029_032026"
+  "foto": "902340-MLB109298352029_032026",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6502247112": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Sonda lambda sensor oxigênio",
   "carro": "Volvo XC60",
   "foto": "683646-MLB108498484348_032026"
  },
  "MLB6502292898": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Tomada 120w com chicote",
   "carro": "Volvo XC60",
-  "foto": "803298-MLB108500535746_032026"
+  "foto": "803298-MLB108500535746_032026",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6502208640": {
   "status": "pulada",
@@ -2027,7 +2038,7 @@
   "foto": "863868-MLB108498514078_032026"
  },
  "MLB6502235844": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tubo flexível escapamento metálico",
   "carro": "Volvo XC60",
   "foto": "826174-MLB109298503377_032026"
@@ -2040,28 +2051,30 @@
   "foto": "616833-MLB109298056985_032026"
  },
  "MLB6502331182": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura painel instrumentos",
   "carro": "Audi A4",
-  "foto": "746200-MLB108500746506_032026"
+  "foto": "746200-MLB108500746506_032026",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6502249680": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Conjunto chave seta limpador",
   "carro": "Volkswagen Gol",
   "foto": "863892-MLB108498635940_032026"
  },
  "MLB6502320920": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa cobertura motor",
   "carro": "Jaguar E-Pace",
   "foto": "804570-MLB109300586481_032026"
  },
  "MLB4553240157": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura coluna direção",
   "carro": "Fiat Toro",
-  "foto": "922232-MLB109300706795_032026"
+  "foto": "922232-MLB109300706795_032026",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6502272392": {
   "status": "pulada",
@@ -2071,19 +2084,19 @@
   "foto": "653489-MLB109298387053_032026"
  },
  "MLB6502356354": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Macaco tesoura",
   "carro": "Mercedes-Benz C320",
   "foto": "635265-MLB109298506719_032026"
  },
  "MLB6502312656": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa lateral inferior painel",
   "carro": "Volkswagen Golf",
   "foto": "626602-MLB108498605622_032026"
  },
  "MLB6507557400": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Painel botões iluminação tanque",
   "carro": "Volvo XC60",
   "foto": "618909-MLB109382555777_032026"
@@ -2096,16 +2109,18 @@
   "foto": "870249-MLB91351351174_092025"
  },
  "MLB6507451456": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Acabamento coluna traseira esquerda",
   "carro": "Fiat Toro",
-  "foto": "850605-MLB91597487411_092025"
+  "foto": "850605-MLB91597487411_092025",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB6507451382": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura frontal painel",
   "carro": "Volvo XC60",
-  "foto": "792016-MLB109298443085_032026"
+  "foto": "792016-MLB109298443085_032026",
+  "motivo": "ChatGPT mudou ângulo/forma/código ou completou parte cortada"
  },
  "MLB4556231423": {
   "status": "pronta",
@@ -2316,264 +2331,338 @@
   "foto": "675847-MLB90893819214_082025"
  },
  "MLB4555024785": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Flauta bico injetor",
-  "carro": "Renault Logan"
+  "carro": "Renault Logan",
+  "motivo": "etiqueta impressa: código impresso (PA8J0F301)",
+  "foto": "752466-MLB91289027985_082025"
  },
  "MLB6505926068": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Alternador",
-  "carro": "Jeep Renegade"
+  "carro": "Jeep Renegade",
+  "foto": "851122-MLB91290121985_082025"
  },
  "MLB4555087633": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo injeção",
-  "carro": "Chevrolet Zafira"
+  "carro": "Chevrolet Zafira",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "949427-MLB112353548218_062026"
  },
  "MLB4554989703": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Suporte reservatório água",
-  "carro": "Fiat Toro"
+  "carro": "Fiat Toro",
+  "foto": "877177-MLB90899711354_082025"
  },
  "MLB4555062001": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor partida arranque",
-  "carro": "Fiat Toro"
+  "carro": "Fiat Toro",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "682085-MLB91291226387_082025"
  },
  "MLB4555074879": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Farol milha DRL LED transparente",
-  "carro": "Peugeot 308"
+  "carro": "Peugeot 308",
+  "foto": "824874-MLB90893685430_082025"
  },
  "MLB6506008708": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Bobina ignição",
-  "carro": "Citroën C3 Picasso"
+  "carro": "Citroën C3 Picasso",
+  "motivo": "foto pequena demais para conferir (1200x438)",
+  "foto": "962894-MLB90828191318_082025"
  },
  "MLB4555049317": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Flauta bico injetor",
-  "carro": "Citroën C3 Picasso"
+  "carro": "Citroën C3 Picasso",
+  "motivo": "foto pequena demais para conferir (457x1200)",
+  "foto": "617504-MLA91224000359_082025"
  },
  "MLB4555049345": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Flauta bico injetor",
-  "carro": "Fiat Cronos"
+  "carro": "Fiat Cronos",
+  "motivo": "foto pequena demais para conferir (1200x485)",
+  "foto": "783461-MLB91218971461_082025"
  },
  "MLB6505961352": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Kit flauta bicos",
-  "carro": "Renault Logan"
+  "carro": "Renault Logan",
+  "motivo": "foto pequena demais para conferir (1200x582)",
+  "foto": "989660-MLB90834142754_082025"
  },
  "MLB4555150817": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Chicote bico injetor",
-  "carro": "Chevrolet Tracker"
+  "carro": "Chevrolet Tracker",
+  "foto": "636306-MLB90833205282_082025"
  },
  "MLB4555003541": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Bico injetor",
-  "carro": "Chevrolet Tracker"
+  "carro": "Chevrolet Tracker",
+  "motivo": "foto pequena demais para conferir (499x1200)",
+  "foto": "828961-MLB91222746669_082025"
  },
  "MLB4555088525": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Sensor fluxo ar",
-  "carro": "Chevrolet Onix"
+  "carro": "Chevrolet Onix",
+  "foto": "927458-MLB91125490735_082025"
  },
  "MLB4555049931": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo carburador",
-  "carro": "Volkswagen Logus"
+  "carro": "Volkswagen Logus",
+  "motivo": "foto pequena demais para conferir (1200x470)",
+  "foto": "892819-MLB91120108271_082025"
  },
  "MLB4555138513": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Bico injetor",
-  "carro": "Volkswagen Gol"
+  "carro": "Volkswagen Gol",
+  "motivo": "etiqueta impressa: código impresso (032906031)",
+  "foto": "957373-MLB91142353963_082025"
  },
  "MLB4555004097": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Difusor ar esquerdo",
-  "carro": "Land Rover Discovery"
+  "carro": "Land Rover Discovery",
+  "foto": "603495-MLB91197613181_082025"
  },
  "MLB4555050079": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Comando ar condicionado",
-  "carro": "Toyota"
+  "carro": "Toyota",
+  "foto": "674938-MLB90753298676_082025"
  },
  "MLB4554991123": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão vidro dianteiro esquerdo",
-  "carro": "Chevrolet Tracker"
+  "carro": "Chevrolet Tracker",
+  "foto": "869095-MLB91110394551_082025"
  },
  "MLB4555037461": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Comando retrovisor",
-  "carro": "Honda New Civic"
+  "carro": "Honda New Civic",
+  "foto": "709498-MLB90721834802_082025"
  },
  "MLB4555016835": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Tampa caixa fusível",
-  "carro": "Chevrolet Astra"
+  "carro": "Chevrolet Astra",
+  "foto": "916172-MLB91110014759_082025"
  },
  "MLB6505927874": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor limpador direito",
-  "carro": "Ford Fusion"
+  "carro": "Ford Fusion",
+  "motivo": "etiqueta impressa: código impresso (17584BC)",
+  "foto": "882356-MLB90664343538_082025"
  },
  "MLB4555017365": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Painel instrumentos",
-  "carro": "Fiat Toro"
+  "carro": "Fiat Toro",
+  "foto": "984142-MLB90631666994_082025"
  },
  "MLB4555113479": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Maçaneta externa dianteira esquerda",
-  "carro": "Chevrolet Astra"
+  "carro": "Chevrolet Astra",
+  "foto": "894508-MLB90640935708_082025"
  },
  "MLB6505997940": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Espelho retrovisor interno",
-  "carro": "Mercedes-Benz GLA"
+  "carro": "Mercedes-Benz GLA",
+  "foto": "881481-MLB90250052938_082025"
  },
  "MLB4555090377": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo injeção",
-  "carro": "Chevrolet Vectra"
+  "carro": "Chevrolet Vectra",
+  "motivo": "foto pequena demais para conferir (1200x549)",
+  "foto": "856408-MLB90644545365_082025"
  },
  "MLB6505963754": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo localização",
-  "carro": "Audi A3"
+  "carro": "Audi A3",
+  "motivo": "etiqueta impressa: código impresso (00000000064913, 060814)",
+  "foto": "979826-MLB90542941215_082025"
  },
  "MLB4555365133": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Comando vidro dianteiro esquerdo",
-  "carro": "Volkswagen Amarok"
+  "carro": "Volkswagen Amarok",
+  "foto": "776376-MLB90545184147_082025"
  },
  "MLB4555342197": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Fechadura elétrica dianteira esquerda",
-  "carro": "Ford Ranger"
+  "carro": "Ford Ranger",
+  "foto": "853996-MLB91028889261_082025"
  },
  "MLB4555378669": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Moldura externa dianteira esquerda",
-  "carro": "Hyundai HB20"
+  "carro": "Hyundai HB20",
+  "foto": "841852-MLB91144689253_082025"
  },
  "MLB4555365813": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Mangueira arrefecimento motor",
-  "carro": "Fiat Toro"
+  "carro": "Fiat Toro",
+  "foto": "990119-MLB91415496587_092025"
  },
  "MLB4555318981": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Motor limpador para-brisa galhada",
-  "carro": "Fiat Toro"
+  "carro": "Fiat Toro",
+  "motivo": "foto pequena demais para conferir (1200x567)",
+  "foto": "815978-MLB91046426116_092025"
  },
  "MLB6506223514": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Módulo comando som rádio",
-  "carro": "Renault Sandero"
+  "carro": "Renault Sandero",
+  "foto": "650174-MLB91424926371_092025"
  },
  "MLB6506505072": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Moldura borracha porta-trecos",
-  "carro": "Fiat Toro"
+  "carro": "Fiat Toro",
+  "motivo": "foto pequena demais para conferir (562x1200)",
+  "foto": "626174-MLB91107313102_092025"
  },
  "MLB6506517510": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Chave seta limpador com som",
-  "carro": "Renault Sandero"
+  "carro": "Renault Sandero",
+  "foto": "681519-MLB90646168962_082025"
  },
  "MLB6513442822": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Amortecedor pneumático dianteiro esquerdo",
-  "carro": "Hyundai Genesis"
+  "carro": "Hyundai Genesis",
+  "foto": "855969-MLB109475543651_032026"
  },
  "MLB4565557679": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo porta traseira",
-  "carro": "Ford Fusion"
+  "carro": "Ford Fusion",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "860128-MLB109656447555_032026"
  },
  "MLB6535057226": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Bomba tanque completa",
-  "carro": "Fiat Toro"
+  "carro": "Fiat Toro",
+  "foto": "752862-MLB109746434185_032026"
  },
  "MLB6540718660": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo injeção IAW",
-  "carro": "Fiat Palio"
+  "carro": "Fiat Palio",
+  "motivo": "etiqueta impressa: código impresso (46481486, 1ABG815526, 1ABG81)",
+  "foto": "813322-MLB109829276833_032026"
  },
  "MLB6540707830": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Botão interruptor farol",
-  "carro": "Ford New Fiesta"
+  "carro": "Ford New Fiesta",
+  "foto": "988867-MLB108994206694_032026"
  },
  "MLB6540695876": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo câmbio automático",
-  "carro": "Peugeot 307"
+  "carro": "Peugeot 307",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "691535-MLB109829037253_032026"
  },
  "MLB6540531964": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Painel instrumentos",
-  "carro": "Audi A3"
+  "carro": "Audi A3",
+  "motivo": "etiqueta impressa: código impresso (1MINX1000)",
+  "foto": "797197-MLB109828946339_032026"
  },
  "MLB6540531448": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo sensor estacionamento",
-  "carro": "Volkswagen Up"
+  "carro": "Volkswagen Up",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "914814-MLB109828885249_032026"
  },
  "MLB6540744984": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Porta-luvas compartimento",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "679260-MLB109829248231_032026"
  },
  "MLB4572227349": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Grade kidney dianteira",
-  "carro": "BMW Série 3"
+  "carro": "BMW Série 3",
+  "foto": "783334-MLB109828828915_032026"
  },
  "MLB6551356904": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Moldura câmbio automático tiptronic",
-  "carro": "Volkswagen Golf"
+  "carro": "Volkswagen Golf",
+  "motivo": "etiqueta impressa: código impresso (000020)",
+  "foto": "783943-MLB109930829725_042026"
  },
  "MLB6551320926": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Módulo câmbio automático",
-  "carro": "Volkswagen Golf"
+  "carro": "Volkswagen Golf",
+  "motivo": "etiqueta impressa: código de barras/QR na etiqueta",
+  "foto": "649147-MLB109092523474_042026"
  },
  "MLB6558245452": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Trinco batente porta",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "foto": "700738-MLB109147015518_042026"
  },
  "MLB6558231084": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Chave seta limpador pisca-alerta",
-  "carro": "Chevrolet Celta"
+  "carro": "Chevrolet Celta",
+  "foto": "763951-MLB109147009024_042026"
  },
  "MLB6558218272": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Mangueira arrefecimento",
-  "carro": "BMW 320i"
+  "carro": "BMW 320i",
+  "foto": "971374-MLB109987859773_042026"
  },
  "MLB6558196894": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Grade frontal kidney cromada",
-  "carro": "BMW Série 5"
+  "carro": "BMW Série 5",
+  "foto": "610579-MLB109987389369_042026"
  },
  "MLB6555787856": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Motor parcial G6DA",
-  "carro": "Hyundai Genesis"
+  "carro": "Hyundai Genesis",
+  "foto": "661011-MLB109127103270_042026"
  },
  "MLB6553176812": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Espelho retrovisor interno",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "foto": "635078-MLB109108353668_042026"
  },
  "MLB6553164036": {
   "status": "fila",
