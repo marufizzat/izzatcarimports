@@ -7,6 +7,7 @@
 // Gatilhos so com dado de verdade: estoque = p.q (ML), reputacao = resumo().reputacao, CDV/nota/garantia do site.
 import type { Peca } from '../lib/dados';
 import { foto, brl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
+import { quadroFoto } from '../lib/quadroFoto';
 import { linkWhats, cabecaPeca, CAUDA_PECA, DESCONTO_WHATS } from '../lib/whats';
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
@@ -35,11 +36,12 @@ const cauda = CAUDA_PECA;
 const msg = cabeca + semCarro + cauda;
 // Estoque real do ML: 1 = peca unica (usada: quando vende, acabou); mais de 1 = so a quantidade, sem pressa inventada.
 const q = typeof p.q === 'number' && p.q >= 1 ? p.q : 0;
-// 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça.
+// 1ª foto = capa de estúdio (fundo limpo); depois as fotos reais do anúncio, que mostram o estado da peça, no mesmo
+// quadro da capa (lib/quadroFoto.ts: peça centrada ocupando ~84%, ou a foto inteira num fundo de estúdio).
 const est = capaEstudio(p.id);
-const fotos: { g: string; m: string; e?: boolean }[] = [
+const fotos: { g: string; m: string; e?: boolean; q?: { cls?: string; style?: string } }[] = [
   ...(est ? [{ g: est, m: est, e: true }] : []),
-  ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'E') })),
+  ...(p.fotos.length ? p.fotos : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'A'), q: quadroFoto(f) })),
 ];
 // 1ª tela do celular (CSS no fim): a altura que a foto pode ter depende de quantas linhas vêm abaixo dela. Contado no
 // build pelo tamanho do texto (sem script, sem pulo na tela): nome curto = 1 linha (a foto ganha); nome longo = letra
@@ -85,7 +87,7 @@ const perguntas = [
       {/* o trilho é a parada do teclado da galeria: setas trocam a foto, Enter abre a tela cheia (script abaixo) */}
       <ul class="galeria-trilho" data-trilho tabindex="0" aria-label="Fotos da peça: setas trocam, Enter amplia">
         {fotos.map((f, i) => (
-          <li><img class:list={[{ estudio: f.e }]} src={f.g} alt={i === 0 ? `${p.n}${carro ? `, ${carro}` : ''}, foto 1 de ${fotos.length}` : `${p.n}, foto ${i + 1} de ${fotos.length}`} width="1000" height="1000"
+          <li><img class:list={[{ estudio: f.e }, f.q?.cls]} style={f.q?.style} src={f.g} alt={i === 0 ? `${p.n}${carro ? `, ${carro}` : ''}, foto 1 de ${fotos.length}` : `${p.n}, foto ${i + 1} de ${fotos.length}`} width={f.q?.style ? undefined : 1000} height={f.q?.style ? undefined : 1000}
                    loading={i === 0 ? 'eager' : 'lazy'} fetchpriority={i === 0 ? 'high' : undefined} decoding="async" /></li>
         ))}
       </ul>
@@ -100,7 +102,9 @@ const perguntas = [
       <div class="galeria-miniaturas" role="group" aria-label="Miniaturas" data-minis>
         {fotos.map((f, i) => (
           <button type="button" aria-current={i === 0 ? 'true' : 'false'} aria-label={`Ver foto ${i + 1}`} data-ir={i}>
-            <img class:list={[{ estudio: f.e }]} src={f.m} alt="" width="72" height="72" loading="lazy" decoding="async" />
+            {/* miniatura (-A: a foto inteira, na proporção dela, como a -F do palco): o mesmo quadro do palco (sem o
+                degradê das bordas, que numa miniatura não aparece) */}
+            <img class:list={[{ estudio: f.e }]} style={f.q?.style} src={f.m} alt="" width={f.q?.style ? undefined : 72} height={f.q?.style ? undefined : 72} loading="lazy" decoding="async" />
           </button>
         ))}
       </div>
@@ -257,7 +261,7 @@ const perguntas = [
       const i = indice();
       carregarTelaCheia().then((m) => m.abrirGaleria({
         fotos: fotos.map((f) => f.getAttribute('src') || ''),
-        minis: minis.map((b) => b.querySelector('img')?.getAttribute('src') || ''),
+        minis: minis.map((b) => b.querySelector('img')),
         titulo, indice: i, foco: trilho,
         aoFechar: (k) => { if (k !== indice()) ir(k, false); },
       })).catch(() => {});
@@ -295,7 +299,8 @@ const perguntas = [
     }
 
     // computador: lupa que segue o mouse, só na foto à vista. Um desenho por quadro; a escala respeita o tamanho real
-    // da foto (a capa de estúdio tem 1000 px: passar de 1,5x só borrava, ainda mais em tela retina).
+    // da foto (a capa de estúdio tem 1000 px: passar de 1,5x só borrava, ainda mais em tela retina). A foto do anúncio
+    // enquadrada é maior que o quadro (posta com left/top/width, sem transform): o ponto da lupa é medido na caixa dela.
     let lupaImg: HTMLImageElement | null = null;
     let mx = 0, my = 0, lupaAgendada = false;
     function lupaFim() {
@@ -308,13 +313,14 @@ const perguntas = [
     }
     const escala = (im: HTMLImageElement) => {
       if (im.classList.contains('estudio')) return 1.5;
-      const r = im.getBoundingClientRect();
       const s = getComputedStyle(im);
-      const caixaL = r.width - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight);
-      const caixaA = r.height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
+      const caixaL = im.offsetWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight);
+      const caixaA = im.offsetHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
       if (!im.naturalWidth || caixaL <= 0) return 2;
-      const k = Math.min(1, caixaL / im.naturalWidth, caixaA / im.naturalHeight); // object-fit: scale-down
-      return Math.max(1.6, Math.min(2.2, 1 / k));
+      // px da tela por px da foto (scale-down: nunca acima de 1; enquadrada: pode já vir ampliada)
+      let k = Math.min(caixaL / im.naturalWidth, caixaA / im.naturalHeight);
+      if (s.objectFit === 'scale-down') k = Math.min(1, k);
+      return Math.max(1.5, Math.min(2.2, 1 / k));
     };
     const lupaDesenhar = () => {
       lupaAgendada = false;
@@ -322,7 +328,7 @@ const perguntas = [
       if (!im) return;
       const r = trilho.getBoundingClientRect();
       if (lupaImg !== im) { lupaFim(); lupaImg = im; im.style.setProperty('--lupa', String(escala(im))); im.classList.add('lupa-on'); palco.classList.add('lupa'); }
-      im.style.transformOrigin = `${((mx - r.left) / r.width) * 100}% ${((my - r.top) / r.height) * 100}%`;
+      im.style.transformOrigin = `${mx - r.left - im.offsetLeft}px ${my - r.top - im.offsetTop}px`;
     };
     if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
       palco.addEventListener('pointermove', (e) => {
@@ -386,10 +392,27 @@ const perguntas = [
   /* flex, não grid: no grid a altura 100% da foto não resolvia e a foto em pé ficava mais alta que o palco (cortava embaixo) */
   .galeria-trilho li { flex: 0 0 100%; height: 100%; min-width: 0; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .galeria-trilho img { width: 100%; height: 100%; max-height: 100%; min-width: 0; object-fit: contain; padding: 6%; cursor: zoom-in; transition: transform .18s ease-out; }
-  /* fotos do anúncio: inteiras e nunca esticadas além do tamanho real (foto pequena ficava borrada) */
-  .galeria-trilho img:not(.estudio) { object-fit: scale-down; }
   /* capa de estúdio já tem o próprio fundo: ocupa o palco inteiro, sem caixa dentro da caixa */
   .galeria-trilho img.estudio { padding: 0; object-fit: cover; }
+  /* Fotos do anúncio no quadro da capa (lib/quadroFoto.ts). O fundo é o do estúdio da capa e a foto "multiplica" sobre
+     ele: o branco cru do ML vira o tom do estúdio (a peça quase não muda). Sem medida (anúncio novo): inteira e nunca
+     esticada além do tamanho real, como antes. */
+  .galeria { --estudio: linear-gradient(#f4f3f0, #e7e5e1); }
+  .galeria-trilho li { position: relative; background: var(--estudio); }
+  .galeria-trilho img:not(.estudio), .galeria-miniaturas img:not(.estudio) { object-fit: scale-down; mix-blend-mode: multiply; }
+  /* enquadrada: a foto posta (left/top/width, sem transform) para a peça ficar no centro, ocupando ~84%. A marca é o
+     --w no style (a lupa também escreve no style, então [style] sozinho não serve). Vai sem width/height no HTML:
+     o tamanho vem daqui e, fora do fluxo (absolute), ela não empurra nada */
+  :is(.galeria-trilho, .galeria-miniaturas, .gt-faixa) img[style*="--w"] {
+    position: absolute; padding: 0; max-width: none; max-height: none; object-fit: fill;
+    left: calc(var(--x, 0) * -100%); top: calc(var(--y, 0) * -100%); width: calc(var(--w) * 100%); height: calc(var(--h, var(--w)) * 100%); }
+  /* a peça não cabe num quadrado da foto sem cortar (ou não foi achada): o quadro passa da foto no lado curto e as
+     bordas dela se desfazem no fundo do estúdio (nada de foto colada) */
+  .galeria-trilho img.i { --fx: clamp(0%, (1 - var(--w)) * 100%, 5%); --fy: clamp(0%, (1 - var(--h, var(--w))) * 100%, 5%);
+                          --mx: linear-gradient(90deg, #0000, #000 var(--fx), #000 calc(100% - var(--fx)), #0000);
+                          --my: linear-gradient(#0000, #000 var(--fy), #000 calc(100% - var(--fy)), #0000);
+                          -webkit-mask-image: var(--mx), var(--my); -webkit-mask-composite: source-in;
+                          mask-image: var(--mx), var(--my); mask-composite: intersect; }
   /* lupa: só a foto à vista amplia, no ponto do mouse (só no computador; escala e ponto vêm do script) */
   .galeria-trilho img.lupa-on { transform: scale(var(--lupa, 2)); }
   .galeria-contador { position: absolute; right: 14px; bottom: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 650;
@@ -412,7 +435,7 @@ const perguntas = [
   .galeria-miniaturas.mais-dir { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent); }
   .galeria-miniaturas.mais-esq { -webkit-mask-image: linear-gradient(90deg, transparent, #000 56px); mask-image: linear-gradient(90deg, transparent, #000 56px); }
   .galeria-miniaturas.mais-esq.mais-dir { -webkit-mask-image: linear-gradient(90deg, transparent, #000 56px, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(90deg, transparent, #000 56px, #000 calc(100% - 56px), transparent); }
-  .galeria-miniaturas button { flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--surface-2);
+  .galeria-miniaturas button { position: relative; flex: none; width: 68px; height: 68px; border-radius: 12px; border: 0; padding: 0; background: var(--estudio);
                                box-shadow: inset 0 0 0 1.5px var(--line); overflow: hidden; outline: 2.5px solid transparent; outline-offset: -2.5px;
                                transition: outline-color .2s; }
   /* a ativa: anel por cima da foto (o box-shadow ficava por baixo da capa de estúdio) */

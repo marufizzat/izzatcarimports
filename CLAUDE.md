@@ -55,6 +55,13 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      filtros automáticos; `sem_capa` = nenhuma foto serve (o robô apaga a capa e o site mostra a foto do ML);
      `ok` = falso alarme conferido (não volta ao `_revisar.json`). Ajuste novo/mudado refaz a capa (assinatura em
      `<saída>/_ajustes_aplicados.json`, que vai junto no ramo). Teste: `python testes/test_capas_ajustes.py`.
+   - **Fotos do anúncio na galeria da peça** (depois da capa): o mesmo quadro quadrado da capa, fundo do estúdio
+     (`#F4F3F0→#E7E5E1`) e a foto "multiplicando" sobre ele (o branco cru do ML vira o tom do estúdio). A peça fica
+     centrada ocupando ~84%, sem nunca cortar nada (`site/src/lib/quadroFoto.ts`, só CSS, a foto do ML não é copiada).
+     A caixa da peça de cada foto fica em `site/src/data/fotos-ml-caixas.json` (commitado): `ferramentas/medir_fotos_ml.py`
+     mede só o que falta (Mac: Vision, 8 em paralelo, ~2 h para as 45 mil; robô: rembg nas fotos novas, cache
+     `caixas-`, até 4 min por rodada). Foto sem medida aparece inteira, como antes. Tela cheia: fundo escuro, foto inteira.
+     Testes: `python testes/test_medir_fotos_ml.py` e `site/testes/quadroFoto.test.ts`.
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
 
 7. **Reputação do Mercado Livre**: `atualizar_catalogo.py` (`save_seller_reputation`) lê a rota pública
