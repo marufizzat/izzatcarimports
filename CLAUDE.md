@@ -234,7 +234,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   nome: dois iguais cancelam a transição) e o CSS dá o mesmo nome ao `.galeria-palco` só durante a troca
   (`:active-view-transition`). Nada de `unload`/`no-store`: o voltar (bfcache) continua instantâneo.
   Teste no Playwright: o Chromium dele desliga `PaintHolding` e `RenderDocument` (a página nova nem pinta com a
-  transição); religar os dois (`_r12fluido/scripts/chromium-real.cjs`). O WebKit confere a transição inteira.
+  transição); religar os dois (`ferramentas/navegacao/chromium-real.cjs`). O WebKit confere a transição inteira.
 - **A próxima página já carregada** (nov/2026): `<script type="speculationrules">` no `<head>` do `Base.astro` (o MESMO
   bloco de ~170 bytes em toda página): `prerender` com `eagerness: "moderate"` (no celular, no toque; no PC, com o mouse
   parado 200 ms) só para `/peca/*`, `/carros/*`, `/carros.html`, `/categoria/*`, `/marca/*` e `/catalogo.html` (com ou sem
@@ -244,7 +244,13 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   nada enquanto `document.prerendering` (espera o `prerenderingchange`; a busca que o catálogo mandar antes fica na
   fila): 1 visita = 1 `page_view`/`PageView`, página preparada e não aberta = 0; `contato_whatsapp` igual.
   Teste do prerender: o Playwright faz o Chrome recusar ("PrerenderingDisabledByDevTools"); usar o CDP cru preso na aba
-  (`_r12fluido/scripts/cdp-cru.cjs`).
+  (`ferramentas/navegacao/cdp-cru.cjs`; `metrica2.cjs` confere a métrica, `vt-cru.cjs` a transição, `nav-cru.cjs` mede).
+- **Medido em 10/11/2026** (Chromium, 4G lento 150 ms/1,6 Mbps pelo `proxy-lento.cjs`, CPU 4×, do toque até a página
+  nova pintada, mediana de 3; "antes" = mesmo navegador sem transição nem prerender): catálogo→peça 713 → 633 ms no
+  celular e 616 → 414 no PC; carro→peça 653 → 515 e 530 → 417; home→carro 1.109 → 1.119 e 1.031 → 880. No celular o
+  prerender só começa no toque (~120 ms antes do clique): ganho menor que no PC (mouse parado 200 ms). O único quadro
+  longo da troca é a 1ª pintura da página nova (estilo + layout, 70–110 ms com CPU 4×, igual antes: 79–95); a animação
+  não tem script. LCP, CLS, TBT e INP das páginas iguais (±12 ms); bfcache em todas; peça +229 bytes (+95 com gzip).
 - Catálogo: a 1ª tela (24 cartões e os filtros) vem pronta no HTML, feita no build com o MESMO `busca.json`; o índice só
   desce depois das fotos dela, ou já se o endereço traz busca/filtro (`html.cat-url`, marcado no `<head>` de
   `catalogo.astro`, que também guarda o lugar das fichas e do "Seu carro"). Lotes de 48 (2 entram sozinhos, depois o
