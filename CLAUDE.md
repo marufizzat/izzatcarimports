@@ -171,6 +171,16 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Página de peça ≈ 38 KB de HTML (era 87 KB). Antes de pôr algo em todo cartão ou em toda peça, pense nisso.
 - Arte grande em cartão pequeno sempre com `srcset`/`sizes` (`srcArte` de `src/lib/variantes.ts`): o /carros caiu de
   5,9 MB para ~2 MB rolando no iPhone só com as variantes de 600 px.
+- **Capas leves dos cartões** (nov/2026): a capa de estúdio tem 1000 px (~41 KB) e o cartão mostra 125–300 px. O build
+  faz `public/estudio-400/<MLB>.webp` (~8 KB) e `public/estudio-640/<MLB>.webp` (~17 KB) da capa que o site usa (a
+  maquiada manda) — `site/scripts/capas-cartao.mjs`, chamado pela integração `integracoes/capas-cartao.mjs` no começo de
+  TODO build (`npm run build`, `npx astro build`, prévia). Refaz só a capa nova ou trocada (hash em
+  `src/data/capas-cartao.json`); a leve de capa trocada ou de peça sem capa sai antes de tudo. Pastas e manifesto fora do
+  git: o robô guarda no cache do Actions (`capas-cartao-<hash do manifesto>`; rodada sem mudança não grava). Sem cache:
+  ~2 min para as 5,3 mil no Mac. O busca.json ganha a coluna `r` ('1' = leve em dia) para os cartões do navegador.
+  UMA regra para src/srcset: `fotoCartao()` (lib/busca.ts) nos 3 que montam cartão (`CartaoPeca.astro`, `Etiqueta` do
+  catálogo, `cartaoHtml`); o `sizes` de cada lugar em `SIZES_CARTAO`. 640 e não 600: o cartão de 208 px num celular 3x
+  pede 624 px. Leve que falha: o cartão cai na capa inteira (nunca imagem quebrada). A página da peça usa a de 1000.
 - Ícones: desenhos em `site/src/lib/icones.ts`; os longos (WhatsApp, escudo, carro…) vêm do sprite `/icones.svg`
   com `<use>` (`Icone.astro`). Nunca colar o `<path>` do WhatsApp direto na página.
 - CSS e scripts de componente saem em arquivo com cache (`astro.config.mjs`); `site/integracoes/escopo-curto.mjs`
@@ -185,6 +195,12 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Busca: UMA regra para o catálogo e as sugestões (`lib/busca.ts`): ano solto vira filtro; todas as palavras, depois com
   erro de digitação (nunca em termo com número), depois as parecidas (`aproximado`); o carro digitado vem primeiro.
   O índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
+- Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
+  de anos com mais peças (na página do carro, num `<script is:inline>` antes da 1ª pintura); o "Todos" fica fixo à
+  esquerda (`.ac-fixo`/`.mc-fixo`, sticky). Só o scrollLeft da fila, nunca a página.
+- Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (só as peças do carro, feito no
+  build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entra em partes (12 cartões, o resto, a lista completa em
+  fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`.
 - Catálogo: a 1ª tela (24 cartões e os filtros) vem pronta no HTML, feita no build com o MESMO `busca.json`; o índice só
   desce depois das fotos dela, ou já se o endereço traz busca/filtro (`html.cat-url`, marcado no `<head>` de
   `catalogo.astro`, que também guarda o lugar das fichas e do "Seu carro"). Lotes de 48 (2 entram sozinhos, depois o

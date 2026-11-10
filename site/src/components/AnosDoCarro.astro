@@ -7,8 +7,10 @@
 // tocado vai para o carro salvo (o cabeçalho e o "É o meu carro" acompanham).
 import type { Peca } from '../lib/dados';
 import { anosNoModelo } from '../lib/meuCarro';
-interface Props { lista: Peca[]; b: string; m: string; base: string }
-const { lista, b, m, base } = Astro.props;
+import { rolarFila } from '../lib/anosFila';
+/** k = a chave do carro: com mais de 48 peças, a grade do ano sai de /dados/carro/<k>.json (só as peças dele) */
+interface Props { lista: Peca[]; b: string; m: string; base: string; k?: string }
+const { lista, b, m, base, k } = Astro.props;
 const conta = new Map<number, number>();
 for (const p of lista) {
   const y = anosNoModelo(p, m);
@@ -16,23 +18,33 @@ for (const p of lista) {
 }
 const anos = [...conta].sort((x, z) => x[0] - z[0]);
 const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça' : 'peças'}`;
+// Antes da 1ª pintura (logo depois das fichas): a fila já abre nos anos com mais peças, ou no ano do carro salvo deste
+// modelo (lib/anosFila.ts, a mesma função do seletor "Seu carro"); o "Todos" fica fixo à esquerda.
+const abrirFila = `(function(){var r=document.currentScript.previousElementSibling,l=r.querySelector('.ac-lista'),t=l.parentElement,`
+  + `cs=[].slice.call(l.querySelectorAll('.ac-ano[data-c]')),alvo=null,n=function(s){return(s||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g,'')};`
+  + `try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')||'null');if(c&&c.y&&n(c.b)===n(r.dataset.b)&&n(c.m)===n(r.dataset.m))alvo=l.querySelector('.ac-ano[data-y="'+Number(c.y)+'"]')}catch(e){}`
+  + `(${rolarFila.toString()})(l,l.querySelector('.ac-ano[data-y=""]'),cs,cs.map(function(x){return+x.dataset.c}),alvo);`
+  + `var f=l.scrollWidth-l.clientWidth;if(l.scrollLeft>4)t.setAttribute('data-esq','');if(l.scrollLeft<f-4)t.setAttribute('data-dir','')})()`;
 ---
-{anos.length > 1 && (
-  <div class="anos-carro" data-anos-carro data-b={b} data-m={m} data-base={base} data-n={lista.length}>
+{anos.length > 1 && (<>
+  <div class="anos-carro" data-anos-carro data-b={b} data-m={m} data-base={base} data-n={lista.length}
+       data-dados={k && lista.length > 48 ? `/dados/carro/${k}.json` : undefined}>
     <span class="ac-rot" id="ac-rot">Ano do carro</span>
     <div class="ac-trilho">
       <div class="ac-lista" role="group" aria-labelledby="ac-rot">
-        <button type="button" class="ac-ano" data-y="" aria-pressed="true" aria-label={`Todos os anos, ${pecasTxt(lista.length)}`}>Todos</button>
+        <span class="ac-fixo"><button type="button" class="ac-ano" data-y="" aria-pressed="true" aria-label={`Todos os anos, ${pecasTxt(lista.length)}`}>Todos</button></span>
         {anos.map(([y, c]) => (
           <button type="button" class="ac-ano num" data-y={y} data-c={c} aria-pressed="false" aria-label={`${y}, ${pecasTxt(c)}`}>{y}<small aria-hidden="true">{c}</small></button>
         ))}
       </div>
     </div>
   </div>
-)}
+  <script is:inline set:html={abrirFila} />
+</>)}
 
 <script>
   import { lerMeuCarro, salvarMeuCarro, norm, anosNoModelo, serveNoModelo, lerModelos, EVENTO, type MeuCarro } from '../lib/meuCarro';
+  import { rolarFila } from '../lib/anosFila';
   import type { Item, Indice } from '../lib/busca';
 
   const raiz = document.querySelector<HTMLElement>('[data-anos-carro]');
@@ -42,6 +54,8 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
     const lista = raiz.querySelector<HTMLElement>('.ac-lista')!;
     const trilho = raiz.querySelector<HTMLElement>('.ac-trilho')!;
     const chips = [...raiz.querySelectorAll<HTMLButtonElement>('.ac-ano')];
+    const todos = chips.find((c) => !c.dataset.y) ?? null;
+    const anosChips = chips.filter((c) => c.dataset.y);
     const eh = (c: MeuCarro | null): c is MeuCarro => !!c && norm(c.b) === norm(B) && norm(c.m) === norm(M);
     // o que muda com o ano: a contagem do título da grade e o "Ver as N peças no catálogo" (carro com mais de 48)
     const num = secao.querySelector<HTMLElement>('.grade-cabeca .num');
@@ -56,7 +70,9 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
     const total = Number(raiz.dataset.n || 0);
     let gradeAno: HTMLElement | null = null;
     let doCarro: Promise<Item[]> | null = null;
-    const fmt = (x: number) => `${x.toLocaleString('pt-BR')} ${x === 1 ? 'peça' : 'peças'}`;
+    // UM formatador, criado já (o toLocaleString('pt-BR') monta um a cada chamada: ~1 ms cada no celular lento, 25 grupos)
+    const nf = new Intl.NumberFormat('pt-BR');
+    const fmt = (x: number) => `${nf.format(x)} ${x === 1 ? 'peça' : 'peças'}`;
     const todas = secao.querySelector<HTMLElement>('.todas-pecas');
     const sumario = todas?.querySelector('summary') ?? null;
     const sumarioOrig = sumario?.textContent ?? '';
@@ -85,23 +101,43 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
         mais.textContent = y == null ? maisOrig.txt : n === 1 ? `Ver a peça do ${M} ${y} no catálogo` : `Ver as ${fmt(n)} do ${M} ${y} no catálogo`;
       }
     };
-    /** A lista "Todas as N peças": só as do ano (pelo endereço de cada linha); sem ano, volta inteira. */
-    const filtrarLista = (y: number | null, enderecos: Set<string> | null) => {
+    /** A lista "Todas as N peças": só as do ano (pelo endereço de cada linha); sem ano, volta inteira. Em fatias de ~6 ms
+     *  (515 linhas no XC60: de uma vez era um quadro de 60 ms num celular lento); `vez` = a chamada que ainda vale. */
+    let grupos: { g: HTMLElement; c: HTMLElement | null; linhas: [HTMLElement, string][] }[] | null = null;
+    const filtrarLista = (y: number | null, enderecos: Set<string> | null, vez: number) => {
       if (!todas) return;
-      let n = 0;
-      todas.querySelectorAll<HTMLElement>('.todas-pecas-grupo').forEach((g) => {
-        let k = 0;
-        g.querySelectorAll<HTMLElement>('li').forEach((li) => {
-          const ok = !enderecos || enderecos.has(li.querySelector('a')?.getAttribute('href') || '');
-          li.hidden = !ok;
-          if (ok) k++;
-        });
-        g.hidden = k === 0;
-        const c = g.querySelector<HTMLElement>('.todas-pecas-n');
-        if (c) c.textContent = `(${k.toLocaleString('pt-BR')})`;
-        n += k;
-      });
-      if (sumario) sumario.textContent = y == null || !enderecos ? sumarioOrig : n === 1 ? `A peça do ${B} ${M} ${y}` : `Todas as ${fmt(n)} do ${B} ${M} ${y}`;
+      grupos ??= [...todas.querySelectorAll<HTMLElement>('.todas-pecas-grupo')].map((g) => ({
+        g, c: g.querySelector<HTMLElement>('.todas-pecas-n'),
+        linhas: [...g.querySelectorAll<HTMLElement>('li')].map((li) => [li, li.querySelector('a')?.getAttribute('href') || ''] as [HTMLElement, string]),
+      }));
+      let i = 0, n = 0;
+      const fatia = () => {
+        if (vez !== vezLista) return;
+        const t0 = performance.now();
+        for (; i < grupos!.length && performance.now() - t0 < 6; i++) {
+          const { g, c, linhas } = grupos![i];
+          let k = 0;
+          for (const [li, h] of linhas) {
+            const ok = !enderecos || enderecos.has(h);
+            if (li.hidden === ok) li.hidden = !ok;
+            if (ok) k++;
+          }
+          if (g.hidden !== (k === 0)) g.hidden = k === 0;
+          if (c) c.textContent = `(${nf.format(k)})`;
+          n += k;
+        }
+        if (i < grupos!.length) { setTimeout(fatia, 0); return; }
+        if (sumario) sumario.textContent = y == null || !enderecos ? sumarioOrig : n === 1 ? `A peça do ${B} ${M} ${y}` : `Todas as ${fmt(n)} do ${B} ${M} ${y}`;
+      };
+      fatia();
+    };
+    // Fluidez (XC60, CPU 6x): o trabalho do toque vai em partes, cada uma no seu quadro (nenhum passa de 50 ms): os cartões
+    // da 1ª tela, o resto da grade do ano 12 por vez e, por último, a lista completa (fica embaixo da grade)
+    const pausa = () => new Promise<void>((r) => setTimeout(r, 0));
+    let vezLista = 0;
+    const listaDepois = (y: number | null, enderecos: Set<string> | null) => {
+      const vez = ++vezLista;
+      setTimeout(() => filtrarLista(y, enderecos, vez), 0);
     };
     const semGradeAno = () => {
       gradeAno?.remove();
@@ -123,13 +159,14 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
       }
       try {
         doCarro ??= (async () => {
-          const [{ Busca }, r] = await Promise.all([import('../lib/busca'), fetch('/dados/busca.json')]);
+          // só as peças deste carro (~10% do índice no XC60): o índice inteiro (1,4 MB) travava o 1º toque num celular lento
+          const [{ Busca }, r] = await Promise.all([import('../lib/busca'), fetch(raiz.dataset.dados || '/dados/busca.json')]);
           if (!r.ok) throw new Error(String(r.status));
           return new Busca((await r.json()) as Indice).itens
             .filter((it) => norm(it.b) === norm(B) && serveNoModelo(it, M))
             .sort((a, z) => (z.id > a.id ? 1 : -1));
         })();
-        const [itens, { cartaoHtml, vigiarFotos }] = await Promise.all([doCarro, import('../lib/vendidaCartoes')]);
+        const [itens, { cartaoHtml, vigiarFotos }, { SIZES_CARTAO }] = await Promise.all([doCarro, import('../lib/vendidaCartoes'), import('../lib/busca')]);
         if (ano !== y) return;   // trocou de ano enquanto o índice descia
         const doAno = itens.filter((it) => { const f = anosNoModelo(it, M); return !!f && y >= f[0] && y <= f[1]; });
         if (!doAno.length) { semGradeAno(); return; }
@@ -139,11 +176,19 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
           grade.after(gradeAno);
         }
         vigiarFotos(gradeAno);
+        await pausa();
+        if (ano !== y || !gradeAno) return;
+        const cartoes = (de: number, ate: number) => doAno.slice(de, ate).map((it) => cartaoHtml(it, SIZES_CARTAO.grade)).join('');
         gradeAno.removeAttribute('aria-busy');
-        gradeAno.innerHTML = doAno.slice(0, 48).map(cartaoHtml).join('');
+        gradeAno.innerHTML = cartoes(0, 12);   // a 1ª tela (6 fileiras no celular, 3 no PC)
         grade.classList.add('fora-do-ano');
         textos(y, doAno.length);
-        filtrarLista(y, new Set(doAno.map((it) => `/peca/${it.h}.html`)));
+        for (let de = 12; de < Math.min(doAno.length, 48); de += 12) {   // o resto, 12 por vez
+          await pausa();
+          if (ano !== y || !gradeAno) return;
+          gradeAno.insertAdjacentHTML('beforeend', cartoes(de, de + 12));
+        }
+        listaDepois(y, new Set(doAno.map((it) => `/peca/${it.h}.html`)));
       } catch {
         doCarro = null;
         if (ano === y && aVista === 0) semGradeAno();
@@ -158,7 +203,7 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
       const aVista = aplicar();
       const n = chip?.dataset.c ? Number(chip.dataset.c) : 0;
       textos(y, n);
-      if (y == null) filtrarLista(null, null);
+      if (y == null) listaDepois(null, null);
       // o ano tem mais peças que as que estão na grade fixa (só em carro com mais de 48): monta a grade do ano inteira
       else if (total > 48 && (n > aVista || todas)) void completar(y, aVista);
       if (salvar && y != null) {
@@ -174,12 +219,10 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
       trilho.toggleAttribute('data-esq', lista.scrollLeft > 4);
       trilho.toggleAttribute('data-dir', lista.scrollLeft < fim - 4);
     };
-    // a ficha escolhida vai para o meio da fila (nunca fica cortada na borda que esmaece)
+    // a ficha escolhida vai para o meio da parte da fila à direita do "Todos" (nunca fica cortada na borda que esmaece)
     const centrar = (y: number, suave = false) => {
-      const chip = chips.find((c) => c.dataset.y === String(y));
-      if (chip && lista.scrollWidth > lista.clientWidth) {
-        lista.scrollTo({ left: chip.offsetLeft - (lista.clientWidth - chip.offsetWidth) / 2, behavior: suave ? 'smooth' : 'auto' });
-      }
+      const chip = anosChips.find((c) => c.dataset.y === String(y));
+      if (chip) rolarFila(lista, todos, anosChips, anosChips.map((c) => Number(c.dataset.c)), chip, suave);
     };
     lista.addEventListener('scroll', bordas, { passive: true });
     window.addEventListener('resize', bordas, { passive: true });
@@ -189,7 +232,8 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
       if (!chip) return;
       const y = chip.dataset.y ? Number(chip.dataset.y) : null;
       escolher(y, true);
-      if (y != null) centrar(y, true);
+      // a fila centra a ficha no quadro seguinte (a leitura das posições não cai no mesmo quadro do filtro)
+      if (y != null) requestAnimationFrame(() => setTimeout(() => { if (ano === y) centrar(y, true); }, 0));
     });
 
     // cartões que entram depois (a lista completa do carro): o mesmo filtro
@@ -201,7 +245,7 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
 
     // o carro salvo deste modelo, com ano: o ano dele já vem escolhido (e acompanha a troca no cabeçalho)
     const doSalvo = (c: MeuCarro | null) => {
-      if (eh(c) && c.y && c.y !== ano && chips.some((x) => x.dataset.y === String(c.y))) { escolher(c.y, false); centrar(c.y); }
+      if (eh(c) && c.y && c.y !== ano && chips.some((x) => x.dataset.y === String(c.y))) { centrar(c.y); escolher(c.y, false); }
     };
     window.addEventListener(EVENTO, (e) => doSalvo((e as CustomEvent<MeuCarro | null>).detail));
     doSalvo(lerMeuCarro());
@@ -219,9 +263,16 @@ const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça
     scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .anos-carro .ac-lista::-webkit-scrollbar { display: none; }
   .anos-carro .ac-trilho[data-dir] .ac-lista { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); }
-  .anos-carro .ac-trilho[data-esq] .ac-lista { -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px); mask-image: linear-gradient(90deg, transparent, #000 40px); }
-  .anos-carro .ac-trilho[data-esq][data-dir] .ac-lista { -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+  /* o esmaecido da esquerda começa depois do "Todos" fixo (--fixo, lib/anosFila.ts) */
+  .anos-carro .ac-trilho[data-esq] .ac-lista { -webkit-mask-image: linear-gradient(90deg, #000 var(--fixo, 0px), transparent var(--fixo, 0px), #000 calc(var(--fixo, 0px) + 40px));
+    mask-image: linear-gradient(90deg, #000 var(--fixo, 0px), transparent var(--fixo, 0px), #000 calc(var(--fixo, 0px) + 40px)); }
+  .anos-carro .ac-trilho[data-esq][data-dir] .ac-lista { -webkit-mask-image: linear-gradient(90deg, #000 var(--fixo, 0px), transparent var(--fixo, 0px), #000 calc(var(--fixo, 0px) + 40px), #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(90deg, #000 var(--fixo, 0px), transparent var(--fixo, 0px), #000 calc(var(--fixo, 0px) + 40px), #000 calc(100% - 40px), transparent); }
+  /* "Todos" fixo à esquerda: a fila corre por baixo dele. O invólucro cobre também a folga de 5 px da fila (margem
+     negativa), e com a fila rolada ganha a cor da página: as fichas que passam por trás somem inteiras.
+     left: -5px: o sticky conta da borda do conteúdo da fila (dentro da folga), e a folga também fica coberta */
+  .anos-carro .ac-fixo { position: sticky; left: -5px; z-index: 1; flex: none; display: flex; margin: -5px; padding: 5px; }
+  .anos-carro .ac-trilho[data-esq] .ac-fixo { background: var(--bg); }
   .anos-carro .ac-ano { flex: none; min-width: 60px; height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; margin: 0;
     padding: 0 12px; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink-2);
     box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 15px; font-weight: 660; font-stretch: 94%; line-height: 1; cursor: pointer;

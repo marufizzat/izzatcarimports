@@ -1,7 +1,9 @@
 // Le os dados gerados por ../preparar_dados.py (uma vez por build).
+import { createHash } from 'node:crypto';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fotosGaleria } from './quadroFoto';
+import { LARGURAS_CAPA, fotoCartao } from './busca';
 
 export type Peca = {
   id: string; slug: string; t: string; n: string; limpa?: boolean; p: number; fotos: string[]; ml: string;
@@ -12,8 +14,9 @@ export type Peca = {
   /** Peça que serve em 2+ carros da marca ("Volvo S60 Xc60" no título): ["S60", "XC60"], o 1º é o m.
    *  Ela aparece na página, no filtro e no Meu carro de cada um (lib/meuCarro.ts: modelosDa). */
   ms?: string[];
-  /** Anos de cada carro do ms, quando a faixa muda de um para outro (o período de venda corta). */
-  ys?: [number, number][];
+  /** Anos de cada carro do ms, quando a faixa muda de um para outro (o período de venda corta); null = o carro está
+   *  no título, mas a faixa é de outro ("Fiat Punto Strada 18/23": o Punto acabou em 2017). */
+  ys?: ([number, number] | null)[];
   /** Dia da última mudança do anúncio no ML (AAAA-MM-DD): o <lastmod> da peça no sitemap. */
   u?: string;
   /** Mesma peça (código e carro) com outro preço: a versão que o título diz ("T8", "2.0", "G5/G6"), para a pílula
@@ -102,6 +105,35 @@ export function capaEstudio(id: string): string | null {
  *  ferramentas/capas_limpas_feed.py): so o feed do Google usa, e so na peca que nao tem outra foto alem da montagem. */
 export function capaLimpa(id: string): string | null {
   return arquivos('estudio-limpa').has(id) ? `/estudio-limpa/${id}.webp` : null;
+}
+// Capas leves dos cartões (scripts/capas-cartao.mjs, no começo do build): só valem se foram feitas da capa ATUAL (o hash
+// dela no manifesto src/data/capas-cartao.json); senão o cartão fica com a capa inteira (nunca a leve de uma capa velha).
+let _manCapas: Record<string, { f: string; h: string; w: number }> | null = null;
+const _leve = new Map<string, boolean>();
+export function capaLeveEmDia(id: string): boolean {
+  if (_leve.has(id)) return _leve.get(id)!;
+  if (!_manCapas) {
+    const arq = join(process.cwd(), 'src', 'data', 'capas-cartao.json');
+    try { _manCapas = existsSync(arq) ? JSON.parse(readFileSync(arq, 'utf-8')) : {}; } catch { _manCapas = {}; }
+  }
+  const c = capaEstudio(id);
+  const m = _manCapas![id];
+  const pub = join(process.cwd(), 'public');
+  const ok = !!c && !!m && c === `/${m.f}/${id}.webp` && LARGURAS_CAPA.every((w) => existsSync(join(pub, `estudio-${w}`, `${id}.webp`)))
+    && createHash('sha1').update(readFileSync(join(pub, c))).digest('hex').slice(0, 12) === m.h;
+  _leve.set(id, ok);
+  return ok;
+}
+/** A foto do cartão da peça (src, srcset e sizes): a mesma regra dos cartões do navegador (fotoCartao, lib/busca.ts). */
+export function fotoCartaoPeca(p: Pick<Peca, 'id' | 'fotos'>, sizes: string) {
+  const c = capaEstudio(p.id);
+  return fotoCartao({ id: p.id, e: !c ? '0' : c.startsWith('/estudio-pro/') ? '2' : '1', i: fotosGaleria(p.fotos)[0] ?? '',
+    r: c && capaLeveEmDia(p.id) ? 1 : undefined }, sizes);
+}
+/** Capa em miniatura (os cartões "Por tipo"/"Peças por sistema", 64–76 px): a leve de 400 px quando está em dia. */
+export function capaPequena(src: string): string {
+  const m = /^\/estudio(?:-pro)?\/(MLB\d+)\.webp$/.exec(src);
+  return m && capaEstudio(m[1]) === src && capaLeveEmDia(m[1]) ? `/estudio-400/${m[1]}.webp` : src;
 }
 export function temEstudio(id: string): boolean {
   return capaEstudio(id) !== null;

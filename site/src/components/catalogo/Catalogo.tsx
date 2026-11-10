@@ -14,7 +14,7 @@
 import {
   memo, startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
-import { Busca, FAIXAS, capaItem, codigoJunto, foto, type Carro, type Facetas, type Filtros, type Indice, type Item } from '../../lib/busca';
+import { Busca, FAIXAS, SIZES_CARTAO, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
 import { serveNoMeuCarro, nomeCarro } from '../../lib/meuCarro';
@@ -102,11 +102,11 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
   const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
   const [reais, cent] = precoPartes(it.p);
   const cod = codigoPeca(it.o);
-  // foto que não carregou: a capa de estúdio dá lugar à foto do ML; se essa também falhar, fica a placa clara
-  // (nunca o ícone quebrado com o título cru do anúncio)
+  // foto que não carregou: a capa leve (srcset) dá lugar à capa inteira; ela, à foto do ML; se essa também falhar, fica a
+  // placa clara (nunca o ícone quebrado com o título cru do anúncio). 0 tudo certo, 1 sem a leve, 2 foto do ML, 3 placa
   const [falha, setFalha] = useState(0);
-  const estudio = it.e !== '0' && falha === 0;
-  const falhou = () => setFalha((x) => (x === 0 && it.e !== '0' && it.i ? 1 : 2));
+  const falhou = () => setFalha((x) => (x === 0 && it.e !== '0' && it.r ? 1 : x <= 1 && it.e !== '0' && it.i ? 2 : 3));
+  const f = fotoCartao(falha === 0 ? it : falha === 1 ? { ...it, r: undefined } : { ...it, e: '0' }, SIZES_CARTAO.catalogo);
   const img = useRef<HTMLImageElement>(null);
   useEffect(() => {
     // a falha pode ter acontecido antes do React assumir o cartão (a 1ª tela vem pronta no HTML)
@@ -117,15 +117,14 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
     <div className={CLASSE_CARTAO}>
       <a className="etiqueta" href={`/peca/${it.h}.html`} {...dadosCarro(it.b, it.m, it.y, it.ms, it.ys)}>
         <div className="etiqueta-foto">
-          <img ref={img} src={estudio ? capaItem(it) : foto(it.i, 'O')} srcSet={estudio ? undefined : `${foto(it.i, 'V')} 320w, ${foto(it.i, 'C')} 400w, ${foto(it.i, 'O')} 500w`}
-               sizes={estudio ? undefined : '(min-width:1280px) 240px, (min-width:768px) 28vw, 46vw'}
-               className={estudio ? 'estudio' : falha === 2 ? 'sem-capa' : undefined} alt="" width={800} height={800}
+          <img ref={img} sizes={f.sizes} srcSet={f.srcset} src={f.src}
+               className={f.estudio ? 'estudio' : falha === 3 ? 'sem-capa' : undefined} alt="" width={800} height={800}
                loading={eager ? 'eager' : 'lazy'} fetchPriority={alta ? 'high' : undefined} decoding="async" onError={falhou} />
           {novo && <span className="etiqueta-novo">Chegou agora</span>}
         </div>
         <div className="etiqueta-dados">
           <span className="etiqueta-serve" hidden={!meuModelo}>{meuModelo ? `Serve no seu ${meuModelo}` : ''}</span>
-          {carro && <span className="etiqueta-carro"><span className="etiqueta-modelo">{carro}{it.dif && <> <span className="etiqueta-dif">{it.dif}</span></>}</span>{anos && <span className="etiqueta-anos"><span className="etiqueta-sep"> · </span>{anos}</span>}</span>}
+          {carro && <span className="etiqueta-carro"><span className="etiqueta-modelo">{carro}</span>{it.dif && <> <span className="etiqueta-dif">{it.dif}</span></>}{anos && <span className="etiqueta-anos"><span className="etiqueta-sep"> · </span>{anos}</span>}</span>}
           <h3 className="etiqueta-nome">{it.n}</h3>
           {cod && <span className="etiqueta-cod" title="Código gravado na peça">Cód. <span className="oem">{cod}</span></span>}
           <span className="sr-only">R$ {reais},{cent}</span>

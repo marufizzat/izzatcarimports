@@ -174,7 +174,27 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - run: npm ci --prefix site
       - run: npm --prefix site test
+      # ---- Capas leves dos cartões (400/640 px, site/scripts/capas-cartao.mjs): o build faz só as que faltam ou mudaram
+      # (hash da capa no manifesto). As ~5.300 da rodada anterior vêm deste cache (sem ele, o build refaz todas: ~2 min).
+      # A chave nova só nasce quando o manifesto muda (capa nova ou trocada): rodada sem mudança não grava cache.
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            site/public/estudio-400
+            site/public/estudio-640
+            site/src/data/capas-cartao.json
+          key: capas-cartao-${{ github.run_id }}
+          restore-keys: capas-cartao-
       - run: npm --prefix site run build
+      - uses: actions/cache/save@v4
+        if: always()
+        continue-on-error: true
+        with:
+          path: |
+            site/public/estudio-400
+            site/public/estudio-640
+            site/src/data/capas-cartao.json
+          key: capas-cartao-${{ hashFiles('site/src/data/capas-cartao.json') }}
       - name: Conferir links internos (nenhum quebrado)
         run: node site/scripts/verificar-links.mjs
 

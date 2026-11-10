@@ -5,6 +5,7 @@
 //   + contagem. Baixo de propósito: os atalhos não empurram as peças para a 3ª tela.
 // Só os `limite` primeiros aparecem de cara; o resto (e os grupos com menos de `minimo` peças, que expõem estoque
 // fraco) fica atrás do botão "Ver todas/todos". O botão é a última ficha da lista (no celular, o fim do trilho).
+import { capaPequena } from '../lib/dados';
 interface Logo { src: string; w: number; h: number; png: boolean }
 interface Item { n: string; c: number; h: string; logo?: Logo | null; foto?: string | null; arte?: boolean }
 // limitePc: no PC (cartões em grade), quantos aparecem de cara (ex.: 4 + o botão = uma fileira só).
@@ -39,7 +40,7 @@ const qtd = (c: number) => `${c.toLocaleString('pt-BR')} ${c === 1 ? 'peça' : '
             </a>
           ) : (
             <a class="av-cartao" href={i.h}>
-              <span class:list={['av-foto', { 'av-foto-arte': i.arte }]}><img src={i.foto!} alt="" width="800" height={i.arte ? 632 : 800} loading="lazy" decoding="async" /></span>
+              <span class:list={['av-foto', { 'av-foto-arte': i.arte }]}><img src={capaPequena(i.foto!)} alt="" width="800" height={i.arte ? 632 : 800} loading="lazy" decoding="async" /></span>
               <span class="av-txt"><b>{i.n}</b><small class="num">{qtd(i.c)}</small></span>
             </a>
           )}
