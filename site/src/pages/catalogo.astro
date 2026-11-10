@@ -321,20 +321,44 @@ const confianca: [string, string][] = [
   @media (min-width: 900px) { .cat-aviso, .cat-erro { grid-template-columns: auto minmax(0, 1fr) auto; } .cat-aviso-botoes, .cat-erro-botoes { grid-column: auto; } }
   @media (max-width: 560px) { .cat-aviso-botoes .botao, .cat-erro-botoes .botao { flex: 1 1 100%; } }
   .cat-avise svg { color: var(--accent-text); }
-  .cat-vazio { display: grid; grid-template-columns: 88px minmax(0, 1fr); grid-template-areas: "img titulo" "texto texto" "botoes botoes"; gap: 12px 16px; align-items: center;
+  /* "Não achou? A gente procura no pátio" (cliente oculto 10/11, atrito 1): cartão claro, o rosto do atendimento
+     (o mesmo do formulário), botão laranja com letra grafite e, embaixo, o formulário já preenchido */
+  .cat-aviso.cat-patio { grid-template-areas: "rosto titulo" "texto texto" "botoes botoes" "form form"; gap: 10px 14px; padding: 18px;
+    border-radius: 22px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-1); }
+  .cat-patio-rosto { grid-area: rosto; width: 46px; height: 46px; margin: 4px; border-radius: 50%; object-fit: cover; background: #efeeeb;
+    box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
+  .cat-aviso.cat-patio .cat-patio-titulo { grid-area: titulo; font-stretch: 86%; font-weight: 800; font-size: 18px; line-height: 1.15; text-wrap: balance; }
+  .cat-aviso.cat-patio .cat-patio-texto { grid-area: texto; }
+  .cat-aviso.cat-patio .cat-patio-carro { display: inline; font: inherit; font-weight: 650; color: var(--ink); }
+  .cat-patio .cat-aviso-botoes { grid-area: botoes; margin-top: 2px; }
+  .cat-patio-form { grid-area: form; margin: 0; font-size: 14px; line-height: 1.4; color: var(--ink-3); }
+  .cat-patio-form a { display: inline-block; padding: 8px 2px; margin: -8px -2px; color: var(--accent-text); font-weight: 650;
+    text-decoration: underline; text-underline-offset: 3px; }
+  @media (min-width: 900px) {
+    .cat-aviso.cat-patio { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "rosto titulo botoes" "rosto texto form";
+      gap: 4px 18px; padding: 18px 22px; }
+    .cat-aviso.cat-patio .cat-patio-rosto { align-self: center; width: 52px; height: 52px; }
+    .cat-aviso.cat-patio .cat-patio-titulo { align-self: end; }
+    .cat-aviso.cat-patio .cat-patio-texto { align-self: start; margin-top: 2px; }
+    .cat-aviso.cat-patio .cat-aviso-botoes { align-self: end; justify-content: flex-end; margin: 0; }
+    .cat-aviso.cat-patio .cat-patio-form { align-self: start; justify-self: end; margin-top: 8px; }
+  }
+  .cat-vazio { display: grid; grid-template-columns: 88px minmax(0, 1fr); grid-template-areas: "img titulo" "texto texto" "botoes botoes" "form form"; gap: 12px 16px; align-items: center;
     padding: 20px; border-radius: 24px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-1); }
   .cat-vazio img { grid-area: img; width: 88px; height: 88px; border-radius: 16px; object-fit: cover; }
   .cat-vazio h2 { grid-area: titulo; margin: 0; font-stretch: 80%; font-weight: 820; font-size: clamp(24px, 3vw, 34px); line-height: 1.05; overflow-wrap: anywhere; text-wrap: balance; }
   .cat-vazio p { grid-area: texto; margin: 0; max-width: 46ch; color: var(--ink-2); }
   .cat-vazio-botoes { grid-area: botoes; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .cat-vazio .cat-patio-form { grid-area: form; max-width: none; color: var(--ink-3); }
   @media (max-width: 600px) { .cat-vazio-botoes .botao { flex: 1 1 100%; padding-inline: 16px; } }
   /* celular bem estreito: "Procurar no pátio" numa linha (o ícone já diz WhatsApp; o leitor de tela ouve tudo) */
   @media (max-width: 379px) { .cat-so-largo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
   @media (min-width: 768px) {
-    .cat-vazio { grid-template-columns: 240px minmax(0, 1fr); grid-template-areas: "img titulo" "img texto" "img botoes"; gap: 10px 32px; padding: 32px 40px 32px 32px; }
+    .cat-vazio { grid-template-columns: 240px minmax(0, 1fr); grid-template-areas: "img titulo" "img texto" "img botoes" "img form"; gap: 10px 32px; padding: 32px 40px 32px 32px; }
     .cat-vazio img { width: 240px; height: 240px; border-radius: 20px; align-self: center; }
     .cat-vazio h2 { align-self: end; }
     .cat-vazio-botoes { align-self: start; margin-top: 8px; }
+    .cat-vazio .cat-patio-form { align-self: start; margin-top: 2px; }
   }
 
   /* atalhos do pé (para quem chega sem JS e para o Google): colunas de links, não pílulas */

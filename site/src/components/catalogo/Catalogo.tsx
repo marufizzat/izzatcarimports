@@ -14,7 +14,7 @@
 import {
   memo, startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
-import { Busca, FAIXAS, capaItem, foto, type Carro, type Facetas, type Filtros, type Indice, type Item } from '../../lib/busca';
+import { Busca, FAIXAS, capaItem, codigoJunto, foto, type Carro, type Facetas, type Filtros, type Indice, type Item } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
 import { serveNoMeuCarro, nomeCarro } from '../../lib/meuCarro';
@@ -484,19 +484,50 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
     const q = (f.q || '').trim(); const m = q.match(/\b(19[89]\d|20[0-3]\d)\b/);
     return m ? { texto: q.replace(m[0], ' ').replace(/\s+/g, ' ').trim(), ano: Number(m[1]) } : { texto: q, ano: undefined };
   }, [f.q]);
-  const ano = f.ano || anoQ;
-  const carroFiltro = f.marca ? [f.marca, f.modelo].filter(Boolean).join(' ') : carroDaBusca ? `${carroDaBusca.b} ${carroDaBusca.m}` : '';
-  const oQue = (f.marca ? qSemAno : semCarro(qSemAno, carroDaBusca)) || (f.sub ? f.sub.toLowerCase() : f.tipo ? `peça de ${f.tipo.toLowerCase()}` : 'peça');
-  const paraCarro = carroFiltro ? `para ${carroFiltro}${ano ? ` ${ano}` : ''}` : ano ? `para carro ano ${ano}` : '';
+  // o carro do pedido: o do filtro, senão o digitado, senão o salvo no "Meu carro"; o ano: o do filtro ou da busca,
+  // senão o do carro salvo (quando é o mesmo carro)
+  const alvo = useMemo(() => {
+    const mesmo = (b: string, m?: string) => !!meuCarro && meuCarro.b === b && (!m || meuCarro.m === m);
+    const anoDe = (b: string, m?: string) => f.ano || anoQ || (mesmo(b, m) ? meuCarro!.y ?? undefined : undefined);
+    if (f.marca) return { b: f.marca, m: f.modelo || '', y: anoDe(f.marca, f.modelo) };
+    if (carroDaBusca) return { b: carroDaBusca.b, m: carroDaBusca.m, y: anoDe(carroDaBusca.b, carroDaBusca.m) };
+    if (meuCarro) return { b: meuCarro.b, m: meuCarro.m, y: f.ano || anoQ || meuCarro.y || undefined };
+    return null;
+  }, [f.marca, f.modelo, f.ano, anoQ, carroDaBusca, meuCarro]);
+  const ano = alvo?.y ?? (f.ano || anoQ);
+  const carroPedido = alvo ? (alvo.m ? nomeCarro({ b: alvo.b, m: alvo.m, y: alvo.y ?? null }) : `${alvo.b}${alvo.y ? ` ${alvo.y}` : ''}`) : '';
+  // o que a pessoa digitou, sem o carro e o ano ("retrovisor xc60 2019" -> "retrovisor"); código: "a peça com o código …"
+  const digitado = f.marca ? qSemAno : semCarro(qSemAno, carroDaBusca);
+  const codDigitado = codigoBusca || codigoJunto(digitado) || (/^[a-z0-9]{6,20}$/i.test(digitado) && (digitado.match(/\d/g) ?? []).length >= 5 ? digitado : '');
+  const oQue = (codDigitado ? `a peça com o código ${codDigitado.toUpperCase()}` : digitado) || (f.sub ? f.sub.toLowerCase() : f.tipo ? `peça de ${f.tipo.toLowerCase()}` : 'peça');
+  const paraCarro = carroPedido ? `para ${carroPedido}` : ano ? `para carro ano ${ano}` : '';
   const procuro = [oQue, paraCarro].filter(Boolean).join(' ');
+  const pedirNoPatio = whatsUrl(`Procuro ${procuro}. Não achei no site, tem no pátio?`);
+  // o formulário "Não achou a peça?" já preenchido com a busca e o carro
+  const urlFormulario = useMemo(() => {
+    const u = new URLSearchParams();
+    if (digitado) u.set('q', digitado);
+    if (carroPedido) u.set('carro', carroPedido);
+    const qs = u.toString();
+    return `/procuro-peca.html${qs ? `?${qs}` : ''}`;
+  }, [digitado, carroPedido]);
   // "Avise-me quando chegar": com carro no filtro, na busca ou salvo no Meu carro (só fatos, sem prazo)
-  const carroAviso = carroFiltro ? `${carroFiltro}${ano ? ` ${ano}` : ''}` : meuCarro ? nomeCarro(meuCarro) : '';
-  const avise = carroAviso
-    ? whatsUrl(`Procuro ${oQue === 'peça' ? 'peças' : oQue} para ${carroAviso}. Quero ser avisado quando chegar no pátio.`)
+  const avise = carroPedido
+    ? whatsUrl(`Procuro ${oQue === 'peça' ? 'peças' : oQue} para ${carroPedido}. Quero ser avisado quando chegar no pátio.`)
     : '';
   const botaoAvise = avise ? (
     <a className="botao botao-linha cat-avise" href={avise} target="_blank" rel="noopener"><Sino />Me avise quando chegar</a>
   ) : null;
+  // "Não achou? A gente procura no pátio": sem nada, só parecidas, ou a lista não tem a peça buscada para o carro
+  // ("retrovisor direito" com o XC60 2019 achava só a capa do espelho)
+  const naoBate = useMemo(
+    () => !!busca && !aproximado && resultado.length > 0 && !!(f.q || '').trim() && !busca.bate(resultado, f.q || '', alvo?.m ? alvo : null),
+    [busca, aproximado, resultado, f.q, alvo],
+  );
+  const botaoPatio = (rotulo: ReactNode) => (
+    <a className="botao botao-laranja" href={pedirNoPatio} target="_blank" rel="noopener" data-botao="procurar-patio"><Whats />{rotulo}</a>
+  );
+  const linkFormulario = <p className="cat-patio-form">Prefere o formulário? <a href={urlFormulario}>Preencher o pedido</a></p>;
 
   const blocos = !!busca && aproximado && (f.ordem || 'rel') === 'rel' && nDoCarro > 0 && nDoCarro < resultado.length && !!carroDaBusca;
   const grade = lista.slice(0, pintados);
@@ -574,29 +605,31 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
           )}
 
           {vazio && (
-            <div className="cat-vazio">
+            <div className="cat-vazio cat-patio">
               <img src="/arte/v2/vazio-busca.webp" alt="" width={360} height={360} loading="lazy" decoding="async" />
-              <h2>Nada {f.q ? <>com “{f.q}”</> : 'com esses filtros'} no site.</h2>
-              <p>Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp que a gente procura no pátio.</p>
+              <h2>Não achou? A gente procura no pátio</h2>
+              <p>Nada {f.q ? <>com “{f.q}”{f.marca && carroPedido ? ` para ${carroPedido}` : ''}</> : 'com esses filtros'} no site agora. Nem toda peça está anunciada: mande pelo WhatsApp que a gente confere no pátio.</p>
               <div className="cat-vazio-botoes">
-                <a className="botao botao-laranja" href={whatsUrl(`Procuro ${procuro}. Tem no pátio?`)} target="_blank" rel="noopener"><Whats /><span>Procurar no pátio<span className="cat-so-largo"> pelo WhatsApp</span></span></a>
+                {botaoPatio(<span>Procurar no pátio<span className="cat-so-largo"> pelo WhatsApp</span></span>)}
                 {botaoAvise}
                 {(nFiltros > 0 || !!f.q) && <button type="button" className="botao botao-linha" onClick={limpar}>{nFiltros > 0 ? 'Limpar filtros' : 'Limpar a busca'}</button>}
               </div>
+              {linkFormulario}
             </div>
           )}
 
-          {!!busca && resultado.length > 0 && aproximado && (
-            <div className="cat-aviso">
-              <img src="/icones/conversa-96.webp" alt="" width={44} height={44} />
-              <div>
-                <b>Nem toda peça está no site.</b>
-                <span>A gente procura no pátio pelo WhatsApp. Abaixo, as parecidas{blocos && carroDaBusca ? <>: primeiro as do {carroDaBusca.b} {carroDaBusca.m}</> : null}.</span>
-              </div>
+          {!!busca && resultado.length > 0 && (aproximado || naoBate) && (
+            <div className="cat-aviso cat-patio">
+              <img className="cat-patio-rosto" src="/arte/v2/atendimento-rosto.webp" alt="" width={192} height={192} decoding="async" />
+              <b className="cat-patio-titulo">Não achou? A gente procura no pátio</b>
+              {aproximado
+                ? <span className="cat-patio-texto">Nada exato com “{f.q}”. Nem toda peça está anunciada: a gente confere no pátio. Abaixo, as parecidas{blocos && carroDaBusca ? <>: primeiro as do {carroDaBusca.b} {carroDaBusca.m}</> : null}.</span>
+                : <span className="cat-patio-texto">Nem toda peça está anunciada. Mande pelo WhatsApp{carroPedido ? <> o que você procura para o <b className="cat-patio-carro">{carroPedido}</b></> : null}: a gente confere no pátio.</span>}
               <div className="cat-aviso-botoes">
-                <a className="botao botao-laranja" href={whatsUrl(`Procuro ${procuro}. Não achei no site, tem no pátio?`)} target="_blank" rel="noopener"><Whats />Procurar no pátio</a>
+                {botaoPatio('Procurar no pátio')}
                 {botaoAvise}
               </div>
+              {linkFormulario}
             </div>
           )}
 

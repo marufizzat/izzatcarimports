@@ -334,3 +334,47 @@ describe('termos do índice', () => {
   });
 });
 
+
+// cliente oculto 10/11 (atrito 1): com o XC60 2019, "retrovisor direito" só achava a capa do espelho e o site não
+// oferecia "a gente procura no pátio". bate() diz se a lista tem a peça buscada para o carro-alvo.
+describe('a lista bate com o que a pessoa procura (bloco "A gente procura no pátio")', () => {
+  const xc = { b: 'Volvo', m: 'XC60', y: 2019 };
+  const retroDireitoXc = b.itens.filter((x) => serveNoModelo(x, 'XC60') && /^retrovisor/.test(normal(x.n)) && /direit/.test(normal(x.n))
+    && (!x.y || (x.y[0] <= 2019 && x.y[1] >= 2019)));
+
+  it('J1 com o carro no filtro: "retrovisor direito" + Volvo XC60 2019 não bate (só a capa do espelho)', (ctx) => {
+    if (!temCarro('Volvo', 'XC60') || retroDireitoXc.length) return ctx.skip(); // chegou retrovisor direito do XC60
+    const r = b.procurar({ q: 'retrovisor direito', marca: 'Volvo', modelo: 'XC60', ano: 2019 });
+    expect(b.bate(r, 'retrovisor direito', xc)).toBe(false);
+  });
+
+  it('J1 com o carro só salvo (sem filtro): a lista traz retrovisores de outros carros, mas para o XC60 2019 não bate', (ctx) => {
+    if (!temCarro('Volvo', 'XC60') || retroDireitoXc.length) return ctx.skip();
+    const r = b.procurar({ q: 'retrovisor direito' });
+    expect(r.length).toBeGreaterThan(0);
+    expect(b.aproximado).toBe(false);
+    expect(b.bate(r, 'retrovisor direito', xc)).toBe(false);
+    // sem carro nenhum, a lista de retrovisores direitos bate
+    expect(b.bate(r, 'retrovisor direito', null)).toBe(true);
+  });
+
+  it('J1 no PC (carro e ano digitados): "retrovisor direito xc60 2019" não bate', (ctx) => {
+    if (!temCarro('Volvo', 'XC60') || retroDireitoXc.length) return ctx.skip();
+    const r = b.procurar({ q: 'retrovisor direito xc60 2019' });
+    expect(b.bate(r, 'retrovisor direito xc60 2019', xc)).toBe(false);
+  });
+
+  it('bate quando a peça do carro existe, com plural, e com código achado', (ctx) => {
+    const alvo = b.itens.find((x) => x.b && x.m && x.y && /^farol\b/.test(normal(x.n)));
+    if (!alvo) return ctx.skip();
+    const carro = { b: alvo.b, m: alvo.m, y: alvo.y![0] };
+    expect(b.bate(b.procurar({ q: 'farol', marca: alvo.b, modelo: alvo.m }), 'farol', carro)).toBe(true);
+    expect(b.bate(b.procurar({ q: 'farois' }), 'farois', carro)).toBe(true);
+    const cod = alvo.o.split(' ')[0];
+    if (cod) expect(b.bate(b.procurar({ q: cod }), cod, null)).toBe(true);
+    // busca só do carro ("xc60") não pede o bloco
+    if (temCarro('Volvo', 'XC60')) expect(b.bate(b.procurar({ q: 'xc60' }), 'xc60', xc)).toBe(true);
+    // lista vazia nunca bate
+    expect(b.bate([], 'farol', null)).toBe(false);
+  });
+});

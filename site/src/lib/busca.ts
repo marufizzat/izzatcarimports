@@ -465,6 +465,36 @@ export class Busca {
     };
   }
 
+  /** A lista tem o que a pessoa procura? (cliente oculto 10/11, atrito 1: com o XC60 2019, "retrovisor direito" só
+   *  achava a "Capa espelho retrovisor direito", e o site não oferecia "a gente procura no pátio".)
+   *  Bate quando alguma peça da lista serve no carro-alvo (o do filtro, o digitado ou o salvo; no ano, quando a peça
+   *  diz os anos) e o nome dela começa pela palavra principal buscada ("retrovisor", "retrovisores" ou com 1 letra
+   *  trocada). Código gravado achado bate; busca só de carro, marca ou sistema ("xc60", "suspensão") também.
+   *  Sem carro-alvo, vale qualquer peça da lista. */
+  bate(lista: Item[], q: string, alvo?: { b: string; m: string; y?: number | null } | null): boolean {
+    if (!lista.length) return false;
+    const { texto } = this.separar((q || '').trim());
+    if (!texto) return true;
+    const r = this.porTexto(texto);
+    if (r.codigo) return lista.some((it) => codigosDa(it).includes(r.codigo!));
+    const ent = this.entender(texto);
+    const principal = ent.resto.find((w) => w.length >= 3 && !/\d/.test(w));
+    if (!principal || ent.familia) return true;
+    const raiz = (a: string, b: string) => {
+      let n = 0;
+      while (n < a.length && n < b.length && a[n] === b[n]) n++;
+      const menor = Math.min(a.length, b.length);
+      return n >= Math.min(4, menor) && n >= menor - 3;
+    };
+    return lista.some((it) => {
+      if (!raiz(palavras(it.n)[0] || '', principal)) return false;
+      if (!alvo) return true;
+      if (!doCarro(it, alvo)) return false;
+      const y = anosNoModelo(it, alvo.m);
+      return !alvo.y || !y || dentro(alvo.y, y);
+    });
+  }
+
   /** Quantas peças do carro (no ano, se houver) — a mesma conta do catálogo filtrado por marca, modelo e ano. */
   contaCarro(c: Carro, ano?: number): number {
     let n = 0;
