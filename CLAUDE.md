@@ -118,7 +118,10 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    link `procuro-peca.html?q=&carro=` pré-preenche o formulário). Mesmo código + carro com preços diferentes: o campo `dif`
    (`diferencas()` em `preparar_dados.py`, só o que o TÍTULO do anúncio diz: "T8", "2.0", "G5/G6") vira a pílula
    `.etiqueta-dif` ao lado do carro no cartão (catálogo e `CartaoPeca.astro`). O WhatsApp do cabeçalho/menu leva o carro
-   salvo ("Procuro uma peça para Volvo XC60 2019.") via `data-whats-carro`.
+   salvo ("Procuro uma peça para Volvo XC60 2019.") via `data-whats-carro`. **Sugestões (nov/2026)**: com o campo vazio,
+   as últimas 5 buscas da pessoa (`lib/buscasRecentes.ts`, só no navegador: localStorage `izzatcar.buscas`, sem repetir,
+   com "Limpar"; entram no Enter/Buscar, ao escolher uma sugestão e no Buscar do catálogo); a pílula `dif` ("T8") também
+   ao lado do carro na linha da sugestão.
 
 9. **10% no WhatsApp em toda peça (decisão do dono, 10/11)**: `DESCONTO_WHATS`, `precoWhats()` e `precoWhatsTxt()` em
    `site/src/lib/whats.ts` (sempre calculado do preço do anúncio; nunca em arte). Na página da peça: a faixa "No WhatsApp

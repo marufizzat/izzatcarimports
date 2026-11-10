@@ -24,6 +24,7 @@ import {
   CLASSE_CARTAO, VITRINE_CLARA, icone,
 } from './etiqueta';
 import { whatsUrl } from '../../lib/whats';
+import { guardarBusca } from '../../lib/buscasRecentes';
 
 /** Logo da marca (calculado no build por logoInfo em catalogo.astro). */
 export type Logo = { src: string; w: number; h: number };
@@ -461,7 +462,8 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   const muda = useCallback((parcial: Partial<Filtros>) => { setF((o) => ({ ...o, ...parcial })); carregar(); }, [carregar]);
   const mudaFiltro = useCallback((parcial: Partial<Filtros>) => { muda(parcial); voltaAoTopo(); }, [muda, voltaAoTopo]);
   const mudaTexto = useCallback((q: string) => { muda({ q }); setQTitulo(''); voltaAoTopo('auto'); }, [muda, voltaAoTopo]);
-  const enviaTexto = useCallback((q: string) => { muda({ q }); setQTitulo(q); voltaAoTopo(); }, [muda, voltaAoTopo]);
+  // enviada (Enter / Buscar): vira busca recente das sugestões do cabeçalho
+  const enviaTexto = useCallback((q: string) => { muda({ q }); setQTitulo(q); guardarBusca(q); voltaAoTopo(); }, [muda, voltaAoTopo]);
 
   // fichas do que está escolhido (a busca de texto já aparece no campo, com o "×" dele; o parâmetro antigo
   // "frete" dos links continua filtrando, sem ficha)
