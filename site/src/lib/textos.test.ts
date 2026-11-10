@@ -117,6 +117,18 @@ describe('textos: categoria, carro e marca (fixtures)', () => {
     expect(tituloCarro('Volvo', 'XC60', [2014, 2026])).toBe('Peças Volvo XC60 2014 a 2026 originais | Izzat Car Imports');
     expect(tituloMarca('Volvo')).toBe('Peças Volvo originais | Izzat Car Imports');
   });
+  it('titulo do carro em ate 65 caracteres: sai "originais", depois os anos (SEO, 10/11)', () => {
+    expect(tituloCarro('Mitsubishi', 'Pajero Full', [2008, 2014])).toBe('Peças Mitsubishi Pajero Full 2008 a 2014 | Izzat Car Imports');
+    expect(tituloCarro('Mercedes-Benz', 'Classe GLA 200', [2015, 2020]).length).toBeLessThanOrEqual(65);
+    expect(tituloCarro('Mercedes-Benz', 'Classe GLA 200', [2015, 2020])).not.toMatch(/2015/);
+  });
+  it('meta da marca: com mais modelos que os citados, "como X e Y" (nao lia como se fossem so esses)', () => {
+    const lista = [peca({ b: 'Chevrolet', m: 'Tracker' }), peca({ id: 'MLB2', b: 'Chevrolet', m: 'Cruze' })];
+    const m = { n: 'Chevrolet', c: 552, m: Array.from({ length: 15 }, (_, i) => ({ n: ['Tracker', 'Cruze'][i] ?? `M${i}`, c: 1 })) };
+    expect(textosMarca(m as never, lista).meta).toMatch(/15 modelos, como Tracker e Cruze\./);
+    const dois = { n: 'Volvo', c: 10, m: [{ n: 'XC60', c: 6 }, { n: 'S60', c: 4 }] };
+    expect(textosMarca(dois as never, lista).meta).toMatch(/2 modelos: XC60 e S60\./);
+  });
 });
 
 describe('textos: todas as paginas de lista do estoque real', () => {
@@ -149,6 +161,9 @@ describe('textos: todas as paginas de lista do estoque real', () => {
     const metas = paginas.map((p) => p.t.meta);
     expect(new Set(metas).size).toBe(metas.length);
     for (const m of metas) expect(m.length).toBeLessThanOrEqual(160);
+  });
+  it('titulos das paginas de carro com ate 65 caracteres', () => {
+    for (const c of r.carros) expect(tituloCarro(c.b, c.m, c.anos).length, `${c.b} ${c.m}`).toBeLessThanOrEqual(65);
   });
   it('titulos unicos', () => {
     const tits = paginas.map((p) => p.titulo);

@@ -113,21 +113,26 @@ const ld = {
   '@context': 'https://schema.org',
   '@graph': [
     { '@type': 'Product', name: nomeFora, image: [...(capa ? [SITE + capa] : []), ...fotosMl.slice(0, 6).map((k) => foto(k, 'F'))], sku: p.id,
-      mpn: codigo || p.id,
+      // mpn só com o código de verdade da peça (antes 97 peças levavam o MLB) e marca só quando lida (11 iam "Original")
+      ...(codigo ? { mpn: codigo } : {}),
       description: `${descricao} Desmanche credenciado pelo Detran-RS, CDV nº 01060.`,
-      brand: { '@type': 'Brand', name: p.b || 'Original' },
+      ...(p.b ? { brand: { '@type': 'Brand', name: p.b } } : {}),
       category: p.s || p.c,
       offers: { '@type': 'Offer', url, price: p.p.toFixed(2), priceCurrency: 'BRL', availability: 'https://schema.org/InStock',
                 itemCondition: 'https://schema.org/UsedCondition',
-                seller: { '@type': 'Organization', name: 'Izzat Car Imports' } } },
+                seller: { '@type': 'AutoPartsStore', '@id': `${SITE}/#loja`, name: 'Izzat Car Imports' } } },
     { '@type': 'BreadcrumbList', itemListElement: [...trilha, [p.n, `/peca/${p.slug}.html`]].map(([n, h], i) => ({
         '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) },
   ],
 };
 ---
-<Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(fotosMl[0], 'F') || undefined}
+<Pagina titulo={titulo} descricao={descricao} ogImagem={capa ? `${SITE}${capa}` : foto(fotosMl[0], 'F') || undefined} ogTipo="product"
         produto={{ id: p.id, name: nomeFora, price: p.p, category: p.c }} rodapeSelos={false}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
+  {/* prévia do link como produto (Facebook/WhatsApp leem o preço e o estado) */}
+  <meta slot="head" property="product:price:amount" content={p.p.toFixed(2)} />
+  <meta slot="head" property="product:price:currency" content="BRL" />
+  <meta slot="head" property="product:condition" content="used" />
   {/* prévia do link (WhatsApp, Facebook): a capa de estúdio tem sempre 1000×1000 (capas_estudio.py) */}
   {capa && <meta slot="head" property="og:image:width" content="1000" />}
   {capa && <meta slot="head" property="og:image:height" content="1000" />}

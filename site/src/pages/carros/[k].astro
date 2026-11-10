@@ -7,6 +7,7 @@
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
+import TodasAsPecas from '../../components/categoria/TodasAsPecas.astro';
 import AtalhosVisuais from '../../components/AtalhosVisuais.astro';
 import TextoApoio from '../../components/TextoApoio.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
@@ -92,6 +93,9 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
         <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{N > 1 ? ' · as mais novas primeiro' : ''}</p>
       </div>
       <GradePecas lista={lista.slice(0, 48)} total={N} linkTodas={base} />
+      {/* toda peça do carro com um link de verdade (a grade mostra 48; o "Ver as N" vai para o catálogo filtrado, que o
+          Google não indexa): sem esta lista, 2.310 peças de 40 carros não tinham link na página do próprio carro (SEO, 10/11) */}
+      {N > 48 && <TodasAsPecas lista={lista} titulo={`Todas as ${fmt(N)} peças do ${nome}`} />}
     </section>
     {apoio.length > 0 && <div class="carro-apoio"><TextoApoio paragrafos={apoio} /></div>}
     {/* depois da grade: o Maruf apontando a peça (faixa baixa 1536×512 no PC, em pé no celular). Substitui a faixa

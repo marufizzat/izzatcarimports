@@ -153,6 +153,8 @@ def get_items_details(raw_items):
             "model": model,
             "category_id": item.get("category_id", ""),
             "attrs": attrs,
+            # data da última mudança do anúncio (o <lastmod> de cada peça no sitemap); sem ela, fica a do catálogo
+            "last_updated": item.get("last_updated") or item.get("date_created") or "",
         }
         products.append(product)
 

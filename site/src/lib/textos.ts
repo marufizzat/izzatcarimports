@@ -248,7 +248,8 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
       ]));
   }
   const meta = caber([
-    `${N} ${P(N)} ${O(N)} de ${m.n}${modelos ? ` para ${modelos} ${M(modelos)}` : ''}${nomes.length ? `: ${juntar(nomes.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
+    // "para 15 modelos: Tracker e Cruze" lia como se fossem só esses dois: com mais modelos que nomes, vira "como"
+    `${N} ${P(N)} ${O(N)} de ${m.n}${modelos ? ` para ${modelos} ${M(modelos)}` : ''}${nomes.length ? `${modelos > Math.min(2, nomes.length) ? ', como' : ':'} ${juntar(nomes.slice(0, 2))}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
     `${N} ${P(N)} ${O(N)} de ${m.n}${modelos ? ` para ${modelos} ${M(modelos)}` : ''}. Nota fiscal e 90 dias de garantia. CDV nº 01060.`,
     `${N} ${P(N)} ${O(N)} de ${m.n}. Nota fiscal e 90 dias de garantia.`,
   ]);
@@ -257,8 +258,13 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
 
 // Titulos (<title>) das paginas de lista: cada uma e unica, com a marca no fim.
 export const tituloCategoria = (n: string) => `${n}: peças originais | Izzat Car Imports`;
-export const tituloCarro = (b: string, m: string, anos: [number, number] | null) =>
-  `Peças ${b} ${m}${anos ? ` ${anos[0]} a ${anos[1]}` : ''} originais | Izzat Car Imports`;
+// Até 65 caracteres (o Google corta o resto): sem caber, sai "originais"; ainda sem caber, saem os anos.
+export const TITULO_CARRO_MAX = 65;
+export const tituloCarro = (b: string, m: string, anos: [number, number] | null) => {
+  const ano = anos ? ` ${anos[0]} a ${anos[1]}` : '';
+  const opcoes = [`Peças ${b} ${m}${ano} originais | Izzat Car Imports`, `Peças ${b} ${m}${ano} | Izzat Car Imports`, `Peças ${b} ${m} originais | Izzat Car Imports`];
+  return opcoes.find((t) => t.length <= TITULO_CARRO_MAX) ?? `Peças ${b} ${m} | Izzat Car Imports`;
+};
 export const tituloMarca = (n: string) => `Peças ${n} originais | Izzat Car Imports`;
 
 /** Termos que nunca podem aparecer nos textos (regras da marca: nada nao confirmado). */

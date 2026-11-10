@@ -14,6 +14,8 @@ export type Peca = {
   ms?: string[];
   /** Anos de cada carro do ms, quando a faixa muda de um para outro (o período de venda corta). */
   ys?: [number, number][];
+  /** Dia da última mudança do anúncio no ML (AAAA-MM-DD): o <lastmod> da peça no sitemap. */
+  u?: string;
 };
 export type Resumo = {
   updated: string; total: number;

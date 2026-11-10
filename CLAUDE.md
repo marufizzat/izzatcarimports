@@ -136,7 +136,17 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Logo: só os arquivos originais em `site/public/identidade/` (nunca redesenhar).
 - Não escrever: frete grátis em arte, número de peças em arte, "tem aqui", preço em arte,
   "mais barato que", "100% garantido", depoimento inventado.
-- Ainda **a confirmar** antes de aparecer no site: endereço, horário, 12x, retirada no local, "lacre".
+- Ainda **a confirmar** antes de aparecer no site: 12x, retirada no local, "lacre". Endereço e horário confirmados
+  em 10/11/2026 (os do Perfil da Empresa no Google): ficam só em `site/src/lib/loja.ts` (JSON-LD da loja e Contato).
+
+## SEO (10/11/2026)
+- `robots.txt` bloqueia `/catalogo.html?` (as variações com filtro têm a canônica em /catalogo.html); as páginas de
+  carro (`TodasAsPecas` quando passa de 48), categoria e o pé do catálogo dão link de verdade para toda peça.
+- Sitemap: `lastmod` por peça = `u` (dia da última mudança do anúncio, `last_updated` do ML, em `marcar_datas` no fim
+  do `preparar_dados.py`); carro/marca/categoria = o dia mais novo das suas peças. Nunca a data da rodada em tudo.
+- Página da peça: o h1 é nome + carro + anos (visual de 2 linhas igual); JSON-LD Product sem `mpn` inventado (só o
+  código real) e sem marca "Original"; `seller` = a loja (`@id` /#loja). `og:type` product.
+- `noindex` vira "noindex, follow" (`Base.astro`); páginas de redirecionamento só com canônica + refresh.
 
 ## Peso e fluidez (o Pages aceita até 1 GB; cada byte da página de peça vale 5 mil vezes)
 - Página de peça ≈ 38 KB de HTML (era 87 KB). Antes de pôr algo em todo cartão ou em toda peça, pense nisso.

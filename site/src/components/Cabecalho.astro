@@ -52,7 +52,8 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
 <dialog id="meu-carro-dialogo" class="mc-dialogo" aria-labelledby="mc-dlg-titulo">
   <div class="mc-dlg-topo">
     <div>
-      <h2 id="mc-dlg-titulo" class="mc-dlg-titulo">Seu carro</h2>
+      {/* <p> e não <h2>: a caixa fica no HTML de toda página, antes do h1 (o Google lia "Seu carro" como o 1º título) */}
+      <p id="mc-dlg-titulo" class="mc-dlg-titulo">Seu carro</p>
       <p class="mc-dlg-sub">Escolha uma vez: o site passa a mostrar as peças do seu carro.</p>
     </div>
     <button class="mc-dlg-fechar" type="button" aria-label="Fechar" data-fechar-carro>

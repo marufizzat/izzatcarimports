@@ -3341,6 +3341,7 @@ def main():
         "ys": {str(i): x["ys"] for i, x in enumerate(pecas) if x.get("ys")},
     }
 
+    marcar_datas(pecas, prods)
     SAIDA_DADOS.mkdir(parents=True, exist_ok=True)
     SAIDA_PUBLICA.mkdir(parents=True, exist_ok=True)
     (SAIDA_DADOS / "pecas.json").write_text(
@@ -3357,6 +3358,16 @@ def main():
           f"em 2+ carros: {sum(1 for x in pecas if x.get('ms'))}")
     print(f"marcas: {len(marcas)} | familias: {len(familias)} | paginas de carro: {len(carros)}")
     print(f"busca.json: {kb:.0f} KB (sem gzip) | {time.time() - t0:.1f}s")
+
+
+def marcar_datas(pecas, prods):
+    """"u" = dia da última mudança do anúncio no ML (AAAA-MM-DD), para o <lastmod> de cada peça no sitemap
+    (sitemap.xml.ts). Sem a data (backend antigo), a peça fica sem "u" e o sitemap usa a data do catálogo."""
+    datas = {p.get("id"): str(p.get("last_updated") or "")[:10] for p in prods}
+    for x in pecas:
+        d = datas.get(x.get("id"), "")
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d):
+            x["u"] = d
 
 
 if __name__ == "__main__":

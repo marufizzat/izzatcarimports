@@ -1,20 +1,24 @@
 ---
 // Contato: o WhatsApp em primeiro lugar e funcionando (número clicável, botão copiar, QR no PC e a mensagem
-// que vai pronta). Depois, o que mandar na mensagem e os outros canais. Só fatos já publicados no site:
-// endereço e horário seguem fora até o Maruf confirmar.
+// que vai pronta). Depois, o que mandar na mensagem e os outros canais. Endereço e horário = os do Perfil da Empresa
+// no Google (confirmados em 10/11/2026), com o mesmo bloco de dados da loja da home (lib/loja.ts).
 import Pagina from '../layouts/Pagina.astro';
 import Icone from '../components/Icone.astro';
 import IconeInst from '../components/inst/IconeInst.astro';
 import CartaoWhats from '../components/inst/CartaoWhats.astro';
 import SeloReputacao from '../components/SeloReputacao.astro';
 import { whatsUrl, SITE } from '../lib/dados';
+import { lojaLd, LOJA_ENDERECO, LOJA_HORARIO, LOJA_MAPA } from '../lib/loja';
 
 const canonical = `${SITE}/contato.html`;
 const canonicalPath = '/contato.html';
 const msg = 'Estou procurando uma peça.';
 const url = whatsUrl(msg);
 const trilha: [string, string][] = [['Início', '/'], ['Contato', canonicalPath]];
-const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) };
+const ld = { '@context': 'https://schema.org', '@graph': [
+  lojaLd(),
+  { '@type': 'BreadcrumbList', itemListElement: trilha.map(([n, h], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: `${SITE}${h}` })) },
+] };
 const mandar = [
   { i: 'carro', t: 'O carro', s: 'Marca, modelo e ano.' },
   { i: 'etiqueta', t: 'A peça', s: 'Do jeito que você fala: farol, retrovisor, módulo...' },
@@ -75,7 +79,9 @@ const mandar = [
         </div>
         <div class="con-canal">
           <span class="inst-disco inst-disco-g"><IconeInst nome="pino" /></span>
-          <span class="con-canal-txt"><b>Onde a gente está</b><span>Aceguá-RS, na fronteira com o Uruguai. Atendimento pelo WhatsApp.</span>
+          <span class="con-canal-txt"><b>Onde a gente está</b>
+            <span>{LOJA_ENDERECO.rua}, {LOJA_ENDERECO.cidade}-{LOJA_ENDERECO.uf}, CEP {LOJA_ENDERECO.cep}, na fronteira com o Uruguai. {LOJA_HORARIO}. Atendimento pelo WhatsApp.</span>
+            <a class="con-link" href={LOJA_MAPA} target="_blank" rel="noopener">Ver no Google Maps</a>
             <a class="con-link" href="/sobre.html">Conheça o pátio</a>
           </span>
         </div>

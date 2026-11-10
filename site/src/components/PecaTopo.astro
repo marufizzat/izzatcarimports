@@ -117,12 +117,15 @@ const perguntas = [
   </div>
 
   <div class="compra">
-    <div class="compra-cabeca">
-      <Titulo class:list={['compra-nome', { 'nome-longo': p.n.length > 36 }]}>{p.n}</Titulo>
+    {/* o h1 leva nome + carro + anos (é o que se procura: "coletor admissão duster 2016"); visual igual ao de antes:
+        o h1 é a caixa (sem fonte própria) e o nome e o carro são as duas linhas. Os espaços entre eles não aparecem
+        (grade), mas entram no texto que o Google e o leitor de tela leem ("Coletor admissão Renault Duster 2016–2020"). */}
+    <Titulo class="compra-cabeca">
+      <span class:list={['compra-nome', { 'nome-longo': p.n.length > 36 }]}>{p.n}</span>{' '}
       {p.b && (dobra['carro-2l'] && anos
-        ? <p class="compra-carro"><b>{carro}</b><span class="compra-anos">{anos}</span></p>
-        : <p class="compra-carro"><b>{carro}</b>{anos && ` · ${anos}`}</p>)}
-    </div>
+        ? <span class="compra-carro"><b>{carro}</b>{' '}<span class="compra-anos">{anos}</span></span>
+        : <span class="compra-carro"><b>{carro}</b>{anos && ` · ${anos}`}</span>)}
+    </Titulo>
 
     <div class="compra-caixa">
       <div class="compra-preco-linha">
@@ -517,7 +520,7 @@ const perguntas = [
   @media (prefers-reduced-motion: reduce) { .galeria-pontos i, .galeria-miniaturas button, .galeria-dica, .galeria-guia, .galeria-lupa { transition: none !important; } }
 
   .compra { min-width: 0; display: grid; gap: 16px; align-content: start; }
-  .compra-cabeca { display: grid; gap: 8px; }
+  .compra-cabeca { display: grid; gap: 8px; margin: 0; font: inherit; letter-spacing: normal; }
   .compra-nome { overflow-wrap: anywhere; margin: 0; font-stretch: 84%; font-weight: 800; font-size: clamp(28px, 3.2vw, 42px); line-height: 1.04; letter-spacing: -.01em; text-wrap: balance; }
   /* o carro da peça logo abaixo do nome (o título cru do ML saiu daqui: repetia o nome; ele está na ficha) */
   .compra-carro { margin: 0; font-size: 15.5px; line-height: 1.35; color: var(--ink-2); overflow-wrap: anywhere; }
