@@ -125,6 +125,23 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    (`cabecaPeca` + `linhaMeuCarro` + `caudaPeca`; o frete pelo CEP usa a mesma ficha: `*COTAÇÃO DE FRETE*`). Só Brasil
    (sem versão em espanhol).
 
+10. **Lista de orçamento (rodada 12, nov/2026)**: o "carrinho" de quem compra pelo WhatsApp. Estado só no navegador em
+   `site/src/lib/lista.ts` (`localStorage['izzatcar.lista']`, até 30 peças, evento `lista` com a ação; funções puras
+   testadas; dinheiro em centavos: o total no WhatsApp é a SOMA das linhas com 10%, `somaPrecos` em `lib/whats.ts`).
+   Página da peça: "Adicionar à lista de orçamento" abaixo dos dois botões da compra (só o botão no HTML; os dados vêm do
+   h1, da linha do carro, do código e do `IZZAT_PRODUCT`; `components/peca/listaPeca.ts`); na barra fixa do celular NÃO
+   (não cabe sem apertar). Cabeçalho: o ícone com o número só com 1+ peça (script no HTML antes da 1ª pintura marca
+   `html[data-lista]`); abaixo de 1100 px ele ocupa o lugar da lupa. `/lista.html` (noindex, fora do sitemap,
+   `pages/lista.astro` + `components/lista/paginaLista.ts`): preço do site e no WhatsApp por peça, tirar com "Desfazer",
+   subtotal/desconto/total, "Pedir tudo no WhatsApp" (`mensagemLista`, GA4 `contato_whatsapp` com `data-botao="lista"`),
+   "Copiar o link da lista" (`/lista.html?i=MLB1,MLB2`: quem abre vê a mesma lista, só para ver e pedir, e "Guardar na
+   minha lista" junta sem apagar a dele); preço e disponibilidade conferidos no `/dados/busca.json` (peça fora dele =
+   "Já vendida", fora do total; sem rede, ficam os valores guardados com um aviso). GA4 `lista_adicionar` (`rastreio.js`).
+   **"Vai junto"** (`components/peca/VaiJunto.astro`, logo depois da compra): até 4 peças do MESMO carro e geração que
+   costumam ser trocadas com a vista, pela regra `GRUPOS`/`JUNTO` de `lib/relacionadas.ts` (`vaiJunto`: lado e
+   frente/trás pelo nome, nunca o outro lado nem a outra ponta, nunca a mesma peça repetida); sem peça que combine, o
+   bloco não aparece. As peças dele saem do "Do mesmo carro". Teste do estoque real em `relacionadas.test.ts`.
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
