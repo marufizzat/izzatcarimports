@@ -5446,181 +5446,185 @@
   "foto": "993502-MLB110820941333_042026"
  },
  "MLB4632379073": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento soleira traseira esquerda",
   "carro": "Hyundai HB20",
   "foto": "938011-MLB109956176250_042026"
  },
  "MLB4632355031": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Comando vidro esquerdo",
   "carro": "Chery Tiggo",
-  "foto": "612415-MLB109956620344_042026"
+  "foto": "612415-MLB109956620344_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4632355015": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento soleira dianteira direita",
   "carro": "Hyundai HB20",
   "foto": "822157-MLB110860781153_042026"
  },
  "MLB4632262865": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa caixa fusível",
   "carro": "Hyundai HB20",
   "foto": "779874-MLB109953710888_042026"
  },
  "MLB4632251307": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar central painel",
   "carro": "BMW Série 5",
   "foto": "637550-MLB109953626928_042026"
  },
  "MLB4632251253": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro elétrico",
   "carro": "Ford Focus",
   "foto": "717969-MLB109953894120_042026"
  },
  "MLB4632251069": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Capa dobra porta-malas esquerda",
   "carro": "Hyundai Genesis",
   "foto": "939189-MLB110857944345_042026"
  },
  "MLB4632240003": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Tampa alto-falante painel",
   "carro": "Chevrolet Cruze",
-  "foto": "959848-MLB110858665421_042026"
+  "foto": "959848-MLB110858665421_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4632239177": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar lateral direito",
   "carro": "BMW Série 5",
   "foto": "656203-MLB110858208371_042026"
  },
  "MLB4632238501": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura console central",
   "carro": "Chevrolet Cruze",
-  "foto": "785922-MLB110858146655_042026"
+  "foto": "785922-MLB110858146655_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4632214445": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Painel instrumentos automatic",
   "carro": "Chevrolet Spin",
   "foto": "698243-MLB109953712852_042026"
  },
  "MLB4632213865": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Capa dobra porta-malas direita",
   "carro": "Hyundai Genesis",
   "foto": "730563-MLB110857999259_042026"
  },
  "MLB4632213761": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Rádio CD",
   "carro": "Geely GC2",
   "foto": "717683-MLB110857969719_042026"
  },
  "MLB4632142807": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Cruzeta coluna direção",
   "carro": "Chevrolet Cruze",
   "foto": "832114-MLB110855258435_042026"
  },
  "MLB4632119437": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura alavanca freio mão",
   "carro": "Iveco Daily",
   "foto": "710578-MLB110856025393_042026"
  },
  "MLB4632114631": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Mangueira turbina filtro ar",
   "carro": "Iveco Daily",
   "foto": "801168-MLB110855248189_042026"
  },
  "MLB4632109729": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura coifa seletor marcha",
   "carro": "Iveco Daily",
   "foto": "835959-MLB110855352725_042026"
  },
  "MLB4632109345": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Acabamento tampa porta-malas",
   "carro": "Volvo S60",
-  "foto": "957706-MLB110855559557_042026"
+  "foto": "957706-MLB110855559557_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4631609351": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento lateral painel direito",
   "carro": "Audi A3",
   "foto": "832446-MLB109943788422_042026"
  },
  "MLB6671103268": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Porta-copos console central",
   "carro": "Peugeot 2008",
   "foto": "760943-MLB110900552995_042026"
  },
  "MLB6671090936": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Apoio braço forro porta couro d/e",
   "carro": "BMW Série 5",
   "foto": "921668-MLB110900696945_042026"
  },
  "MLB6671079118": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento coluna direção",
   "carro": "Renault Clio",
   "foto": "983299-MLB109993674762_042026"
  },
  "MLB6671067422": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa caixa filtro ar",
   "carro": "Jaguar E-Pace",
   "foto": "898709-MLB109993473814_042026"
  },
  "MLB6671067334": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão regulagem retrovisor",
   "carro": "Chevrolet Cruze",
   "foto": "604477-MLB109993473258_042026"
  },
  "MLB6671003324": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado",
   "carro": "Peugeot 206",
   "foto": "837421-MLB109992027846_042026"
  },
  "MLB6670990782": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Mangueira drenagem teto solar",
   "carro": "Volvo XC60",
   "foto": "612364-MLB110898697941_042026"
  },
  "MLB6670989660": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa caixa filtro ar",
   "carro": "Land Rover Discovery",
   "foto": "901032-MLB110898663029_042026"
  },
  "MLB6670963366": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa caixa fusíveis",
   "carro": "Audi A4",
   "foto": "787757-MLB110898101255_042026"
  },
  "MLB6670509590": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Soleira porta traseira direita",
   "carro": "Ford Ranger",
   "foto": "671830-MLB109985963032_042026"
  },
  "MLB4634376141": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Saída ar lateral painel defroster",
   "carro": "Nissan Murano",
   "foto": "848808-MLB110898713763_042026"
@@ -5853,538 +5857,646 @@
   "foto": "703230-MLB110962441609_042026"
  },
  "MLB6677213582": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Coletor admissão",
-  "carro": "Renault Scenic"
+  "carro": "Renault Scenic",
+  "foto": "615112-MLB110049840230_042026"
  },
  "MLB6677207192": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Comando rádio sony",
-  "carro": "Ford New Fiesta"
+  "carro": "Ford New Fiesta",
+  "foto": "927980-MLB110049564272_042026"
  },
  "MLB6677207186": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Fechadura capô",
-  "carro": "Volkswagen Jetta"
+  "carro": "Volkswagen Jetta",
+  "foto": "657463-MLB110961098719_042026"
  },
  "MLB6677203034": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Coletor admissão",
-  "carro": "Chevrolet Cruze"
+  "carro": "Chevrolet Cruze",
+  "foto": "731189-MLB110049929866_042026"
  },
  "MLB6677203022": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Coletor admissão gnv",
-  "carro": "Fiat Strada"
+  "carro": "Fiat Strada",
+  "foto": "612672-MLB110050071170_042026"
  },
  "MLB6677202988": {
-  "status": "fila",
+  "status": "pronta",
   "n": "Coletor admissão",
-  "carro": "Honda New Civic"
+  "carro": "Honda New Civic",
+  "foto": "661888-MLB110049549302_042026"
  },
  "MLB4638382953": {
-  "status": "fila",
+  "status": "pulada",
   "n": "Coletor admissão",
-  "carro": "Renault Logan"
+  "carro": "Renault Logan",
+  "motivo": "etiqueta impressa: código impresso (11026BS01, PAGG130)",
+  "foto": "609197-MLB110963140591_042026"
  },
  "MLB4638281379": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Renault Sandero"
+  "carro": "Renault Sandero",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4638281357": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Renault Sandero"
+  "carro": "Renault Sandero",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4638276315": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "BMW 330i"
+  "carro": "BMW 330i",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690617776": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Comando ar condicionado teto",
-  "carro": "Land Rover Discovery"
+  "carro": "Land Rover Discovery",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690617538": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Tampa buzina volante bicudo",
-  "carro": "Chevrolet Monza"
+  "carro": "Chevrolet Monza",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690617502": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Chave luz seta",
-  "carro": "Geely GC2"
+  "carro": "Geely GC2",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690604516": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Chave limpador para-brisa",
-  "carro": "Geely GC2"
+  "carro": "Geely GC2",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690604504": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Botão sensor alarme interno",
-  "carro": "Toyota Yaris"
+  "carro": "Toyota Yaris",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690591544": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Caixa fusível completa",
-  "carro": "Land Rover Discovery"
+  "carro": "Land Rover Discovery",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690591272": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Caixa fusível",
-  "carro": "Land Rover Discovery"
+  "carro": "Land Rover Discovery",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690591226": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Chicote console",
-  "carro": "Land Rover Discovery"
+  "carro": "Land Rover Discovery",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690584854": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Subwoofer",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6690578638": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo injeção",
-  "carro": "Renault Duster"
+  "carro": "Renault Duster",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6689984904": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo injeção ECU DME",
-  "carro": "BMW Série 5"
+  "carro": "BMW Série 5",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643640995": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Chave liga desliga airbag",
-  "carro": "Chevrolet Onix"
+  "carro": "Chevrolet Onix",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643640989": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Sensor radar ponto cego",
-  "carro": "Nissan Kicks"
+  "carro": "Nissan Kicks",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643640811": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Chave de luz",
-  "carro": "Ford Ka"
+  "carro": "Ford Ka",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6691359404": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Mercedes-Benz C200"
+  "carro": "Mercedes-Benz C200",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6691346640": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Fiat Palio"
+  "carro": "Fiat Palio",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6691346582": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Ford Escort"
+  "carro": "Ford Escort",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6691346538": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Ford Fusion"
+  "carro": "Ford Fusion",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6691333402": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão Pulse Strada Argo Cronos firefly",
-  "carro": "Fiat"
+  "carro": "Fiat",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6691269214": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Fiat Palio"
+  "carro": "Fiat Palio",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6691269158": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão ecotec",
-  "carro": "Chevrolet Cruze"
+  "carro": "Chevrolet Cruze",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644231193": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo controle transmissão",
-  "carro": "Volvo S60"
+  "carro": "Volvo S60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644229623": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura acabamento forro porta dianteiro esquerdo",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644227265": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão de",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644227247": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Chery Tiggo"
+  "carro": "Chery Tiggo",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644227243": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Chevrolet Celta"
+  "carro": "Chevrolet Celta",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644227229": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Peugeot 3008"
+  "carro": "Peugeot 3008",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644227227": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Dodge Journey"
+  "carro": "Dodge Journey",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644227225": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Botão desembaçador",
-  "carro": "Volkswagen Santana"
+  "carro": "Volkswagen Santana",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644216645": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Painel instrumentos",
-  "carro": "Ford New Fiesta"
+  "carro": "Ford New Fiesta",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644216357": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura traseira console central",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644216345": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo injeção ECU",
-  "carro": "Mercedes-Benz C320"
+  "carro": "Mercedes-Benz C320",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644214193": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Volkswagen Fox"
+  "carro": "Volkswagen Fox",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644214187": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Mangueira respiro motor",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644214183": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Ford New Fiesta"
+  "carro": "Ford New Fiesta",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644213913": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Porta-luvas completo",
-  "carro": "Fiat Toro"
+  "carro": "Fiat Toro",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644204409": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Sensor crepuscular",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644203413": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura botão vidro traseiro esquerdo",
-  "carro": "Chery Arrizo"
+  "carro": "Chery Arrizo",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644201181": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Botão controle tração",
-  "carro": "Toyota Yaris"
+  "carro": "Toyota Yaris",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644176041": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura comando vidro motorista",
-  "carro": "Chery Arrizo"
+  "carro": "Chery Arrizo",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644017377": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Brake light (luz de freio)",
-  "carro": "Honda New Civic"
+  "carro": "Honda New Civic",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644013489": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Balança bandeja suspensão traseira direita",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644013385": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Porta-luvas",
-  "carro": "Chevrolet Cruze"
+  "carro": "Chevrolet Cruze",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644000619": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Balança bandeja suspensão traseira esquerda",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644000577": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Gargalo tanque combustível",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4644000573": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Painel controle suspensão terreno",
-  "carro": "Land Rover Discovery"
+  "carro": "Land Rover Discovery",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643987507": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "Citroën C3"
+  "carro": "Citroën C3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643987475": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Lanterna luz teto cortesia",
-  "carro": "Land Rover Discovery"
+  "carro": "Land Rover Discovery",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643987319": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Caixa fusível",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643987285": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Caixa fusível ECU",
-  "carro": "Volvo S60"
+  "carro": "Volvo S60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643979033": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Caixa fusível reles",
-  "carro": "Fiat Idea"
+  "carro": "Fiat Idea",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643975117": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Caixa filtro ar ressonador",
-  "carro": "Mercedes-Benz"
+  "carro": "Mercedes-Benz",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643975103": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura painel instrumentos",
-  "carro": "Renault Captur"
+  "carro": "Renault Captur",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4643975093": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura porta-objetos painel",
-  "carro": "Toyota Yaris"
+  "carro": "Toyota Yaris",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704025482": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Amplificador meridian som",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704024844": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Batente tampa traseira",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703947530": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Acabamento lateral porta-malas lado direito",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703946958": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Porta-copos console central",
-  "carro": "Honda New Civic"
+  "carro": "Honda New Civic",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703509296": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura comando retrovisor esquerdo",
-  "carro": "Geely GC2"
+  "carro": "Geely GC2",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703507996": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Difusor ar central painel",
-  "carro": "Chevrolet Onix"
+  "carro": "Chevrolet Onix",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703495180": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Conjunto botões drive select",
-  "carro": "Audi A3"
+  "carro": "Audi A3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703483020": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Acabamento coluna traseira direita",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703472342": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Farol direito bi xenon",
-  "carro": "Audi A4"
+  "carro": "Audi A4",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4648110211": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo direção elétrica",
-  "carro": "Toyota Yaris"
+  "carro": "Toyota Yaris",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4648106439": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Mangueira respiro carter",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4648095735": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Acabamento coluna traseira esquerda",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4648085079": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura lateral traseira esquerda",
-  "carro": "Nissan Kicks"
+  "carro": "Nissan Kicks",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4647889271": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Suporte carcaça módulo ar condicionado",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4647889253": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo conforto BCM",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4647889239": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Difusor ar painel direito",
-  "carro": "Ford Ranger"
+  "carro": "Ford Ranger",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4647879355": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo injeção",
-  "carro": "Renault Captur"
+  "carro": "Renault Captur",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4647876843": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Chicote caixa ar condicionado",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706913642": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Relé vidro elétrico",
-  "carro": "Volkswagen Polo"
+  "carro": "Volkswagen Polo",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706901290": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Suporte módulo tampa traseira",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706863378": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo imobilizador",
-  "carro": "Volkswagen Santana"
+  "carro": "Volkswagen Santana",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706609080": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Maçaneta interna dianteira esquerda",
-  "carro": "Chevrolet Cruze"
+  "carro": "Chevrolet Cruze",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706608486": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Difusor ar central",
-  "carro": "Volkswagen Polo"
+  "carro": "Volkswagen Polo",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706608462": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Grade alto-falante porta esquerda",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706608428": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Difusor ar esquerdo titanium",
-  "carro": "Ford Fusion"
+  "carro": "Ford Fusion",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706584438": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Tampa guia isofix banco traseiro",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6706584436": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Difusor ar lado direito",
-  "carro": "Chevrolet Cobalt"
+  "carro": "Chevrolet Cobalt",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704036868": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura central rádio",
-  "carro": "Volkswagen Fox"
+  "carro": "Volkswagen Fox",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704036594": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Duto de ar porta-malas",
-  "carro": "Volvo XC60"
+  "carro": "Volvo XC60",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704036548": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Coletor admissão",
-  "carro": "BMW 320i"
+  "carro": "BMW 320i",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704031338": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Luz teto cortesia",
-  "carro": "Land Rover Discovery"
+  "carro": "Land Rover Discovery",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704029798": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo central alarme bateria",
-  "carro": "Toyota Yaris"
+  "carro": "Toyota Yaris",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704018052": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo conforto",
-  "carro": "Toyota Yaris"
+  "carro": "Toyota Yaris",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6704013138": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Porta-objetos console",
-  "carro": "Honda New Civic"
+  "carro": "Honda New Civic",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703967302": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Módulo injeção ECU",
-  "carro": "Toyota Yaris"
+  "carro": "Toyota Yaris",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6703951894": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Acabamento lateral porta-malas lado esquerdo",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4649526669": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Soleira porta dianteira direita",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4649513227": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Moldura difusor ar painel direito",
-  "carro": "Nissan Murano"
+  "carro": "Nissan Murano",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4649502853": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Soleira porta traseira direita",
-  "carro": "Jaguar E-Pace"
+  "carro": "Jaguar E-Pace",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4649488897": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Protetor térmico do catalisador",
-  "carro": "Fiat Strada"
+  "carro": "Fiat Strada",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4649488779": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Difusor ar painel direito",
-  "carro": "Nissan Murano"
+  "carro": "Nissan Murano",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4649488131": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Farol bi-xenon esquerdo",
-  "carro": "Audi A4"
+  "carro": "Audi A4",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB4649487343": {
-  "status": "fila",
+  "status": "reprovada",
   "n": "Acabamento coluna lateral traseira direita",
-  "carro": "Audi Q3"
+  "carro": "Audi Q3",
+  "motivo": "nenhuma foto com a peça inteira e limpa"
  }
 }
