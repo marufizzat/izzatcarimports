@@ -59,8 +59,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      (`#F4F3F0→#E7E5E1`) e a foto "multiplicando" sobre ele (o branco cru do ML vira o tom do estúdio). A peça fica
      centrada ocupando ~84%, sem nunca cortar nada (`site/src/lib/quadroFoto.ts`, só CSS, a foto do ML não é copiada).
      A caixa da peça de cada foto fica em `site/src/data/fotos-ml-caixas.json` (commitado): `ferramentas/medir_fotos_ml.py`
-     mede só o que falta (Mac: Vision, 8 em paralelo, ~2 h para as 45 mil; robô: rembg nas fotos novas, cache
-     `caixas-`, até 4 min por rodada). Foto sem medida aparece inteira, como antes. Tela cheia: fundo escuro, foto inteira.
+     mede só o que falta (Mac: Vision num processo aberto, `ferramentas/caixa_vision.swift`, 8 em paralelo, ~1h15 para as
+     45 mil; robô: rembg nas fotos novas, cache `caixas-`, até 4 min por rodada). Foto sem medida aparece inteira, como
+     antes. Miniaturas pela foto `-A` do ML (228 px, proporção da foto). Tela cheia: fundo escuro, foto inteira.
      Testes: `python testes/test_medir_fotos_ml.py` e `site/testes/quadroFoto.test.ts`.
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
 
