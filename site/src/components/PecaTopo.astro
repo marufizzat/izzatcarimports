@@ -78,6 +78,8 @@ const perguntas = [
     // regra do dono (09/11): frete a combinar pelo site; frete e prazo do ML são os do anúncio (sem prazo próprio)
     resposta: 'A gente envia para todo o Brasil. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.',
     link: { href: '/envios.html', texto: 'Ver envios' },
+    // o campo de CEP ("Cotar o frete no WhatsApp") é montado pelo script, na 1ª vez que a pergunta abre (HTML mínimo)
+    attrs: { 'data-cep': '' },
   },
   {
     pergunta: 'Tem nota fiscal?',
@@ -183,6 +185,8 @@ const perguntas = [
 
 <script>
   import { lerMeuCarro, nomeCarro, EVENTO, type MeuCarro } from '../lib/meuCarro';
+  import { ligarCampoCep, cepCompleto, formatarCep, salvarCep } from '../lib/cep';
+  import { linkWhats, mensagemFrete, blocoDaCabeca, abrirWhats } from '../lib/whats';
 
   // WhatsApp leva o carro salvo na mensagem (troca só a linha "Meu carro é ...").
   // [data-whats-espelho] (o botão da barra fixa do celular) recebe o mesmo link do botão principal.
@@ -209,6 +213,55 @@ const perguntas = [
   const abaDoMl = () => { if (ml) { if (pc.matches) ml.target = '_blank'; else ml.removeAttribute('target'); } };
   abaDoMl();
   pc.addEventListener('change', abaDoMl);
+
+  // "Como é o envio?": o CEP para cotar o frete no WhatsApp (cliente oculto, melhoria 10), o mesmo de /envios.html
+  // (lib/cep.ts: máscara, 8 números e o CEP lembrado). Montado na 1ª vez que a pergunta abre: no HTML de cada peça vai só
+  // o data-cep. Sem promessa de prazo nem de valor: a gente responde com o frete. O WhatsApp abre com o CEP e o bloco da
+  // peça (o mesmo do "Pedir no WhatsApp", tirado do data-cabeca dele) e conta no GA4 como data-botao="frete-cep".
+  const envio = document.querySelector<HTMLDetailsElement>('details[data-cep]');
+  if (envio) {
+    let montado = false;
+    const montar = () => {
+      if (montado) return;
+      montado = true;
+      const f = document.createElement('form');
+      f.className = 'cep-peca';
+      f.noValidate = true;
+      f.innerHTML = '<div class="campo"><label for="cep-peca">Seu CEP</label><div class="cep-peca-linha">'
+        + '<input id="cep-peca" name="cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" aria-describedby="cep-peca-nota cep-peca-erro">'
+        + '<button class="botao botao-laranja" type="submit">Cotar o frete no WhatsApp</button></div>'
+        + '<p class="erro" id="cep-peca-erro" hidden>Confira o CEP: são 8 números.</p></div>'
+        + '<p class="cep-peca-nota" id="cep-peca-nota">A gente responde no WhatsApp com o valor do frete para o seu CEP.</p>'
+        + '<p class="cep-peca-status" role="status" aria-live="polite"></p>';
+      // o ícone do WhatsApp: a cópia do que já está no botão "Pedir no WhatsApp" (o sprite com a versão certa)
+      const ic = principal?.querySelector('svg')?.cloneNode(true);
+      if (ic) f.querySelector('button')!.prepend(ic);
+      envio.append(f);
+      const cep = f.querySelector<HTMLInputElement>('input')!;
+      const erro = f.querySelector<HTMLElement>('.erro')!;
+      const status = f.querySelector<HTMLElement>('.cep-peca-status')!;
+      ligarCampoCep(cep, () => { if (!erro.hidden) { erro.hidden = true; cep.setAttribute('aria-invalid', 'false'); } });
+      f.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!cepCompleto(cep.value)) {
+          erro.hidden = false;
+          cep.setAttribute('aria-invalid', 'true');
+          cep.focus();
+          return;
+        }
+        const c = formatarCep(cep.value);
+        salvarCep(c);
+        const url = linkWhats(mensagemFrete(c, { bloco: blocoDaCabeca(principal?.dataset.cabeca || '') }));
+        abrirWhats(url, 'frete-cep');
+        const a = Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener', textContent: 'abra por aqui' });
+        a.dataset.botao = 'frete-cep';
+        status.replaceChildren('A gente abriu o WhatsApp com o seu CEP. Se não abriu, ', a, '.');
+      });
+    };
+    // antes de abrir (o clique no título vem antes da troca): o campo já está lá quando a altura anima
+    envio.querySelector('summary')?.addEventListener('click', montar);
+    envio.addEventListener('toggle', () => { if (envio.open) montar(); });
+  }
 
   // Galeria em tela cheia: módulo pequeno e sem React (ui/GaleriaTelaCheia.ts). Pré-busca quando o navegador folga
   // e no 1º toque na foto; o HTML dela só é montado na 1ª vez que abre.
@@ -597,6 +650,20 @@ const perguntas = [
 
   .compra-perguntas { margin-top: 6px; }
   .compra-perguntas-titulo { margin: 0 0 6px; font-stretch: 84%; font-weight: 800; font-size: 22px; line-height: 1.1; }
+  /* "Como é o envio?": o CEP (montado pelo script). Campo e botão lado a lado quando cabem; senão, um embaixo do outro */
+  .cep-peca { display: grid; gap: 8px; margin: -4px 0 0; padding: 14px; border-radius: 16px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .acd-item[open] > .cep-peca { margin-bottom: 16px; }
+  .cep-peca .campo { gap: 6px; }
+  .cep-peca label { font-size: 14px; }
+  .cep-peca-linha { display: flex; flex-wrap: wrap; gap: 8px; }
+  /* o campo é o .campo do site (borda, foco e erro iguais aos de /envios.html); aqui só o jeito do CEP */
+  .cep-peca input { flex: 1 1 128px; width: auto; min-width: 0; height: var(--botao-p); padding: 0 14px; font-size: 18px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+  .cep-peca .botao { --h: var(--botao-p); flex: 1 1 auto; padding: 0 16px; gap: 8px; font-size: 15px; }
+  .cep-peca .botao svg { width: 19px; height: 19px; }
+  .cep-peca-nota, .cep-peca-status { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+  .cep-peca-status:empty { display: none; }
+  .cep-peca-status a { color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
 
   @media (max-width: 959px) {
     .compra { gap: 14px; }

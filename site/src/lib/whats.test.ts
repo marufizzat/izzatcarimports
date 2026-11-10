@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, blocoPeca, WHATS } from './whats';
+import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, blocoPeca, cabecaPeca, blocoDaCabeca, mensagemFrete, WHATS } from './whats';
+import { formatarCep, cepCompleto, digitosCep } from './cep';
 import { msgWhats } from '../components/catalogo/etiqueta';
 
 const texto = (u: string) => decodeURIComponent(u.split('?text=')[1]);
@@ -47,5 +48,31 @@ describe('WhatsApp: uma abertura só ("Olá! Vim pelo site da Izzat Car.")', () 
     };
     andar(raiz);
     expect(achados).toEqual([]);
+  });
+});
+
+describe('frete pelo CEP (envios e "Como é o envio?" da peça)', () => {
+  const x = { linha: 'Caixa filtro ar · Renault Clio, Logan e Sandero 2007 a 2014 · Cód. 8200328856', preco: '244,64',
+    url: 'https://izzatcarimports.com.br/peca/caixa-filtro-ar-renault-clio-logan-sandero-07-14-8200328856-MLB7862060624.html' };
+  it('o bloco da peça sai da cabeça do botão (com e sem a frase do desconto)', () => {
+    expect(blocoDaCabeca(cabecaPeca(x, { desconto: true }))).toBe(blocoPeca(x));
+    expect(blocoDaCabeca(cabecaPeca(x))).toBe(blocoPeca(x));
+    expect(blocoDaCabeca('qualquer coisa')).toBe('');
+  });
+  it('a mensagem: o CEP e a peça (sem prazo nem valor)', () => {
+    expect(mensagemFrete('96445-000', { bloco: blocoPeca(x) })).toBe(`${ABERTURA} Quero saber o frete desta peça para o CEP 96445-000:\n\n`
+      + 'Caixa filtro ar · Renault Clio, Logan e Sandero 2007 a 2014 · Cód. 8200328856\nR$ 244,64\n' + x.url);
+    expect(mensagemFrete('96445-000', { peca: 'farol do Cruze' })).toBe(`${ABERTURA} Quero saber o frete para o CEP 96445-000. A peça é: farol do Cruze`);
+    expect(mensagemFrete('96445-000')).toBe(`${ABERTURA} Quero saber o frete para o CEP 96445-000. A peça é: ____`);
+  });
+  it('máscara 00000-000 e os 8 números', () => {
+    expect(formatarCep('96445000')).toBe('96445-000');
+    expect(formatarCep('96445-0')).toBe('96445-0');
+    expect(formatarCep('9644')).toBe('9644');
+    expect(formatarCep('96.445-0001')).toBe('96445-000');
+    expect(digitosCep('abc96445')).toBe('96445');
+    expect(cepCompleto('96445-000')).toBe(true);
+    expect(cepCompleto('96445-00')).toBe(false);
+    expect(cepCompleto('96445-0001')).toBe(false);
   });
 });

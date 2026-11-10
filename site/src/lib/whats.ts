@@ -43,8 +43,18 @@ export const FRASE_DESCONTO = `Vi que tem ${DESCONTO_WHATS}% de desconto pedindo
  *  `meuCarro` = "Meu carro é Volvo XC60 2019. " (o carro salvo) ou o convite com lacuna ("… ano ____. ").
  *  `desconto`: só na página da peça, onde o selo do desconto aparece (o cartão não mostra o selo: a pessoa não
  *  mandaria uma frase sobre algo que não viu). */
+const INTERESSE = 'Tenho interesse nesta peça:';
 export function cabecaPeca(x: PecaMsg, { desconto = false } = {}): string {
-  return `${mensagem(`Tenho interesse nesta peça:\n\n${blocoPeca(x)}`)}\n\n${desconto ? `${FRASE_DESCONTO}\n` : ''}`;
+  return `${mensagem(`${INTERESSE}\n\n${blocoPeca(x)}`)}\n\n${desconto ? `${FRASE_DESCONTO}\n` : ''}`;
+}
+/** O bloco da peça de volta, a partir da cabeça pronta (o data-cabeca do botão "Pedir no WhatsApp"): a página da peça
+ *  não leva o bloco duas vezes no HTML. '' quando não é uma cabeça de peça. */
+export function blocoDaCabeca(cabeca: string): string {
+  const i = cabeca.indexOf(`${INTERESSE}\n\n`);
+  if (i < 0) return '';
+  const resto = cabeca.slice(i + INTERESSE.length + 2);
+  const fim = resto.indexOf('\n\n');
+  return (fim < 0 ? resto : resto.slice(0, fim)).trim();
 }
 export const CAUDA_PECA = 'Serve e ainda tem?';
 export function mensagemPeca(x: PecaMsg, meuCarro = '', opcoes: { desconto?: boolean } = {}): string {
@@ -54,4 +64,21 @@ export function mensagemPeca(x: PecaMsg, meuCarro = '', opcoes: { desconto?: boo
 /** Anos para a mensagem: "2018 a 2024" (ou "2019"). */
 export function anosTexto(y?: [number, number] | null): string {
   return y ? (y[0] === y[1] ? String(y[0]) : `${y[0]} a ${y[1]}`) : '';
+}
+
+/** Cotar o frete pelo CEP (lib/cep.ts): com o bloco da peça (página da peça) ou a peça que a pessoa escreveu
+ *  (/envios.html). Sem prazo nem valor: a gente responde com o frete. */
+export function mensagemFrete(cep: string, o: { bloco?: string; peca?: string } = {}): string {
+  if (o.bloco) return mensagem(`Quero saber o frete desta peça para o CEP ${cep}:\n\n${o.bloco}`);
+  return mensagem(`Quero saber o frete para o CEP ${cep}. A peça é: ${o.peca || '____'}`);
+}
+
+/** Abre o WhatsApp como o clique num link de verdade, noutra aba (o rastreio.js conta o contato_whatsapp com o
+ *  data-botao). Só no navegador e dentro do gesto da pessoa (clique ou Enter), depois de conferir o que ela digitou. */
+export function abrirWhats(url: string, botao: string) {
+  const a = Object.assign(document.createElement('a'), { href: url, target: '_blank', rel: 'noopener' });
+  a.dataset.botao = botao;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }

@@ -5,7 +5,8 @@
 // Uma pergunta aberta por vez (atributo name). Gera FAQPage em JSON-LD para o Google
 // (ld={false} desliga: a pagina da peca repete as mesmas perguntas em milhares de paginas).
 // compacto: linhas mais baixas, para caber na coluna de compra da peca. link: atalho no fim da resposta.
-interface Item { pergunta: string; resposta: string; link?: { href: string; texto: string } }
+// attrs: atributos da pergunta (um gancho para o script da página: data-cep no "Como é o envio?" da peça).
+interface Item { pergunta: string; resposta: string; link?: { href: string; texto: string }; attrs?: Record<string, string> }
 interface Props { itens: Item[]; ld?: boolean; compacto?: boolean }
 
 const { itens, ld = true, compacto = false } = Astro.props;
@@ -24,7 +25,7 @@ const jsonLd = JSON.stringify({
 
 <div class:list={['acd', { 'acd-compacto': compacto }]}>
   {itens.map((it) => (
-    <details class="acd-item" name={grupo}>
+    <details class="acd-item" name={grupo} {...it.attrs}>
       <summary class="acd-pergunta">
         <span>{it.pergunta}</span>
         <i class="acd-sinal" aria-hidden="true"></i>
