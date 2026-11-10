@@ -298,5 +298,10 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
     .cab .cab-linha { gap: 14px; }
     .cab .cab-nav a { padding-inline: 10px; } .cab .cab-nav a[aria-current="page"]::after { left: 10px; right: 10px; }
   }
+  /* com o ícone da lista (html[data-lista]) o menu fica um pouco mais junto: o campo continua com o texto de exemplo inteiro */
+  @media (min-width: 1100px) and (max-width: 1279px) {
+    html[data-lista] .cab .cab-linha { gap: 10px; }
+    html[data-lista] .cab .cab-nav a { padding-inline: 8px; } html[data-lista] .cab .cab-nav a[aria-current="page"]::after { left: 8px; right: 8px; }
+  }
   @media (min-width: 1280px) { .cab .cab-linha { gap: 20px; } }
 </style>
