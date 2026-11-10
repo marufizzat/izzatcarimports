@@ -2,7 +2,7 @@
 // a cada 30 min e as pecas sao vendidas): se um caso nao existir hoje, o teste pula.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { Busca, normal, palavras, termos, type Item } from '../src/lib/busca';
+import { Busca, codigoJunto, normal, palavras, termos, type Item } from '../src/lib/busca';
 import { serveNoModelo, anosNoModelo, modelosDa } from '../src/lib/meuCarro';
 
 const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8'));
@@ -16,6 +16,7 @@ const temCarro = (marca: string, modelo: string) => porCarro.has(`${marca}|${mod
 const junto = (s: string) => palavras(s).join('');
 /** o texto da peça (carro, título e código), sem espaço nem pontuação */
 const textoPeca = (it: Item) => junto(`${it.b} ${it.m} ${it.t} ${it.o}`);
+const codigosDe = (it?: Item) => (it?.o ? it.o.split(' ') : []);
 
 describe('busca do catalogo', () => {
   it('codigo de carro separado por espaco ("Xc 60") acha pela forma junta ("xc60")', (ctx) => {
@@ -173,6 +174,67 @@ describe('relevancia: códigos gravados', () => {
     expect(b.procurar({ q: comHifen }).some((x) => x.id === alvo.id)).toBe(true);
   });
 
+  // cliente oculto 10/11 (atrito 5): "8200 328 856" dava "Nenhuma peça" com a peça em 31º; "8200-328-856" e
+  // "8200.328.856" achavam a peça, mas o título dizia "Nenhuma peça"
+  const grafias = (cod: string) => {
+    const g = cod.length >= 9 ? [cod.slice(0, 4), cod.slice(4, 7), cod.slice(7)] : [cod.slice(0, 3), cod.slice(3)];
+    return [g.join(' '), g.join('-'), g.join('.'), g.join(' ').toUpperCase(), `${g[0]}/${g.slice(1).join('')}`];
+  };
+  const comGrafia = codigos.filter((x) => /^\d{9,}$/.test(x.o.split(' ')[0])).slice(0, 12)
+    .concat(codigos.filter((x) => /^[a-z]\d{6}$/.test(x.o.split(' ')[0])).slice(0, 4));
+
+  it('código com espaço, traço, ponto ou barra: a peça em 1º, sem "aproximado", no catálogo e nas sugestões', (ctx) => {
+    if (!comGrafia.length) return ctx.skip();
+    for (const alvo of comGrafia) {
+      const cod = alvo.o.split(' ')[0];
+      for (const q of grafias(cod)) {
+        const r = b.procurar({ q });
+        expect({ q, primeiro: codigosDe(r[0]) }).toEqual({ q, primeiro: expect.arrayContaining([cod]) });
+        expect({ q, aprox: b.aproximado, cod: b.codigoDaBusca }).toEqual({ q, aprox: false, cod });
+        const s = b.sugestoes(q, 6);
+        expect({ q, aprox: s.aproximado }).toEqual({ q, aprox: false });
+        expect(codigosDe(s.itens[0])).toContain(cod);
+      }
+    }
+  });
+
+  it('o exemplo do relatório: 8200 328 856 (Caixa filtro ar Renault)', (ctx) => {
+    const alvo = b.itens.find((x) => codigosDe(x).includes('8200328856'));
+    if (!alvo) return ctx.skip(); // vendeu
+    for (const q of ['8200328856', '8200 328 856', '8200-328-856', '8200.328.856']) {
+      expect(b.procurar({ q })[0].id, q).toBe(alvo.id);
+      expect(b.aproximado, q).toBe(false);
+      expect(b.codigoDaBusca, q).toBe('8200328856');
+      expect(b.sugestoes(q).itens[0]?.id, q).toBe(alvo.id);
+    }
+    // digitando aos poucos (sugestões ao vivo): o começo do código já acha
+    expect(b.sugestoes('8200 328').itens.some((x) => x.id === alvo.id)).toBe(true);
+  });
+
+  it('cara de código só quando é código: "xc60 2019", "farol 31476671" e "s60 t5" seguem a busca normal', () => {
+    expect(codigoJunto('8200 328 856')).toBe('8200328856');
+    expect(codigoJunto('1K0 959 653 C')).toBe('1k0959653c');
+    expect(codigoJunto('A045-591')).toBe('a045591');
+    expect(codigoJunto('farol 31476671')).toBe('');
+    expect(codigoJunto('xc 60')).toBe('');
+    expect(codigoJunto('s60 t5')).toBe('');
+    expect(codigoJunto('31476671')).toBe('');      // sem separador: a busca de sempre
+    expect(codigoJunto('lanterna 18/24')).toBe('');
+    // "xc60 2019" tem cara de código, mas nenhum código do estoque começa assim: o ano continua sendo filtro
+    if (temCarro('Volvo', 'XC60')) {
+      const r = b.procurar({ q: 'xc60 2019' });
+      expect(r.length).toBeGreaterThan(0);
+      expect(r.every((x) => serveNoModelo(x, 'XC60') || textoPeca(x).includes('xc60'))).toBe(true);
+      expect(r.every((x) => !x.y || (x.y[0] <= 2019 && x.y[1] >= 2019))).toBe(true);
+    }
+  });
+
+  it('índice: código com traço ou ponto de qualquer tamanho também na forma junta (nunca ano "18/24")', () => {
+    expect(termos('Modulo 1K0.959.653.C')).toContain('1k0959653c');
+    expect(termos('Caixa 8200-328-856')).toContain('8200328856');
+    expect(termos('Lanterna 18/24')).not.toContain('1824');
+  });
+
   it('termo com número nunca aproxima (código parecido de outra peça não entra)', () => {
     for (const alvo of codigos.slice(0, 10)) {
       const cod = alvo.o.split(' ')[0];
@@ -182,7 +244,8 @@ describe('relevancia: códigos gravados', () => {
 });
 
 describe('sugestões = a mesma regra do catálogo', () => {
-  const buscas = ['xc60', 'farol compass', 'retrovisor palio 2010', 'lanterna traseira', 'macaneta', 'amortecedor dianteiro', 'zzzqqq'];
+  const buscas = ['xc60', 'farol compass', 'retrovisor palio 2010', 'lanterna traseira', 'macaneta', 'amortecedor dianteiro', 'zzzqqq',
+    '8200 328 856', '8200-328-856', '8200.328.856', 'xc60 2019'];
 
   it('mesmo total e mesma ordem do catálogo', () => {
     for (const q of buscas) {

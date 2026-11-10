@@ -60,8 +60,11 @@ const compacto = (s: string) => palavras(s).join('');
 // letra(s) + número de modelo separados ("xc 60", "s 10", "c 4"): a forma junta também vale
 const parLetraNumero = (a: string, b: string) => /^[a-z]{1,3}$/.test(a) && /^\d{1,3}[a-z]?$/.test(b);
 
+const digitos = (s: string) => s.replace(/\D/g, '').length;
+
 /** Termos de um texto para o ÍNDICE: as palavras + as formas juntas ("xc 60"/"XC-60" -> "xc60";
- *  "Para-choque" -> "parachoque"; "T-Cross" -> "tcross"). */
+ *  "Para-choque" -> "parachoque"; "T-Cross" -> "tcross"; código com traço, ponto ou barra, de qualquer tamanho:
+ *  "1K0.959.653.C" -> "1k0959653c", só com 5+ números: "18/24" nunca vira "1824"). */
 export function termos(texto: string): string[] {
   const out: string[] = [];
   const extra = new Set<string>();
@@ -73,6 +76,7 @@ export function termos(texto: string): string[] {
     if (partes.length > 1 && partes.length <= 3 && /^[a-z0-9]+(-[a-z0-9]+)+$/.test(bloco.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ''))) {
       extra.add(partes.join(''));
     }
+    if (partes.length > 1 && digitos(bloco) >= 5) extra.add(partes.join(''));
     for (const p of partes) {
       if (ant && parLetraNumero(ant, p)) extra.add(ant + p);
       out.push(p);
@@ -81,6 +85,21 @@ export function termos(texto: string): string[] {
   }
   for (const x of extra) if (!out.includes(x)) out.push(x);
   return out;
+}
+
+/** Código gravado digitado com espaço, traço, ponto ou barra ("8200 328 856", "8200-328-856", "A045.591", "1K0 959 653 C"):
+ *  a forma junta ("8200328856"). '' quando a busca não tem cara de código: cada pedaço só com letras, números e
+ *  .-/, todo pedaço com número (letra solta de 1 ou 2 só nas pontas: "1K0 959 653 C", "A 204 820 08 42"), algum
+ *  separador e, junto, de 6 a 20 caracteres com 5+ números ("xc60 2019", "farol 31476671" e "s60 t5" não são). */
+export function codigoJunto(texto: string): string {
+  const t = normal(texto).trim();
+  if (!/[\s.\-/]/.test(t) || !/^[a-z0-9][a-z0-9\s.\-/]*$/.test(t)) return '';
+  const ps = t.split(/[\s.\-/]+/).filter(Boolean);
+  if (ps.length < 2) return '';
+  const solta = (p: string, i: number) => /^[a-z]{1,2}$/.test(p) && (i === 0 || i === ps.length - 1);
+  if (!ps.every((p, i) => /\d/.test(p) || solta(p, i))) return '';
+  const j = ps.join('');
+  return j.length >= 6 && j.length <= 20 && digitos(j) >= 5 ? j : '';
 }
 
 /** "palio 2010" -> { texto: "palio", ano: 2010 } (os carros da Peugeot com nome de ano ficam no texto). */
@@ -111,7 +130,11 @@ type Entendido = {
   /** sistema do carro (família) quando o texto inteiro, tirando o carro, é o nome dela */
   familia?: string;
 };
-type PorTexto = { base: Item[]; aproximado: boolean; carros: Carro[] };
+/** codigo: o código gravado buscado ("8200328856"), quando alguma peça da lista tem exatamente esse código */
+type PorTexto = { base: Item[]; aproximado: boolean; carros: Carro[]; codigo?: string };
+
+/** Os códigos gravados da peça (campo o, já sem hífen nem ponto: "1j0858601 1j0858601d"). */
+const codigosDa = (it: Item) => (it.o ? it.o.split(' ') : []);
 
 // palavras que não dizem qual é a peça ("peça original para xc60"): não precisam estar no anúncio
 // (tudo no site é peça original); só contam se a busca tiver só elas
@@ -129,6 +152,8 @@ export class Busca {
   carrosDaBusca: Carro[] = [];
   /** na busca aproximada em ordem de relevância: quantas peças do carro digitado abrem a lista (para os blocos) */
   nDoCarro = 0;
+  /** a última busca foi um código gravado que alguma peça tem ("8200 328 856" -> "8200328856"); senão '' */
+  codigoDaBusca = '';
   // Fluidez: o índice de texto (MiniSearch, ~5 mil peças) não é montado de uma vez no construtor.
   // Sem texto na busca (catálogo aberto, filtros) ele nem é preciso; prepararIndice() monta aos poucos,
   // em pedaços pequenos entre as tarefas da página; quem precisar antes (this.ms) completa na hora. O índice
@@ -142,6 +167,7 @@ export class Busca {
   private _marcas: Map<string, { b: string; n: number }> | null = null;
   private _familias: Map<string, { c: string; n: number }> | null = null;
   private _anosCarro = new Map<string, [number, number]>();
+  private _codigos: string[] | null = null;
 
   constructor(ix: Indice) {
     this.itens = ix.id.map((id, k) => ({
@@ -263,21 +289,40 @@ export class Busca {
     return { carros: carros.map(({ b, m }) => ({ b, m })), marcas: marcasSoltas, resto, familia };
   }
 
-  /** Árvore da busca: cada palavra é um termo; "xc 60" e "para-choque" valem junto OU separado. */
+  /** Árvore da busca: cada palavra é um termo; "xc 60", "para-choque" e "8200-328-856" valem junto OU separado. */
   private arvore(texto: string): { grupos: Query[]; ultima: string } {
     const grupos: Query[] = [];
     const blocos = normal(texto).split(/\s+/).filter(Boolean);
     const ws: { w: string; bloco: number }[] = [];
     blocos.forEach((bl, b) => bl.split(/[^a-z0-9]+/).filter(Boolean).forEach((w) => ws.push({ w, bloco: b })));
+    const juntoOuSeparado = (partes: string[]): Query => ({ combineWith: 'OR', queries: [{ combineWith: 'AND', queries: partes }, partes.join('')] });
     for (let i = 0; i < ws.length; i++) {
       const a = ws[i], p = ws[i + 1];
-      // mesmo bloco com hífen, ponto ou barra ("xc-60", "316-63477", "para-choque") ou letra + número ("xc 60")
-      if (p && ((a.bloco === p.bloco && /[-./]/.test(blocos[a.bloco])) || parLetraNumero(a.w, p.w))) {
-        grupos.push({ combineWith: 'OR', queries: [{ combineWith: 'AND', queries: [a.w, p.w] }, a.w + p.w] });
+      // bloco com hífen, ponto ou barra ("xc-60", "316-63477", "para-choque", "8200-328-856"): o bloco inteiro
+      if (p && a.bloco === p.bloco && /[-./]/.test(blocos[a.bloco])) {
+        let fim = i + 1;
+        while (ws[fim + 1]?.bloco === a.bloco) fim++;
+        grupos.push(juntoOuSeparado(ws.slice(i, fim + 1).map((x) => x.w)));
+        i = fim;
+      } else if (p && parLetraNumero(a.w, p.w)) { // letra + número ("xc 60")
+        grupos.push(juntoOuSeparado([a.w, p.w]));
         i++;
       } else if (!VAZIAS.has(a.w) || ws.every((x) => VAZIAS.has(x.w))) grupos.push(a.w);
     }
     return { grupos, ultima: ws.length ? ws[ws.length - 1].w : '' };
+  }
+
+  /** Algum código gravado do estoque é este ou começa por ele (a busca ao vivo digita o código aos poucos)? */
+  private temCodigo(cod: string): boolean {
+    this._codigos ??= this.itens.flatMap(codigosDa);
+    return this._codigos.some((c) => c.startsWith(cod));
+  }
+
+  /** O texto e o ano da busca. Código gravado com espaço, traço ou ponto que existe no estoque vira a forma junta
+   *  ("8200 328 856" -> "8200328856") ANTES de tudo: nenhum pedaço dele vira ano nem palavra solta. */
+  private separar(q: string): { texto: string; ano?: number } {
+    const cod = codigoJunto(q);
+    return cod && this.temCodigo(cod) ? { texto: cod } : separarAno(q);
   }
 
   /** Peças da busca de texto, na ordem de relevância (com as mais próximas quando nenhuma tem todas as palavras). */
@@ -336,7 +381,14 @@ export class Busca {
       }
       base = [...frente(doCarroDig), ...frente(daMarca), ...outras];
     } else base = frente(base);
-    m = { base, aproximado, carros: ent.carros };
+    // código gravado buscado ("8200328856"): a peça com esse código abre a lista, antes das que só o citam
+    let codigo: string | undefined;
+    if (!aproximado && /^[a-z0-9]{6,20}$/.test(chave) && digitos(chave) >= 5) {
+      const tem = (it: Item) => codigosDa(it).includes(chave);
+      const comCodigo = base.filter(tem);
+      if (comCodigo.length) { base = [...comCodigo, ...base.filter((it) => !tem(it))]; codigo = chave; }
+    }
+    m = { base, aproximado, carros: ent.carros, codigo };
     this._textos.set(chave, m);
     if (this._textos.size > 24) this._textos.delete(this._textos.keys().next().value!);
     return m;
@@ -348,8 +400,8 @@ export class Busca {
   }
 
   /** A lista para os filtros, sem mexer no estado público (aproximado, carrosDaBusca). */
-  private filtrar(f: Filtros): { itens: Item[]; aproximado: boolean; carros: Carro[]; comTexto: boolean } {
-    const { texto, ano: anoQ } = separarAno((f.q || '').trim());
+  private filtrar(f: Filtros): { itens: Item[]; aproximado: boolean; carros: Carro[]; comTexto: boolean; codigo: string } {
+    const { texto, ano: anoQ } = this.separar((f.q || '').trim());
     const o = f.ordem || 'rel';
     let r: PorTexto;
     if (texto) r = this.porTexto(texto);
@@ -365,7 +417,7 @@ export class Busca {
       (!f.sub || it.s === f.sub) &&
       (!faixa || (it.p >= faixa[2] && it.p < faixa[3])) &&
       (!f.frete || it.f));
-    return { itens, aproximado: r.aproximado, carros: r.carros, comTexto: !!texto };
+    return { itens, aproximado: r.aproximado, carros: r.carros, comTexto: !!texto, codigo: r.codigo ?? '' };
   }
 
   procurar(f: Filtros): Item[] {
@@ -377,6 +429,7 @@ export class Busca {
     else if (o === 'novos' && r.comTexto) out.sort((a, b) => b.id.length - a.id.length || (b.id > a.id ? 1 : b.id < a.id ? -1 : 0));
     this.aproximado = r.aproximado;
     this.carrosDaBusca = r.carros;
+    this.codigoDaBusca = r.codigo && out.some((it) => codigosDa(it).includes(r.codigo)) ? r.codigo : '';
     this.nDoCarro = 0;
     if (r.aproximado && o === 'rel' && r.carros.length) {
       while (this.nDoCarro < out.length && r.carros.some((c) => doCarro(out[this.nDoCarro], c))) this.nDoCarro++;
@@ -395,7 +448,7 @@ export class Busca {
     };
     // anos: só os que têm peça (uma peça de 2018–2024 conta em cada um desses anos), do mais novo para o mais velho
     const porAno = new Map<number, number>();
-    const semAno = this.filtrar({ ...f, ano: undefined, q: f.q ? separarAno(f.q).texto : f.q, ordem: 'rel' }).itens;
+    const semAno = this.filtrar({ ...f, ano: undefined, q: f.q ? this.separar(f.q).texto : f.q, ordem: 'rel' }).itens;
     for (const it of semAno) {
       const y = f.modelo ? anosNoModelo(it, f.modelo) : it.y;
       if (y) for (let a = y[0]; a <= y[1]; a++) porAno.set(a, (porAno.get(a) || 0) + 1);
@@ -423,7 +476,7 @@ export class Busca {
   sugestoes(q: string, n = 6): Sugestoes {
     const vazio: Sugestoes = { itens: [], total: 0, aproximado: false, atalhos: [], carros: [] };
     if (q.trim().length < 2) return vazio;
-    const { texto, ano } = separarAno(q.trim());
+    const { texto, ano } = this.separar(q.trim());
     // só o ano ("2019"): as peças desse ano, como no catálogo
     const r: PorTexto = texto ? this.porTexto(texto) : { base: this.porNovos(), aproximado: false, carros: [] };
     const lista = ano ? r.base.filter((it) => dentro(ano, it.y)) : r.base;

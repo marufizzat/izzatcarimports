@@ -370,10 +370,10 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   }, [meuCarro]);
 
   const fDiferido = useDeferredValue(f);
-  const [resultado, aproximado, nDoCarro, carrosBusca] = useMemo(() => {
-    if (!busca) return [[] as Item[], false, 0, [] as Carro[]] as const;
+  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca] = useMemo(() => {
+    if (!busca) return [[] as Item[], false, 0, [] as Carro[], ''] as const;
     const r = busca.procurar(fDiferido);
-    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca] as const;
+    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca] as const;
   }, [busca, fDiferido]);
   const padrao = ehPadrao(f);
   const facetas = useMemo(() => (busca ? busca.facetas(fDiferido) : padrao ? facetasIniciais : null), [busca, fDiferido, padrao, facetasIniciais]);
@@ -527,7 +527,8 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             <h2 className="cat-total" id="cat-total" aria-live="polite">
               {erro && !busca ? null
                 : total === null ? <span className="cat-total-espera">Buscando peças…</span>
-                : aproximado ? <span className="cat-total-aprox">Nenhuma peça com “{f.q}” · {n2(total)} parecidas</span>
+                : aproximado ? <><b className="num">{n2(total)}</b> {total === 1 ? 'parecida' : 'parecidas'}<span className="cat-total-q"> com “{f.q}”</span></>
+                : codigoBusca ? <><b className="num">{n2(total)}</b> {pecas(total)} com o código <span className="cat-total-q oem">{codigoBusca.toUpperCase()}</span></>
                 : <><b className="num">{n2(total)}</b> {pecas(total)}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
             </h2>
             <div data-selo-reputacao>{selo}</div>
