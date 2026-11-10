@@ -2,29 +2,49 @@
 // Aba "Pelo carro" da abertura: marca (logo) -> modelo -> ano, com contagem real de peças.
 // A grade de marcas já vem no HTML, gerada pela MESMA função do script e com os MESMOS dados do
 // /dados/meu-carro.json: a primeira tela nasce pronta, sem "carregando" e sem pulo de layout.
+// Quem já tem carro salvo: antes de pintar, o esqueleto do "cartão do seu carro" (mesmo desenho e mesma altura do
+// cartão de verdade, htmlEsqueletoGaragem) toma o lugar da grade, já com o nome do carro, o logo e o link das peças.
 // O mesmo seletor abre na caixa do cabeçalho (ui/meuCarroPicker.ts).
 import { garagem } from '../lib/garagem';
-import { htmlInicial } from './ui/meuCarroPicker';
+import { htmlInicial, htmlEsqueletoGaragem } from './ui/meuCarroPicker';
 const html = htmlInicial(garagem());
+const esqueleto = htmlEsqueletoGaragem();
 ---
-<div class="mc-raiz" data-mc-raiz data-hero data-ssr><div class="mc-conteudo" data-mc-conteudo set:html={html} /><p class="mc-sr" aria-live="polite" data-mc-voz></p></div>
+<div class="mc-raiz" data-mc-raiz data-hero data-ssr><div class="mc-conteudo" data-mc-conteudo set:html={html} /><p class="mc-sr" aria-live="polite" data-mc-voz></p><template data-mc-esq set:html={esqueleto}></template></div>
 <script is:inline>
-  // Quem já escolheu o carro: os campos já mostram o carro dele antes do script principal
-  // (a grade de marcas fica guardada, com a mesma altura, até o resultado chegar).
+  // Quem já escolheu o carro: o cartão do carro (esqueleto) entra no lugar da grade de marcas antes do script principal.
+  // O nome e o link das peças já são os de verdade; contagem, anos e arte chegam com /dados/meu-carro.json.
   (function () {
     try {
       var c = JSON.parse(localStorage.getItem('izzatcar.meuCarro') || 'null');
       if (!c || typeof c.b !== 'string' || typeof c.m !== 'string') return;
       var r = document.currentScript.previousElementSibling;
-      var campos = r.querySelectorAll('.mc-campo');
-      var v = [c.b, c.m, typeof c.y === 'number' ? String(c.y) : 'Todos'];
-      for (var i = 0; i < campos.length && i < 3; i++) {
-        campos[i].querySelector('b').textContent = v[i];
-        campos[i].removeAttribute('aria-current');
-        campos[i].removeAttribute('data-off');
-        if (i < 2 || typeof c.y === 'number') campos[i].classList.add('mc-campo-cheio');
-        if (campos[i].disabled) campos[i].disabled = false;
+      var alvo = r.querySelector('[data-mc-conteudo]');
+      var t = r.querySelector('template[data-mc-esq]');
+      if (!alvo || !t) return;
+      var f = t.content.cloneNode(true);
+      var nome = f.querySelector('[data-esq-nome]');
+      var marca = document.createElement('span');
+      marca.textContent = c.b;
+      nome.textContent = '';
+      nome.appendChild(marca);
+      nome.appendChild(document.createTextNode(' ' + c.m));
+      // NOME_LONGO de ui/meuCarroPicker.ts
+      if ((c.b + ' ' + c.m).length > 16) nome.classList.add('mc-longo');
+      // o logo da marca, se ela está na grade de cara
+      var tiles = r.querySelectorAll('.mc-marca');
+      for (var i = 0; i < tiles.length; i++) {
+        if (tiles[i].getAttribute('data-n') !== c.b) continue;
+        var img = tiles[i].querySelector('.mc-disco img');
+        if (img) f.querySelector('[data-esq-logo]').appendChild(img.cloneNode());
+        break;
       }
+      // o mesmo link de linkCatalogo (lib/meuCarro.ts)
+      var u = new URLSearchParams({ marca: c.b, modelo: c.m });
+      if (typeof c.y === 'number') u.set('ano', String(c.y));
+      f.querySelector('[data-esq-ver]').setAttribute('href', '/catalogo.html?' + u.toString());
+      alvo.textContent = '';
+      alvo.appendChild(f);
       r.setAttribute('data-salvo', '');
     } catch (e) {}
   })();
