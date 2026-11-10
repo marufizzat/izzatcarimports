@@ -5630,103 +5630,105 @@
   "foto": "848808-MLB110898713763_042026"
  },
  "MLB4634375483": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento coluna inferior",
   "carro": "Chery Arrizo",
   "foto": "805591-MLB110898856061_042026"
  },
  "MLB4634374831": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Fechadura porta dianteira esquerda",
   "carro": "Toyota Yaris",
   "foto": "970324-MLB109992098786_042026"
  },
  "MLB4634374169": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Puxador abertura motor",
   "carro": "Chery Arrizo",
   "foto": "870697-MLB109992240964_042026"
  },
  "MLB4634369701": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento coluna direito",
   "carro": "Chevrolet Cruze",
   "foto": "627222-MLB110899234615_042026"
  },
  "MLB4634369641": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar painel lateral esquerdo",
   "carro": "Nissan Murano",
   "foto": "751377-MLB110899585141_042026"
  },
  "MLB4634369017": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento painel lateral",
   "carro": "Chery Arrizo",
   "foto": "704563-MLB110899524811_042026"
  },
  "MLB4634368949": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Painel instrumentos",
   "carro": "Citroën C5",
-  "foto": "707080-MLB109992501702_042026"
+  "foto": "707080-MLB109992501702_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4634363555": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura botão vidro traseiro esquerdo",
   "carro": "Fiat Strada",
   "foto": "978690-MLB109992186370_042026"
  },
  "MLB4634357975": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão desembaçador traseiro",
   "carro": "Volkswagen Gol",
   "foto": "916060-MLB110899115523_042026"
  },
  "MLB4634351941": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura interruptor banco esquerdo",
   "carro": "Jaguar",
   "foto": "977535-MLB110898825825_042026"
  },
  "MLB4634350723": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Tampa acabamento console",
   "carro": "Chery Arrizo",
   "foto": "790481-MLB110898823331_042026"
  },
  "MLB4634349963": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Chave presencial smart key botões",
   "carro": "Chery Arrizo",
   "foto": "639936-MLB109992269512_042026"
  },
  "MLB4634347541": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Radiador ar quente",
   "carro": "Hyundai HB20",
   "foto": "659041-MLB109992259258_042026"
  },
  "MLB4634346151": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Módulo sam dianteiro",
   "carro": "Mercedes-Benz C180",
   "foto": "966440-MLB110899556007_042026"
  },
  "MLB4634345887": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura porta dianteira direita",
   "carro": "Toyota Yaris",
-  "foto": "977287-MLB109992617290_042026"
+  "foto": "977287-MLB109992617290_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4634345621": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura botão vidro elétrico",
   "carro": "Toyota Yaris",
   "foto": "660254-MLB109992616422_042026"
  },
  "MLB4634340281": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro quádruplo",
   "carro": "Chevrolet Cruze",
   "foto": "630432-MLB110898826073_042026"
@@ -5739,25 +5741,26 @@
   "foto": "853450-MLB109992041992_042026"
  },
  "MLB4634338847": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro elétrico",
   "carro": "Ford Ka",
   "foto": "920617-MLB109993966050_042026"
  },
  "MLB4634338703": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte módulo rádio",
   "carro": "Chevrolet Cruze",
-  "foto": "953630-MLB110898649893_042026"
+  "foto": "953630-MLB110898649893_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4634200249": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Guia para-choque traseiro direito",
   "carro": "Jaguar E-Pace",
   "foto": "813657-MLB109988317964_042026"
  },
  "MLB4634188217": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Guia para-choque traseiro esquerdo",
   "carro": "Jaguar E-Pace",
   "foto": "741783-MLB109988461800_042026"
@@ -5833,55 +5836,57 @@
   "foto": "908105-MLB110924055657_042026"
  },
  "MLB6677238350": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Coletor de admissão",
   "carro": "Ford Focus",
-  "foto": "957397-MLB110050044080_042026"
+  "foto": "957397-MLB110050044080_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6677237650": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Coletor admissão",
   "carro": "Renault Clio",
   "foto": "626514-MLB110050189618_042026"
  },
  "MLB6677237614": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Coletor admissão",
   "carro": "Fiat Palio",
   "foto": "794174-MLB110961776995_042026"
  },
  "MLB6677214196": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Coletor admissão",
   "carro": "Renault Duster",
-  "foto": "703230-MLB110962441609_042026"
+  "foto": "703230-MLB110962441609_042026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6677213582": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Coletor admissão",
   "carro": "Renault Scenic",
   "foto": "615112-MLB110049840230_042026"
  },
  "MLB6677207192": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando rádio sony",
   "carro": "Ford New Fiesta",
   "foto": "927980-MLB110049564272_042026"
  },
  "MLB6677207186": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Fechadura capô",
   "carro": "Volkswagen Jetta",
   "foto": "657463-MLB110961098719_042026"
  },
  "MLB6677203034": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Coletor admissão",
   "carro": "Chevrolet Cruze",
   "foto": "731189-MLB110049929866_042026"
  },
  "MLB6677203022": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Coletor admissão gnv",
   "carro": "Fiat Strada",
   "foto": "612672-MLB110050071170_042026"
