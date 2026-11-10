@@ -546,8 +546,7 @@ const perguntas = [
   /* celular estreito: só "10% de desconto" (o botão logo abaixo já diz WhatsApp), longe do "Peça única" que quebra
      para a 2ª linha nos preços de 5 dígitos */
   @media (max-width: 379px) { .compra-desconto-onde { display: none; } }
-  .compra-botoes .botao { --h: 56px; font-size: 16.5px; }
-  .compra-botoes .botao-linha { --h: 52px; }
+  .compra-botoes .botao { --h: var(--botao-g); font-size: 16.5px; }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .compra-facil b { font-weight: 650; color: var(--ink-2); }
 
@@ -579,7 +578,7 @@ const perguntas = [
   .compra-cod span { display: block; font-size: 12.5px; color: var(--ink-3); }
   .compra-cod b { display: block; font-size: 18px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
   .compra-cod > div { min-width: 0; }
-  .compra-cod .botao { --h: 44px; padding: 0 14px; font-size: 14px; }
+  .compra-cod .botao { --h: var(--botao-p); padding: 0 14px; font-size: 14px; }
   /* o link numa linha própria: o código acima é bloco (colado, "A045591 Onde fica..." lia como uma coisa só).
      inline-block e sem largura fixa: no celular de 320 px ele quebra em vez de alargar a coluna */
   .compra-ajuda { display: inline-block; padding-block: 12px; margin: -8px 0 -12px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
