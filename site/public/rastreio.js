@@ -55,6 +55,11 @@
       fbq('track', 'InitiateCheckout', base); gtag('event', 'saida_mercado_livre', { pagina: location.pathname });
     }
   }, true);
+  /* Lista de orcamento (lib/lista.ts): peca posta na lista (origem: 'peca' ou 'vai-junto') */
+  window.addEventListener('lista', function (e) {
+    var d = e && e.detail; if (!d || d.acao !== 'adicionar') return;
+    gtag('event', 'lista_adicionar', { mlb: d.id, origem: d.origem || undefined, pagina: location.pathname });
+  });
   /* Meu carro: qual carro o cliente escolheu (so marca/modelo/ano, nada pessoal) */
   window.addEventListener('meu-carro', function (e) {
     var c = e && e.detail; if (!c || !c.b) return;

@@ -1,0 +1,276 @@
+---
+// /lista.html — a Lista de orçamento (lib/lista.ts): as peças que a pessoa juntou, com o preço do site e o do WhatsApp
+// (10% em cada), o subtotal, o desconto e o total no WhatsApp; "Pedir tudo no WhatsApp" (lib/whats.ts: mensagemLista,
+// GA4 contato_whatsapp com data-botao="lista") e "Copiar o link da lista" (/lista.html?i=MLB1,MLB2: quem abre vê a
+// mesma lista e pode guardar na dele, sem apagar a que já tinha). Preço e disponibilidade conferidos no
+// /dados/busca.json (o mesmo índice do catálogo): peça que saiu do site aparece "Já vendida" e sai do total.
+// Fora do Google (noindex) e do sitemap. O HTML é o esqueleto; o script (components/lista/paginaLista.ts) monta as peças.
+// Um script no <head> escolhe o esqueleto antes da 1ª pintura (com peças, link ou vazia): quem tem peças nunca vê o
+// "Sua lista está vazia" piscar.
+import Pagina from '../layouts/Pagina.astro';
+import Icone from '../components/Icone.astro';
+import { DESCONTO_WHATS, whatsUrl } from '../lib/whats';
+// sem o script, os botões abrem o WhatsApp com a abertura do site (o script troca pelo pedido com as peças)
+const semScript = whatsUrl('Quero pedir várias peças.');
+import { MAX_LISTA } from '../lib/lista';
+---
+<Pagina titulo="Sua lista de orçamento | Izzat Car Imports" noindex
+  descricao="Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com 10% de desconto em cada peça.">
+  <script slot="head" is:inline>try{var d=document.documentElement,m=/[?&]i=([^&]*)/.exec(location.search),k=m?decodeURIComponent(m[1]).split(/[\s,;]+/).filter(function(x){return/^MLB\d{6,}$/i.test(x)}).length:0,n=k||(JSON.parse(localStorage.getItem('izzatcar.lista'))||[]).length;d.dataset.lst=k?'link':n?'cheia':'vazia';d.dataset.lstN=Math.min(n||3,4)}catch(e){document.documentElement.dataset.lst='vazia'}</script>
+
+  <div class="moldura lst" data-lst>
+    <nav class="lst-trilha" aria-label="Você está em">
+      <a href="/">Início</a><span aria-hidden="true">/</span><span aria-current="page">Lista de orçamento</span>
+    </nav>
+
+    <header class="lst-topo">
+      <h1 class="lst-h1" data-lst-h1>Sua lista de orçamento</h1>
+      <p class="lst-lead" data-lst-lead>Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada peça.</p>
+    </header>
+
+    <div class="lst-grade" data-lst-cheia>
+      <section class="lst-itens" aria-labelledby="lst-itens-t">
+        <h2 class="sr-only" id="lst-itens-t">Peças da lista</h2>
+        {/* lista que veio por um link: "Guardar na minha lista" (montado pelo script) */}
+        <div class="lst-link" data-lst-link hidden></div>
+        <ul class="lst-ul" data-lst-ul aria-busy="true">
+          {[0, 1, 2, 3].map(() => <li class="lst-esq" aria-hidden="true"><i></i><span><b></b><b></b><b></b></span></li>)}
+        </ul>
+        <p class="lst-nota" data-lst-nota hidden></p>
+        <div class="lst-pe" data-lst-pe>
+          <a class="lst-mais" href="/catalogo.html" data-lst-mais><Icone nome="lista-mais" /><span>Adicionar mais peças</span></a>
+          <button type="button" class="lst-limpar" data-lst-limpar>Limpar a lista</button>
+        </div>
+      </section>
+
+      <aside class="lst-resumo" aria-labelledby="lst-resumo-t">
+        <div class="lst-resumo-cx">
+          <h2 class="lst-resumo-t" id="lst-resumo-t">Resumo do pedido</h2>
+          <dl class="lst-contas">
+            <div><dt data-lst-qtd>Preço no site</dt><dd class="num" data-lst-sub>—</dd></div>
+            <div class="lst-conta-desc"><dt>Desconto de {DESCONTO_WHATS}% no WhatsApp</dt><dd class="num" data-lst-desc>—</dd></div>
+            <div class="lst-conta-total"><dt>Total no WhatsApp</dt><dd class="num" data-lst-total>—</dd></div>
+          </dl>
+          <p class="lst-fora" data-lst-fora hidden></p>
+          <a class="botao botao-laranja lst-pedir" data-lst-pedir data-botao="lista" target="_blank" rel="noopener" href={semScript}><Icone nome="whats" /><span>Pedir tudo no WhatsApp</span></a>
+          <button type="button" class="botao botao-linha lst-copiar" data-lst-copiar><Icone nome="copiar" /><span>Copiar o link da lista</span></button>
+          <p class="lst-copiar-nota" data-lst-copiar-nota>Quem abrir o link vê esta mesma lista: a oficina manda para o cliente, o cliente manda para a oficina.</p>
+          <div class="lst-carro" data-lst-carro></div>
+          <ul class="lst-confia">
+            <li><Icone nome="check" /><span>Na dúvida se serve, a gente confere na peça antes de você comprar.</span></li>
+            <li><Icone nome="check" /><span>O frete é combinado no WhatsApp, pelo seu CEP.</span></li>
+            <li><Icone nome="check" /><span>Nota fiscal e 90 dias de garantia em toda peça.</span></li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+
+    <section class="lst-vazia" data-lst-vazia aria-labelledby="lst-vazia-t">
+      <p class="lst-desfazer-tudo" data-lst-desfazer-tudo hidden></p>
+      <div class="lst-vazia-cx">
+        <div class="lst-vazia-arte" aria-hidden="true"><span><Icone nome="lista" /></span></div>
+        <h2 class="lst-vazia-t" id="lst-vazia-t">Sua lista está vazia</h2>
+        <p class="lst-vazia-txt">Na página de cada peça, toque em <b>Adicionar à lista</b>. Junte as peças do serviço (até {MAX_LISTA}) e peça tudo de uma vez no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada uma.</p>
+        <div class="lst-vazia-botoes">
+          <a class="botao botao-laranja" href="/catalogo.html"><Icone nome="busca" />Ver o catálogo</a>
+          <a class="botao botao-linha" href="/carros.html" data-lst-seu-carro><Icone nome="carro" /><span>Escolher o meu carro</span></a>
+        </div>
+        <ol class="lst-passos">
+          <li><b>Junte as peças</b><span>Em cada peça, “Adicionar à lista”. Ela fica guardada neste aparelho.</span></li>
+          <li><b>Peça tudo no WhatsApp</b><span>Uma mensagem só, com cada peça e o total com {DESCONTO_WHATS}% de desconto.</span></li>
+          <li><b>A gente confere e combina</b><span>Confere as peças no seu carro e combina o frete pelo seu CEP.</span></li>
+        </ol>
+      </div>
+    </section>
+  </div>
+
+  {/* celular: o total e o "Pedir tudo" sempre à mão quando o resumo sai da tela */}
+  <div class="lst-barra" data-lst-barra aria-hidden="true">
+    <div class="lst-barra-info"><span>Total no WhatsApp</span><b class="num" data-lst-barra-total></b></div>
+    <a class="botao botao-laranja" data-lst-barra-pedir data-botao="lista" target="_blank" rel="noopener" tabindex="-1" href={semScript}><Icone nome="whats" /><span>Pedir tudo</span></a>
+  </div>
+</Pagina>
+
+<script>
+  import { iniciarLista } from '../components/lista/paginaLista';
+  iniciarLista();
+</script>
+
+<style is:global>
+  /* Estilos globais presos a .lst / .lst-barra (o HTML das peças é montado pelo script, sem o atributo de escopo). */
+  .lst { padding-bottom: clamp(48px, 7vw, 96px); }
+  .lst [hidden] { display: none !important; }
+  .lst .lst-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding-block: 18px 6px; font-size: 13.5px; color: var(--ink-3); }
+  .lst .lst-trilha a { color: var(--ink-2); padding: 12px 6px; margin: -12px -6px; }
+  .lst .lst-trilha a:hover { color: var(--ink); text-decoration: underline; }
+  .lst .lst-topo { margin: 8px 0 22px; max-width: 760px; }
+  .lst .lst-h1 { margin: 0; font-stretch: 84%; font-weight: 820; font-size: clamp(32px, 4.2vw, 48px); line-height: 1.02; letter-spacing: -.01em; text-wrap: balance; }
+  .lst .lst-lead { margin: 10px 0 0; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+  html[data-lst="vazia"] .lst .lst-lead { display: none; }
+
+  /* qual parte aparece: com peças (ou um link) a lista e o resumo; sem peças, o convite */
+  html[data-lst="vazia"] .lst [data-lst-cheia], html:not([data-lst="vazia"]) .lst [data-lst-vazia] { display: none; }
+  .lst .lst-grade { display: grid; gap: 20px; align-items: start; }
+  @media (min-width: 960px) { .lst .lst-grade { grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 32px; } }
+
+  /* ---- as peças ---- */
+  .lst .lst-ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .lst .lst-item { position: relative; display: grid; grid-template-columns: 76px minmax(0, 1fr) 44px; grid-template-areas: "foto dados tirar" "foto precos precos";
+    column-gap: 14px; row-gap: 8px; align-items: start; padding: 12px 8px 12px 12px; border-radius: 18px; background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  .lst .lst-foto { grid-area: foto; display: block; width: 76px; height: 76px; border-radius: 13px; overflow: hidden; background: linear-gradient(#f4f3f0, #e7e5e1); }
+  .lst .lst-foto img { width: 100%; height: 100%; object-fit: cover; }
+  .lst .lst-foto img.sem-capa { visibility: hidden; }
+  .lst .lst-dados { grid-area: dados; display: grid; gap: 2px; min-width: 0; padding-top: 2px; }
+  /* carro e anos: quebram em vez de cortar (os anos são o que a pessoa confere) */
+  .lst .lst-veic { font-size: 12.5px; font-weight: 650; font-stretch: 94%; line-height: 1.3; color: var(--ink-2); text-wrap: pretty; }
+  .lst .lst-anos { font-weight: 560; color: var(--ink-3); white-space: nowrap; }
+  .lst .lst-anos::before { content: " · "; }
+  @media (max-width: 459px) { .lst .lst-anos { display: block; } .lst .lst-anos::before { content: none; } }
+  .lst .lst-nome { font-size: 16px; font-weight: 700; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; text-wrap: pretty; }
+  .lst a.lst-nome:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .lst .lst-cod { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lst .lst-cod .oem { font-size: 12px; color: var(--ink-2); }
+  .lst .lst-precos { grid-area: precos; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .lst .lst-pw { font-stretch: 86%; font-weight: 850; font-size: 21px; line-height: 1.05; color: var(--ink); }
+  .lst .lst-pw small { font-size: 12.5px; font-weight: 650; font-stretch: 94%; color: var(--ink-2); white-space: nowrap; }
+  .lst .lst-ps { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+  .lst .lst-ps s { text-decoration-thickness: 1.2px; }
+  .lst .lst-mudou { flex-basis: 100%; font-size: 12.5px; font-weight: 600; color: var(--accent-text); }
+  .lst .lst-tirar { grid-area: tirar; display: grid; place-items: center; width: 44px; height: 44px; margin-top: -4px; border: 0; border-radius: 12px; background: none; color: var(--ink-3); }
+  .lst .lst-tirar:hover { color: var(--ink); background: color-mix(in oklab, var(--ink), transparent 93%); }
+  .lst .lst-tirar svg { width: 20px; height: 20px; }
+  /* lista de um link: só para ver (sem o "x") */
+  .lst .lst-item.ler { grid-template-columns: 76px minmax(0, 1fr); grid-template-areas: "foto dados" "foto precos"; padding-right: 14px; }
+  @media (min-width: 700px) { .lst .lst-item.ler { grid-template-columns: 88px minmax(0, 1fr) auto; grid-template-areas: "foto dados precos"; padding-right: 18px; } }
+  /* peça que saiu do site: apagada, com o selo e o caminho para uma parecida; fora do total */
+  .lst .lst-item.vendida { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .lst .lst-item.vendida .lst-foto img { filter: grayscale(1); opacity: .5; }
+  .lst .lst-item.vendida .lst-nome { color: var(--ink-2); }
+  .lst .lst-vendida { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; font-weight: 750;
+    color: var(--ink-2); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--line-2); white-space: nowrap; }
+  .lst .lst-parecida { font-size: 13.5px; font-weight: 650; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; padding-block: 12px; margin-block: -12px; }
+  /* "Desfazer" no lugar da peça tirada (o foco vai para ele) */
+  .lst .lst-desfeito { display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; min-height: 64px; padding: 10px 12px 10px 18px;
+    border-radius: 18px; background: var(--bg-2); color: var(--ink-2); font-size: 14.5px; line-height: 1.35; }
+  .lst .lst-desfeito b { color: var(--ink); font-weight: 650; }
+  .lst :is(.lst-desfeito, .lst-desfazer-tudo) button { --h: var(--botao-p); height: 44px; padding: 0 16px; border-radius: 12px; border: 0; font-weight: 700; font-size: 14.5px;
+    background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-2); }
+  .lst :is(.lst-desfeito, .lst-desfazer-tudo) button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  /* esqueleto (antes do script): a mesma altura das peças, para nada pular quando elas chegam */
+  .lst .lst-esq { display: grid; grid-template-columns: 76px 1fr; gap: 14px; padding: 12px; border-radius: 18px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .lst .lst-esq:nth-child(n + 5) { display: none; }
+  html[data-lst-n="1"] .lst .lst-esq:nth-child(n + 2), html[data-lst-n="2"] .lst .lst-esq:nth-child(n + 3), html[data-lst-n="3"] .lst .lst-esq:nth-child(n + 4) { display: none; }
+  .lst .lst-esq i { width: 76px; height: 76px; border-radius: 13px; background: var(--bg-2); }
+  .lst .lst-esq span { display: grid; gap: 8px; align-content: start; padding-top: 4px; }
+  .lst .lst-esq b { height: 12px; width: 40%; border-radius: 6px; background: var(--bg-2); }
+  .lst .lst-esq b:nth-child(2) { height: 16px; width: 75%; }
+  .lst .lst-esq b:nth-child(3) { height: 20px; width: 30%; margin-top: 6px; }
+  @media (prefers-reduced-motion: no-preference) { .lst .lst-esq :is(i, b) { animation: lst-brilho 1.2s ease-in-out infinite alternate; } }
+  @keyframes lst-brilho { to { opacity: .55; } }
+  @media (min-width: 700px) {
+    .lst .lst-item { grid-template-columns: 88px minmax(0, 1fr) auto 44px; grid-template-areas: "foto dados precos tirar"; align-items: center; padding: 14px 10px 14px 14px; }
+    .lst .lst-foto { width: 88px; height: 88px; }
+    .lst .lst-precos { display: grid; justify-items: end; text-align: right; gap: 3px; }
+    .lst .lst-pw small { display: block; margin: 2px 0 0; }
+    .lst .lst-mudou { flex-basis: auto; }
+    .lst .lst-tirar { margin-top: 0; }
+    .lst .lst-esq { grid-template-columns: 88px 1fr; } .lst .lst-esq i { width: 88px; height: 88px; }
+  }
+
+  .lst .lst-nota { margin: 12px 2px 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+  .lst .lst-tentar { min-height: 44px; padding: 0 4px; border: 0; background: none; font-size: 13.5px; font-weight: 700; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .lst .lst-pe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 14px; }
+  .lst .lst-mais { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 700; font-size: 15px; color: var(--ink); }
+  .lst .lst-mais svg { box-sizing: content-box; width: 20px; height: 20px; padding: 7px; border-radius: 10px; color: var(--accent-text); background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 74%); }
+  .lst .lst-mais:hover span { text-decoration: underline; text-underline-offset: 4px; }
+  .lst .lst-limpar { min-height: 44px; padding: 0 4px; border: 0; background: none; font-size: 14px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .lst .lst-limpar:hover { color: var(--ink); }
+  html[data-lst="link"] .lst .lst-limpar { display: none; }
+
+  /* lista de um link: o aviso com "Guardar na minha lista" */
+  .lst .lst-link { display: grid; gap: 12px; margin-bottom: 12px; padding: 16px; border-radius: 18px; background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
+  .lst .lst-link[hidden] { display: none; }
+  .lst .lst-link p { margin: 0; font-size: 15px; line-height: 1.45; color: #1d1d1f; text-wrap: pretty; }
+  .lst .lst-link p small { display: block; margin-top: 2px; font-size: 13.5px; color: var(--ink-2); }
+  .lst .lst-link .botao { --h: var(--botao-p); justify-self: start; gap: 8px; }
+  .lst .lst-link .botao svg { width: 19px; height: 19px; }
+  @media (min-width: 700px) { .lst .lst-link { grid-template-columns: minmax(0, 1fr) auto; align-items: center; } }
+
+  /* ---- o resumo ---- */
+  @media (min-width: 960px) { .lst .lst-resumo { position: sticky; top: 104px; } }
+  .lst .lst-resumo-cx { display: grid; gap: 12px; padding: 20px 18px 18px; border-radius: 22px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-2); }
+  .lst .lst-resumo-t { margin: 0 0 2px; font-stretch: 84%; font-weight: 800; font-size: 22px; line-height: 1.1; }
+  .lst .lst-contas { margin: 0; display: grid; gap: 8px; }
+  .lst .lst-contas > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .lst .lst-contas dt { font-size: 14.5px; color: var(--ink-2); }
+  .lst .lst-contas dd { margin: 0; font-size: 15.5px; font-weight: 650; color: var(--ink); white-space: nowrap; }
+  .lst .lst-conta-desc dd { color: var(--serve-ink); }
+  .lst .lst-conta-total { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .lst .lst-conta-total dt { font-size: 15.5px; font-weight: 750; color: var(--ink); }
+  .lst .lst-conta-total dd { font-stretch: 84%; font-weight: 850; font-size: 30px; line-height: 1; }
+  .lst .lst-fora { margin: -2px 0 0; font-size: 13px; line-height: 1.4; color: var(--ink-2); }
+  .lst .lst-pedir, .lst .lst-copiar { width: 100%; }
+  .lst .lst-pedir { margin-top: 4px; }
+  .lst .lst-pedir[aria-disabled="true"] { opacity: .5; pointer-events: none; filter: grayscale(.4); }
+  .lst .lst-copiar { --h: var(--botao-p); gap: 8px; font-size: 15px; }
+  .lst .lst-copiar svg { width: 18px; height: 18px; }
+  .lst .lst-copiar.ok { box-shadow: inset 0 0 0 1.5px var(--serve-borda); color: var(--serve-ink); background: var(--serve-bg); }
+  .lst .lst-copiar-nota { margin: -4px 2px 0; font-size: 12.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
+  .lst .lst-copiar-campo { width: 100%; height: 44px; padding: 0 12px; border: 0; border-radius: 10px; font-size: 16px; background: var(--surface-2); color: var(--ink);
+    box-shadow: inset 0 0 0 1.5px var(--line-2); }
+  .lst .lst-carro:empty { display: none; }
+  .lst .lst-carro { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 14px; background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--line); font-size: 13.5px; line-height: 1.35; color: var(--ink-2); }
+  .lst .lst-carro svg { width: 20px; height: 20px; flex: none; color: var(--ink-2); }
+  .lst .lst-carro > span { flex: 1 1 160px; min-width: 0; }
+  .lst .lst-carro b { color: var(--ink); font-weight: 700; }
+  .lst .lst-carro button { min-height: 44px; margin: -8px -4px -8px 0; padding: 0 8px; border: 0; background: none; font-size: 14px; font-weight: 700; color: var(--ink);
+    text-decoration: underline; text-underline-offset: 3px; }
+  .lst .lst-confia { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; line-height: 1.4; color: var(--ink-2); }
+  .lst .lst-confia li { display: flex; gap: 8px; align-items: flex-start; }
+  .lst .lst-confia svg { width: 16px; height: 16px; flex: none; margin-top: 1px; color: var(--serve-ink); stroke-width: 2.4; }
+
+  /* ---- vazia ---- */
+  .lst .lst-desfazer-tudo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin: 0 0 14px; padding: 10px 12px 10px 18px;
+    border-radius: 18px; background: var(--bg-2); font-size: 14.5px; color: var(--ink-2); }
+  .lst .lst-desfazer-tudo[hidden] { display: none; }
+  .lst .lst-vazia-cx { display: grid; justify-items: center; text-align: center; gap: 14px; padding: clamp(28px, 5vw, 56px) 20px clamp(24px, 4vw, 40px); border-radius: 26px;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  .lst .lst-vazia-arte span { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 30px; color: var(--accent-text);
+    background: radial-gradient(circle at 30% 25%, #fff, var(--accent-soft) 70%);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 70%), 0 0 0 10px color-mix(in oklab, var(--accent-soft), transparent 40%), 0 18px 34px -16px rgb(194 65 12 / .45); }
+  .lst .lst-vazia-arte svg { width: 44px; height: 44px; stroke-width: 1.7; }
+  .lst .lst-vazia-t { margin: 8px 0 0; font-stretch: 84%; font-weight: 820; font-size: clamp(26px, 3vw, 34px); line-height: 1.05; }
+  .lst .lst-vazia-txt { margin: 0; max-width: 520px; font-size: 16px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+  .lst .lst-vazia-txt b { color: var(--ink); }
+  .lst .lst-vazia-botoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 4px; }
+  .lst .lst-vazia-botoes .botao { gap: 9px; }
+  .lst .lst-passos { list-style: none; counter-reset: passo; margin: 18px 0 0; padding: 22px 0 0; border-top: 1px solid var(--line); display: grid; gap: 14px;
+    width: 100%; max-width: 900px; text-align: left; }
+  .lst .lst-passos li { counter-increment: passo; position: relative; display: grid; gap: 2px; padding-left: 46px; min-height: 34px; font-size: 14px; line-height: 1.4; color: var(--ink-2); }
+  .lst .lst-passos li::before { content: counter(passo); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--accent-text); font-weight: 800; font-size: 15px; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 74%); }
+  .lst .lst-passos b { color: var(--ink); font-size: 15px; }
+  @media (min-width: 760px) { .lst .lst-passos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+
+  /* ---- barra do celular ---- */
+  .lst-barra { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 40; display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; padding: 9px 9px 9px 16px; border-radius: 18px; background: color-mix(in oklab, var(--surface), transparent 6%);
+    backdrop-filter: blur(16px); box-shadow: var(--shadow-2), inset 0 0 0 1px var(--line); transform: translateY(140%); visibility: hidden;
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), visibility 0s linear .35s; }
+  .lst-barra.visivel { transform: none; visibility: visible; transition: transform .35s cubic-bezier(.2,.8,.2,1), visibility 0s; }
+  html.leve .lst-barra { background: var(--surface); backdrop-filter: none; }
+  .lst-barra .lst-barra-info { display: grid; gap: 1px; min-width: max-content; }
+  .lst-barra .lst-barra-info span { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  .lst-barra .lst-barra-info b { font-stretch: 82%; font-weight: 850; font-size: 22px; line-height: 1.05; white-space: nowrap; }
+  .lst-barra .botao { --h: var(--botao-p); height: var(--h); padding: 0 18px; font-size: 15.5px; gap: 8px; white-space: nowrap; }
+  @media (min-width: 960px) { .lst-barra { display: none; } }
+  @media (max-width: 959px) {
+    body:has(.lst-barra) { padding-bottom: 84px; }
+    html:has(.lst-barra.visivel) { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  }
+  @media (prefers-reduced-motion: reduce) { .lst-barra, .lst-barra.visivel { transition: none; } }
+</style>
