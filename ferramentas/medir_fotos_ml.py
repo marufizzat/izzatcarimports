@@ -12,7 +12,8 @@ o que está em primeiro plano na foto (nada fica cortado ao meio).
 Só mede o que falta no JSON (nunca baixa de novo o que já tem); grava aos poucos (pode parar e retomar).
 Baixa a foto média (-O, até 500 px, ~9 KB) só na memória, e os 64 primeiros bytes da grande (-F) para o tamanho.
 
-Motor (MEDIR_MOTOR): vision (Mac, recorte nativo ~/.local/bin/recorta-fundo, 8 em paralelo) | rembg (robô).
+Motor (MEDIR_MOTOR): vision (Mac, recorte nativo; ferramentas/caixa_vision.swift aberto em cada uma das 8 linhas de
+trabalho, ou o ~/.local/bin/recorta-fundo a cada foto) | rembg (robô).
 Variáveis: MEDIR_PARALELO (8), MEDIR_TEMPO_MAX (s, 0 = sem limite), MEDIR_IDS (MLBs que vão primeiro),
 MEDIR_LIMITE (fotos por rodada, 0 = todas).
 Opções: --extra ARQ   junta o JSON do robô (cache entre rodadas) e grava o resultado nele também
@@ -88,22 +89,58 @@ class SemPeca(Exception):
     """O recorte não achou nada em primeiro plano (foto sem peça destacada): vale como medida."""
 
 
+def _ajudante_vision():
+    """ferramentas/caixa_vision.swift compilado (uma vez, em ~/.cache): o recorte do Vision num processo só, que fica
+    aberto e recebe uma foto por linha (~3x mais rápido que abrir o recorta-fundo a cada foto). None sem o swiftc."""
+    import shutil
+    import subprocess
+    fonte = Path(__file__).with_name("caixa_vision.swift")
+    prog = Path.home() / ".cache" / "izzatcar" / "caixa_vision"
+    if prog.exists() and prog.stat().st_mtime >= fonte.stat().st_mtime:
+        return str(prog)
+    if not shutil.which("swiftc"):
+        return None
+    prog.parent.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run(["swiftc", "-O", str(fonte), "-o", str(prog)], capture_output=True, timeout=300)
+    return str(prog) if r.returncode == 0 and prog.exists() else None
+
+
 def motor_vision():
-    """Recorte nativo do Mac (o mesmo do capas_estudio.py). Saída 5 = nenhum primeiro plano."""
+    """Recorte nativo do Mac (o mesmo do capas_estudio.py: VNGenerateForegroundInstanceMaskRequest, todas as
+    instâncias). Com o ajudante em Swift, cada linha de trabalho tem o seu processo aberto; sem ele, o
+    ~/.local/bin/recorta-fundo a cada foto (saída 5 = nenhum primeiro plano)."""
     import subprocess
     import tempfile
     from PIL import Image
-    prog = os.path.expanduser("~/.local/bin/recorta-fundo")
+    ajudante = _ajudante_vision()
+    local = threading.local()
+
+    def _processo():
+        pr = getattr(local, "pr", None)
+        if pr is None or pr.poll() is not None:
+            pr = local.pr = subprocess.Popen([ajudante], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
+        return pr
 
     def recortar(img):
         with tempfile.TemporaryDirectory() as d:
             ent, sai = os.path.join(d, "e.png"), os.path.join(d, "s.png")
             img.save(ent)
-            r = subprocess.run([prog, ent, sai], capture_output=True, timeout=60)
-            if r.returncode == 5:
+            if ajudante:
+                pr = _processo()
+                pr.stdin.write(f"{ent}\t{sai}\n")
+                pr.stdin.flush()
+                resp = pr.stdout.readline().strip()
+                if not resp:                       # o processo caiu: abre outro na próxima foto
+                    local.pr = None
+                    raise RuntimeError("vision: o ajudante parou")
+                cod = 5 if resp == "SEM" else 0 if resp == "OK" else 1
+            else:
+                cod = subprocess.run([os.path.expanduser("~/.local/bin/recorta-fundo"), ent, sai],
+                                     capture_output=True, timeout=60).returncode
+            if cod == 5:
                 raise SemPeca
-            if r.returncode != 0 or not os.path.exists(sai):
-                raise RuntimeError(f"vision falhou ({r.returncode})")
+            if cod != 0 or not os.path.exists(sai):
+                raise RuntimeError(f"vision falhou ({cod})")
             return Image.open(sai).split()[3].copy()
     return recortar, int(os.getenv("MEDIR_PARALELO", "8"))
 

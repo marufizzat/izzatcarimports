@@ -22,6 +22,21 @@ function noQuadro(m: number[]) {
 }
 const TOL = 0.004;   // < 3 px num palco de 620 px
 const e = 1e-9;      // só o erro da conta em ponto flutuante
+/** o mesmo que confere(), sem expect: '' = tudo certo, senão o motivo */
+function problema(m: number[]): string {
+  const r = noQuadro(m);
+  if (!r) return '';
+  const [fx0, fy0, fx1, fy1] = r.foto;
+  for (const [a, b, tam] of [[fx0, fx1, r.w], [fy0, fy1, r.h]]) {
+    if (tam >= 1) { if (a > e || b < 1 - e) return 'fresta do fundo'; }
+    else if (!r.borda || Math.abs(a + b - 1) >= 0.004) return 'foto fora do meio';
+  }
+  if (r.peca) {
+    const [a, b, c, d] = r.peca;
+    if (a < -TOL || b < -TOL || c > 1 + TOL || d > 1 + TOL) return 'peça cortada';
+  }
+  return '';
+}
 function confere(m: number[]) {
   const r = noQuadro(m);
   if (!r) return;
@@ -105,13 +120,13 @@ describe('quadro das fotos do ML na galeria', () => {
     }
   });
 
+  // 45 mil fotos: conta sem expect (rápido mesmo no robô) e só falha no fim, mostrando as primeiras chaves com problema
   it('todas as medidas reais (src/data/fotos-ml-caixas.json)', (ctx) => {
     const arq = 'src/data/fotos-ml-caixas.json';
     if (!existsSync(arq)) return ctx.skip();
     const medidas: Record<string, number[]> = JSON.parse(readFileSync(arq, 'utf-8'));
-    for (const m of Object.values(medidas)) {
-      expect(m.length === 2 || m.length === 6).toBe(true);
-      confere(m);
-    }
-  });
+    const ruins: string[] = [];
+    for (const [k, m] of Object.entries(medidas)) if (!(m.length === 2 || m.length === 6) || problema(m)) ruins.push(`${k} ${JSON.stringify(m)} ${problema(m)}`);
+    expect(ruins.slice(0, 5)).toEqual([]);
+  }, 30000);
 });
