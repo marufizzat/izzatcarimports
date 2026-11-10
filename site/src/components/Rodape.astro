@@ -1,7 +1,7 @@
 ---
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
-import { whatsUrl, resumo, logoInfo } from '../lib/dados';
+import { whatsUrl, resumo, logoInfo, DETRAN_CDV } from '../lib/dados';
 // selos={false}: a pagina da peca ja mostra as garantias e a reputacao junto da compra (sem repetir no fim).
 interface Props { selos?: boolean }
 const { selos = true } = Astro.props;
@@ -25,7 +25,7 @@ const reputacao = !!r.reputacao && !COM_REPUTACAO.has(caminho);
       <img src="/identidade/logo-dark.png" alt="Izzat Car Imports" width="99" height="72" loading="lazy" />
       <p>Desmanche credenciado pelo Detran-RS, CDV&nbsp;nº&nbsp;01060. Peças originais de carros com baixa legal, com nota fiscal e 90 dias de garantia em toda peça.</p>
       <a class="botao botao-laranja" href={whatsUrl('Estou procurando uma peça.')} rel="noopener"><Icone nome="whats" />Chamar no WhatsApp</a>
-      <span class="rodape-fone num">WhatsApp (53) 99117-0950</span>
+      <p class="rodape-fone">Nosso único WhatsApp é o <b class="num">(53) 99117-0950</b>, o mesmo do <a href={DETRAN_CDV} target="_blank" rel="noopener">cadastro no Detran-RS</a>.</p>
     </div>
     <nav class="rodape-pecas" aria-label="Peças"><b>Peças</b>
       <a href="/catalogo.html">Catálogo completo</a>
@@ -90,7 +90,11 @@ const reputacao = !!r.reputacao && !COM_REPUTACAO.has(caminho);
   .rodape .rodape-marca { display: grid; gap: 16px; justify-items: start; align-content: start; }
   .rodape .rodape-marca img { height: 72px; width: auto; }
   .rodape .rodape-marca p { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 42ch; text-wrap: pretty; }
-  .rodape .rodape-fone { margin-top: -4px; font-size: 15px; font-weight: 650; color: var(--ink-2); white-space: nowrap; }
+  /* o número + o aviso contra golpe (o mesmo número da lista oficial do Detran-RS) */
+  .rodape .rodape-fone { margin-top: -4px; font-size: 14.5px; line-height: 1.45; color: var(--ink-2); max-width: 42ch; text-wrap: pretty; }
+  .rodape .rodape-fone b { font-size: 15px; font-weight: 650; color: var(--ink); white-space: nowrap; }
+  .rodape .rodape-fone a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .rodape .rodape-fone a:hover { text-decoration-color: currentColor; }
 
   /* listas: toda linha com a mesma altura (marca com logo e texto puro alinham entre colunas); no toque, 44 px */
   .rodape nav { display: grid; gap: 2px; align-content: start; min-width: 0; }

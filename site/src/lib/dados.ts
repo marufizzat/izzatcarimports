@@ -71,6 +71,9 @@ export function fotoSrcset(chave: string): string {
 export const brl = (v: number) =>
   v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const SITE = 'https://izzatcarimports.com.br';
+/** Lista oficial dos CDVs credenciados (Peça Legal RS, do Detran-RS): "IZZAT CAR IMPORTS · CDV01060", com o mesmo
+ *  WhatsApp do site (conferido em 10/11/2026, 1ª página, sem escolher cidade). Prova de fora (cliente oculto, atrito 6). */
+export const DETRAN_CDV = 'https://pecalegal.detran.rs.gov.br/cdv-portal/mod-consulta/credenciados.xhtml';
 // WhatsApp: número, abertura única e links em lib/whats.ts (whatsUrl recebe SÓ o contexto da mensagem)
 export { WHATS, whatsUrl } from './whats';
 

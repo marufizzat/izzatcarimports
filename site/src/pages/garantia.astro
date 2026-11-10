@@ -1,6 +1,7 @@
 ---
 // Garantia e trocas: só o que o site já afirma (90 dias em toda peça, nota fiscal em toda venda, como acionar
-// pelo WhatsApp, a gente avalia e resolve, proteção de compra do Mercado Livre, CDV nº 01060). Sem "troca ou
+// pelo WhatsApp, a gente avalia e resolve, proteção de compra do Mercado Livre, CDV nº 01060, com o link da lista
+// oficial do Detran-RS, e o aviso contra golpe: o único WhatsApp é o do cadastro no Detran-RS). Sem "troca ou
 // devolução" até o Maruf definir a regra (prazo, frete, compra errada): auditoria 4, item 3.2.
 // Cada fato aparece UMA vez (antes o FAQ repetia a página palavra por palavra). Uma mensagem só para a garantia.
 // FALTA O MARUF CONFIRMAR, antes de virar perguntas aqui: o que a garantia cobre e o que não cobre, a partir de
@@ -13,7 +14,7 @@ import BuscaCodigo from '../components/inst/BuscaCodigo.astro';
 import Icone from '../components/Icone.astro';
 import SeloReputacao from '../components/SeloReputacao.astro';
 import BannerV2 from '../components/v2/BannerV2.astro';
-import { whatsUrl, SITE } from '../lib/dados';
+import { whatsUrl, SITE, DETRAN_CDV } from '../lib/dados';
 
 const canonical = `${SITE}/garantia.html`;
 const canonicalPath = '/garantia.html';
@@ -45,7 +46,10 @@ const passos = [
       <ul class="gar-cert-fatos">
         <li><span class="inst-disco"><IconeInst nome="nota" /></span><span><b>Nota fiscal em toda venda</b>Toda compra sai com nota fiscal, para você guardar.</span></li>
         <li><span class="inst-disco"><IconeInst nome="carro" /></span><span><b>Peça original</b>Vem de carro com baixa legal, conferida e fotografada no pátio.</span></li>
-        <li><span class="inst-disco"><IconeInst nome="escudo" /></span><span><b>Desmanche credenciado</b>Detran-RS, CDV&nbsp;nº&nbsp;01060.</span></li>
+        <li><span class="inst-disco"><IconeInst nome="escudo" /></span><span><b>Desmanche credenciado</b>Detran-RS, CDV&nbsp;nº&nbsp;01060.
+          <a class="gar-detran" href={DETRAN_CDV} target="_blank" rel="noopener">Confira na lista do Detran-RS<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg></a></span></li>
+        {/* contra golpe com o nome do desmanche (o Detran-RS alerta): o número do site é o mesmo da lista oficial */}
+        <li><span class="inst-disco"><IconeInst nome="conversa" /></span><span><b>Um WhatsApp só</b>Nosso único WhatsApp é o <span class="num gar-fone">(53) 99117-0950</span>, o mesmo do cadastro no Detran-RS. Desconfie de outro número.</span></li>
       </ul>
     </section>
 
@@ -120,6 +124,12 @@ const passos = [
     border-top: 1.5px dashed var(--line-2); background: var(--surface-2); }
   .gar-cert-fatos li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
   .gar-cert-fatos b { display: block; color: var(--ink); font-size: 17px; font-weight: 700; line-height: 1.3; }
+  .gar-detran { display: inline-block; margin-top: 6px; padding-block: 2px 4px; font-weight: 650; color: var(--ink);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .gar-detran:hover { text-decoration-color: currentColor; }
+  .gar-detran svg { display: inline-block; width: 15px; height: 15px; margin-left: 3px; vertical-align: -2px; fill: none; stroke: currentColor;
+    stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .gar-fone { font-weight: 700; color: var(--ink); white-space: nowrap; }
   @media (min-width: 900px) {
     .gar-cert { grid-template-columns: 1fr 1fr; }
     .gar-cert-fatos { border-top: 0; border-left: 1.5px dashed var(--line-2); }
