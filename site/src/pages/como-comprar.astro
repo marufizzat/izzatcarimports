@@ -10,11 +10,13 @@ import BuscaCodigo from '../components/inst/BuscaCodigo.astro';
 import IconeInst from '../components/inst/IconeInst.astro';
 import Icone from '../components/Icone.astro';
 import SeloReputacao from '../components/SeloReputacao.astro';
+import BannerV2 from '../components/v2/BannerV2.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/como-comprar.html`;
 const canonicalPath = '/como-comprar.html';
 const ML = 'https://www.mercadolivre.com.br/perfil/IZZAT_CAR_IMPORTS';
+const msgConfere = 'Olá! Vim pelo site da Izzat Car. Quero que vocês confiram uma peça. Meu carro é ____ (modelo) ____ (ano) e a peça é: ____';
 const msgSite = 'Olá! Vim pelo site e quero comprar uma peça. Pode me ajudar?';
 const passos = [
   { src: '/arte/v2/passo-1.webp', alt: 'Ache a peça — Pelo nome, pelo carro ou pelo código gravado.' },
@@ -41,6 +43,11 @@ const passos = [
       ))}
     </ol>
   </section>
+  {/* depois dos passos: o Maruf com o celular, o passo 2 ("confirme o seu carro") com rosto */}
+  <div class="moldura">
+    <BannerV2 formato="arte" nome="banner-como-comprar" href={whatsUrl(msgConfere)}
+      texto="A gente confere. Manda o modelo e o ano. A gente confere na peça e responde com foto. Chamar no WhatsApp" />
+  </div>
 
   <div class="moldura">
     <section class="inst-sec inst-duas" id="whatsapp" aria-labelledby="h-whatsapp">

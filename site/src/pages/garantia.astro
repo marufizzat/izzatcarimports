@@ -11,10 +11,12 @@ import IconeInst from '../components/inst/IconeInst.astro';
 import BuscaCodigo from '../components/inst/BuscaCodigo.astro';
 import Icone from '../components/Icone.astro';
 import SeloReputacao from '../components/SeloReputacao.astro';
+import BannerV2 from '../components/v2/BannerV2.astro';
 import { whatsUrl, SITE } from '../lib/dados';
 
 const canonical = `${SITE}/garantia.html`;
 const canonicalPath = '/garantia.html';
+const msgBanner = 'Olá! Vim pelo site da Izzat Car. Quero uma peça original com nota fiscal e garantia. Meu carro é ____ (modelo e ano) e a peça é: ____';
 const msgGarantia = 'Olá! Vim pelo site. Comprei uma peça e preciso de ajuda com a garantia. Número do pedido: ';
 const passos = [
   { i: 'conversa', t: 'Chame pelo WhatsApp', s: 'Dentro do prazo de garantia. Informe o número do pedido e o que aconteceu com a peça.' },
@@ -45,6 +47,12 @@ const passos = [
         <li><span class="inst-disco"><IconeInst nome="escudo" /></span><span><b>Desmanche credenciado</b>Detran-RS, CDV&nbsp;nº&nbsp;01060.</span></li>
       </ul>
     </section>
+
+    {/* o Maruf mostrando a peça: a garantia com rosto, logo depois do certificado dos 90 dias */}
+    <div class="gar-banner">
+      <BannerV2 formato="arte" nome="banner-garantia" href={whatsUrl(msgBanner)}
+        texto="90 dias de garantia. Peça original, conferida. Com nota fiscal e 90 dias de garantia. Chamar no WhatsApp" />
+    </div>
 
     <section class="inst-sec" aria-labelledby="h-problema">
       <div class="gar-cabeca">
@@ -99,6 +107,7 @@ const passos = [
 </Pagina>
 
 <style>
+  .gar-banner { margin-top: clamp(28px, 4vw, 48px); }
   /* certificado */
   .gar-cert { position: relative; display: grid; gap: 0; margin-top: clamp(28px, 4vw, 48px); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-1); overflow: hidden; }
   .gar-cert::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; background: linear-gradient(90deg, transparent, var(--accent) 20%, var(--accent) 80%, transparent); }

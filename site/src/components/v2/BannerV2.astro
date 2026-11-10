@@ -4,11 +4,15 @@
 //    O texto sai de `texto`: 1ª frase = título, última (sem ponto) = botão, o meio = apoio. titulo/apoio/rotulo
 //    trocam cada parte. Na página de um carro (/carros/<k>.html) o título já fala do carro: "Tem um Volvo XC60?".
 //  - "arte": a arte de estúdio com o texto DESENHADO (versão em pé no celular; o texto vai no alt).
-//    Arte com pessoa: usar UMA vez no site (hoje, só "banner-nao-achou" na home).
+//    Cada arte com o Maruf aparece em UMA página só: nao-achou (home), garantia, como-comprar, origem (o pátio)
+//    e carro (página de cada carro, a faixa baixa 1536×512 no PC). arteW/arteH e celW/celH = o tamanho de cada
+//    versão (reserva o espaço certo, a página não pula). Sem `href` (arte sem botão desenhado): vira <figure>, sem link.
 import Icone from '../Icone.astro';
 import { resumo } from '../../lib/dados';
-interface Props { nome: string; texto: string; href: string; class?: string; formato?: 'faixa' | 'arte'; titulo?: string; apoio?: string; rotulo?: string; }
-const { nome, texto, href, class: cls, formato = 'faixa' } = Astro.props;
+interface Props { nome: string; texto: string; href?: string; class?: string; formato?: 'faixa' | 'arte'; titulo?: string; apoio?: string; rotulo?: string;
+  arteW?: number; arteH?: number; celW?: number; celH?: number; }
+const { nome, texto, href, class: cls, formato = 'faixa', arteW = 1536, arteH = 1024, celW = 1024, celH = 1536 } = Astro.props;
+const Caixa = href ? 'a' : 'figure';
 
 // ícone 3D de cada assunto (public/icones, os mesmos dos destaques)
 const ICONE: Record<string, string> = { 'banner-serve': 'serve', 'banner-nao-achou': 'patio', 'banner-oficinas': 'oficina' };
@@ -30,12 +34,12 @@ if (carro) {
 const icone = ICONE[nome] ?? 'conversa';
 ---
 {formato === 'arte' ? (
-  <a class:list={['banner-v2', cls]} href={href} aria-label={texto}>
+  <Caixa class:list={['banner-v2', { 'banner-v2-link': !!href }, cls]} {...(href ? { href, rel: 'noopener', 'aria-label': texto } : {})}>
     <picture>
-      <source media="(max-width: 700px)" srcset={`/arte/v2/${nome}-celular.webp`} width="1024" height="1536" />
-      <img src={`/arte/v2/${nome}.webp`} alt={texto} width="1536" height="1024" loading="lazy" decoding="async" />
+      <source media="(max-width: 700px)" srcset={`/arte/v2/${nome}-celular.webp`} width={celW} height={celH} />
+      <img src={`/arte/v2/${nome}.webp`} alt={texto} width={arteW} height={arteH} loading="lazy" decoding="async" />
     </picture>
-  </a>
+  </Caixa>
 ) : (
   <aside class:list={['faixa-whats', cls]} aria-label={titulo}>
     <img class="fw-icone" src={`/icones/${icone}-192.webp`} alt="" width="192" height="192" loading="lazy" decoding="async" />
@@ -47,9 +51,10 @@ const icone = ICONE[nome] ?? 'conversa';
   </aside>
 )}
 <style>
-  .banner-v2 { display: block; border-radius: 26px; overflow: hidden; background: #efeeeb; box-shadow: var(--shadow-2); transition: transform .35s cubic-bezier(.2,.7,.2,1); }
+  .banner-v2 { display: block; margin: 0; border-radius: 26px; overflow: hidden; background: #efeeeb; box-shadow: var(--shadow-2); transition: transform .35s cubic-bezier(.2,.7,.2,1); }
   .banner-v2 img { display: block; width: 100%; height: auto; }
-  @media (hover: hover) { .banner-v2:hover { transform: translateY(-3px); } }
+  /* só a arte com link sobe no hover (a sem botão é só imagem) */
+  @media (hover: hover) { .banner-v2-link:hover { transform: translateY(-3px); } }
   /* foco do teclado: o anel global (global.css, :focus-visible), só um pouco mais afastado do cartão */
   .banner-v2:focus-visible { outline-offset: 4px; }
 

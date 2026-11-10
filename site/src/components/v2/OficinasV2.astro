@@ -1,40 +1,69 @@
 ---
 // Oficinas e revendas (compra em lista): cartão escuro com texto vivo, os 3 passos e o botão de verdade.
-// Sem foto de pessoa (a arte com o Maruf fica só no banner "Não achou a peça?" da home).
+// À direita, a arte do Maruf com o kit de peças separadas e etiquetadas (estúdio escuro, SEM texto desenhado): a borda
+// esquerda dela se desfaz no preto do cartão. No celular a arte (quadrada) vem em cima e o texto embaixo.
 import Icone from '../Icone.astro';
 import { whatsUrl } from '../../lib/dados';
 const msg = 'Olá! Sou de oficina/revenda e quero mandar uma lista de peças. Carro e ano: ____. Peças: ____';
 const passos = ['Manda a lista com o carro e o ano', 'A gente confere no pátio', 'Responde com foto e código'];
 ---
 <aside class="faixa-escura ofi" aria-labelledby="ofi-titulo">
+  <picture class="ofi-arte">
+    <source media="(max-width: 899px)" srcset="/arte/v2/oficinas-maruf-celular.webp" width="900" height="900" />
+    <img src="/arte/v2/oficinas-maruf.webp" alt="O Maruf, da Izzat Car, com um tablet e um carrinho com peças separadas e etiquetadas"
+      width="1536" height="1024" loading="lazy" decoding="async" />
+  </picture>
   <div class="ofi-texto">
     <p class="ofi-antes"><img src="/icones/oficina-96.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />Oficinas e revendas</p>
     <h2 class="ofi-titulo" id="ofi-titulo">Separamos as peças pra sua oficina.</h2>
+    <ul class="ofi-passos">
+      {passos.map((t) => <li><Icone nome="check" /><span>{t}</span></li>)}
+    </ul>
     <a class="botao botao-laranja ofi-botao" href={whatsUrl(msg)} rel="noopener"><Icone nome="whats" />Mandar a lista no WhatsApp</a>
   </div>
-  <ul class="ofi-passos">
-    {passos.map((t) => <li><Icone nome="check" /><span>{t}</span></li>)}
-  </ul>
 </aside>
 <style>
-  .ofi { position: relative; isolation: isolate; overflow: hidden; display: grid; gap: 28px; align-items: center;
+  .ofi { position: relative; isolation: isolate; overflow: hidden; display: grid; align-items: center;
     padding: clamp(28px, 4.4vw, 56px); border-radius: 28px;
     background: radial-gradient(120% 140% at 100% 0%, #24201c 0%, #141416 55%, #111214 100%);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / .06), 0 30px 60px -30px rgb(0 0 0 / .55); }
-  .ofi::after { content: ""; position: absolute; z-index: -1; right: -120px; bottom: -160px; width: 420px; height: 420px; border-radius: 50%;
+  .ofi::after { content: ""; position: absolute; z-index: -2; right: -120px; bottom: -160px; width: 420px; height: 420px; border-radius: 50%;
     background: radial-gradient(closest-side, rgb(255 106 0 / .22), transparent); }
-  .ofi-texto { display: grid; gap: 14px; justify-items: start; }
+  .ofi-arte { display: block; z-index: -1; }
+  .ofi-arte img { display: block; width: 100%; height: auto; }
+  .ofi-texto { position: relative; display: grid; gap: 14px; justify-items: start; min-width: 0; }
   .ofi-antes { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 15.5px; font-weight: 650; color: #ff8a3d; }
   .ofi-antes img { width: 34px; height: 34px; }
   .ofi-titulo { margin: 0; font-stretch: 78%; font-weight: 820; font-size: clamp(32px, 4vw, 52px); line-height: .98; letter-spacing: -.012em;
     color: #f2f2f4; text-wrap: balance; max-width: 16ch; }
-  .ofi-botao { margin-top: 10px; }
-  .ofi-passos { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
-  .ofi-passos li { display: flex; align-items: center; gap: 14px; padding-block: 16px; border-top: 1px solid rgb(255 255 255 / .09);
-    font-size: clamp(16px, 1.5vw, 19px); font-weight: 600; color: #e6e6ea; }
-  .ofi-passos li:last-child { border-bottom: 1px solid rgb(255 255 255 / .09); }
-  .ofi-passos :global(svg) { flex: none; width: 24px; height: 24px; padding: 5px; box-sizing: content-box; border-radius: 50%;
+  .ofi-passos { list-style: none; margin: 6px 0 0; padding: 0; display: grid; width: 100%; max-width: 440px; }
+  .ofi-passos li { display: flex; align-items: center; gap: 14px; padding-block: 13px; border-top: 1px solid rgb(255 255 255 / .1);
+    font-size: clamp(16px, 1.4vw, 18px); font-weight: 600; color: #e6e6ea; }
+  .ofi-passos li:last-child { border-bottom: 1px solid rgb(255 255 255 / .1); }
+  .ofi-passos :global(svg) { flex: none; width: 22px; height: 22px; padding: 5px; box-sizing: content-box; border-radius: 50%;
     color: #1d1d1f; background: var(--accent); }
-  @media (min-width: 900px) { .ofi { grid-template-columns: 1.1fr .9fr; gap: 56px; } }
+  .ofi-botao { margin-top: 12px; }
+
+  /* PC: a arte ocupa os ~64% da direita, na altura toda do cartão; a borda esquerda (e um pouco de cima e de baixo)
+     se desfaz no preto. O texto fica na coluna da esquerda, sobre a parte escura da arte. */
+  @media (min-width: 900px) {
+    .ofi { min-height: clamp(470px, 40vw, 560px); }
+    .ofi-arte { position: absolute; top: 0; right: 0; bottom: 0; width: 66%; }
+    .ofi-arte img { height: 100%; object-fit: cover; object-position: 82% 42%;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 34%), linear-gradient(180deg, transparent 0, #000 9%, #000 90%, transparent 100%);
+      -webkit-mask-composite: source-in;
+      mask-image: linear-gradient(90deg, transparent 0, #000 34%), linear-gradient(180deg, transparent 0, #000 9%, #000 90%, transparent 100%);
+      mask-composite: intersect; }
+    .ofi-texto { max-width: min(500px, 46%); }
+  }
+  /* celular e tablet: a arte quadrada em cima, na largura toda do cartão; a base dela se desfaz no preto, e o texto
+     sobe um pouco por cima desse degradê */
+  @media (max-width: 899px) {
+    .ofi { padding-top: 0; }
+    .ofi-arte { margin-inline: calc(-1 * clamp(28px, 4.4vw, 56px)); }
+    .ofi-arte img { aspect-ratio: 1; max-height: 560px; object-fit: cover; object-position: 50% 40%;
+      -webkit-mask-image: linear-gradient(180deg, #000 66%, transparent 98%); mask-image: linear-gradient(180deg, #000 66%, transparent 98%); }
+    .ofi-texto { margin-top: -6px; }
+  }
   @media (max-width: 600px) { .ofi-botao { width: 100%; } }
 </style>

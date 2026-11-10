@@ -87,9 +87,12 @@ const og = existe(arteCarro) ? arteCarro : foto(c.capas[0], 'F');
       <GradePecas lista={lista.slice(0, 48)} total={N} linkTodas={base} />
     </section>
     {apoio.length > 0 && <div class="carro-apoio"><TextoApoio paragrafos={apoio} /></div>}
+    {/* depois da grade: o Maruf apontando a peça (faixa baixa 1536×512 no PC, em pé no celular). Substitui a faixa
+        "Tem um <carro>?", que dizia quase o mesmo; a mensagem do WhatsApp continua levando o carro. */}
     <section class="carro-banner">
-      <BannerV2 nome="banner-serve" href={whatsUrl(`Olá! Vim pelo site. Tenho um ${nome} ano ____ e quero confirmar se uma peça serve: ____`)}
-        texto="Serve no meu carro? Manda o modelo e o ano. A gente confere no pátio e te responde com foto. Chamar no WhatsApp" />
+      <BannerV2 formato="arte" nome="banner-carro" arteW={1536} arteH={512}
+        href={whatsUrl(`Olá! Vim pelo site da Izzat Car. Tenho um ${nome} ano ____ e procuro esta peça: ____`)}
+        texto="Tem esse carro? A gente conhece cada peça dele. Manda o ano e a peça no WhatsApp. Chamar no WhatsApp" />
     </section>
   </div>
 </Pagina>
