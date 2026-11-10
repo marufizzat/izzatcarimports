@@ -195,6 +195,14 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Busca: UMA regra para o catálogo e as sugestões (`lib/busca.ts`): ano solto vira filtro; todas as palavras, depois com
   erro de digitação (nunca em termo com número), depois as parecidas (`aproximado`); o carro digitado vem primeiro.
   O índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
+  **Jeito de falar do cliente** (nov/2026): `lib/sinonimos.ts`, UMA tabela no navegador (~2 KB no JS com cache; no
+  busca.json custaria em toda peça): "sinaleira" = lanterna, "máquina de vidro" = motor/máquina vidro, "pisca" = seta,
+  "farolete" = farol de milha, "frente" = grade/farol/capô/para-choque dianteiro, "central"/"ECU" = módulo, "TBI" = corpo
+  de borboleta, "caneta" = bobina, "mola a gás" = amortecedor da tampa/capô, "tapete" = carpete, "estepe"/"roda"... Só
+  ACRESCENTA alternativas (a palavra digitada continua valendo), a frase mais longa primeiro, sem as palavras vazias
+  ("de", "da"...); o plural vale sozinho ("faróis" = farol, só a palavra inteira). Cada linha aponta para um nome que
+  EXISTE no estoque (`sinonimos.test.ts` confere); tipo novo no estoque = conferir a tabela. O "começa pela palavra" e o
+  `bate()` (bloco "Não achou?") usam as mesmas formas.
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
   de anos com mais peças (na página do carro, num `<script is:inline>` antes da 1ª pintura); o "Todos" fica fixo à
   esquerda (`.ac-fixo`/`.mc-fixo`, sticky). Só o scrollLeft da fila, nunca a página.

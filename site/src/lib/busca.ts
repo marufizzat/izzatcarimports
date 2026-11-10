@@ -7,9 +7,12 @@
 //   2. todas as palavras, sem aproximação; se nada, com aproximação (erro de digitação); se ainda nada,
 //      as peças com alguma das palavras (aproximado = true: "nada exato, veja as parecidas");
 //   3. o carro digitado vem primeiro ("xc60": as do Volvo XC60; "farol compass": as do Jeep Compass);
-//   4. a peça cujo nome começa pela palavra buscada sobe ("farol": "Farol esquerdo" antes de "Interruptor farol").
+//   4. a peça cujo nome começa pela palavra buscada sobe ("farol": "Farol esquerdo" antes de "Interruptor farol");
+//   5. o jeito de falar do cliente vale (lib/sinonimos.ts: "sinaleira" = lanterna, "máquina de vidro" = motor vidro,
+//      "faróis" = farol).
 import MiniSearch, { type Query, type SearchResult } from 'minisearch';
 import { serveNoModelo, anosNoModelo, modelosDa } from './meuCarro';
+import { MAPA_SINONIMOS, MAIOR_GATILHO, VAZIAS, singulares } from './sinonimos';
 
 export type Indice = {
   v: number; updated: string; marcas: string[]; familias: string[]; tipos: string[];
@@ -144,10 +147,11 @@ type PorTexto = { base: Item[]; aproximado: boolean; carros: Carro[]; codigo?: s
 /** Os códigos gravados da peça (campo o, já sem hífen nem ponto: "1j0858601 1j0858601d"). */
 const codigosDa = (it: Item) => (it.o ? it.o.split(' ') : []);
 
-// palavras que não dizem qual é a peça ("peça original para xc60"): não precisam estar no anúncio
-// (tudo no site é peça original); só contam se a busca tiver só elas
-const VAZIAS = new Set(['de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'com', 'e', 'o', 'a', 'os', 'as', 'um', 'uma',
-  'peca', 'pecas', 'original', 'originais', 'usada', 'usadas', 'usado', 'usados']);
+// o peso das outras formas de dizer (lib/sinonimos.ts) perto da palavra digitada
+const PESO_SINONIMO = 0.4;
+
+// palavras que não dizem qual é a peça ("peça original para xc60", VAZIAS em lib/sinonimos.ts): não precisam estar no
+// anúncio (tudo no site é peça original); só contam se a busca tiver só elas
 
 // apelidos comuns de marca
 const APELIDOS: Record<string, string> = { gm: 'Chevrolet', vw: 'Volkswagen', mercedes: 'Mercedes-Benz', mb: 'Mercedes-Benz' };
@@ -306,27 +310,59 @@ export class Busca {
     return { carros: carros.map(({ b, m }) => ({ b, m })), marcas: marcasSoltas, resto, familia };
   }
 
-  /** Árvore da busca: cada palavra é um termo; "xc 60", "para-choque" e "8200-328-856" valem junto OU separado. */
-  private arvore(texto: string): { grupos: Query[]; ultima: string } {
+  /** Árvore da busca: cada palavra é um termo; "xc 60", "para-choque" e "8200-328-856" valem junto OU separado.
+   *  O jeito de falar do cliente (lib/sinonimos.ts, a frase mais longa primeiro) acrescenta as outras formas: "sinaleira"
+   *  = sinaleira OU lanterna; "máquina de vidro" = (máquina E vidro) OU (motor E vidro)...; e o plural, a forma no singular
+   *  ("faróis" = faróis OU farol, só a palavra inteira). formas: para cada palavra, as formas que valem por ela
+   *  (o "começa pela palavra" da ordem e o bate() usam). */
+  private arvore(texto: string): { grupos: Query[]; ultima: string; formas: Map<string, string[]> } {
     const grupos: Query[] = [];
+    const formas = new Map<string, string[]>();
     const blocos = normal(texto).split(/\s+/).filter(Boolean);
     const ws: { w: string; bloco: number }[] = [];
     blocos.forEach((bl, b) => bl.split(/[^a-z0-9]+/).filter(Boolean).forEach((w) => ws.push({ w, bloco: b })));
     const juntoOuSeparado = (partes: string[]): Query => ({ combineWith: 'OR', queries: [{ combineWith: 'AND', queries: partes }, partes.join('')] });
+    // as unidades da busca: palavra solta, bloco com hífen/ponto/barra e letra + número
+    const uns: { q: Query; chave: string; solta: boolean }[] = [];
     for (let i = 0; i < ws.length; i++) {
       const a = ws[i], p = ws[i + 1];
       // bloco com hífen, ponto ou barra ("xc-60", "316-63477", "para-choque", "8200-328-856"): o bloco inteiro
       if (p && a.bloco === p.bloco && /[-./]/.test(blocos[a.bloco])) {
         let fim = i + 1;
         while (ws[fim + 1]?.bloco === a.bloco) fim++;
-        grupos.push(juntoOuSeparado(ws.slice(i, fim + 1).map((x) => x.w)));
+        const partes = ws.slice(i, fim + 1).map((x) => x.w);
+        uns.push({ q: juntoOuSeparado(partes), chave: partes.join(''), solta: false });
         i = fim;
       } else if (p && parLetraNumero(a.w, p.w)) { // letra + número ("xc 60")
-        grupos.push(juntoOuSeparado([a.w, p.w]));
+        uns.push({ q: juntoOuSeparado([a.w, p.w]), chave: a.w + p.w, solta: false });
         i++;
-      } else if (!VAZIAS.has(a.w) || ws.every((x) => VAZIAS.has(x.w))) grupos.push(a.w);
+      } else if (!VAZIAS.has(a.w) || ws.every((x) => VAZIAS.has(x.w))) uns.push({ q: a.w, chave: a.w, solta: true });
     }
-    return { grupos, ultima: ws.length ? ws[ws.length - 1].w : '' };
+    const frase = (f: string[]): Query => (f.length === 1 ? f[0] : { combineWith: 'AND', queries: f });
+    for (let i = 0; i < uns.length;) {
+      let n = Math.min(MAIOR_GATILHO, uns.length - i);
+      for (; n >= 1; n--) if (MAPA_SINONIMOS.has(uns.slice(i, i + n).map((u) => u.chave).join(' '))) break;
+      if (n >= 1) {
+        const k = uns.slice(i, i + n).map((u) => u.chave).join(' ');
+        const alts = MAPA_SINONIMOS.get(k)!.filter((f) => f.join(' ') !== k);
+        const orig: Query = n === 1 ? uns[i].q : { combineWith: 'AND', queries: uns.slice(i, i + n).map((u) => u.q) };
+        // as outras formas valem um pouco menos que a digitada (e a soma de 2 formas não passa a frente dela)
+        grupos.push(alts.length ? { combineWith: 'OR', queries: [orig, { combineWith: 'OR', queries: alts.map(frase), boostTerm: () => PESO_SINONIMO }] } : orig);
+        formas.set(uns[i].chave, [...new Set(alts.map((f) => f[0]))]);
+        i += n;
+        continue;
+      }
+      // plural ("faróis", "lanternas", "retrovisores"): a forma no singular também, só a palavra inteira (sem começo de
+      // palavra nem erro de digitação: "mais" nunca vira "mal...")
+      const u = uns[i];
+      const sing = u.solta ? singulares(u.chave) : [];
+      if (sing.length) {
+        grupos.push({ combineWith: 'OR', queries: [u.q, { combineWith: 'OR', queries: sing, prefix: false, fuzzy: false }] });
+        formas.set(u.chave, sing);
+      } else grupos.push(u.q);
+      i++;
+    }
+    return { grupos, ultima: ws.length ? ws[ws.length - 1].w : '', formas };
   }
 
   /** Algum código gravado do estoque é este ou começa por ele (a busca ao vivo digita o código aos poucos)? */
@@ -347,7 +383,7 @@ export class Busca {
     const chave = normal(texto).replace(/\s+/g, ' ').trim();
     let m = this._textos.get(chave);
     if (m) return m;
-    const { grupos, ultima } = this.arvore(chave);
+    const { grupos, ultima, formas } = this.arvore(chave);
     const ent = this.entender(chave);
     // a última palavra pode estar pela metade (busca ao vivo): vale o começo dela a partir de 2 letras
     const prefix = (t: string) => t.length >= 3 || (t === ultima && t.length >= 2);
@@ -362,14 +398,20 @@ export class Busca {
     let aproximado = false;
     if (!r.length && grupos.length) { r = busca('OR', true).slice(0, 300); aproximado = r.length > 0; }
 
-    // o nome da peça começa pela palavra buscada: sobe ("farol" -> "Farol esquerdo" antes de "Interruptor farol")
-    const principais = ent.resto.filter((w) => w.length >= 3 || w === ultima);
+    // o nome da peça começa pela palavra buscada (ou uma forma dela: "sinaleira" -> "Lanterna"): sobe
+    // ("farol" -> "Farol esquerdo" antes de "Interruptor farol")
+    const principais = ent.resto.filter((w) => w.length >= 3 || w === ultima).flatMap((w) => [w, ...(formas.get(w) ?? [])]);
+    // só conta quando a busca tem sinônimo ou plural (sem eles, a ordem fica a de antes)
+    const digitadas = formas.size ? ent.resto.filter((w) => w.length >= 3 && !/\d/.test(w)) : [];
     const nota = new Map<number, number>();
     for (const x of r) {
       const it = this.itens[x.id as number];
       const nome = normal(it.n);
       const comeca = principais.some((w) => nome.startsWith(w));
-      nota.set(it.k, x.score * (comeca ? 1.6 : 1));
+      // o nome diz o que foi digitado, do jeito que foi digitado (não só um sinônimo): sobe um pouco
+      const ws = nome.split(/[^a-z0-9]+/);
+      const exato = digitadas.length > 0 && digitadas.every((d) => ws.some((w) => w.startsWith(d)));
+      nota.set(it.k, x.score * (comeca ? 1.6 : 1) * (exato ? 1.5 : 1));
     }
     let base = r.map((x) => this.itens[x.id as number]).sort((a, b) => nota.get(b.k)! - nota.get(a.k)!);
     // Parecidas ("farol compass" sem farol do Compass): o NOME da peça é o que diz o que a pessoa procura. As categorias
@@ -497,6 +539,8 @@ export class Busca {
     const ent = this.entender(texto);
     const principal = ent.resto.find((w) => w.length >= 3 && !/\d/.test(w));
     if (!principal || ent.familia) return true;
+    // a palavra principal ou uma forma dela ("sinaleira" -> lanterna, "faróis" -> farol)
+    const formas = [principal, ...(this.arvore(texto).formas.get(principal) ?? [])];
     const raiz = (a: string, b: string) => {
       let n = 0;
       while (n < a.length && n < b.length && a[n] === b[n]) n++;
@@ -504,7 +548,8 @@ export class Busca {
       return n >= Math.min(4, menor) && n >= menor - 3;
     };
     return lista.some((it) => {
-      if (!raiz(palavras(it.n)[0] || '', principal)) return false;
+      const p0 = palavras(it.n)[0] || '';
+      if (!formas.some((w) => raiz(p0, w))) return false;
       if (!alvo) return true;
       if (!doCarro(it, alvo)) return false;
       const y = anosNoModelo(it, alvo.m);

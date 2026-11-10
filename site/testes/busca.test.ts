@@ -396,3 +396,45 @@ describe('pílula da versão (dif) no índice', () => {
     }
   });
 });
+
+// Busca que fala como o cliente (nov/2026): sinônimos e plural (lib/sinonimos.ts) no catálogo e nas sugestões
+describe('sinônimos e plural', () => {
+  const nomesComecam = (r: Item[], w: string) => r.filter((x) => normal(x.n).startsWith(w)).length;
+  it('"sinaleira" (RS) acha as lanternas, como "lanterna"', (ctx) => {
+    const lanternas = b.procurar({ q: 'lanterna' });
+    if (!lanternas.length) return ctx.skip();
+    const r = b.procurar({ q: 'sinaleira' });
+    expect(b.aproximado).toBe(false);
+    expect(nomesComecam(r, 'lanterna')).toBe(nomesComecam(lanternas, 'lanterna'));
+    expect(normal(r[0].n).startsWith('lanterna')).toBe(true);
+    // no plural também, e nas sugestões do cabeçalho (a mesma regra)
+    expect(b.procurar({ q: 'sinaleiras' }).length).toBe(r.length);
+    expect(b.sugestoes('sinaleira').total).toBe(r.length);
+    // e o bloco "Não achou?" não aparece: a lista tem o que a pessoa pediu
+    expect(b.bate(r, 'sinaleira', null)).toBe(true);
+  });
+  it('"faróis" acha o mesmo que "farol" (plural fora do padrão)', (ctx) => {
+    const um = b.procurar({ q: 'farol' });
+    if (!um.length) return ctx.skip();
+    const varios = new Set(b.procurar({ q: 'faróis' }).map((x) => x.id));
+    expect(b.aproximado).toBe(false);
+    expect(um.every((x) => varios.has(x.id))).toBe(true);
+  });
+  it('"máquina de vidro" acha os "Motor vidro"; "mola a gás" acha os amortecedores da tampa e do capô', (ctx) => {
+    const motores = b.itens.filter((x) => /^motor vidro/.test(normal(x.n)));
+    if (!motores.length) return ctx.skip();
+    const ids = new Set(b.procurar({ q: 'máquina de vidro' }).map((x) => x.id));
+    expect(motores.every((x) => ids.has(x.id))).toBe(true);
+    const mola = b.procurar({ q: 'mola a gás' });
+    expect(b.aproximado).toBe(false);
+    expect(mola.some((x) => /amortecedor/.test(normal(x.n)))).toBe(true);
+  });
+  it('sinônimo só acrescenta: a palavra digitada continua valendo ("pisca" acha o pisca-alerta e a chave de seta)', (ctx) => {
+    const antes = b.itens.filter((x) => /\bpisca\b/.test(normal(x.n)));
+    if (!antes.length) return ctx.skip();
+    const ids = new Set(b.procurar({ q: 'pisca' }).map((x) => x.id));
+    expect(antes.every((x) => ids.has(x.id))).toBe(true);
+    expect(b.procurar({ q: 'pisca' }).some((x) => /chave seta/.test(normal(x.n)))).toBe(true);
+  });
+});
+
