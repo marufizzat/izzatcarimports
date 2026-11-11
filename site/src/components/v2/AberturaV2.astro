@@ -46,11 +46,11 @@ const msgDesconto = 'Quero comprar pelo WhatsApp com os 10% de desconto.';
 const antes = `(function(){try{var s=document.currentScript.parentNode,d=document.documentElement,p=s.querySelector('[data-ab-palco]'),pc=matchMedia('(min-width: 1024px)').matches;`
   // as imagens das peças ficam para depois: tirar() guarda o srcset (aberturaPalco.ts devolve quando a peça vai aparecer)
   + `function tirar(q){[].forEach.call(s.querySelectorAll(q),function(i){i.setAttribute('data-srcset',i.getAttribute('srcset'));i.setAttribute('data-src',i.getAttribute('src'));i.removeAttribute('srcset');i.removeAttribute('src')})}`
-  + `if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!d.classList.contains('leve'))p.setAttribute('data-ab-entrada','');`
+  + `var luz=s.querySelectorAll('.ab-drl');if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!d.classList.contains('leve')){p.setAttribute('data-ab-entrada','');[].forEach.call(luz,function(x){x.classList.add('ab-apagado')})}`
   // celular e tablet: o palco está abaixo do cartão e dorme (sem montar e sem baixar nada) até chegar na tela
   + `if(!pc){p.setAttribute('data-ab-dorme','');tirar('.ab-p img[srcset]')}else{var h=s.querySelector('.ab-heroi .ab-img');if(h)h.loading='eager'}`
   // sem o script principal em 5 s (rede ruim, erro): a cena aparece sozinha, parada
-  + `setTimeout(function(){if(s.hasAttribute('data-ab-montada'))return;p.removeAttribute('data-ab-entrada');if(p.hasAttribute('data-ab-dorme')){p.removeAttribute('data-ab-dorme');[].forEach.call(s.querySelectorAll('.ab-p[data-cena] img[data-srcset]'),function(i){i.srcset=i.getAttribute('data-srcset');i.src=i.getAttribute('data-src')})}},5000);`
+  + `setTimeout(function(){if(s.hasAttribute('data-ab-montada'))return;p.removeAttribute('data-ab-entrada');[].forEach.call(luz,function(x){x.classList.remove('ab-apagado')});[].forEach.call(s.querySelectorAll('.ab-p[data-cena]'),function(x){x.classList.add('ab-on')});if(p.hasAttribute('data-ab-dorme')){p.removeAttribute('data-ab-dorme');[].forEach.call(s.querySelectorAll('.ab-p[data-cena] img[data-srcset]'),function(i){i.srcset=i.getAttribute('data-srcset');i.src=i.getAttribute('data-src')})}},5000);`
   + `var r=s.querySelector('[data-mc-raiz]');if(!r||!r.hasAttribute('data-salvo'))return;`
   + `var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro'));var v=(${palavraViva.toString()})(c.m,c.y,c.b);`
   + `s.querySelector('[data-ab-palavra]').textContent=v.t;s.querySelector('[data-ab-h1]').style.setProperty('--ab-l',v.l);p.setAttribute('data-ab','carro');`
@@ -327,6 +327,7 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
   /* a heroína no piso: sombra de contato e reflexo (a mesma imagem, virada) */
   .abv2 .ab-heroi .ab-f::before { content: ""; position: absolute; left: 6%; right: 4%; bottom: -3%; height: 16%; border-radius: 50%;
     background: radial-gradient(closest-side, rgb(40 26 18 / .42), rgb(40 26 18 / 0)); transition: opacity .3s ease; }
+  .abv2 .ab-heroi:not(.ab-on) .ab-f::before { opacity: 0; }
   .abv2 .ab-heroi .ab-rot { top: calc(100% + 16px / var(--se)); }
   .abv2 .ab-ref { position: absolute; left: 0; top: 96%; width: 100%; height: 100%; max-width: none; transform: scaleY(-1); opacity: .2; pointer-events: none;
     -webkit-mask-image: linear-gradient(0deg, #000 0, transparent 42%); mask-image: linear-gradient(0deg, #000 0, transparent 42%); transition: opacity .3s ease; }
@@ -348,14 +349,19 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
   .abv2 .ab-legenda::before, .abv2 .ab-legenda::after { content: ""; width: 22px; height: 3px; border-radius: 3px; background: var(--accent); }
   .abv2 .ab-palco[data-ab="carro"] .ab-legenda[data-on] { opacity: 1; transform: none; }
 
-  /* a luz que corre pelo DRL do farol (a máscara são só as luzes acesas) */
+  /* o DRL do farol ACENDE: a máscara são só as luzes acesas (farol-drl.webp) e por ela passa um véu escuro. Parado, o
+     véu não existe (luz acesa). Na chegada o farol nasce apagado (.ab-apagado, posto antes da 1ª pintura) e o véu sai
+     da esquerda para a direita (.ab-corre); ao escolher a marca ou o carro ele pisca duas vezes (.ab-pisca), como
+     carro destravando. Só transform/opacity. */
   .abv2 .ab-drl { position: absolute; inset: 0; overflow: hidden; pointer-events: none;
     -webkit-mask: url(/arte/v2/abertura/farol-drl.webp) center / 100% 100% no-repeat; mask: url(/arte/v2/abertura/farol-drl.webp) center / 100% 100% no-repeat; }
-  .abv2 .ab-drl i { position: absolute; inset: 0; opacity: 0; background: linear-gradient(100deg, rgb(255 255 255 / 0) 30%, #fff 47%, #fff 53%, rgb(255 255 255 / 0) 70%); transform: translateX(-80%); }
-  .abv2 .ab-drl.ab-corre i { animation: ab-corre 1.15s cubic-bezier(.4, 0, .2, 1) both; }
-  .abv2 .ab-drl.ab-pisca i { background: #fff; transform: none; animation: ab-pisca .62s linear both; }
-  @keyframes ab-corre { 0% { opacity: 0; transform: translateX(-80%); } 12% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(80%); } }
-  @keyframes ab-pisca { 0%, 100% { opacity: 0; } 12%, 30% { opacity: .95; } 45% { opacity: 0; } 58%, 76% { opacity: .95; } }
+  .abv2 .ab-drl i { position: absolute; top: 0; bottom: 0; left: -18%; width: 136%; opacity: 0;
+    background: linear-gradient(90deg, rgb(14 14 18 / 0) 0, rgb(14 14 18 / .74) 13%, rgb(14 14 18 / .74) 100%); }
+  .abv2 .ab-drl.ab-apagado i { opacity: 1; }
+  .abv2 .ab-drl.ab-corre i { animation: ab-corre 1s cubic-bezier(.45, 0, .2, 1) both; }
+  .abv2 .ab-drl.ab-pisca i { animation: ab-pisca .66s linear both; }
+  @keyframes ab-corre { from { opacity: 1; transform: none; } to { opacity: 1; transform: translateX(100%); } }
+  @keyframes ab-pisca { 0%, 100% { opacity: 0; } 10%, 30% { opacity: 1; } 42%, 54% { opacity: 0; } 64%, 82% { opacity: 1; } }
 
   /* a vida: deriva lenta (só transform), só com o palco na tela e a aba à vista */
   .abv2 .ab-p.ab-on:not(.ab-heroi) .ab-f, .abv2 .ab-palco[data-ab="carro"] .ab-heroi.ab-on .ab-f { animation: ab-deriva calc(7s + var(--i) * .9s) ease-in-out calc(var(--i) * -1.3s) infinite alternate paused; }

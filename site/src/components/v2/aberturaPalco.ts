@@ -75,10 +75,14 @@ export function montarAbertura(sec: HTMLElement) {
     palco.removeAttribute('data-ab-entrada');
   }
 
-  function brilhar(pisca = false) {
-    if (calmo) return;
-    for (const d of sec.querySelectorAll<HTMLElement>('.ab-drl')) {
-      d.classList.remove('ab-corre', 'ab-pisca');
+  /** O DRL acende (o véu escuro sai correndo) ou pisca duas vezes. `onde`: o farol do palco, o do topo do celular, ou os dois. */
+  const drls = Array.from(sec.querySelectorAll<HTMLElement>('.ab-drl'));
+  function brilhar(pisca = false, onde: HTMLElement[] = drls) {
+    for (const d of onde) {
+      const apagado = d.classList.contains('ab-apagado');
+      d.classList.remove('ab-corre', 'ab-pisca', 'ab-apagado');
+      if (calmo || (pisca && apagado)) continue;
+      if (!pisca && !apagado) continue; // já aceso: nada a acender
       void d.offsetWidth;
       d.classList.add(pisca ? 'ab-pisca' : 'ab-corre');
     }
@@ -264,8 +268,8 @@ export function montarAbertura(sec: HTMLElement) {
     comecou = true;
     palco.removeAttribute('data-ab-dorme');
     const salvo = palco.getAttribute('data-ab') === 'carro' ? lerMeuCarro() : null;
-    if (salvo) comCarro(salvo, true);
-    else { whatsDoSelo(null); entrar(cenaBase()).then(() => setTimeout(brilhar, 420)); }
+    if (salvo) { for (const d of drls) if (palco.contains(d)) d.classList.remove('ab-apagado'); comCarro(salvo, true); }
+    else { whatsDoSelo(null); entrar(cenaBase()).then(() => setTimeout(() => brilhar(false, drls.filter((d) => palco.contains(d))), 380)); }
   }
   if ('IntersectionObserver' in window) {
     new IntersectionObserver((es) => {
@@ -277,7 +281,7 @@ export function montarAbertura(sec: HTMLElement) {
     }, { rootMargin: '80px 0px' }).observe(palco);
   } else { naTela = true; comecar(); viver(); }
   // a luz do farolzinho da 1ª tela do celular não espera o palco
-  if (!largo.matches) setTimeout(brilhar, 700);
+  setTimeout(() => brilhar(false, drls.filter((d) => !palco.contains(d))), largo.matches ? 0 : 650);
   const c0 = lerMeuCarro();
   if (c0) whatsDoSelo(c0);
 }
