@@ -161,7 +161,7 @@
 
 /* o pé: o total e o botão ficam à vista enquanto a lista rola (presos ao pé da tela, dentro do painel) */
 .rxb-pe { padding-top: 10px; }
-.rxb-fixo { position: sticky; bottom: 0; z-index: 2; display: grid; gap: 10px; margin: auto -18px 0; padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+.rxb-fixo { position: sticky; bottom: 0; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: auto -18px 0; padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
   background: var(--surface); border-top: 1px solid var(--line); }
 .rxb-fixo::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 18px; pointer-events: none;
   background: linear-gradient(to top, color-mix(in oklab, var(--surface), transparent 8%), transparent); }
@@ -170,9 +170,9 @@
 .rxb-painel > :is(.rxb-linhas, .rxb-patio, .rxb-mais):has(+ .rxb-fixo) { margin-bottom: 14px; }
 .rxb-total { margin: 0; min-height: 30px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 14px; color: var(--ink-2); font-size: 14px; line-height: 1.4; }
 .rxb-t-n { font-weight: 620; }
-.rxb-t-v { color: var(--ink); font-size: 14.5px; white-space: nowrap; }
-.rxb-t-v s { color: var(--ink-2); }
-.rxb-t-v b { font-size: 21px; font-weight: 850; font-stretch: 88%; letter-spacing: -.005em; }
+.rxb-t-v { color: var(--ink); font-size: 14.5px; }
+.rxb-t-v s { color: var(--ink-2); white-space: nowrap; }
+.rxb-t-v b { font-size: 21px; font-weight: 850; font-stretch: 88%; letter-spacing: -.005em; white-space: nowrap; }
 .rxb-t-v small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
 .rxb-fixo.rxb-solto { position: static; }
 .rxb-pedir { width: 100%; }
