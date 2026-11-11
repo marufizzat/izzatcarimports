@@ -15,6 +15,12 @@
 //   1ª pintura) e, no 1º toque na seção, /dados/carro/<k>.json (o do "Chegou para o seu carro") vira as contagens DELE
 //   (no ano salvo; ano sem peça: o modelo em todos os anos, com aviso). Trocar o carro atualiza tudo sem recarregar.
 // - página do carro (`carro`): as contagens daquele carro já saem no build.
+// - DOIS MODOS (o seletor acima da arte): "Achar uma peça" (as zonas, o de sempre) e "Bati o carro" (os 8 pontos da
+//   batida e a lista do conserto: components/v2/raioXBatida.ts, baixado só perto do seletor). E, da zona Frente, o piloto
+//   "Ver a frente por dentro" (a vista explodida com cada peça clicável: components/v2/raioXPorDentro.ts, só no clique).
+//   O palco, a fila das fichas e a caixa do painel são os mesmos nos três: trocar não muda o tamanho de nada.
+// - Endereço que já abre uma parte: #raio-x=frente (zona), #raio-x=batida ou #raio-x=batida:frente-esquerda (o modo e
+//   o ponto), #raio-x=por-dentro (a frente por dentro). O "Onde fica" da página da peça usa o 1º.
 // Teclado: Tab percorre as zonas na ordem do carro (ZONAS), Enter abre o painel e leva o foco para ele, Esc limpa.
 // Leitor de tela: cada zona é um link "Frente: 118 peças"; a arte, as etiquetas e as fichas (um alvo maior para o dedo)
 // ficam de fora. Sem ilha React; a busca do catálogo só desce com carro salvo (1º toque) ou no "Ver as peças".
@@ -52,7 +58,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   + `t.textContent='Onde fica a peça no seu '+c.b+' '+c.m+y+'?';l.textContent='Toque na parte do carro e veja as peças do seu '+c.m+' que a gente tem.';`
   + `if(b)b.textContent='Trocar o carro'}catch(e){}})()`;
 ---
-<div class:list={['rx', { 'rx-compacto': compacto, 'rx-recolhido': recolhido }]} data-rx data-modo={carro ? 'carro' : 'home'} data-b={carro?.b} data-m={carro?.m}>
+<div class:list={['rx', { 'rx-compacto': compacto, 'rx-recolhido': recolhido }]} data-rx data-rx-id={id} data-vista="achar" data-modo={carro ? 'carro' : 'home'} data-b={carro?.b} data-m={carro?.m} data-sizes={sizes}>
   <div class="rx-cabeca">
     <h2 class:list={[compacto ? 'rx-titulo-p' : 'titulo-secao']} id={`${id}-t`} data-rx-titulo>{titulo}</h2>
     {!compacto && <p class="lead" data-rx-lead>{lead}</p>}
@@ -62,6 +68,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       </button>
     )}
     {!carro && <script is:inline set:html={antes} />}
+  </div>
+
+  {/* os dois modos: rádios de verdade (setas trocam, Tab entra e sai), desenhados como um seletor de dois lados */}
+  <div class="rx-modos" role="radiogroup" aria-label="O que você precisa" data-rx-modos>
+    <label><input type="radio" name={`${id}-modo`} value="achar" checked /><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>Achar uma peça</span></label>
+    <label><input type="radio" name={`${id}-modo`} value="batida" /><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-2.2 6.3L4 7l4.3 5L3 16l6.6.4L11 22l3.2-5.4L21 18l-3.6-5.3L22 8l-6.6.6z" /></svg>Bati o carro</span></label>
   </div>
 
   {recolhido && (
@@ -102,12 +114,14 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         ))}
       </div>
       {/* um alvo maior para o dedo (as mesmas zonas, com os mesmos números): fora do Tab e do leitor de tela, que já têm as zonas */}
+      <div class="rx-filas" data-rx-filas>
       <div class="rx-fichas" aria-hidden="true" data-rx-fichas>
         {ZONAS.map((z, i) => (
           <button type="button" tabindex="-1" data-ficha={z.k} class:list={[{ vazia: !nZ(z.k) }]}>
             <i class="num">{i + 1}</i><span>{z.nome}</span><small class="num" data-ficha-n>{fmt(nZ(z.k))}</small>
           </button>
         ))}
+      </div>
       </div>
     </div>
 
@@ -138,7 +152,11 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel,
   } from '../../lib/raioX';
   import { linkAvisoParte, linkProcuraParte } from '../../lib/aviso';
+  import { carroSalvoTxt } from '../../lib/whats';
+  import { ZONA_PILOTO, ARTE_FRENTE_320 } from '../../lib/raioXFrente';
   import type { Filtros, Indice, Item } from '../../lib/busca';
+  import type { Batida, CarroDaVez } from './raioXBatida';
+  import type { PorDentro } from './raioXPorDentro';
 
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   const nf = (n: number) => n.toLocaleString('pt-BR');
@@ -179,6 +197,16 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     // de onde saem as peças do "Ver as peças": a busca do carro (salvo ou da página) ou o arquivo das mais novas por zona
     let procurarCarro: Procurar | null = null;
     let galeria: Promise<{ itens: Item[]; zonas: Record<string, number[]> }> | null = null;
+    // a capa da peça (capaItem de lib/busca.ts, que só desce com a busca) e a conta do carro em andamento
+    let capa: ((it: Item) => string) | null = null;
+    let contando: Promise<void> | null = null;
+    // o que a arte mostra: as zonas ('achar'), os pontos da batida ('batida') ou a frente por dentro ('frente')
+    let vista: 'achar' | 'batida' | 'frente' = 'achar';
+    let batida: Batida | null = null;
+    let porDentro: PorDentro | null = null;
+    const palco = raiz.querySelector<HTMLElement>('[data-rx-palco]')!;
+    const filas = raiz.querySelector<HTMLElement>('[data-rx-filas]')!;
+    const radios = [...raiz.querySelectorAll<HTMLInputElement>('[data-rx-modos] input')];
 
     const zona = (k: string) => ZONAS.find((z) => z.k === k)!;
     const conta = (k: string): ZonaPainel => dados.find((d) => d.k === k) ?? { k, n: 0, l: [] };
@@ -203,7 +231,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     }
 
     // ---- o carro salvo (só na home): /dados/carro/<k>.json no 1º toque ----
-    async function carregarCarro() {
+    function carregarCarro(): Promise<void> {
+      if (!home || !carro) return Promise.resolve();
+      if (estado === 'nada') contando = contarCarro();
+      return contando ?? Promise.resolve();
+    }
+    async function contarCarro() {
       if (!home || !carro || estado !== 'nada') return;
       estado = 'carregando';
       const minha = ++vez;
@@ -220,6 +253,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
           const b = new Busca(ix);
           const q: Procurar = (x) => b.procurar(x);
           p = q;
+          capa = (it) => capaItem(it, 'A');
           // uma parte do carro por vez, devolvendo a vez ao navegador entre elas (nenhuma tarefa longa no 1º toque)
           const contarAos = async (g: CarroFiltro) => {
             const out: ReturnType<typeof contarZonas> = [];
@@ -245,7 +279,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       }
       estado = 'ok';
       pintarZonas();
-      if (ativa) mostrar(ativa, false);
+      if (ativa && vista === 'achar') mostrar(ativa, false);
     }
 
     // ---- o painel ----
@@ -278,10 +312,16 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
           + `${raiz.querySelector('template[data-rx-whats]')?.innerHTML ?? ''}Me avise quando chegar</a>`
           + `<a class="rx-p-outros" href="${esc(linkCatalogo({ b: filtro.marca || raiz.dataset.b || carro!.b, m: filtro.modelo || raiz.dataset.m || carro!.m, y: filtro.ano }))}">Ver todas as peças ${esc(dc)}</a></div>`;
       } else {
-        const ricas = c.l.slice(0, NA_FRENTE);
-        const resto = c.l.slice(NA_FRENTE);
+        // a zona do piloto (a Frente): o convite "Ver a frente por dentro" ocupa o lugar de UMA linha (a altura do painel
+        // fica a mesma das outras zonas); o tipo que saiu da frente continua no "Ver os N tipos"
+        const piloto = k === ZONA_PILOTO;
+        const naFrente = piloto ? NA_FRENTE - 1 : NA_FRENTE;
+        const ricas = c.l.slice(0, naFrente);
+        const resto = c.l.slice(naFrente);
         html = cabeca(` · ${qtdPecas(c.n)}`, `${dc}${c.l.length > 1 ? ` · ${c.l.length} tipos de peça` : ''}`)
           + (aviso ? `<p class="rx-p-aviso">${esc(aviso)}</p>` : '')
+          + (piloto ? `<button type="button" class="rx-dentro" data-rx-dentro><img src="${ARTE_FRENTE_320}" alt="" width="84" height="56" loading="lazy" decoding="async">`
+            + `<span><b>Ver a frente por dentro</b><small>Para-choque, grade, faróis, radiador: cada peça no lugar dela.</small></span>${SETA}</button>` : '')
           + `<ul class="rx-linhas">${ricas.map((l) => linhaHtml(l, true)).join('')}</ul>`;
         if (resto.length) {
           html += `<button type="button" class="rx-mais" aria-expanded="false" aria-controls="${painel.id}-resto">Ver os ${c.l.length} tipos ${esc(z.de)}</button>`
@@ -306,20 +346,35 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         if (abrir) resto.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
       });
       conteudo.querySelector<HTMLButtonElement>('.rx-ver')?.addEventListener('click', (e) => void verPecas(k, e.currentTarget as HTMLButtonElement));
+      const dentro = conteudo.querySelector<HTMLButtonElement>('[data-rx-dentro]');
+      if (dentro) {
+        // o dedo ou o mouse encostou: o código e a arte da vista começam a descer antes do clique
+        const cedo = () => void modPorDentro().then((m) => m.aquecerArte(raiz.dataset.sizes ?? '100vw')).catch(() => {});
+        dentro.addEventListener('pointerenter', cedo, { once: true });
+        dentro.addEventListener('touchstart', cedo, { once: true, passive: true });
+        dentro.addEventListener('focus', cedo, { once: true });
+        dentro.addEventListener('click', () => void abrirPorDentro(dentro));
+      }
       if (focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
+    }
+
+    // página do carro: o arquivo só do carro (o mesmo da grade do ano), uma vez
+    let daPagina: Promise<void> | null = null;
+    function buscaDaPagina(): Promise<void> {
+      daPagina ??= Promise.all([
+        fetch(ARQUIVO_CARRO(raiz.dataset.b!, raiz.dataset.m!)).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Indice>; }),
+        import('../../lib/busca'),
+      ]).then(([ix, { Busca, capaItem }]) => {
+        const b = new Busca(ix);
+        procurarCarro = (x) => b.procurar(x);
+        capa = (it) => capaItem(it, 'A');
+      }).catch((e) => { daPagina = null; throw e; });
+      return daPagina;
     }
 
     // ---- "Ver as peças da frente": as mais novas da zona num trilho de cartões, ali mesmo ----
     async function pecasDe(k: string): Promise<Item[]> {
-      if (!procurarCarro && !home) {
-        // página do carro: o arquivo só do carro (o mesmo da grade do ano)
-        const [ix, { Busca }] = await Promise.all([
-          fetch(ARQUIVO_CARRO(raiz.dataset.b!, raiz.dataset.m!)).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Indice>; }),
-          import('../../lib/busca'),
-        ]);
-        const b = new Busca(ix);
-        procurarCarro = (x) => b.procurar(x);
-      }
+      if (!home) await buscaDaPagina();
       if (procurarCarro && filtro.modelo) return pecasDaZona(procurarCarro, filtro, zona(k));
       galeria ??= Promise.all([fetch(ARQUIVO_GALERIA).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }), import('../../lib/busca')])
         .then(([ix, { Busca }]) => ({ itens: new Busca(ix as Indice).itens, zonas: (ix as { zonas: Record<string, number[]> }).zonas }))
@@ -421,6 +476,103 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       }
     }
 
+    // ---- os outros modos: "Bati o carro" e "a frente por dentro" (código e estilo baixados sob demanda) ----
+    const modBatida = () => import('./raioXBatida');
+    const modPorDentro = () => import('./raioXPorDentro');
+    const doCarroDe = (f: CarroFiltro) => (!f.modelo ? '' : `${home ? 'do seu' : 'do'} ${f.modelo}${f.ano ? ` ${f.ano}` : ''}`);
+    /** O carro nas mensagens: o salvo (home; na página do carro, se é o mesmo) ou o da página, sem o ano. */
+    const carroTxt = (): { nome: string; meu: boolean } => {
+      if (home) return { nome: carro ? carroSalvoTxt(carro) : '', meu: true };
+      const s = lerMeuCarro();
+      return s && s.b === raiz.dataset.b && s.m === raiz.dataset.m && s.y
+        ? { nome: nomeCarro(s), meu: true } : { nome: `${raiz.dataset.b} ${raiz.dataset.m}`, meu: false };
+    };
+    /** O carro que vale para a lista do conserto e a frente por dentro: o salvo (home, com as mesmas quedas das zonas:
+     *  ano sem peça = todos os anos; modelo sem peça = o estoque inteiro) ou o da página (no ano do salvo, se é o mesmo). */
+    async function carroDaVez(): Promise<CarroDaVez> {
+      const semCapa = () => '';
+      if (home) {
+        await carregarCarro();
+        return { procurar: filtro.modelo ? procurarCarro : null, filtro, aviso, capa: capa ?? semCapa };
+      }
+      await buscaDaPagina();
+      let f: CarroFiltro = { marca: raiz.dataset.b, modelo: raiz.dataset.m };
+      let msg = '';
+      const s = lerMeuCarro();
+      if (s && s.b === f.marca && s.m === f.modelo && s.y) {
+        if (procurarCarro!({ ...f, ano: s.y }).length) f = { ...f, ano: s.y };
+        else msg = `Agora não há peça do ${s.m} ${s.y} no site: a lista é do ${s.m} de todos os anos.`;
+      }
+      return { procurar: procurarCarro, filtro: f, aviso: msg, capa: capa ?? semCapa };
+    }
+    const semPainel = () => {
+      conteudo.hidden = true;
+      conteudo.innerHTML = '';
+      dica.hidden = false;
+      painel.classList.remove('aberto');
+    };
+    // página do carro no celular: o Raio-x recolhido abre
+    const abrirRecolhido = () => {
+      raiz.classList.add('rx-aberto');
+      raiz.querySelector('[data-rx-abrir]')?.setAttribute('aria-expanded', 'true');
+    };
+    let pegando: Promise<Batida> | null = null;
+    const pegarBatida = () => (pegando ??= modBatida().then((m) => (batida = m.ligarBatida({
+      raiz, palco, painel, conteudo, dica, fichas: filas, home, carro: carroDaVez,
+      carroMsg: () => { const c = carroTxt(); return c.meu || !c.nome ? c.nome : `${c.nome}, ano ____`; },
+      doCarro: doCarroDe,
+      dizerCarro: () => window.dispatchEvent(new CustomEvent(ABRIR)),
+      whats: raiz.querySelector('template[data-rx-whats]')?.innerHTML ?? '',
+    }))).catch((e) => { pegando = null; throw e; }));
+
+    async function abrirPorDentro(botao: HTMLElement | null) {
+      try {
+        const m = await modPorDentro();
+        porDentro ??= m.ligarPorDentro({
+          raiz, palco, painel, conteudo, dica, fichas: filas, home, carro: carroDaVez, carroMsg: carroTxt, doCarro: doCarroDe,
+          sizes: raiz.dataset.sizes ?? '100vw',
+          aoVoltar: () => {
+            vista = 'achar';
+            if (ativa) mostrar(ativa, false); else semPainel();
+            acender();
+          },
+        });
+        if (await porDentro.abrir(botao)) vista = 'frente';
+      } catch { /* sem conexão: o painel da zona continua como está */ }
+    }
+
+    /** Troca de modo (o seletor, ou o endereço #raio-x=batida). O palco, as fichas e a caixa do painel são os mesmos. */
+    async function irPara(novo: 'achar' | 'batida', pontoInicial?: string) {
+      if (vista === 'frente') porDentro?.sair(false, true);
+      for (const r of radios) r.checked = r.value === novo;
+      if (novo === vista) { if (novo === 'batida' && pontoInicial) void batida?.selecionar(pontoInicial, { rolar: true }); return; }
+      abrirRecolhido();
+      if (novo === 'batida') {
+        let b: Batida;
+        // sem conexão para baixar o modo: o seletor volta para onde estava
+        try { b = await pegarBatida(); } catch { for (const r of radios) r.checked = r.value === vista; return; }
+        if (vista !== 'achar') return;
+        ativa = null;
+        passando = null;
+        acender();
+        vista = 'batida';
+        raiz.dataset.vista = 'batida';
+        b.entrar(pontoInicial);
+      } else {
+        batida?.sair();
+        vista = 'achar';
+        raiz.dataset.vista = 'achar';
+        semPainel();
+      }
+    }
+    for (const r of radios) r.addEventListener('change', () => { if (r.checked) void irPara(r.value as 'achar' | 'batida'); });
+    // o código do modo de batida começa a descer quando a pessoa encosta no seletor (antes do clique)
+    const modos = raiz.querySelector<HTMLElement>('[data-rx-modos]');
+    const cedoBatida = () => void pegarBatida().catch(() => {});
+    modos?.addEventListener('pointerenter', cedoBatida, { once: true });
+    modos?.addEventListener('touchstart', cedoBatida, { once: true, passive: true });
+    modos?.addEventListener('focusin', cedoBatida, { once: true });
+
     // ---- ouvintes ----
     for (const a of zonasA) {
       const k = a.dataset.z!;
@@ -435,7 +587,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       a.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && passando === k) { passando = null; acender(); } });
     }
     for (const f of fichas) f.addEventListener('click', () => selecionar(f.dataset.ficha!, { rolar: true }));
-    raiz.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ativa) { e.preventDefault(); limpar(); } });
+    raiz.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (vista === 'frente') { e.preventDefault(); porDentro?.sair(true); }
+      else if (vista === 'batida') { if (batida?.esc()) e.preventDefault(); }
+      else if (ativa) { e.preventDefault(); limpar(); }
+    });
     // Aquecimento: quando a arte aparece na tela, com o navegador folgando, as duas camadas de desfoque são desenhadas
     // uma vez (quase transparentes) e um painel é montado fora da vista e desfeito. O 1º toque não paga a 1ª vez.
     const aquecer = () => {
@@ -469,7 +626,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     }
 
     // "1º toque" na seção: o carro salvo começa a descer antes do clique (mouse em cima, dedo encostando, Tab)
-    const cedo = () => void carregarCarro();
+    const cedo = () => {
+      void carregarCarro();
+      // e o modo "Bati o carro" fica pronto (código, estilo e a camada dos pontos) quando o navegador folgar
+      if ('requestIdleCallback' in window) requestIdleCallback(cedoBatida, { timeout: 3000 });
+      else setTimeout(cedoBatida, 600);
+    };
     raiz.addEventListener('pointerenter', cedo, { once: true });
     raiz.addEventListener('touchstart', cedo, { once: true, passive: true });
     raiz.addEventListener('focusin', cedo, { once: true });
@@ -477,10 +639,39 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     // página do carro no celular: o cartão recolhido abre o Raio-x (e o foco vai para a 1ª parte do carro)
     const abrir = raiz.querySelector<HTMLButtonElement>('[data-rx-abrir]');
     abrir?.addEventListener('click', () => {
-      raiz.classList.add('rx-aberto');
-      abrir.setAttribute('aria-expanded', 'true');
-      zonasA[0]?.focus({ preventScroll: true });
+      abrirRecolhido();
+      if (vista === 'achar') zonasA[0]?.focus({ preventScroll: true });
+      else raiz.querySelector<HTMLElement>('.rxb-ponto')?.focus({ preventScroll: true });
     });
+
+    // ---- o endereço que já abre uma parte: #raio-x=frente | #raio-x=batida[:ponto] | #raio-x=por-dentro ----
+    function doEndereco() {
+      const m = /^#raio-x=([a-z-]+)(?::([a-z-]+))?$/.exec(location.hash);
+      if (!m) return;
+      const [, a, b] = m;
+      const zonaDoLink = ZONAS.some((z) => z.k === a);
+      if (a !== 'batida' && a !== 'por-dentro' && !zonaDoLink) return;
+      abrirRecolhido();
+      // a página ainda se arruma (fotos, seções acima): chega agora e de novo depois da carga, se a pessoa não rolou
+      const chegar = () => raiz.scrollIntoView({ block: 'start' });
+      chegar();
+      let mexeu = false;
+      const parou = () => { mexeu = true; };
+      addEventListener('wheel', parou, { once: true, passive: true });
+      addEventListener('touchmove', parou, { once: true, passive: true });
+      addEventListener('keydown', parou, { once: true });
+      const depois = () => setTimeout(() => { if (!mexeu) chegar(); }, 350);
+      if (document.readyState === 'complete') depois(); else addEventListener('load', depois, { once: true });
+      if (a === 'batida') void irPara('batida', b);
+      else {
+        void irPara('achar').then(() => {
+          selecionar(zonaDoLink ? a : ZONA_PILOTO);
+          if (a === 'por-dentro') void abrirPorDentro(null);
+        });
+      }
+    }
+    doEndereco();
+    addEventListener('hashchange', doEndereco);
 
     if (!home) return;
     raiz.querySelector('[data-rx-trocar]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent(ABRIR)));
@@ -499,8 +690,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       t.textContent = carro ? `Onde fica a peça no seu ${nomeCarro(carro)}?` : 'Não sabe o nome da peça? Aponte no carro.';
       if (l) l.textContent = carro ? `Toque na parte do carro e veja as peças do seu ${carro.m} que a gente tem.` : lead0;
       if (b) b.textContent = carro ? 'Trocar o carro' : 'Diga o seu carro';
+      contando = null;
+      capa = null;
       pintarZonas();
-      if (ativa) { mostrar(ativa, false); void carregarCarro(); }
+      if (ativa && vista === 'achar') { mostrar(ativa, false); void carregarCarro(); }
+      batida?.trocouCarro();
+      porDentro?.trocouCarro();
     });
     if (carro) pintarZonas();
   }
@@ -522,6 +717,25 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     text-underline-offset: 5px; cursor: pointer; }
   .rx-convite :global(svg) { width: 20px; height: 20px; color: var(--accent-text); }
   .rx-convite:hover { text-decoration-color: var(--accent); }
+
+  /* o seletor dos dois modos: uma trilha clara com o lado escolhido em cartão branco */
+  .rx { scroll-margin-top: 88px; }
+  .rx-modos { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; justify-self: start; max-width: 100%; padding: 4px; border-radius: 16px;
+    background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .rx-modos label { position: relative; display: block; min-width: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .rx-modos input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .rx-modos span { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 12px;
+    color: var(--ink-2); font-size: 15px; font-weight: 680; font-stretch: 96%; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; }
+  .rx-modos svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .rx-modos label:hover span { color: var(--ink); }
+  .rx-modos input:checked + span { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(16 16 20 / .08), 0 4px 12px -6px rgb(16 16 20 / .18); }
+  .rx-modos input:checked + span svg { stroke: var(--accent-text); }
+  .rx-modos input:focus-visible + span { outline: 3px solid var(--foco); outline-offset: 2px; }
+  @media (max-width: 479px) { .rx-modos { display: grid; width: 100%; } .rx-modos span { padding: 0 8px; font-size: 14.5px; gap: 6px; } }
+  @media (prefers-reduced-motion: reduce) { .rx-modos span { transition: none; } }
+  /* as filas de fichas (zonas, pontos da batida, a legenda da frente por dentro) ocupam a MESMA caixa */
+  .rx-filas { display: grid; min-width: 0; }
+  .rx-filas > :global(*) { grid-area: 1 / 1; min-width: 0; }
 
   .rx-corpo { display: grid; gap: 16px; align-items: start; }
   /* recolhido (página do carro, celular e tablet): o cartão baixo no lugar da arte, até tocar nele */
@@ -654,6 +868,23 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-conteudo :global(.rx-p-acoes) { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 0 4px 14px; }
   .rx-conteudo :global(.rx-avise) { --h: var(--botao-p); padding: 0 18px; font-size: 15px; }
   .rx-conteudo :global(.rx-p-outros) { padding-block: 12px; margin-block: -12px; font-size: 14px; font-weight: 650; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* zona Frente: o convite da vista por dentro, na altura de UMA linha */
+  .rx-conteudo :global(.rx-dentro) { display: grid; grid-template-columns: 84px minmax(0, 1fr) 18px; align-items: center; gap: 12px; width: 100%; min-height: calc(var(--linha) - 1px);
+    padding: 6px 10px 6px 6px; border: 0; border-radius: 14px; background: var(--accent-soft); color: #1d1d1f; font: inherit; text-align: left; cursor: pointer;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 70%); -webkit-tap-highlight-color: transparent; transition: box-shadow .15s ease; }
+  .rx-conteudo :global(.rx-dentro img) { width: 84px; height: 56px; border-radius: 10px; object-fit: cover; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); display: block; }
+  .rx-conteudo :global(.rx-dentro span) { display: grid; gap: 1px; min-width: 0; }
+  .rx-conteudo :global(.rx-dentro b) { font-size: 15.5px; font-weight: 760; line-height: 1.25; }
+  .rx-conteudo :global(.rx-dentro small) { font-size: 13px; line-height: 1.3; color: #5b5b61; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rx-conteudo :global(.rx-dentro .rx-l-seta) { stroke: #1d1d1f; }
+  .rx-conteudo :global(.rx-dentro:hover) { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .rx-conteudo :global(.rx-dentro:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
+  .rx-conteudo :global(.rx-dentro[aria-busy="true"]) { opacity: .7; cursor: progress; }
+  @media (max-width: 400px) {
+    .rx-conteudo :global(.rx-dentro) { grid-template-columns: 72px minmax(0, 1fr) 18px; gap: 10px; }
+    .rx-conteudo :global(.rx-dentro img) { width: 72px; height: 48px; }
+  }
 
   .rx-conteudo :global(.rx-linhas) { list-style: none; margin: 0; padding: 0; display: grid; }
   .rx-conteudo :global(.rx-linhas li + li) { border-top: 1px solid var(--line); }
