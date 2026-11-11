@@ -27,12 +27,14 @@ export const SINONIMOS: [string[], string[], string[]?][] = [
   // difusor de ar são de dentro do carro (a grade do alto-falante e a "Moldura frontal painel" não são a frente) e o que é
   // de trás não é a frente (o amortecedor da tampa traseira vinha pelo tipo "Amortecedores da Tampa e do Capô")
   [['frente', 'frente completa'], ['grade', 'churrasqueira', 'farol', 'capo', 'parachoque dianteiro', 'paralama dianteiro', 'frontal'],
-    ['painel', 'console', 'falante', 'tweeter', 'difusor', 'tras', 'porta-malas', 'portamalas']],
+    ['painel', 'console', 'falante', 'tweeter', 'difusor', 'tras', 'porta-malas', 'portamalas', 'chave', 'botao', 'interruptor']],
   [['espelho', 'espelho retrovisor', 'retrovisor externo'], ['retrovisor']],
   [['masaneta', 'massaneta', 'trinco'], ['macaneta']],
   // vidro elétrico
   // ("motor vidro" fica como estava: já acha os "Motor vidro" e os "Motor máquina vidro")
   [['maquina vidro', 'maquininha vidro', 'regulador vidro', 'elevador vidro'], ['maquina vidro', 'motor vidro']],
+  // "motor vidro" também acha a "Máquina vidro" (o nome que o estoque usa; a palavra digitada continua valendo)
+  [['motor vidro'], ['maquina vidro']],
   [['vidro eletrico'], ['maquina vidro', 'motor vidro', 'botao vidro']],
   // tampa, capô e porta-malas
   [['amortecedor tampa', 'amortecedor portamalas', 'amortecedor mala', 'mola gas', 'molas gas', 'pistao tampa', 'pistao capo', 'amortecedor gas'],

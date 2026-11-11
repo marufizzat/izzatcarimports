@@ -15,10 +15,14 @@
 import {
   memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode,
 } from 'react';
-import { Busca, FAIXAS, SIZES_CARTAO, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item, type Lado, type Posicao } from '../../lib/busca';
+import { Busca, FAIXAS, SIZES_CARTAO, capaItem, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item, type Lado, type Posicao } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
-import { serveNoMeuCarro, nomeCarro } from '../../lib/meuCarro';
+import { serveNoMeuCarro, nomeCarro, nomeModelos } from '../../lib/meuCarro';
+import { zonaDaChave } from '../../lib/raioX';
+import { chaveCarro } from '../../lib/chegouCarro';
+import { adicionarNaLista, lerLista, EVENTO_LISTA, PAGINA_LISTA } from '../../lib/lista';
+import { itemDeDados, rotulo, avisar, CLASSE_LISTA } from '../ui/listaCartao';
 import {
   linhaCarro, codigoPeca, precoPartes, msgWhats, linkWhats, urlPeca, dadosCarro,
   CLASSE_CARTAO, VITRINE_CLARA, icone,
@@ -58,6 +62,8 @@ function lerUrl(): Filtros {
     q: u.get('q') || '', marca: u.get('marca') || undefined, modelo: u.get('modelo') || undefined,
     ano, tipo: u.get('tipo') || undefined, sub: u.get('sub') || undefined, preco: u.get('preco') || undefined,
     lado: daUrl(LADOS, u.get('lado')), pos: daUrl(POSICOES, u.get('pos')),
+    // parte do carro do Raio-x (?zona=frente): só uma chave que existe
+    zona: zonaDaChave(u.get('zona'))?.k,
     // "frete" dos links antigos: aceito no endereço, mas não filtra mais (filtrava calado: "492 peças para xc60",
     // contra 515, sem ficha nem aviso)
     frete: undefined, ordem,
@@ -74,6 +80,7 @@ function escreverUrl(f: Filtros) {
   if (f.preco) u.set('preco', f.preco);
   if (f.lado) u.set('lado', paraUrl(LADOS, f.lado)!);
   if (f.pos) u.set('pos', paraUrl(POSICOES, f.pos)!);
+  if (f.zona) u.set('zona', f.zona);
   if (f.frete) u.set('frete', '1');
   if (f.ordem && f.ordem !== 'rel') u.set('ordem', f.ordem);
   const qs = u.toString();
@@ -81,7 +88,7 @@ function escreverUrl(f: Filtros) {
 }
 /** A lista da 1ª tela (feita no build) vale: sem busca nem filtro, na ordem padrão. */
 const ehPadrao = (f: Filtros) =>
-  !(f.q || '').trim() && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.sub && !f.preco && !f.frete && !f.lado && !f.pos &&
+  !(f.q || '').trim() && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.sub && !f.preco && !f.frete && !f.lado && !f.pos && !f.zona &&
   (!f.ordem || f.ordem === 'rel' || f.ordem === 'novos');
 
 /** Título da página com os filtros ("Peças para Volvo XC60 2020"). A busca de texto fica na linha do total
@@ -110,9 +117,20 @@ const Xis = () => (
 );
 
 /** Cartão da peça (vitrine) — mesmo markup de CartaoPeca.astro. Memorizado: só redesenha se a peça ou o selo mudam. */
-export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModelo }: {
-  it: Item; eager?: boolean; alta?: boolean; novo?: boolean; meuModelo?: string | null;
+export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModelo, naLista }: {
+  it: Item; eager?: boolean; alta?: boolean; novo?: boolean; meuModelo?: string | null; naLista?: boolean;
 }) {
+  // "+ Lista": põe a peça na lista sem abrir a peça (ou, já na lista, leva à lista). Clique: um só (o botão é irmão do link)
+  const pôrNaLista = () => {
+    if (naLista) { window.location.href = PAGINA_LISTA; return; }
+    const carro = nomeModelos({ b: it.b, m: it.m, ms: it.ms, ys: it.ys });
+    const anos = it.y ? (it.y[0] === it.y[1] ? String(it.y[0]) : `${it.y[0]}–${it.y[1]}`) : '';
+    const item = itemDeDados({ id: it.id, slug: it.h, nome: it.n, carro, anos, cod: codigoPeca(it.o), preco: it.p, capa: capaItem(it, 'E') });
+    if (!item) { avisar('Não deu para pôr esta peça na lista agora.'); return; }
+    const r = adicionarNaLista(item, 'cartao');
+    avisar(r === 'cheia' ? 'A lista está cheia. Tire uma peça para pôr outra.' : r === 'ja' ? 'Essa peça já está na sua lista.' : `Peça na sua lista (${lerLista().length}).`);
+  };
+  const lr = rotulo(!!naLista, it.n);
   const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
   const [reais, cent] = precoPartes(it.p);
   const cod = codigoPeca(it.o);
@@ -129,6 +147,8 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
   }, []);
   return (
     <div className={CLASSE_CARTAO}>
+      <button type="button" className={`${CLASSE_LISTA}${naLista ? ' na' : ''}`} data-react data-botao="lista-cartao" data-na={naLista ? '1' : '0'}
+              aria-label={lr.label} onClick={pôrNaLista}>{lr.txt}</button>
       <a className="etiqueta" href={`/peca/${it.h}.html`} {...dadosCarro(it.b, it.m, it.y, it.ms, it.ys)}>
         <div className="etiqueta-foto">
           <img ref={img} sizes={f.sizes} srcSet={f.srcset} src={f.src}
@@ -444,12 +464,14 @@ type Props = {
   facetasIniciais?: Facetas | null;
   /** ids das que chegaram agora (selo "Chegou agora"), feitos no build */
   novos?: string[];
+  /** chaves dos carros com página (/carros/<k>.html), para o "Aponte no carro" do catálogo vazio */
+  carrosComPagina?: string[];
 };
 
 const SEM_LOGOS: Record<string, Logo> = {};
 const SEM_IDS: string[] = [];
 
-export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo, iniciais = NENHUMA, facetasIniciais = null, novos: idsNovos = SEM_IDS }: Props) {
+export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo, iniciais = NENHUMA, facetasIniciais = null, novos: idsNovos = SEM_IDS, carrosComPagina = SEM_IDS }: Props) {
   const [busca, setBusca] = useState<Busca | null>(null);
   const [erro, setErro] = useState(false);
   const [f, setF] = useState<Filtros>({});
@@ -511,11 +533,22 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   }, [meuCarro]);
 
   const fDiferido = useDeferredValue(f);
-  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca, ladoQ, posQ] = useMemo(() => {
-    if (!busca) return [[] as Item[], false, 0, [] as Carro[], '', undefined, undefined] as const;
+  // as peças que estão na lista (um ouvinte só para o catálogo inteiro; cada cartão recebe um booleano)
+  const [naLista, setNaLista] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    const ler = () => setNaLista(new Set(lerLista().map((x) => x.id)));
+    ler();
+    window.addEventListener(EVENTO_LISTA, ler);
+    return () => window.removeEventListener(EVENTO_LISTA, ler);
+  }, []);
+  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca, ladoQ, posQ, faltou, outrosLados] = useMemo(() => {
+    if (!busca) return [[] as Item[], false, 0, [] as Carro[], '', undefined, undefined, null, [] as Item[]] as const;
     const r = busca.procurar(fDiferido);
-    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca, busca.ladoDaBusca, busca.posDaBusca] as const;
+    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca, busca.ladoDaBusca, busca.posDaBusca, busca.faltou, busca.outrosLados] as const;
   }, [busca, fDiferido]);
+  // o lado/posição que a busca pediu e o estoque não tem ("Nenhuma peça direita"): o outro lado, para a dica
+  const falta = faltou ? [faltou.lado === 'D' ? 'direita' : faltou.lado === 'E' ? 'esquerda' : '', faltou.pos === 'D' ? 'dianteira' : faltou.pos === 'T' ? 'traseira' : ''].filter(Boolean).join(' ') : '';
+  const ladoOposto = faltou?.lado ? (faltou.lado === 'D' ? 'E' : 'D') : null;
   const padrao = ehPadrao(f);
   const facetas = useMemo(() => (busca ? busca.facetas(fDiferido) : padrao ? facetasIniciais : null), [busca, fDiferido, padrao, facetasIniciais]);
 
@@ -571,6 +604,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   if (f.ano) ativos.push({ k: 'ano', rot: `Ano ${f.ano}`, tirar: () => mudaFiltro({ ano: undefined }) });
   if (f.tipo) ativos.push({ k: 'tipo', rot: f.tipo, tirar: () => mudaFiltro({ tipo: undefined, sub: undefined }) });
   if (f.sub) ativos.push({ k: 'sub', rot: f.sub, tirar: () => mudaFiltro({ sub: undefined }) });
+  if (f.zona && zonaDaChave(f.zona)) ativos.push({ k: 'zona', rot: `Parte do carro: ${zonaDaChave(f.zona)!.nome}`, tirar: () => mudaFiltro({ zona: undefined }) });
   if (f.preco) ativos.push({ k: 'preco', rot: FAIXAS.find((x) => x[0] === f.preco)?.[1] || f.preco, tirar: () => mudaFiltro({ preco: undefined }) });
   if (f.lado) ativos.push({ k: 'lado', rot: `Lado ${ROT_LADO[f.lado].toLowerCase()}`, tirar: () => mudaFiltro({ lado: undefined }) });
   if (f.pos) ativos.push({ k: 'pos', rot: ROT_POS[f.pos], tirar: () => mudaFiltro({ pos: undefined }) });
@@ -685,6 +719,9 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
     () => !!busca && !aproximado && resultado.length > 0 && !!(f.q || '').trim() && !busca.bate(resultado, f.q || '', alvo?.m ? alvo : null),
     [busca, aproximado, resultado, f.q, alvo],
   );
+  // "Aponte no carro": o carro do filtro com página vai ao Raio-x dele; sem página, o da home
+  const chaveAponte = f.marca && f.modelo ? chaveCarro(f.marca, f.modelo) : '';
+  const aponteUrl = chaveAponte && carrosComPagina.includes(chaveAponte) ? `/carros/${chaveAponte}.html#raio-x-t` : '/#raio-x-t';
   const botaoPatio = (rotulo: ReactNode) => (
     <a className="botao botao-laranja" href={pedirNoPatio} target="_blank" rel="noopener" data-botao="procurar-patio"><Whats />{rotulo}</a>
   );
@@ -721,8 +758,9 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
                 : total === null ? <span className="cat-total-espera">Buscando peças…</span>
                 : aproximado ? <><b className="num">{n2(total)}</b> {total === 1 ? 'parecida' : 'parecidas'}<span className="cat-total-q"> com “{f.q}”</span></>
                 : codigoBusca ? <><b className="num">{n2(total)}</b> {pecas(total)} com o código <span className="cat-total-q oem">{codigoBusca.toUpperCase()}</span></>
+                : total === 0 && f.q && falta ? <>Nenhuma peça {falta}<span className="cat-total-q"> para “{f.q}”</span></>
                 : total === 0 && f.q ? <>Nenhuma peça<span className="cat-total-q"> para “{f.q}”</span></>
-                : <><b className="num">{n2(total)}</b> {pecas(total)}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
+                : <><b className="num">{n2(total)}</b> {pecas(total)}{f.zona && zonaDaChave(f.zona) ? <span className="cat-total-q"> {zonaDaChave(f.zona)!.de}</span> : null}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
             </h2>
             <div data-selo-reputacao>{selo}</div>
             {!vazio && (
@@ -770,22 +808,29 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             <div className="cat-vazio cat-patio">
               <img src="/arte/v2/vazio-busca.webp" alt="" width={360} height={360} loading="lazy" decoding="async" />
               <h2>Não achou? A gente procura no pátio</h2>
-              <p>Nada {f.q ? <>com “{f.q}”{f.marca && carroPedido ? ` para ${carroPedido}` : ''}</> : 'com esses filtros'} no site agora. Nem toda peça está anunciada: mande pelo WhatsApp que a gente confere no pátio.</p>
+              <p>Nada {falta ? <>{falta} </> : null}{f.q ? <>com “{f.q}”{f.marca && carroPedido ? ` para ${carroPedido}` : ''}</> : 'com esses filtros'} no site agora. Nem toda peça está anunciada: mande pelo WhatsApp que a gente confere no pátio.</p>
+              {ladoOposto && outrosLados.length > 0 && (
+                <p className="cat-vazio-outro">Do outro lado ({ladoOposto === 'E' ? 'esquerda' : 'direita'}) a gente tem {n2(outrosLados.length)} {pecas(outrosLados.length)} com esse nome.
+                  {' '}<button type="button" className="cat-link-outro" onClick={() => mudaFiltro({ lado: ladoOposto })}>Ver as da {ladoOposto === 'E' ? 'esquerda' : 'direita'}</button></p>
+              )}
               <div className="cat-vazio-botoes">
                 {botaoPatio(<span>Procurar no pátio<span className="cat-so-largo"> pelo WhatsApp</span></span>)}
                 {botaoAvise}
                 {(nFiltros > 0 || !!f.q) && <button type="button" className="botao botao-linha" onClick={limpar}>{nFiltros > 0 ? 'Limpar filtros' : 'Limpar a busca'}</button>}
               </div>
               {linkFormulario}
+              <p className="cat-aponte"><a href={aponteUrl}>Não sabe o nome da peça? Aponte no carro</a></p>
             </div>
           )}
 
-          {!!busca && resultado.length > 0 && (aproximado || naoBate) && (
+          {!!busca && resultado.length > 0 && (aproximado || naoBate || resultado.length <= 3) && (
             <div className="cat-aviso cat-patio">
               <img className="cat-patio-rosto" src="/arte/v2/atendimento-rosto.webp" alt="" width={192} height={192} decoding="async" />
               <b className="cat-patio-titulo">Não achou? A gente procura no pátio</b>
               {aproximado
                 ? <span className="cat-patio-texto">Nada exato com “{f.q}”. Nem toda peça está anunciada: a gente confere no pátio. Abaixo, as parecidas{blocos && carroDaBusca ? <>: primeiro as do {carroDaBusca.b} {carroDaBusca.m}</> : null}.</span>
+                : resultado.length <= 3 && !naoBate
+                  ? <span className="cat-patio-texto">Só {resultado.length === 1 ? 'achei uma peça' : `achei ${resultado.length} peças`} com “{f.q}”. Nem toda peça está anunciada: a gente confere no pátio{carroPedido ? <> o que você procura para o <b className="cat-patio-carro">{carroPedido}</b></> : null}.</span>
                 : <span className="cat-patio-texto">Nem toda peça está anunciada. Mande pelo WhatsApp{carroPedido ? <> o que você procura para o <b className="cat-patio-carro">{carroPedido}</b></> : null}: a gente confere no pátio.</span>}
               <div className="cat-aviso-botoes">
                 {botaoPatio('Procurar no pátio')}
@@ -805,7 +850,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             <div className={busca ? 'cat-grade' : 'cat-grade cat-ini'}>
               {grade.flatMap((it, i) => {
                 const cartao = (
-                  <Etiqueta key={it.id} it={it} eager={!!busca && i < 4} alta={!!busca && i < 2} novo={!semSelo && novos.has(it.id)}
+                  <Etiqueta key={it.id} it={it} eager={!!busca && i < 4} alta={!!busca && i < 2} novo={!semSelo && novos.has(it.id)} naLista={naLista.has(it.id)}
                             meuModelo={meuCarro && serveNoMeuCarro(it, meuCarro) === 'sim' ? meuCarro.m : null} />
                 );
                 if (blocos && carroDaBusca && i === 0) return [<h2 key="bloco-carro" className="cat-bloco">Do {carroDaBusca.b} {carroDaBusca.m} <span>· {n2(nDoCarro)} {pecas(nDoCarro)}</span></h2>, cartao];

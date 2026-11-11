@@ -292,6 +292,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`: até 2 núcleos, até 4 GB no Chrome ou economia de
   dados; o Safari informa sempre 4 ou 8 núcleos, então iPhone não entra): sem vidro desfocado, sem 3D no coverflow,
   sem o "respirar" da abertura e sem animação de altura nas perguntas.
+- **Tipo manda (rodada 14, cliente oculto atrito 6)**: `busca.ts` separa o TIPO digitado (`alvosDo`) do carro/lado/ano. Peça do tipo = a 1ª palavra do nome (`tipoDe`: "Para-choque…", "Lanterna…"); a 2ª só sob cabeçalho genérico (`GENERICOS`: guia, suporte, moldura, acabamento, grade, tampa, maquina, motor) ou para o sinônimo (forma do `sinonimos.ts`, "pisca" = "Chave seta" e "Botão pisca"; `CONTROLES`); "Botão farol milha" e "Chave seta farol" NÃO são farol. Vários termos: o 1º é o tipo, os outros têm de estar no nome ("motor vidro"). Sem peça do tipo: as PARECIDAS são da família (`familia`: o sistema "s" ou o bloco "c" com a palavra, todas as palavras digitadas), o carro digitado primeiro, com aviso (`aproximado`); busca de sistema ("suspensão xc60", o nome do bloco) não é parecida. Tabela de regressão: `lib/busca.regressao.ts` (gabarito pelo estoque, 926 consultas, a antiga 612) e `lib/busca.regressao.test.ts`. Palavra curta não é raiz ("par" ≠ "paralama"); erro de uma letra em palavra de 6+ letras vale ("esqurdo").
 - Busca: UMA regra para o catálogo e as sugestões (`lib/busca.ts`): ano solto vira filtro; todas as palavras, depois com
   erro de digitação (nunca em termo com número), depois as parecidas (`aproximado`); o carro digitado vem primeiro.
   O índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
@@ -310,7 +311,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   **Lado e posição digitados viram filtro** ("retrovisor direito xc60": os DIREITOS do XC60, pela coluna `l`;
   "motorista" = esquerdo; "dianteira", "traseira", "frontal", "esq", "dir", "tras"): saem do texto (`separarLadoPos`),
   filtram e marcam a ficha; a peça cujo nome diz a mesma palavra sobe ("amortecedor traseiro" antes da "tampa
-  traseira"). Se o filtro não deixar nada, a busca volta ao texto de antes (nunca pior). As fichas "Lado e posição" do
+  traseira"). Rodada 14: se o filtro não deixar nada, NÃO volta ao texto: a lista sai vazia e `busca.faltou` diz o que faltou (lado/posição), com `busca.outrosLados` (o outro lado, para a dica "tem a esquerda") e o "Não achou? A gente procura no pátio" (nunca trocar por outro lado em silêncio). As fichas "Lado e posição" do
   catálogo (`Catalogo.tsx`, depois do Ano, só com peça na lista) contam sem o próprio filtro; tocar numa tira a palavra
   da busca (`Busca.semLadoPos`).
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
