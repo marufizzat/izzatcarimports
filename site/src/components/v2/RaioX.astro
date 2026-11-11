@@ -1,0 +1,708 @@
+---
+// "Raio-x do carro" (home, depois das categorias; página do carro, acima da grade): a arte do carro em vista fantasma
+// (public/arte/v2/raio-x.webp, aprovada pelo dono) com as ZONAS tocáveis por cima (lib/raioX.ts).
+// - Passar o mouse, focar (Tab) ou tocar uma zona acende a parte: um véu laranja translúcido de bordas esfumadas e o
+//   resto da arte escurece de leve (≤ 180 ms; nada se mexe com prefers-reduced-motion). No celular o toque marca a zona
+//   e ela fica marcada até tocar outra.
+// - Arte larga (640+ px): cada zona tem a etiqueta fixa "Frente 118" no fundo do estúdio, com uma linha-guia fina até o
+//   ponto da parte. Arte estreita: só os pontos NUMERADOS na arte (o escolhido ganha o anel grafite) + a fila de fichas
+//   embaixo com os mesmos números (a escolhida fica laranja).
+// - O painel: o nome e quantas peças a zona tem, os tipos mais comuns dela (cada um um link EXATO do catálogo: tipo +
+//   sub + lado/posição + o carro, com a foto da peça mais nova do tipo) e o botão laranja "Ver as peças da frente", que
+//   mostra as peças mais novas da zona ali mesmo, num trilho de cartões (a zona inteira não cabe num endereço do
+//   catálogo, que entende UM tipo e UM sub). Zona sem peça do carro: cinza, com "Me avise quando chegar" (WhatsApp).
+// - home: as contagens do estoque inteiro saem no build. Com carro salvo, o título já nasce com o carro (script antes da
+//   1ª pintura) e, no 1º toque na seção, /dados/carro/<k>.json (o do "Chegou para o seu carro") vira as contagens DELE
+//   (no ano salvo; ano sem peça: o modelo em todos os anos, com aviso). Trocar o carro atualiza tudo sem recarregar.
+// - página do carro (`carro`): as contagens daquele carro já saem no build.
+// Teclado: Tab percorre as zonas na ordem do carro (ZONAS), Enter abre o painel e leva o foco para ele, Esc limpa.
+// Leitor de tela: cada zona é um link "Frente: 118 peças"; a arte, as etiquetas e as fichas (um alvo maior para o dedo)
+// ficam de fora. Sem ilha React; a busca do catálogo só desce com carro salvo (1º toque) ou no "Ver as peças".
+import { ZONAS, ARTE } from '../../lib/raioX';
+import { dadosRaioX } from '../../lib/raioXDados';
+import { srcArte, srcsetArte } from '../../lib/variantes';
+import { CHAVE } from '../../lib/meuCarro';
+import Icone from '../Icone.astro';
+
+// compacto (página do carro): o título menor, no tamanho dos atalhos da página, e sem a linha de apoio.
+// recolhido (página do carro, abaixo de 1024 px): no lugar da arte, um cartão baixo com a miniatura que abre o Raio-x.
+// A arte inteira na 1ª tela do celular virava o LCP da página (2,5 s em 4G lento, contra 0,74 s) e empurrava a grade.
+interface Props { carro?: { b: string; m: string }; id?: string; titulo?: string; compacto?: boolean; recolhido?: boolean }
+const { carro, id = 'raio-x', compacto = false, recolhido = false } = Astro.props;
+// a miniatura do cartão recolhido: a variante de 320 px (feita por scripts/variantes-imagens.mjs) quando está em dia
+const mini = srcsetArte(ARTE.src)?.includes('-320.webp') ? ARTE.src.replace(/\.webp$/, '-320.webp') : ARTE.src;
+const dados = dadosRaioX(carro);
+const nZ = (k: string) => dados.z.find((d) => d.k === k)?.n ?? 0;
+const fmt = (n: number) => n.toLocaleString('pt-BR');
+const nomeCarro = carro ? `${carro.b} ${carro.m}` : '';
+const titulo = Astro.props.titulo ?? (carro ? `Onde fica a peça no ${nomeCarro}?` : 'Não sabe o nome da peça? Aponte no carro.');
+const lead = 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
+// a arte ocupa a moldura inteira no celular e no tablet; no PC, a coluna da esquerda (≈ 58% da moldura de até 1240)
+const sizes = '(max-width: 1023px) calc(100vw - 32px), (max-width: 1303px) calc(58vw - 40px), 716px';
+const pct = (v: number, t: number) => `${((v / t) * 100).toFixed(2)}%`;
+const rotulo = (k: string, nome: string) => {
+  const n = nZ(k);
+  const dc = carro ? ` do ${carro.m}` : '';
+  return n ? `${nome}: ${fmt(n)} ${n === 1 ? 'peça' : 'peças'}${dc}` : `${nome}: nenhuma peça${dc} agora`;
+};
+// antes da 1ª pintura (só na home): com carro salvo, o título, a linha de apoio e o convite já com o carro
+const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(CHAVE)})||'null');`
+  + `if(!c||typeof c.b!=='string'||typeof c.m!=='string'||!c.b||!c.m)return;var r=document.currentScript.parentNode,`
+  + `y=typeof c.y==='number'?' '+c.y:'',t=r.querySelector('[data-rx-titulo]'),l=r.querySelector('[data-rx-lead]'),b=r.querySelector('[data-rx-txt]');`
+  + `t.textContent='Onde fica a peça no seu '+c.b+' '+c.m+y+'?';l.textContent='Toque na parte do carro e veja as peças do seu '+c.m+' que a gente tem.';`
+  + `if(b)b.textContent='Trocar o carro'}catch(e){}})()`;
+---
+<div class:list={['rx', { 'rx-compacto': compacto, 'rx-recolhido': recolhido }]} data-rx data-modo={carro ? 'carro' : 'home'} data-b={carro?.b} data-m={carro?.m}>
+  <div class="rx-cabeca">
+    <h2 class:list={[compacto ? 'rx-titulo-p' : 'titulo-secao']} id={`${id}-t`} data-rx-titulo>{titulo}</h2>
+    {!compacto && <p class="lead" data-rx-lead>{lead}</p>}
+    {!carro && (
+      <button type="button" class="rx-convite" data-rx-trocar>
+        <Icone nome="carro" /><span data-rx-txt>Diga o seu carro</span>
+      </button>
+    )}
+    {!carro && <script is:inline set:html={antes} />}
+  </div>
+
+  {recolhido && (
+    <button type="button" class="rx-abrir" aria-expanded="false" aria-controls={`${id}-corpo`} data-rx-abrir>
+      <img src={mini} alt="" width="320" height="213" loading="lazy" decoding="async" />
+      <span class="rx-abrir-txt"><b>Aponte no carro</b><span>Frente, motor, portas, teto, rodas… e as peças do {carro?.m} em cada parte.</span></span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+    </button>
+  )}
+  <div class="rx-corpo" id={`${id}-corpo`}>
+    <div class="rx-arte">
+      <div class="rx-palco" data-rx-palco>
+        {/* prioridade baixa: na página do carro (PC) a arte cai na 1ª tela e disputava a rede com a arte do topo (o LCP) */}
+        <img src={ARTE.src} {...srcArte(ARTE.src, sizes)} alt="" width={ARTE.w} height={ARTE.h} loading="lazy" decoding="async" fetchpriority="low" />
+        {/* o véu escuro (o retângulo todo menos a parte acesa) e o véu laranja da parte: duas camadas só de desenho, com o
+            desfoque do CSS (feito pela placa de vídeo; o filtro do SVG era redesenhado pela CPU a cada troca) */}
+        <svg class="rx-camada rx-escuros" viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} aria-hidden="true">
+          {ZONAS.map((z) => <path data-furo={z.k} fill-rule="evenodd" d={`M-120,-120H${ARTE.w + 120}V${ARTE.h + 120}H-120Z ${z.realce.map((p) => `M${p.trim().split(/\s+/).join('L')}Z`).join(' ')}`} />)}
+        </svg>
+        <svg class="rx-camada rx-realces" viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} aria-hidden="true">
+          {ZONAS.map((z) => <g data-realce={z.k} class:list={[{ vazia: !nZ(z.k) }]}>{z.realce.map((p) => <polygon points={p} />)}</g>)}
+        </svg>
+        <svg class="rx-mapa" viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} role="group" aria-labelledby={`${id}-t`}>
+          <g class="rx-guias" aria-hidden="true">
+            {ZONAS.map((z) => <line data-guia={z.k} x1={z.ancora[0]} y1={z.ancora[1]} x2={z.etiqueta[0]} y2={z.etiqueta[1]} />)}
+          </g>
+          {ZONAS.map((z) => (
+            <a href={`#${id}-painel`} data-z={z.k} aria-label={rotulo(z.k, z.nome)} class:list={[{ vazia: !nZ(z.k) }]}>
+              {z.poligonos.map((p) => <polygon class="rx-alvo" points={p} />)}
+            </a>
+          ))}
+        </svg>
+        {ZONAS.map((z, i) => (
+          <span class:list={['rx-ponto', { vazia: !nZ(z.k) }]} data-ponto={z.k} style={`left:${pct(z.ancora[0], ARTE.w)};top:${pct(z.ancora[1], ARTE.h)}`} aria-hidden="true"><i class="num">{i + 1}</i></span>
+        ))}
+        {ZONAS.map((z) => (
+          <span class:list={['rx-etiqueta', { vazia: !nZ(z.k) }]} data-etiqueta={z.k} style={`left:${pct(z.etiqueta[0], ARTE.w)};top:${pct(z.etiqueta[1], ARTE.h)}`} aria-hidden="true">{z.nome}<b class="num" data-etiqueta-n>{fmt(nZ(z.k))}</b></span>
+        ))}
+      </div>
+      {/* um alvo maior para o dedo (as mesmas zonas, com os mesmos números): fora do Tab e do leitor de tela, que já têm as zonas */}
+      <div class="rx-fichas" aria-hidden="true" data-rx-fichas>
+        {ZONAS.map((z, i) => (
+          <button type="button" tabindex="-1" data-ficha={z.k} class:list={[{ vazia: !nZ(z.k) }]}>
+            <i class="num">{i + 1}</i><span>{z.nome}</span><small class="num" data-ficha-n>{fmt(nZ(z.k))}</small>
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div class="rx-painel" id={`${id}-painel`} data-rx-painel>
+      <div class="rx-dica" data-rx-dica>
+        <span class="rx-dica-icone" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6.5 6.5 0 0 1-6.5 6.5h-.6a6 6 0 0 1-4.6-2.2L4.4 15.3a1.6 1.6 0 0 1 2.4-2.1L9 15"/><path d="M5 4.5 3.5 3M14.5 4.5 16 3M9.8 1.5V0"/></svg>
+        </span>
+        <b>Escolha uma parte do carro</b>
+        <ol class="rx-passos">
+          <li><span class="num">1</span>Toque na parte, na imagem ou nos nomes logo abaixo dela.</li>
+          <li><span class="num">2</span>Veja os tipos de peça daquela parte e quantas a gente tem de cada um.</li>
+          <li><span class="num">3</span>Toque no tipo: o catálogo abre já filtrado{carro ? ` no ${carro.m}` : ''}.</li>
+        </ol>
+      </div>
+      <div class="rx-conteudo" data-rx-conteudo hidden></div>
+    </div>
+  </div>
+  <script type="application/json" data-rx-dados set:html={JSON.stringify(dados)} />
+  <template data-rx-whats><Icone nome="whats" /></template>
+</div>
+
+<script>
+  import { lerMeuCarro, nomeCarro, linkCatalogo, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
+  import { ARQUIVO_CARRO } from '../../lib/chegouCarro';
+  import {
+    ZONAS, NA_FRENTE, NA_GALERIA, ARQUIVO_GALERIA, linkLinha, qtdPecas, contarZonas, pecasDaZona, lerRaioX,
+    type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel,
+  } from '../../lib/raioX';
+  import { linkAvisoParte, linkProcuraParte } from '../../lib/aviso';
+  import type { Filtros, Indice, Item } from '../../lib/busca';
+
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+  const nf = (n: number) => n.toLocaleString('pt-BR');
+  const calmo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SETA = '<svg class="rx-l-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  // a foto do cartão no trilho do painel: 168 px no celular, 176 no PC
+  const SIZES_GALERIA = '(max-width: 1023px) 168px, 176px';
+  type Procurar = (f: Filtros) => Item[];
+  // devolve a vez ao navegador (scheduler.yield quando existe; senão um setTimeout)
+  const pausa = () => (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler?.yield?.() ?? new Promise<void>((ok) => setTimeout(ok, 0));
+
+  for (const raiz of document.querySelectorAll<HTMLElement>('[data-rx]')) ligar(raiz);
+
+  function ligar(raiz: HTMLElement) {
+    const home = raiz.dataset.modo === 'home';
+    const base = lerRaioX(JSON.parse(raiz.querySelector('[data-rx-dados]')!.textContent || '{"b":[],"z":[]}') as RaioXJson);
+    const painel = raiz.querySelector<HTMLElement>('[data-rx-painel]')!;
+    const conteudo = raiz.querySelector<HTMLElement>('[data-rx-conteudo]')!;
+    const dica = raiz.querySelector<HTMLElement>('[data-rx-dica]')!;
+    const zonasA = [...raiz.querySelectorAll<SVGAElement>('a[data-z]')];
+    const fichas = [...raiz.querySelectorAll<HTMLButtonElement>('[data-ficha]')];
+    const todos = (sel: string) => [...raiz.querySelectorAll<HTMLElement>(sel)];
+    // a linha de apoio sem carro (a do HTML; com carro salvo o script antes da pintura já trocou: volta para esta)
+    const lead0 = 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
+    // as peças de cada parte acesa (realce, furo do véu, linha-guia, etiqueta, ponto, ficha, zona), lidas uma vez
+    const pecasVisuais = todos('[data-realce], [data-furo], [data-guia], [data-etiqueta], [data-ponto], [data-ficha], a[data-z]')
+      .map((el) => ({ el, k: el.dataset.realce ?? el.dataset.furo ?? el.dataset.guia ?? el.dataset.etiqueta ?? el.dataset.ponto ?? el.dataset.ficha ?? el.dataset.z }));
+
+    // o que está valendo: as contagens (do estoque inteiro, do carro da página ou do carro salvo) e o filtro dos links
+    let dados: ZonaPainel[] = base;
+    let filtro: CarroFiltro = home ? {} : { marca: raiz.dataset.b, modelo: raiz.dataset.m };
+    let carro: MeuCarro | null = home ? lerMeuCarro() : null;
+    let estado: 'nada' | 'carregando' | 'ok' = 'nada';
+    let aviso = '';
+    let ativa: string | null = null;
+    let passando: string | null = null;
+    let vez = 0;
+    // de onde saem as peças do "Ver as peças": a busca do carro (salvo ou da página) ou o arquivo das mais novas por zona
+    let procurarCarro: Procurar | null = null;
+    let galeria: Promise<{ itens: Item[]; zonas: Record<string, number[]> }> | null = null;
+
+    const zona = (k: string) => ZONAS.find((z) => z.k === k)!;
+    const conta = (k: string): ZonaPainel => dados.find((d) => d.k === k) ?? { k, n: 0, l: [] };
+    const esperando = () => home && !!carro && estado !== 'ok';
+    // "do seu XC60 2019" (carro salvo, na home) / "do XC60" (página do carro) / "no estoque"
+    const doCarro = () => {
+      if (!home) return `do ${raiz.dataset.m}`;
+      return carro && estado === 'ok' && filtro.modelo ? `do seu ${carro.m}${filtro.ano ? ` ${filtro.ano}` : ''}` : 'no estoque';
+    };
+
+    function pintarZonas() {
+      for (const z of ZONAS) {
+        const k = z.k;
+        const n = conta(k).n;
+        const vazia = !esperando() && n === 0;
+        for (const p of pecasVisuais) if (p.k === k) p.el.classList.toggle('vazia', vazia);
+        for (const el of todos(`[data-etiqueta="${k}"] [data-etiqueta-n], [data-ficha="${k}"] [data-ficha-n]`)) el.textContent = esperando() ? '' : nf(n);
+        const dc = doCarro() === 'no estoque' ? '' : ` ${doCarro()}`;
+        raiz.querySelector(`a[data-z="${k}"]`)!.setAttribute('aria-label', esperando()
+          ? `${z.nome}: ver as peças do seu ${carro!.m}` : n ? `${z.nome}: ${qtdPecas(n)}${dc}` : `${z.nome}: nenhuma peça${dc} agora`);
+      }
+    }
+
+    // ---- o carro salvo (só na home): /dados/carro/<k>.json no 1º toque ----
+    async function carregarCarro() {
+      if (!home || !carro || estado !== 'nada') return;
+      estado = 'carregando';
+      const minha = ++vez;
+      const c = carro;
+      try {
+        const r = await fetch(ARQUIVO_CARRO(c.b, c.m));
+        let novos: ZonaPainel[] | null = null;
+        let f: CarroFiltro = { marca: c.b, modelo: c.m };
+        let msg = '';
+        let p: Procurar | null = null;
+        if (r.ok) {
+          const [{ Busca, capaItem }, ix] = await Promise.all([import('../../lib/busca'), r.json() as Promise<Indice>]);
+          await pausa();
+          const b = new Busca(ix);
+          const q: Procurar = (x) => b.procurar(x);
+          p = q;
+          // uma parte do carro por vez, devolvendo a vez ao navegador entre elas (nenhuma tarefa longa no 1º toque)
+          const contarAos = async (g: CarroFiltro) => {
+            const out: ReturnType<typeof contarZonas> = [];
+            for (const z of ZONAS) { await pausa(); out.push(...contarZonas(q, g, [z])); }
+            return out;
+          };
+          let contas = await contarAos(c.y ? { ...f, ano: c.y } : f);
+          if (c.y && contas.every((z) => z.n === 0)) {
+            msg = `Agora não há peça do ${c.m} ${c.y} no site: as contagens são do ${c.m} de todos os anos.`;
+            contas = await contarAos(f);
+          } else if (c.y) f = { ...f, ano: c.y };
+          if (contas.some((z) => z.n > 0)) {
+            novos = contas.map((z) => ({ k: z.k, n: z.n, l: z.linhas.map((l, i) => ({ tipo: l.tipo, sub: l.sub, lado: l.lado, pos: l.pos, n: l.n, foto: i < NA_FRENTE ? capaItem(l.it, 'A') : '' })) }));
+          }
+        } else if (r.status !== 404) throw new Error(String(r.status));
+        if (minha !== vez) return;
+        if (novos) { dados = novos; filtro = f; aviso = msg; procurarCarro = p; }
+        else { dados = base; filtro = {}; aviso = `Agora não há peça do seu ${nomeCarro(c)} no site: as contagens são do estoque inteiro.`; }
+      } catch {
+        if (minha !== vez) return;
+        dados = base; filtro = {};
+        aviso = 'Sem conexão para contar as peças do seu carro: as contagens são do estoque inteiro.';
+      }
+      estado = 'ok';
+      pintarZonas();
+      if (ativa) mostrar(ativa, false);
+    }
+
+    // ---- o painel ----
+    function linhaHtml(l: LinhaPainel, rica: boolean) {
+      const href = esc(linkLinha(l, filtro));
+      const qtd = `<span class="rx-l-n num">${nf(l.n)}<span class="sr-only"> ${l.n === 1 ? 'peça' : 'peças'}</span></span>`;
+      if (!rica) return `<li><a class="rx-tipo" href="${href}"><span>${esc(l.sub)}</span>${qtd}</a></li>`;
+      const img = l.foto ? `<img src="${esc(l.foto)}" alt="" width="56" height="56" loading="lazy" decoding="async">` : '';
+      return `<li><a class="rx-linha" href="${href}"><span class="rx-l-foto">${img}</span><span class="rx-l-nome">${esc(l.sub)}</span>${qtd}${SETA}</a></li>`;
+    }
+
+    function mostrar(k: string, focar: boolean) {
+      const z = zona(k);
+      const c = conta(k);
+      dica.hidden = true;
+      conteudo.hidden = false;
+      painel.classList.add('aberto');
+      const dc = doCarro();
+      const cabeca = (n: string, sub: string) => `<div class="rx-p-cabeca"><h3 class="rx-p-titulo" tabindex="-1">${esc(z.nome)}<span class="rx-p-n num">${esc(n)}</span></h3><p class="rx-p-sub">${esc(sub)}</p></div>`;
+      let html = '';
+      if (esperando()) {
+        html = cabeca('', `Contando as peças do seu ${carro!.m}…`)
+          + `<ul class="rx-linhas rx-esq" aria-hidden="true">${'<li><span class="rx-linha"><span class="rx-l-foto"></span><span class="rx-l-nome">&nbsp;</span></span></li>'.repeat(4)}</ul>`;
+      } else if (!c.n) {
+        const quem = carro ? `${carro.b} ${carro.m}` : `${raiz.dataset.b} ${raiz.dataset.m}`;
+        html = cabeca(' · nenhuma peça agora', dc)
+          + (aviso ? `<p class="rx-p-aviso">${esc(aviso)}</p>` : '')
+          + `<p class="rx-p-vazio">Agora não há peça ${esc(z.de)} ${esc(dc)} no site. Peça o aviso no WhatsApp: a mensagem já vai pronta com o carro e a parte.</p>`
+          + `<div class="rx-p-acoes"><a class="botao botao-linha rx-avise" data-botao="avise-carro" rel="noopener" href="${esc(linkAvisoParte(quem, filtro.ano ?? null, z.de))}">`
+          + `${raiz.querySelector('template[data-rx-whats]')?.innerHTML ?? ''}Me avise quando chegar</a>`
+          + `<a class="rx-p-outros" href="${esc(linkCatalogo({ b: filtro.marca || raiz.dataset.b || carro!.b, m: filtro.modelo || raiz.dataset.m || carro!.m, y: filtro.ano }))}">Ver todas as peças ${esc(dc)}</a></div>`;
+      } else {
+        const ricas = c.l.slice(0, NA_FRENTE);
+        const resto = c.l.slice(NA_FRENTE);
+        html = cabeca(` · ${qtdPecas(c.n)}`, `${dc}${c.l.length > 1 ? ` · ${c.l.length} tipos de peça` : ''}`)
+          + (aviso ? `<p class="rx-p-aviso">${esc(aviso)}</p>` : '')
+          + `<ul class="rx-linhas">${ricas.map((l) => linhaHtml(l, true)).join('')}</ul>`;
+        if (resto.length) {
+          html += `<button type="button" class="rx-mais" aria-expanded="false" aria-controls="${painel.id}-resto">Ver os ${c.l.length} tipos ${esc(z.de)}</button>`
+            + `<ul class="rx-resto" id="${painel.id}-resto" hidden>${resto.map((l) => linhaHtml(l, false)).join('')}</ul>`;
+        }
+        html += `<div class="rx-p-pe"><button type="button" class="botao botao-laranja rx-ver" aria-controls="${painel.id}-pecas">Ver as peças ${esc(z.de)}</button>`
+          + `<div class="rx-galeria" id="${painel.id}-pecas" hidden></div></div>`;
+      }
+      if (!esperando()) {
+        const carroMsg = home ? (carro ? nomeCarro({ ...carro, y: filtro.ano ?? carro.y }) : '') : `${raiz.dataset.b} ${raiz.dataset.m}`;
+        html += `<a class="rx-patio" data-botao="raio-x" rel="noopener" href="${esc(linkProcuraParte(carroMsg, z.de, home))}">`
+          + `<span>Não achou? <b>A gente procura no pátio</b></span>${SETA}</a>`;
+      }
+      conteudo.innerHTML = html;
+      const mais = conteudo.querySelector<HTMLButtonElement>('.rx-mais');
+      mais?.addEventListener('click', () => {
+        const resto = conteudo.querySelector<HTMLElement>('.rx-resto')!;
+        const abrir = resto.hidden;
+        resto.hidden = !abrir;
+        mais.setAttribute('aria-expanded', String(abrir));
+        mais.textContent = abrir ? 'Ver menos tipos' : `Ver os ${c.l.length} tipos ${z.de}`;
+        if (abrir) resto.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+      });
+      conteudo.querySelector<HTMLButtonElement>('.rx-ver')?.addEventListener('click', (e) => void verPecas(k, e.currentTarget as HTMLButtonElement));
+      if (focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
+    }
+
+    // ---- "Ver as peças da frente": as mais novas da zona num trilho de cartões, ali mesmo ----
+    async function pecasDe(k: string): Promise<Item[]> {
+      if (!procurarCarro && !home) {
+        // página do carro: o arquivo só do carro (o mesmo da grade do ano)
+        const [ix, { Busca }] = await Promise.all([
+          fetch(ARQUIVO_CARRO(raiz.dataset.b!, raiz.dataset.m!)).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Indice>; }),
+          import('../../lib/busca'),
+        ]);
+        const b = new Busca(ix);
+        procurarCarro = (x) => b.procurar(x);
+      }
+      if (procurarCarro && filtro.modelo) return pecasDaZona(procurarCarro, filtro, zona(k));
+      galeria ??= Promise.all([fetch(ARQUIVO_GALERIA).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }), import('../../lib/busca')])
+        .then(([ix, { Busca }]) => ({ itens: new Busca(ix as Indice).itens, zonas: (ix as { zonas: Record<string, number[]> }).zonas }))
+        .catch((e) => { galeria = null; throw e; });
+      const g = await galeria;
+      return (g.zonas[k] ?? []).map((i) => g.itens[i]).filter(Boolean);
+    }
+
+    async function verPecas(k: string, botao: HTMLButtonElement) {
+      const caixa = conteudo.querySelector<HTMLElement>('.rx-galeria')!;
+      botao.hidden = true;
+      caixa.hidden = false;
+      const z = zona(k);
+      const total = conta(k).n;
+      const { ESQ_CARTAO, porCartoes } = await import('./trilhoPessoal');
+      caixa.innerHTML = `<p class="rx-g-titulo">As peças ${esc(z.de)}</p><div class="trilho rx-trilho" aria-busy="true">${ESQ_CARTAO.repeat(3)}</div>`;
+      try {
+        const [itens, { cartaoHtml, vigiarFotos }] = await Promise.all([pecasDe(k), import('../../lib/vendidaCartoes')]);
+        if (ativa !== k || !caixa.isConnected) return;
+        const mostra = itens.slice(0, NA_GALERIA);
+        const trilho = caixa.querySelector<HTMLElement>('.rx-trilho')!;
+        caixa.querySelector('.rx-g-titulo')!.textContent = total > mostra.length
+          ? `As ${mostra.length} mais novas ${z.de}, de ${nf(total)}` : total === 1 ? `A peça ${z.de}` : `As ${nf(total)} peças ${z.de}`;
+        vigiarFotos(trilho);
+        porCartoes(trilho, mostra.map((it) => cartaoHtml(it, SIZES_GALERIA)).join(''));
+        if (total > mostra.length) caixa.insertAdjacentHTML('beforeend', '<p class="rx-g-nota">Para ver todas, escolha o tipo da peça logo acima: cada um abre o catálogo já filtrado.</p>');
+        trilho.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+      } catch {
+        if (caixa.isConnected) caixa.innerHTML = '<p class="rx-g-nota">Sem conexão agora. Escolha o tipo da peça logo acima: cada um abre o catálogo já filtrado.</p>';
+      }
+    }
+
+    // ---- a parte acesa (mouse em cima, foco ou a escolhida): véu, furo, linha-guia, etiqueta, ponto, ficha ----
+    function acender() {
+      const luz = passando ?? ativa;
+      raiz.classList.toggle('rx-aceso', !!luz);
+      for (const p of pecasVisuais) {
+        p.el.classList.toggle('aceso', p.k === luz);
+        p.el.classList.toggle('on', p.k === ativa);
+      }
+    }
+
+    // o "passar o mouse" só onde há mouse de verdade, e nunca logo depois de escolher (a rolagem até o painel passa o
+    // conteúdo por baixo do ponteiro parado: a parte acesa não pode trocar sozinha)
+    const comMouse = matchMedia('(hover: hover) and (pointer: fine)');
+    let escolhidaEm = 0;
+    const passa = (e: PointerEvent) => e.pointerType === 'mouse' && comMouse.matches && performance.now() - escolhidaEm > 700;
+
+    function selecionar(k: string, como: { focar?: boolean; rolar?: boolean } = {}) {
+      raiz.classList.add('tocado');
+      escolhidaEm = performance.now();
+      void carregarCarro();
+      if (ativa !== k || conteudo.hidden) {
+        ativa = k;
+        passando = null;
+        acender();
+        mostrar(k, !!como.focar);
+      } else if (como.focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
+      // medir (a ficha na fila, o painel na tela) só DEPOIS da pintura: ler a posição logo depois de montar o painel
+      // obrigava o navegador a calcular a página no meio do toque (~20 ms com CPU 6×)
+      requestAnimationFrame(() => setTimeout(() => {
+        if (ativa !== k) return;
+        // a ficha escolhida à vista na fila (só o scroll da fila, nunca a página; na hora: a rolagem suave da fila era
+        // cancelada pela da página até o painel, no Safari)
+        const f = fichas.find((b) => b.dataset.ficha === k);
+        const fila = f?.parentElement;
+        if (f && fila && fila.scrollWidth > fila.clientWidth) {
+          const fr = f.getBoundingClientRect();
+          const lr = fila.getBoundingClientRect();
+          fila.scrollLeft += fr.left - lr.left - (lr.width - fr.width) / 2;
+        }
+        // celular: o painel vem embaixo da arte; se ele começa fora da tela, rola só o bastante para o título e 2 tipos
+        if (como.rolar || como.focar) {
+          const r = painel.getBoundingClientRect();
+          const falta = r.top + Math.min(r.height, 240) - innerHeight;
+          if (falta > 0) scrollBy({ top: falta + 16, behavior: calmo() ? 'auto' : 'smooth' });
+        }
+      }));
+    }
+
+    // Esc: limpa a escolha (volta o "como funciona") e devolve o foco à zona
+    let semAbrir = false;
+    function limpar() {
+      const k = ativa;
+      // o foco estava no painel (que vai ser esvaziado) ou numa zona: volta para a zona que estava escolhida
+      const dentro = raiz.contains(document.activeElement);
+      ativa = null;
+      passando = null;
+      acender();
+      conteudo.hidden = true;
+      conteudo.innerHTML = '';
+      dica.hidden = false;
+      painel.classList.remove('aberto');
+      if (k && dentro) {
+        // o foco volta à zona sem abrir de novo (o foco pelo teclado abre a zona: aqui não)
+        semAbrir = true;
+        raiz.querySelector<SVGAElement>(`a[data-z="${k}"]`)?.focus({ preventScroll: true });
+        semAbrir = false;
+      }
+    }
+
+    // ---- ouvintes ----
+    for (const a of zonasA) {
+      const k = a.dataset.z!;
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Enter (clique sem ponteiro: detail 0) leva o foco ao painel; o toque só abre
+        selecionar(k, { focar: (e as MouseEvent).detail === 0, rolar: true });
+      });
+      // Tab: a zona focada já abre (o foco continua nela; Enter leva ao painel)
+      a.addEventListener('focus', () => { if (!semAbrir && a.matches(':focus-visible')) selecionar(k); });
+      a.addEventListener('pointerenter', (e) => { if (passa(e)) { passando = k; acender(); } });
+      a.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && passando === k) { passando = null; acender(); } });
+    }
+    for (const f of fichas) f.addEventListener('click', () => selecionar(f.dataset.ficha!, { rolar: true }));
+    raiz.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ativa) { e.preventDefault(); limpar(); } });
+    // Aquecimento: quando a arte aparece na tela, com o navegador folgando, as duas camadas de desfoque são desenhadas
+    // uma vez (quase transparentes) e um painel é montado fora da vista e desfeito. O 1º toque não paga a 1ª vez.
+    const aquecer = () => {
+      const k = ZONAS[1].k;
+      const els = todos(`[data-realce="${k}"], [data-furo="${k}"]`);
+      for (const el of els) el.classList.add('aquece');
+      // a cópia do painel (com o atributo do escopo do CSS) fora da vista
+      const molde = conteudo.cloneNode(false) as HTMLElement;
+      molde.removeAttribute('hidden');
+      molde.removeAttribute('data-rx-conteudo');
+      molde.classList.add('rx-molde');
+      molde.setAttribute('aria-hidden', 'true');
+      const c = conta(k);
+      molde.innerHTML = `<div class="rx-p-cabeca"><h3 class="rx-p-titulo">${esc(zona(k).nome)}</h3><p class="rx-p-sub">&nbsp;</p></div>`
+        + `<ul class="rx-linhas">${c.l.slice(0, NA_FRENTE).map((l) => linhaHtml({ ...l, foto: '' }, true)).join('')}</ul>`;
+      painel.appendChild(molde);
+      void molde.offsetHeight;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        for (const el of els) el.classList.remove('aquece');
+        molde.remove();
+      }));
+    };
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((es) => {
+        if (!es.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        if ('requestIdleCallback' in window) requestIdleCallback(aquecer, { timeout: 1500 });
+        else setTimeout(aquecer, 200);
+      }, { rootMargin: '200px' });
+      io.observe(raiz.querySelector('[data-rx-palco]')!);
+    }
+
+    // "1º toque" na seção: o carro salvo começa a descer antes do clique (mouse em cima, dedo encostando, Tab)
+    const cedo = () => void carregarCarro();
+    raiz.addEventListener('pointerenter', cedo, { once: true });
+    raiz.addEventListener('touchstart', cedo, { once: true, passive: true });
+    raiz.addEventListener('focusin', cedo, { once: true });
+
+    // página do carro no celular: o cartão recolhido abre o Raio-x (e o foco vai para a 1ª parte do carro)
+    const abrir = raiz.querySelector<HTMLButtonElement>('[data-rx-abrir]');
+    abrir?.addEventListener('click', () => {
+      raiz.classList.add('rx-aberto');
+      abrir.setAttribute('aria-expanded', 'true');
+      zonasA[0]?.focus({ preventScroll: true });
+    });
+
+    if (!home) return;
+    raiz.querySelector('[data-rx-trocar]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent(ABRIR)));
+    // trocou o carro (abertura, cabeçalho): título, convite, contagens e o painel aberto acompanham, sem recarregar
+    window.addEventListener(EVENTO, (e) => {
+      carro = (e as CustomEvent<MeuCarro | null>).detail;
+      vez++;
+      estado = 'nada';
+      dados = base;
+      filtro = {};
+      aviso = '';
+      procurarCarro = null;
+      const t = raiz.querySelector('[data-rx-titulo]')!;
+      const l = raiz.querySelector('[data-rx-lead]');
+      const b = raiz.querySelector('[data-rx-txt]');
+      t.textContent = carro ? `Onde fica a peça no seu ${nomeCarro(carro)}?` : 'Não sabe o nome da peça? Aponte no carro.';
+      if (l) l.textContent = carro ? `Toque na parte do carro e veja as peças do seu ${carro.m} que a gente tem.` : lead0;
+      if (b) b.textContent = carro ? 'Trocar o carro' : 'Diga o seu carro';
+      pintarZonas();
+      if (ativa) { mostrar(ativa, false); void carregarCarro(); }
+    });
+    if (carro) pintarZonas();
+  }
+</script>
+
+<style>
+  .rx { display: grid; gap: clamp(20px, 2.6vw, 32px); }
+  .rx-compacto { gap: 12px; }
+  .rx-titulo-p { margin: 0; font-stretch: 84%; font-weight: 800; font-size: clamp(21px, 2vw, 26px); line-height: 1.1; letter-spacing: -.005em; text-wrap: balance; }
+  /* home: a seção só é desenhada perto da tela (.cv); o lugar guardado é o da seção de verdade (sem pulo na rolagem) */
+  :global(.rx-secao) { contain-intrinsic-size: auto 720px; }
+  @media (min-width: 1024px) { :global(.rx-secao) { contain-intrinsic-size: auto 860px; } }
+  .rx-cabeca { display: grid; gap: 8px; max-width: 64ch; justify-items: start; }
+  .rx-cabeca .lead { margin: 0; }
+  .rx-cabeca .titulo-secao { margin: 0; text-wrap: balance; }
+  .rx-convite { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 2px; margin-block: -4px;
+    background: none; border: 0; color: var(--ink); font: inherit; font-size: 15px; font-weight: 650;
+    text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--accent), transparent 30%); text-decoration-thickness: 2px;
+    text-underline-offset: 5px; cursor: pointer; }
+  .rx-convite :global(svg) { width: 20px; height: 20px; color: var(--accent-text); }
+  .rx-convite:hover { text-decoration-color: var(--accent); }
+
+  .rx-corpo { display: grid; gap: 16px; align-items: start; }
+  /* recolhido (página do carro, celular e tablet): o cartão baixo no lugar da arte, até tocar nele */
+  .rx-abrir { display: none; grid-template-columns: 112px minmax(0, 1fr) 20px; align-items: center; gap: 14px; width: 100%; padding: 10px 14px 10px 10px;
+    border: 0; border-radius: 20px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); color: var(--ink);
+    font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .rx-abrir img { width: 112px; height: 75px; border-radius: 12px; object-fit: cover; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); display: block; }
+  .rx-abrir-txt { display: grid; gap: 3px; min-width: 0; }
+  .rx-abrir-txt b { font-stretch: 86%; font-weight: 800; font-size: 18px; line-height: 1.15; }
+  .rx-abrir-txt span { font-size: 14px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
+  .rx-abrir svg { width: 20px; height: 20px; fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .rx-abrir:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3), var(--shadow-1); }
+  .rx-abrir:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+  @media (max-width: 1023px) {
+    .rx-recolhido:not(.rx-aberto) .rx-abrir { display: grid; }
+    .rx-recolhido:not(.rx-aberto) .rx-corpo { display: none; }
+  }
+  @media (min-width: 1024px) { .rx-corpo { grid-template-columns: minmax(0, 1.42fr) minmax(340px, 1fr); gap: 28px; align-items: stretch; } }
+
+  /* ---- a arte e as zonas ---- */
+  .rx-arte { display: grid; gap: 12px; min-width: 0; align-content: start; container: rxarte / inline-size; }
+  .rx-palco { position: relative; aspect-ratio: 1536 / 1024; border-radius: clamp(18px, 2.2vw, 28px); overflow: hidden;
+    background: linear-gradient(180deg, #f4f3f0, #e7e5e1); box-shadow: var(--shadow-1); isolation: isolate; }
+  .rx-palco img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .rx-mapa { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .rx-mapa a { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+  .rx-alvo { fill: transparent; stroke: none; }
+  /* foco do teclado: o contorno da área inteira da zona, tracejado */
+  .rx-mapa a:focus-visible .rx-alvo { stroke: var(--foco); stroke-width: 2.5; stroke-dasharray: 9 7; vector-effect: non-scaling-stroke; }
+
+  /* o véu: a parte acesa ganha um laranja translúcido de bordas esfumadas e o resto da arte escurece de leve. Duas
+     camadas com o desfoque do CSS (a placa de vídeo faz; trocar de parte só redesenha os polígonos, sem filtro na CPU) */
+  .rx-camada { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; overflow: visible;
+    filter: blur(clamp(3px, 1.2cqw, 9px)); will-change: filter; }
+  .rx-escuros path { fill: rgb(22 22 26 / .3); opacity: 0; transition: opacity .16s ease; }
+  .rx-escuros path.aceso { opacity: 1; }
+  .rx-realces g { fill: #ff6a00; opacity: 0; transition: opacity .16s ease; }
+  .rx-realces g.aceso { opacity: .42; }
+  /* aquecimento (a 1ª vez que a arte aparece): desenhar a camada uma vez, sem ninguém ver */
+  .rx-realces g.aquece, .rx-escuros path.aquece { opacity: .01; transition: none; }
+  .rx-realces g.vazia { fill: #9a9aa0; }
+
+  /* o ponto de cada parte (convida a tocar); com número na arte estreita */
+  .rx-ponto { position: absolute; z-index: 1; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; pointer-events: none;
+    display: grid; place-items: center; background: #ff6a00; color: #1d1d1f; box-shadow: 0 0 0 2.5px #fff, 0 2px 8px rgb(0 0 0 / .3);
+    transition: transform .16s ease, background-color .16s ease; }
+  .rx-ponto i { font-style: normal; font-size: 12.5px; font-weight: 800; line-height: 1; }
+  .rx-ponto::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid #ff6a00; opacity: 0; animation: rx-pulso 2.6s ease-out infinite; }
+  .rx-ponto:nth-of-type(2n)::after { animation-delay: .9s; }
+  .rx-ponto:nth-of-type(3n)::after { animation-delay: 1.7s; }
+  .rx.tocado .rx-ponto::after { animation: none; }
+  .rx-ponto.aceso { transform: scale(1.18); box-shadow: 0 0 0 2.5px #1d1d1f, 0 2px 8px rgb(0 0 0 / .3); }
+  .rx-ponto.vazia { background: #b4b4ba; }
+  .rx-ponto.vazia::after { border-color: #b4b4ba; }
+  @keyframes rx-pulso { 0% { transform: scale(.85); opacity: .7; } 70%, 100% { transform: scale(2); opacity: 0; } }
+  @media (max-width: 359px) { .rx-ponto { width: 19px; height: 19px; margin: -9.5px 0 0 -9.5px; } .rx-ponto i { font-size: 11px; } }
+
+  /* arte larga: as etiquetas fixas com a linha-guia; o ponto fica pequeno e sem número */
+  .rx-etiqueta, .rx-guias { display: none; }
+  .rx-guias line { stroke: #1d1d1f; stroke-opacity: .38; stroke-width: 1; vector-effect: non-scaling-stroke; transition: stroke .16s ease, stroke-opacity .16s ease; }
+  .rx-guias line.aceso { stroke: #ff6a00; stroke-opacity: 1; stroke-width: 2; }
+  .rx-etiqueta { position: absolute; z-index: 2; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap;
+    align-items: baseline; gap: 6px; padding: 5px 10px; border-radius: 999px; background: rgb(255 255 255 / .94);
+    color: #1d1d1f; font-size: 13px; font-weight: 700; font-stretch: 94%; line-height: 1.2; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 4px 12px -6px rgb(0 0 0 / .22);
+    transition: background-color .16s ease, color .16s ease; }
+  .rx-etiqueta b { font-size: 12px; font-weight: 650; color: #5b5b61; }
+  .rx-etiqueta b:empty { display: none; }
+  .rx-etiqueta.aceso { background: #ff6a00; }
+  .rx-etiqueta.aceso b { color: #1d1d1f; }
+  .rx-etiqueta.vazia { color: #75757b; }
+  .rx-etiqueta.vazia.aceso { background: #d6d6db; color: #1d1d1f; }
+  @container rxarte (min-width: 640px) {
+    .rx-etiqueta { display: inline-flex; }
+    .rx-guias { display: inline; }
+    .rx-ponto { width: 14px; height: 14px; margin: -7px 0 0 -7px; box-shadow: 0 0 0 2.5px #fff, 0 2px 8px rgb(0 0 0 / .28); }
+    .rx-ponto i { display: none; }
+  }
+
+  /* fichas: uma fila que desliza no celular, todas à vista do tablet em diante */
+  .rx-fichas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; margin: 0 -2px; scroll-padding-inline: 16px; }
+  .rx-fichas::-webkit-scrollbar { display: none; }
+  .rx-fichas button { flex: none; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 14px 0 8px; border: 0; border-radius: 999px;
+    background: var(--surface); color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 620; cursor: pointer;
+    box-shadow: inset 0 0 0 1.5px var(--line-2); -webkit-tap-highlight-color: transparent; transition: background-color .15s ease, box-shadow .15s ease; }
+  .rx-fichas i { font-style: normal; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: #ff6a00; color: #1d1d1f; font-size: 12.5px; font-weight: 800; }
+  .rx-fichas small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+  .rx-fichas small:empty { display: none; }
+  .rx-fichas button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .rx-fichas button.on { background: #ff6a00; color: #1d1d1f; box-shadow: none; }
+  .rx-fichas button.on i { background: #1d1d1f; color: #fff; }
+  .rx-fichas button.on small { color: #1d1d1f; }
+  .rx-fichas button.vazia { color: var(--ink-3); background: var(--surface-2); }
+  .rx-fichas button.vazia i { background: #c9c9ce; }
+  .rx-fichas button.vazia.on { background: #d6d6db; color: #1d1d1f; }
+  /* arte larga: as etiquetas já ficam na arte; as fichas sem o número */
+  @container rxarte (min-width: 640px) { .rx-fichas button { padding-left: 14px; } .rx-fichas i { display: none; } }
+  @media (min-width: 768px) { .rx-fichas { flex-wrap: wrap; overflow: visible; } }
+
+  /* ---- o painel ---- */
+  .rx-painel { min-width: 0; }
+  .rx-painel:not(.aberto) { display: none; }
+  /* PC: antes da 1ª escolha, o "como funciona" ocupa a altura da arte ao lado (nada de coluna vazia) */
+  @media (min-width: 1024px) {
+    .rx-painel:not(.aberto) { display: grid; }
+    .rx-painel.aberto { align-self: start; }
+  }
+  .rx-dica { display: grid; gap: 10px; justify-items: start; align-content: center; padding: 32px 30px; border-radius: 24px; background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  .rx-dica-icone { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: var(--accent-soft); color: var(--accent-text); margin-bottom: 4px; }
+  .rx-dica-icone svg { width: 26px; height: 26px; }
+  .rx-dica b { font-stretch: 86%; font-weight: 800; font-size: clamp(21px, 1.8vw, 25px); line-height: 1.2; }
+  .rx-passos { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 14px; }
+  .rx-passos li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; font-size: 15.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+  .rx-passos li span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #ff6a00; color: #1d1d1f; font-size: 14px; font-weight: 800; }
+
+  /* a altura do painel fica guardada (6 tipos + os botões): trocar de parte não empurra nada; o pé fica embaixo */
+  .rx-conteudo { --linha: 69px; display: flex; flex-direction: column; min-height: calc(var(--linha) * 6 + 300px); padding: 20px 18px 8px;
+    border-radius: 24px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  .rx-conteudo[hidden] { display: none; }
+  .rx-molde { position: absolute; left: -10000px; top: 0; width: 420px; visibility: hidden; pointer-events: none; }
+  @media (min-width: 600px) { .rx-conteudo { padding: 24px 22px 10px; } }
+  @media (max-width: 400px) { .rx-conteudo { --linha: 63px; } }
+  .rx-conteudo :global(.rx-p-cabeca) { display: grid; gap: 2px; padding: 0 4px 12px; }
+  .rx-conteudo :global(.rx-p-titulo) { margin: 0; font-stretch: 84%; font-weight: 820; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.1; letter-spacing: -.01em; outline: none; text-wrap: balance; }
+  .rx-conteudo :global(.rx-p-titulo .rx-p-n) { color: var(--ink-2); font-weight: 700; }
+  .rx-conteudo :global(.rx-p-titulo:focus-visible) { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 3px; text-underline-offset: 6px; }
+  .rx-conteudo :global(.rx-p-sub) { margin: 0; font-size: 15px; color: var(--ink-2); }
+  .rx-conteudo :global(.rx-p-aviso) { margin: 0 4px 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+  .rx-conteudo :global(.rx-p-vazio) { margin: 0 4px 14px; font-size: 15px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+  .rx-conteudo :global(.rx-p-acoes) { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 0 4px 14px; }
+  .rx-conteudo :global(.rx-avise) { --h: var(--botao-p); padding: 0 18px; font-size: 15px; }
+  .rx-conteudo :global(.rx-p-outros) { padding-block: 12px; margin-block: -12px; font-size: 14px; font-weight: 650; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+
+  .rx-conteudo :global(.rx-linhas) { list-style: none; margin: 0; padding: 0; display: grid; }
+  .rx-conteudo :global(.rx-linhas li + li) { border-top: 1px solid var(--line); }
+  .rx-conteudo :global(.rx-linha) { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto 18px; align-items: center; gap: 12px; min-height: 68px; padding: 6px 4px;
+    color: var(--ink); text-decoration: none; border-radius: 14px; -webkit-tap-highlight-color: transparent; }
+  .rx-conteudo :global(a.rx-linha:hover) { background: var(--surface-2); }
+  .rx-conteudo :global(.rx-l-foto) { width: 56px; height: 56px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); }
+  .rx-conteudo :global(.rx-l-foto img) { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; display: block; }
+  .rx-conteudo :global(.rx-l-nome) { min-width: 0; font-weight: 650; font-size: 15.5px; line-height: 1.3; text-wrap: pretty; overflow-wrap: anywhere; hyphens: auto; }
+  .rx-conteudo :global(.rx-l-n) { font-size: 14px; font-weight: 700; color: var(--ink-2); padding: 3px 9px; border-radius: 999px; background: var(--surface-2); }
+  .rx-conteudo :global(.rx-l-seta) { width: 18px; height: 18px; fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  @media (max-width: 400px) {
+    .rx-conteudo :global(.rx-linha) { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; min-height: 62px; }
+    .rx-conteudo :global(.rx-l-foto) { width: 48px; height: 48px; }
+    .rx-conteudo :global(.rx-linha .rx-l-seta) { display: none; }
+    .rx-conteudo :global(.rx-l-nome) { font-size: 15px; }
+  }
+  .rx-conteudo :global(.rx-esq .rx-l-foto) { animation: rx-brilho 1.2s ease-in-out infinite alternate; }
+  .rx-conteudo :global(.rx-esq .rx-l-nome) { height: 14px; width: 60%; border-radius: 6px; background: var(--surface-2); }
+  @keyframes rx-brilho { from { opacity: .55; } to { opacity: 1; } }
+
+  .rx-conteudo :global(.rx-mais) { display: flex; width: 100%; align-items: center; justify-content: center; min-height: 48px; margin-top: 8px;
+    border: 0; border-radius: 12px; background: var(--surface-2); color: var(--ink); font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; }
+  .rx-conteudo :global(.rx-mais:hover) { background: var(--bg-2); }
+  .rx-conteudo :global(.rx-resto) { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .rx-conteudo :global(.rx-tipo) { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px 0 14px; border-radius: 999px;
+    box-shadow: inset 0 0 0 1.5px var(--line-2); color: var(--ink); text-decoration: none; font-size: 14.5px; font-weight: 600; }
+  .rx-conteudo :global(.rx-tipo:hover) { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .rx-conteudo :global(.rx-tipo .rx-l-n) { font-size: 13px; padding: 2px 8px; }
+
+  /* o pé do painel: o botão laranja (letra grafite) e, depois de tocar nele, as peças num trilho */
+  .rx-conteudo :global(.rx-p-pe) { margin-top: auto; padding-top: 14px; }
+  .rx-conteudo :global(.rx-ver) { width: 100%; }
+  .rx-conteudo :global(.rx-galeria) { display: grid; gap: 10px; }
+  .rx-conteudo :global(.rx-galeria[hidden]), .rx-conteudo :global(.rx-ver[hidden]) { display: none; }
+  .rx-conteudo :global(.rx-g-titulo) { margin: 0 4px; font-size: 15px; font-weight: 700; }
+  .rx-conteudo :global(.rx-trilho) { grid-auto-columns: 168px; gap: 12px; margin-inline: -4px; padding: 2px 4px 14px; scroll-padding-inline: 4px; }
+  @media (min-width: 1024px) { .rx-conteudo :global(.rx-trilho) { grid-auto-columns: 176px; } }
+  .rx-conteudo :global(.rx-g-nota) { margin: -4px 4px 4px; font-size: 14px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+
+  .rx-conteudo :global(.rx-patio) { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; margin: 10px -4px 0; padding: 4px 8px;
+    border-top: 1px solid var(--line); color: var(--ink-2); font-size: 15px; text-decoration: none; }
+  .rx-conteudo :global(.rx-patio b) { color: var(--ink); font-weight: 700; text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--accent), transparent 30%); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rx-ponto::after, .rx-conteudo :global(.rx-esq .rx-l-foto) { animation: none; }
+    .rx-escuros path, .rx-realces g, .rx-guias line, .rx-etiqueta, .rx-ponto { transition: none; }
+  }
+  /* aparelho fraco: sem pulso e sem desfoque (o véu fica de borda reta) */
+  :global(html.leve) .rx-ponto::after { animation: none; }
+  :global(html.leve) .rx-camada { filter: none; will-change: auto; }
+</style>

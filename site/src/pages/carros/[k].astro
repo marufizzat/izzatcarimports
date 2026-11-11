@@ -1,14 +1,15 @@
 ---
 // Página do carro. Ordem pensada para as peças chegarem cedo na tela:
 //  1. topo: a contagem real e os anos no lead, "Ver as N peças", "É o meu carro" e "Avise-me quando chegar peça";
-//  2. sistemas (só em carro com 20+ peças; sem os de menos de 3 peças e sem "Outros"), em cartões baixos com a
-//     arte de estúdio da família (topo-cat-<k>.webp, sem o nome desenhado);
+//  2. o Raio-x do carro (só em carro com 20+ peças): a arte com as partes tocáveis e as contagens DESTE carro, já no
+//     build (components/v2/RaioX.astro). Ocupa o lugar dos cartões "Peças por categoria": as partes do carro levam aos
+//     tipos de peça com o link exato do catálogo (os blocos continuam no filtro do catálogo e na home);
 //  3. a grade, com título; o texto de apoio vai para o fim.
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
 import TodasAsPecas from '../../components/categoria/TodasAsPecas.astro';
-import AtalhosVisuais from '../../components/AtalhosVisuais.astro';
+import RaioX from '../../components/v2/RaioX.astro';
 import TextoApoio from '../../components/TextoApoio.astro';
 import AnosDoCarro from '../../components/AnosDoCarro.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
@@ -17,9 +18,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS, SITE } from '../../lib/dados';
 import { textosCarro, tituloCarro } from '../../lib/textos';
-import { fotoVitrine } from '../../lib/vitrine';
 import { linkAviso } from '../../lib/aviso';
-import { miniatura } from '../../lib/miniatura';
 import { SIZES } from '../../lib/variantes';
 import { serveNoModelo } from '../../lib/meuCarro';
 import { garagem } from '../../lib/garagem';
@@ -41,21 +40,8 @@ const base = `/catalogo.html?marca=${encodeURIComponent(c.b)}&modelo=${encodeURI
 const existe = (arq: string) => existsSync(join(process.cwd(), 'public', arq));
 
 const AVISO_ATE = 20;
-// sistemas: arte da família quando existir (a foto de uma peça qualquer nem sempre representa o grupo)
-const SISTEMAS_A_PARTIR_DE = 20;
-const arteFamilia = (n: string) => {
-  const k = r.familias.find((f) => f.n === n)?.k;
-  const a = k ? `/arte/v2/topo-cat-${k}.webp` : '';
-  return a && existe(a) ? a : null;
-};
-const fams = N < SISTEMAS_A_PARTIR_DE ? [] : Object.entries(lista.reduce<Record<string, number>>((o, p) => ((o[p.c] = (o[p.c] || 0) + 1), o), {}))
-  .filter(([n, q]) => q >= 3 && n !== 'Outros')
-  .sort((a, b) => b[1] - a[1])
-  .map(([n, q]) => {
-    const arte = arteFamilia(n);
-    // a miniatura (192 px) no lugar da arte inteira (1254 px): o cartão mostra 64 px
-    return { n, c: q, h: `${base}&tipo=${encodeURIComponent(n)}`, foto: arte ? miniatura(arte) : fotoVitrine(lista, (p) => p.c === n), arte: !!arte };
-  });
+// o Raio-x só no carro com 20+ peças (com menos, quase toda parte do carro sairia cinza)
+const RAIO_X_A_PARTIR_DE = 20;
 
 const anos = c.anos ? (c.anos[0] === c.anos[1] ? `de ${c.anos[0]}` : `de ${c.anos[0]} a ${c.anos[1]}`) : '';
 const lead = `${fmt(N)} ${N === 1 ? 'peça original' : 'peças originais'} para ${nome}${anos ? ` ${anos}` : ''}, de carros com baixa legal no Detran-RS.`;
@@ -89,9 +75,7 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
         </a>
       )}
     </Fragment>
-    {fams.length > 0 && (
-      <AtalhosVisuais titulo="Peças por categoria" modo="tipo" itens={fams} limite={9} limitePc={4} minimo={3} id="sistemas" mais={`Ver as ${fams.length} categorias`} />
-    )}
+    {N >= RAIO_X_A_PARTIR_DE && <div class="carro-raiox"><RaioX carro={{ b: c.b, m: c.m }} compacto recolhido /></div>}
   </TopoArte>
   <div class="moldura">
     <section class="carro-pecas" id="pecas" aria-labelledby="h-pecas">
@@ -166,6 +150,7 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
     .carro-aviso { justify-content: flex-start; }
   }
 
+  .carro-raiox { margin-top: clamp(8px, 1.6vw, 16px); }
   .carro-pecas { padding-top: clamp(32px, 4.4vw, 52px); }
   .grade-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; margin-bottom: clamp(18px, 2.4vw, 26px); }
   .grade-cabeca h2 { margin: 0; }

@@ -13,6 +13,7 @@ import Coverflow from '../components/v2/Coverflow.astro';
 import VoceViu from '../components/v2/VoceViu.astro';
 import ChegouCarro from '../components/v2/ChegouCarro.astro';
 import Continuar from '../components/v2/Continuar.astro';
+import RaioX from '../components/v2/RaioX.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
 import Icone from '../components/Icone.astro';
@@ -80,6 +81,11 @@ const ld = {
       </div>
       <GradeCategorias />
     </div>
+  </section>
+
+  {/* quem não sabe o nome da peça aponta onde ela fica (components/v2/RaioX.astro) */}
+  <section class="secao cv rx-secao" aria-labelledby="raio-x-t">
+    <div class="moldura"><RaioX /></div>
   </section>
 
   <section class="secao faixa cv" aria-labelledby="t-chegou">
