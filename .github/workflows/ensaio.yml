@@ -1,0 +1,106 @@
+# ENSAIO: roda no ramo de um pedido (PR) os MESMOS passos que o robô roda antes de publicar
+# (dados, testes, build, links), com o estoque da última rodada do robô — e NÃO publica nada.
+# Serve para saber, antes de juntar ao master, se o robô vai aceitar a rodada (teste vermelho no
+# master = catálogo congelado). Não usa segredo nenhum: o estoque vem do cache que o robô guardou.
+# Não grava cache, não escreve no repositório, não toca no GitHub Pages.
+name: Ensaio (testa a rodada sem publicar)
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ensaio-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ensaiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # o estoque (products.json) da última rodada do robô: só LEITURA do cache dele
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            products.json
+            categorias_ml.json
+            fotos_limpas.json
+          key: catalogo-ensaio-${{ github.run_id }}
+          restore-keys: catalogo-
+      - name: Conferir o estoque que veio do robô
+        run: |
+          python3 - <<'PY'
+          import json, os, time, sys
+          p = 'products.json'
+          if not os.path.exists(p): sys.exit('sem products.json no cache do robô: o ensaio não tem o que testar')
+          d = json.load(open(p, encoding='utf-8'))
+          itens = d if isinstance(d, list) else d.get('products') or d.get('items') or list(d.values())
+          print(f'estoque do robô: {len(itens)} anúncios; arquivo de {time.strftime("%d/%m %H:%M", time.gmtime(os.path.getmtime(p)))} UTC')
+          if len(itens) < 1000: sys.exit('estoque pequeno demais para valer como ensaio')
+          PY
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests python-dotenv pillow
+
+      - name: Preparar dados do site (marca, modelo, ano, busca)
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -u preparar_dados.py
+          python -u testes/test_dados.py
+
+      # capas já prontas (ramo capas-estudio), só leitura: o ensaio não gera capa nova nem grava no ramo
+      - name: Buscar capas de estudio ja prontas
+        continue-on-error: true
+        run: |
+          git fetch --depth=1 origin capas-estudio:capas-estudio 2>/dev/null || true
+          mkdir -p site/public/estudio
+          if git rev-parse --verify capas-estudio >/dev/null 2>&1; then
+            git --work-tree=site/public/estudio checkout capas-estudio -- . && git reset -q
+          fi
+          ls site/public/estudio | wc -l
+      - name: Marcar capas de estudio
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -u capas_estudio.py --so-marcar
+
+      # medidas das fotos da galeria que o robô já fez: só junta (não mede foto nova)
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache-caixas/fotos-ml-caixas.json
+          key: caixas-ensaio-${{ github.run_id }}
+          restore-keys: caixas-
+      - name: Juntar as medidas das fotos (galeria)
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -u ferramentas/medir_fotos_ml.py --extra .cache-caixas/fotos-ml-caixas.json --podar --so-juntar
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - run: npm --prefix site test
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            site/public/estudio-400
+            site/public/estudio-640
+            site/src/data/capas-cartao.json
+          key: capas-cartao-ensaio-${{ github.run_id }}
+          restore-keys: capas-cartao-
+      - run: npm --prefix site run build
+      - name: Conferir links internos (nenhum quebrado)
+        run: node site/scripts/verificar-links.mjs
