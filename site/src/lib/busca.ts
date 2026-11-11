@@ -277,6 +277,8 @@ type Entendido = {
   familia?: string;
   /** por palavra do texto (palavras()): é carro ou marca; e onde cada um foi digitado */
   usado: boolean[]; janelas: Janela[];
+  /** os apelidos de carro unido digitados ("c180", "new fiesta"): a peça que diz o apelido vem antes das outras do principal */
+  apelidos: Carro[];
 };
 /** codigo: o código gravado buscado ("8200328856"), quando alguma peça da lista tem exatamente esse código */
 type PorTexto = {
@@ -502,6 +504,7 @@ export class Busca {
     const achados: Carro[] = [];
     const marcas: string[] = [];
     const janelas: Janela[] = [];
+    const apelidos: Carro[] = [];
     for (let n = Math.min(3, ws.length); n >= 1; n--) {
       for (let i = 0; i + n <= ws.length; i++) {
         if (usado.slice(i, i + n).some(Boolean)) continue;
@@ -511,7 +514,7 @@ export class Busca {
           let alt: string[] | undefined;
           for (const c of cs) {
             const pr = this._principal.get(`${c.b}|${c.m}`);
-            if (pr) alt = palavras(pr);
+            if (pr) { alt = palavras(pr); apelidos.push({ b: c.b, m: c.m }); }
             const car = pr ? { b: c.b, m: pr } : { b: c.b, m: c.m };
             if (!achados.some((x) => x.b === car.b && x.m === car.m)) achados.push(car);
           }
@@ -533,7 +536,7 @@ export class Busca {
     const marcasSoltas = marcas.filter((b) => !carros.some((c) => c.b === b));
     const resto = ws.filter((w, i) => !usado[i] && !VAZIAS.has(w));
     const familia = !carros.length && !marcasSoltas.length && resto.length ? this._familias!.get(resto.join(''))?.c : undefined;
-    return { carros: carros.map(({ b, m }) => ({ b, m })), marcas: marcasSoltas, resto, familia, usado, janelas };
+    return { carros: carros.map(({ b, m }) => ({ b, m })), marcas: marcasSoltas, resto, familia, usado, janelas, apelidos };
   }
 
   // ---- as palavras dos nomes do estoque (para saber o que a peça É) ----
@@ -865,7 +868,7 @@ export class Busca {
       cita: (u: Unidade, onde: 'o' | 's' | 'c') => {
         const m = onde === 'o' ? this._nome : onde === 's' ? this._sis : this._bloco;
         const ks: number[] = [];
-        u.formas.forEach((f, i) => { if (f.length === 1 || onde === 'o') for (const t of de(f[0])) for (const k of m.get(t) ?? []) if (vale(k, u, i)) ks.push(k); });
+        u.formas.forEach((f, i) => { if (f.length === 1 || (f.length > 0 && onde === 'o')) for (const t of de(f[0])) for (const k of m.get(t) ?? []) if (vale(k, u, i)) ks.push(k); });
         return ks;
       },
     };
@@ -928,7 +931,9 @@ export class Busca {
     const U = av.uns;
     const { formas, ultima } = av;
     const doDig = (it: Item) => ent.carros.some((c) => doCarro(it, c));
-    const grupoCarro = (it: Item) => (ent.carros.length && doDig(it) ? 0 : ent.marcas.includes(it.b) ? 1 : 2);
+    // (apelido de carro unido digitado, "modulo c180": as que dizem C180 antes das outras do Classe C)
+    const doApelido = (it: Item) => !ent.apelidos.length || ent.apelidos.some((c) => doCarro(it, c));
+    const grupoCarro = (it: Item) => (ent.carros.length && doDig(it) ? (doApelido(it) ? 0 : 1) : ent.marcas.includes(it.b) ? 2 : 3);
     const temCarro = ent.carros.length > 0 || ent.marcas.length > 0;
     // o nome da peça começa pela palavra buscada (ou uma forma dela: "sinaleira" -> "Lanterna"): sobe
     // ("farol" -> "Farol esquerdo" antes de "Interruptor farol")
@@ -1069,7 +1074,7 @@ export class Busca {
         const fortes = new Set([...cats].filter(([, n]) => n >= max * 0.3).map(([cat]) => cat));
         const daPalavra = (it: Item) => nomeTem.has(it.k) || fortes.has(it.c);
         const frente = (xs: Item[]) => [...xs.filter(daPalavra), ...xs.filter((x) => !daPalavra(x))];
-        if (temCarro) base = [...frente(base.filter((it) => grupoCarro(it) === 0)), ...frente(base.filter((it) => grupoCarro(it) === 1)), ...base.filter((it) => grupoCarro(it) === 2)];
+        if (temCarro) base = [...frente(base.filter((it) => grupoCarro(it) === 0)), ...frente(base.filter((it) => grupoCarro(it) === 1)), ...frente(base.filter((it) => grupoCarro(it) === 2)), ...base.filter((it) => grupoCarro(it) === 3)];
         else base = frente(base);
       }
     }

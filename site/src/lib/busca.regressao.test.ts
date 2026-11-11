@@ -250,3 +250,15 @@ describe('busca: o que a pessoa digitou, sem o carro (o pedido do pátio)', () =
     expect(bb.semCarroQ('farol')).toBe('farol');
   });
 });
+
+describe('busca: apelido de carro unido digitado', () => {
+  it('"modulo c180": os módulos do Classe C, com os que dizem C180 primeiro', () => {
+    const r = b().procurar({ q: 'modulo c180' });
+    const diz = r.map((it) => (it.ms ?? [it.m]).includes('C180'));
+    expect(r.length).toBeGreaterThan(diz.filter(Boolean).length);
+    expect(r.every((it) => (it.ms ?? [it.m]).includes('Classe C'))).toBe(true);
+    // dentro das exatas, nenhuma sem "C180" antes de uma com
+    const bb = b(); const ex = bb.procurar({ q: 'modulo c180' }).slice(0, bb.nExatas).map((it) => (it.ms ?? [it.m]).includes('C180'));
+    expect(ex.lastIndexOf(true)).toBeLessThan(ex.indexOf(false) === -1 ? ex.length : ex.indexOf(false));
+  });
+});
