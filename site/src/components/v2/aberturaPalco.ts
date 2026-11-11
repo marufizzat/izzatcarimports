@@ -6,7 +6,7 @@
 //   - paralaxe pelo ponteiro (só mouse), deriva em CSS; tudo pausa fora da tela ou com a aba escondida;
 //   - celular/tablet: o palco fica abaixo do cartão e dorme (data-ab-dorme) até chegar na tela, depois do load;
 //   - prefers-reduced-motion e aparelho fraco (html.leve): a mesma cena, parada; trocas secas.
-import { EVENTO, lerMeuCarro, type MeuCarro } from '../../lib/meuCarro';
+import { EVENTO, lerMeuCarro, carregarGaragem, type MeuCarro } from '../../lib/meuCarro';
 import { ARQUIVO_CARRO } from '../../lib/chegouCarro';
 import { whatsUrl } from '../../lib/whats';
 import { palavraViva, contarBlocos, escolherAtalhos, linkAtalho, pecasTxt, lugaresEstreitos, type IndiceCarro, type Atalho } from '../../lib/abertura';
@@ -46,10 +46,11 @@ export function montarAbertura(sec: HTMLElement) {
     trocar();
     const depois = resto?.getBoundingClientRect();
     h1.classList.add('ab-anima');
-    const a = palavra.animate([{ opacity: 0, transform: 'translateY(.32em)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2, .9, .25, 1.12)' });
+    // a palavra nova entra varrendo da esquerda, no passo do "precisa?" que desliza (uma nunca fica em cima da outra)
+    const a = palavra.animate([{ opacity: .2, clipPath: 'inset(-.2em 100% -.2em 0)' }, { opacity: 1, clipPath: 'inset(-.2em 0 -.2em 0)' }], { duration: 280, easing: 'cubic-bezier(.2, .8, .2, 1)' });
     a.onfinish = a.oncancel = () => { if (palavraAgora === t) h1.classList.remove('ab-anima'); };
     if (resto && antes && depois && Math.abs(antes.top - depois.top) < 4)
-      resto.animate([{ transform: `translateX(${antes.left - depois.left}px)` }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+      resto.animate([{ transform: `translateX(${antes.left - depois.left}px)` }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2, .8, .2, 1)' });
     // o traço se desenha de novo (dois nomes para a mesma animação: recomeça sem forçar layout)
     if (pincel) { const outra = pincel.classList.contains('ab-traca') ? 'ab-traca2' : 'ab-traca'; pincel.classList.remove('ab-traca', 'ab-traca2'); pincel.classList.add(outra); }
   }
@@ -165,14 +166,30 @@ export function montarAbertura(sec: HTMLElement) {
     }
   }
 
-  /** A arte do carro: duas <img> que se revezam (a nova só aparece carregada: dissolvência, nunca um buraco). */
+  /** A arte do carro salvo. O carro escolhido no seletor já traz a chave (a/as); o salvo por outra página, ou antes de
+   *  a arte existir, não traz: a chave vem da garagem (/dados/meu-carro.json, o mesmo pedido do seletor). null = o
+   *  modelo não tem arte. */
+  type Arte = { a: string; as: number[] };
+  type GaragemArte = { marcas: { n: string; modelos: { n: string; c: number; ya: [number, number][]; a?: string; as?: number[] }[] }[] };
+  async function arteDe(c: MeuCarro): Promise<Arte | null> {
+    if (c.a) return { a: c.a, as: c.as ?? [] };
+    try {
+      const g = await carregarGaragem<GaragemArte>();
+      const mo = g.marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n === c.m);
+      return mo?.a ? { a: mo.a, as: mo.as ?? [] } : null;
+    } catch { return null; }
+  }
+
+  /** Põe a arte no palco: duas <img> que se revezam (a nova só aparece carregada: dissolvência, nunca um buraco).
+   *  Sem arte (null): o palco fica no desenho "sem carro" (data-ab-semarte: os atalhos maiores, no meio). */
   let autoVez = 0;
-  function arteDoCarro(c: MeuCarro | null) {
+  function mostrarArte(arte: Arte | null, semArte = false) {
     const minha = ++autoVez;
+    palco.toggleAttribute('data-ab-semarte', semArte);
     const atual = autos.find((a) => a.hasAttribute('data-on'));
-    if (!c?.a) { autos.forEach((a) => a.removeAttribute('data-on')); return; }
-    const src = `/arte/v2/carro-${c.a}.webp`;
-    const ws = c.as ?? [];
+    if (!arte) { autos.forEach((a) => a.removeAttribute('data-on')); return; }
+    const src = `/arte/v2/carro-${arte.a}.webp`;
+    const ws = arte.as;
     const srcset = ws.map((w, i) => `${i === ws.length - 1 ? src : src.replace(/\.webp$/, `-${w}.webp`)} ${w}w`).join(', ');
     if (atual?.getAttribute('src') === src) return;
     const nova = autos.find((a) => a !== atual) ?? autos[0];
@@ -196,7 +213,7 @@ export function montarAbertura(sec: HTMLElement) {
     carroAgora = null;
     pedido++;
     aplicar('');
-    arteDoCarro(null);
+    mostrarArte(null);
     whatsDoSelo(null);
     dizer();
     if (comecou) entrar();
@@ -212,12 +229,14 @@ export function montarAbertura(sec: HTMLElement) {
     if (mudou) aplicar('carro');
     if (mudou && !primeira) brilhar(true);
     if (!comecou) return; // palco dormindo (celular): a arte e a conta ficam para quando ele acordar
-    arteDoCarro(c);
+    // a arte entra assim que se sabe qual é (não espera a conta); modelo sem arte: o desenho "sem carro"
+    const arte = arteDe(c).then((x) => { if (meu === pedido) mostrarArte(x, !x); return x; });
     let d: IndiceCarro | null = null;
     try {
       const r = await fetch(ARQUIVO_CARRO(c.b, c.m));
       if (r.ok) d = await r.json();
     } catch { /* sem rede: o carro fica no palco, sem os atalhos */ }
+    await arte; // os atalhos já entram no desenho certo (com ou sem a arte do carro)
     if (meu !== pedido) return;
     if (!d) { aplicar('carro'); return; }
     let conta = contarBlocos(d, c.m, c.y);
@@ -243,6 +262,13 @@ export function montarAbertura(sec: HTMLElement) {
   let marcaAgora = '';
   function olharSeletor() {
     const corpo = conteudo?.querySelector<HTMLElement>('.mc-corpo');
+    if (corpo?.dataset.etapa === 'pronto') {
+      // o seletor está mostrando um carro e a abertura não sabe (carro que só a garagem reconhece, apelido migrado
+      // na leitura, outra aba): segue o seletor, sem festa
+      const c = lerMeuCarro();
+      if (c && (estadoAgora !== 'carro' || !carroAgora || carroAgora.b !== c.b || carroAgora.m !== c.m || (carroAgora.y ?? null) !== (c.y ?? null))) comCarro(c, true);
+      return;
+    }
     if (!corpo || corpo.dataset.etapa !== 'modelo') return;
     const b = conteudo!.querySelector<HTMLElement>('.mc-campo-cheio[data-alvo="marca"] b')?.textContent?.trim() || '';
     if (!b || (b === marcaAgora && estadoAgora === 'marca')) return;
@@ -252,7 +278,7 @@ export function montarAbertura(sec: HTMLElement) {
     dizer(null, null, b);
     brilhar(true);
     aplicar('marca');
-    arteDoCarro(null);
+    mostrarArte(null);
     if (comecou) entrar();
   }
   if (conteudo) new MutationObserver(olharSeletor).observe(conteudo, { childList: true });
