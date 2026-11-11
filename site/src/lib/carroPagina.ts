@@ -73,8 +73,8 @@ export function htmlGrupo(c: string, total: number, cartoes: string, hrefMais: s
   const k = chaveGrupo(c), nome = esc(nomeGrupo(c));
   const mais = total > POR_GRUPO_CELULAR
     ? `<a class="gp-mais${classeMais(total)}" href="${esc(hrefMais)}">${esc(textoMais(total, c))}</a>` : '';
-  return `<section class="gp-grupo" id="${k}" data-c="${esc(c)}" aria-labelledby="${k}-t"><h3 class="gp-titulo" id="${k}-t">${nome} <span class="num">${total.toLocaleString('pt-BR')}</span></h3>`
-    + `<div class="gp-grade">${cartoes}</div>${mais}</section>`;
+  return `<div class="gp-grupo" id="${k}" data-c="${esc(c)}"><h3 class="gp-titulo">${nome} <span class="num">${total.toLocaleString('pt-BR')}</span></h3>`
+    + `<div class="gp-grade">${cartoes}</div>${mais}</div>`;
 }
 /** Uma ficha da barra. */
 export const htmlFicha = (c: string, n: number) =>
@@ -92,7 +92,8 @@ export function iniciarPaginaCarro() {
   const dadosEm = secao.dataset.dados || '';
   const B = secao.dataset.b || '', M = secao.dataset.m || '', base = secao.dataset.base || '/catalogo.html';
   const total = Number(secao.dataset.n || 0);
-  const ordem: string[] = (secao.dataset.ordem || '').split('|').filter(Boolean);
+  // a ordem da loja (o desempate das famílias com a mesma contagem): a dos grupos que vieram prontos
+  const ordem: string[] = [...secao.querySelectorAll<HTMLElement>('.gp-estatico > .gp-grupo')].map((g) => g.dataset.c || '');
   const eh = (c: MeuCarro | null): c is MeuCarro => !!c && norm(c.b) === norm(B) && norm(c.m) === norm(M);
   const nf = new Intl.NumberFormat('pt-BR');
   const pecasTxt = (x: number) => `${nf.format(x)} ${x === 1 ? 'peça' : 'peças'}`;
@@ -237,9 +238,11 @@ export function iniciarPaginaCarro() {
       const porFam = new Map(agrupar(itens, ordem).map((g) => [g.c, g.itens]));
       for (const grade of vazios) {
         const l = porFam.get(grade.closest<HTMLElement>('.gp-grupo')?.dataset.c || '') ?? [];
-        grade.innerHTML = l.slice(0, POR_GRUPO).map(cartao).join('');
+        // meia fileira do PC por tarefa (com CPU 4× o grupo inteiro passava de 50 ms)
+        grade.innerHTML = l.slice(0, 4).map(cartao).join('');
         grade.removeAttribute('data-espera');
-        await pausa();   // um grupo por tarefa
+        await pausa();
+        if (l.length > 4) { grade.insertAdjacentHTML('beforeend', l.slice(4, POR_GRUPO).map(cartao).join('')); await pausa(); }
       }
     } catch { /* sem rede: ficam o título e o "Ver as N" (o catálogo mostra) */ }
   }
@@ -281,6 +284,7 @@ export function iniciarPaginaCarro() {
       if (fila) fila.innerHTML = grupos.map((g) => htmlFicha(g.c, g.itens.length)).join('');
       fichaAtiva = null;
       estatico.hidden = true;
+      for (const g of estatico.children) (g as HTMLElement).hidden = true;   // voltam aos poucos no "Todos"
       caixa.hidden = false;
       filtrarProntos(null);
       textos(y, n);
@@ -293,13 +297,25 @@ export function iniciarPaginaCarro() {
       filtrarLista(y, new Set(itens.filter((it) => serveNoAno(it, y)).map((it) => `/peca/${it.h}.html`)));
     } catch { /* sem rede: fica a vista de todos os anos com os cartões do ano (filtrarProntos) */ }
   }
-  function verTodos() {
-    if (doAno) doAno.hidden = true;
-    if (estatico) estatico.hidden = false;
+  /** De volta a todos os anos. Os grupos voltam um por tarefa (os ~160 cartões de uma vez eram um quadro de 90–170 ms
+   *  num celular lento); a vista do ano é esvaziada (menos nós para quem percorre os cartões da página). */
+  let vezTodos = 0;
+  async function verTodos() {
+    const vez = ++vezTodos;
+    if (doAno) { doAno.hidden = true; doAno.innerHTML = ''; }
     if (fila && fila.innerHTML !== filaOrig) { fila.innerHTML = filaOrig; fichaAtiva = null; }
     filtrarProntos(null);
     textos(null, total);
     filtrarLista(null, null);
+    if (estatico) {
+      estatico.hidden = false;
+      const gs = [...estatico.children] as HTMLElement[];
+      for (let i = 0; i < gs.length; i++) {
+        if (!gs[i].hidden) continue;
+        if (i > 0) { await pausa(); if (vez !== vezTodos || ano != null) return; }
+        gs[i].hidden = false;
+      }
+    }
     pedirAcompanhar();
   }
 
@@ -317,7 +333,7 @@ export function iniciarPaginaCarro() {
     ano = y;
     const chip = chips.find((c) => (c.dataset.y ? Number(c.dataset.y) : null) === y);
     chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-    if (y == null) { verTodos(); return; }
+    if (y == null) { void verTodos(); return; }
     // já: os cartões de outro ano saem do que está na tela e os textos mudam; a vista do ano chega em seguida
     filtrarProntos(y);
     textos(y, chip?.dataset.c ? Number(chip.dataset.c) : 0);
@@ -361,7 +377,8 @@ export function iniciarPaginaCarro() {
       if (ano !== y) return;
       salvarMeuCarro(eh(antes) ? { ...antes, y } : { b: B, m: M, y, ...(arte.a ? { a: arte.a, ...(arte.as ? { as: arte.as } : {}) } : {}) });
       desfazer = () => {
-        salvarMeuCarro(antes);
+        // a página primeiro; devolver o carro salvo avisa o cabeçalho e os cartões noutra tarefa
+        setTimeout(() => salvarMeuCarro(antes), 0);
         escolher(anoAntes);
         if (anoAntes != null) centrar(anoAntes, true);
         avisar('Desfeito', false);

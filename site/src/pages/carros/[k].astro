@@ -96,7 +96,7 @@ const fileiras = (n: number) => `--f2:${Math.ceil(Math.min(n, POR_GRUPO_CELULAR)
   </TopoArte>
   <div class="moldura">
     <section class="carro-pecas" id="pecas" aria-labelledby="h-pecas" data-b={c.b} data-m={c.m} data-base={base} data-n={N}
-             data-dados={`/dados/carro/${c.k}.json`} data-ordem={ordem.join('|')}>
+             data-dados={`/dados/carro/${c.k}.json`}>
       <div class="grade-cabeca">
         <h2 class="titulo-secao" id="h-pecas">Peças do {nome}</h2>
         <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{agrupada ? ' · por tipo, as mais novas primeiro' : N > 1 ? ' · as mais novas primeiro' : ''}</p>
@@ -112,13 +112,13 @@ const fileiras = (n: number) => `--f2:${Math.ceil(Math.min(n, POR_GRUPO_CELULAR)
             {grupos.map((g, gi) => {
               const k = chaveGrupo(g.c), n = g.itens.length;
               return (
-                <section class="gp-grupo" id={k} data-c={g.c} aria-labelledby={`${k}-t`}>
-                  <h3 class="gp-titulo" id={`${k}-t`}>{nomeGrupo(g.c)} <span class="num">{fmt(n)}</span></h3>
+                <div class="gp-grupo" id={k} data-c={g.c}>
+                  <h3 class="gp-titulo">{nomeGrupo(g.c)} <span class="num">{fmt(n)}</span></h3>
                   {noHtml[gi] > 0
                     ? <div class="gp-grade">{g.itens.slice(0, N > 48 ? noHtml[gi] : n).map((p, i) => <CartaoPeca p={p} eager={gi === 0 && i < 2} />)}</div>
                     : <div class="gp-grade" data-espera style={fileiras(n)}></div>}
                   {n > POR_GRUPO_CELULAR && <a class={`gp-mais${classeMais(n)}`} href={linkGrupo(g.c)}>{textoMais(n, g.c)}</a>}
-                </section>
+                </div>
               );
             })}
           </div>
@@ -199,6 +199,9 @@ const fileiras = (n: number) => `--f2:${Math.ceil(Math.min(n, POR_GRUPO_CELULAR)
   }
 
   /* as fichas de ano dentro da caixa do carro: a fila corre até a borda da caixa no celular; o "Todos" fixo cobre com a cor da caixa */
+  /* as ações na largura toda da coluna do texto: a largura das fichas não depende da largura dos botões (que muda quando a
+     letra do site chega: as fichas mudavam de linha e a página pulava no PC) */
+  :global(.topo-arte-wrap .topo-acoes) { width: 100%; }
   :global(.topo-arte-wrap .anos-carro) { --ac-fundo: #f4f3f0; margin-top: 2px; }
   :global(.topo-arte-wrap.com-disco .anos-carro), :global(.topo-arte-wrap:not(.com-arte) .anos-carro) { --ac-fundo: var(--bg); }
   @media (max-width: 899px) {
