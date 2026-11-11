@@ -106,7 +106,7 @@ function talvezConvidar() {
   const e = lerEstado();
   const ok = podeConvidar(e, {
     agora: Date.now(), standalone: standalone(), nLista: quantos(CHAVE_LISTA), nVistos: quantos(CHAVE_VISTOS),
-    ocupada: !!document.querySelector('.barra-compra, .lst-barra, [data-pagina-offline], dialog[open]'), jaNestaSessao: sessao() === 'convidou',
+    ocupada: !!document.querySelector('.barra-compra, .lst-barra, .rxb-fixo, [data-pagina-offline], dialog[open]'), jaNestaSessao: sessao() === 'convidou',
   });
   if (!ok) return;
   sessao('convidou');

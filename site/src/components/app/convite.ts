@@ -1,6 +1,8 @@
 // O convite para instalar o app (só desce quando vai aparecer: components/app/app.ts decide pelas regras de lib/app.ts).
 // Um cartão fixo embaixo (não empurra nada: sem pulo de layout), discreto, que sai com o "×" e nunca fica por cima da
-// barra fixa da peça ou da lista (nessas páginas ele nem aparece). Android/Chrome: "Instalar" abre a janela do Chrome.
+// barra fixa da peça ou da lista (nessas páginas ele nem aparece) nem do pé da lista do conserto do Raio-x ("Bati o carro",
+// .rxb-fixo: preso ao pé da tela; com ele na página o convite some e volta quando a pessoa sai do modo: ele cobria o
+// "Pedir o conserto no WhatsApp"). Android/Chrome: "Instalar" abre a janela do Chrome.
 // iPhone (sem a janela): a dica de 1 linha, Compartilhar (o ícone azul do Safari) → Adicionar à Tela de Início.
 const CSS = `
 .app-convite{position:fixed;z-index:45;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));margin:0 auto;max-width:440px;display:grid;
@@ -25,6 +27,7 @@ background:var(--accent,#ff6a00);color:#1d1d1f;cursor:pointer;white-space:nowrap
 .app-convite .ac-x svg{width:20px;height:20px}
 .app-convite.sai{transition:transform .25s ease,opacity .25s ease;transform:translateY(24px);opacity:0}
 @media (max-width:359px){.app-convite{grid-template-columns:minmax(0,1fr) auto}.app-convite img{display:none}}
+html:has(.rxb-fixo) .app-convite{display:none}
 `;
 const X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 // o ícone "Compartilhar" do Safari (quadrado com a seta para cima)
@@ -42,7 +45,7 @@ export function mostrarConvite(o: { ios: boolean; instalar: () => Promise<boolea
   c.innerHTML = `<img src="/icone-192.png" alt="" width="44" height="44">`
     + `<div class="ac-txt"><b>Instale o app da Izzat Car</b>`
     + (o.ios ? `<span>Toque em ${COMPARTILHAR} → <b style="font-size:inherit;font-weight:700">Adicionar à Tela de Início</b></span>`
-      : `<span>Abre na hora e guarda a sua lista.</span>`)
+      : `<span>Fica na tela de início e guarda a sua lista.</span>`)
     + `</div><div class="ac-acoes">${o.ios ? '' : '<button type="button" class="ac-instalar">Instalar</button>'}`
     + `<button type="button" class="ac-x" aria-label="Agora não">${X}</button></div>`;
   const sair = () => { c.classList.add('sai'); setTimeout(() => c.remove(), 260); };
