@@ -5,8 +5,10 @@
      "Você está sem conexão: mostrando a última versão que você viu" posta no próprio HTML (sem pulo). Sem cópia:
      /offline.html. Resposta 404/410 (peça vendida) passa direto e apaga a cópia daquela página.
    - /dados/*.json: rede primeiro (preço e estoque mudam a cada rodada); a cópia só para a página que já é cópia.
-   - /_astro/* (nome com hash, nunca muda): cache primeiro. Capas e artes: a guardada na hora e a nova por trás
-     (até 300, no máximo 7 dias).
+   - /_astro/* (nome com hash, nunca muda): cache primeiro. Capas e artes: a guardada na hora; a nova por trás quando a
+     guardada passa de 1 h (até 300, no máximo 7 dias). A foto que ainda NÃO está guardada nem passa pelo SW: vai direto
+     à rede com a prioridade do navegador (o SW respondendo cada foto nova da página preparada atrasava o CSS dela em
+     ~300 ms no PC) e é guardada depois, do cache HTTP, sem baixar de novo.
    - Nunca toca: outro domínio (WhatsApp, Mercado Livre, fotos do ML, GA, Pixel), o que não é GET, pedaço de arquivo
      (Range), o prerender/prefetch do Chrome (vai direto para a rede, como sem o service worker) e o fetch do navegar.js.
    - Botão de pânico: /sw-desligar.txt com "1" (conferido na ativação e a cada 6 h; a página confere a cada carga). */
@@ -18,6 +20,7 @@ const OFFLINE = '/offline.html';
 const PRAZO_HTML = 3000;
 const SEIS_HORAS = 6 * 3600 * 1000;
 const SETE_DIAS = 7 * 24 * 3600 * 1000;
+const UMA_HORA = 3600 * 1000;
 // o casco troca com a versão; os outros só com o formato (R: trocar à mão se o jeito de guardar mudar)
 const R = 'v1';
 const CACHE = {
@@ -34,6 +37,14 @@ let desligado = false;
 // os caches abertos ficam guardados (abrir de novo a cada pedido custa uma ida ao armazenamento do navegador)
 const abertos = {};
 const abrir = (nome) => (abertos[nome] = abertos[nome] || caches.open(nome));
+// o que está guardado em /_astro/ e nas artes, na memória: o fetch decide NA HORA se responde (só o que tem) ou deixa o
+// navegador ir à rede. Carrega quando o SW acorda (enquanto não carrega, tudo vai à rede, como sem o SW).
+const indice = { [CACHE.astro]: new Set(), [CACHE.artes]: new Set() };
+const chaveDe = (r) => { const u = new URL(r.url); return u.pathname + u.search; };
+// (só o cache que existe: abrir um que o botão de pânico apagou o criaria de novo, vazio)
+for (const nome of Object.keys(indice)) {
+  caches.has(nome).then((tem) => tem && abrir(nome).then((c) => c.keys()).then((ks) => ks.forEach((r) => indice[nome].add(chaveDe(r))))).catch(() => {});
+}
 // páginas abertas a partir de uma cópia (a faixa está na tela): só elas recebem a cópia dos /dados/ sem rede
 const copias = new Set();
 
@@ -83,10 +94,16 @@ self.addEventListener('fetch', (event) => {
   }
   const p = url.pathname;
   if (p === '/sw.js' || p === '/sw-desligar.txt') return;
-  if (p.startsWith('/dados/')) event.respondWith(dados(event, p + url.search));
-  else if (p.startsWith('/_astro/')) event.respondWith(imutavel(event, p));
-  else if (ARTES.test(p)) event.respondWith(artes(event, p + url.search));
-  else if (CASCO.includes(p)) event.respondWith(casco(event, p));
+  if (p.startsWith('/dados/')) { event.respondWith(dados(event, p + url.search)); return; }
+  // sem rede (ou na página que já é a cópia): tudo o que estiver guardado
+  const semRede = !self.navigator.onLine || copias.has(event.clientId);
+  const chave = p + url.search;
+  // CSS e scripts com hash: sempre pelo SW (guardados na hora: a cópia sem conexão precisa deles; medido, não atrasa)
+  if (p.startsWith('/_astro/')) event.respondWith(imutavel(event, p));
+  else if (ARTES.test(p)) {
+    if (indice[CACHE.artes].has(chave) || CASCO.includes(chave) || semRede) event.respondWith(artes(event, chave));
+    else event.waitUntil(guardarDepois(CACHE.artes, chave, LIMITE.artes));
+  } else if (CASCO.includes(p) && semRede) event.respondWith(casco(event, p));
   // o resto (HTML baixado pelo navegar.js, scripts sem hash, ícones da raiz...): direto para a rede, como sem o SW
 });
 
@@ -97,7 +114,7 @@ function navegar(event, url) {
   // a reação que guarda vem ANTES de a página ler o corpo (clone antes do uso)
   event.waitUntil(rede.then((r) => {
     if (r.status === 404 || r.status === 410) return apagar(CACHE.paginas, chave);
-    if (paginaBoa(r)) return guardar(CACHE.paginas, chave, r.clone(), LIMITE.paginas);
+    if (paginaBoa(r)) return guardarPagina(chave, r.clone());
   }).catch(() => {}));
   return responder(event, chave, rede);
 }
@@ -117,7 +134,9 @@ async function responder(event, chave, rede) {
   }
   // sem cópia e a rede só está lenta: espera por ela (a página sem conexão seria mentira)
   if (motivo === 'lenta') { try { return await rede; } catch (e) { /* caiu de vez */ } }
-  return (await (await abrir(CACHE.casco)).match(OFFLINE)) || Response.error();
+  const off = await (await abrir(CACHE.casco)).match(OFFLINE);
+  if (off && event.resultingClientId) copias.add(event.resultingClientId); // as fotos guardadas do "Você viu" saem do cache
+  return off || Response.error();
 }
 
 const paginaBoa = (r) => r && r.status === 200 && r.type === 'basic' && !r.redirected && /text\/html/.test(r.headers.get('content-type') || '');
@@ -140,10 +159,20 @@ async function comFaixa(resp, motivo) {
   return new Response(novo, { status: 200, statusText: 'OK', headers: h });
 }
 
+// a cópia da página e, na fila, o CSS e os scripts dela (sem o CSS guardado, a cópia sem conexão abriria sem desenho)
+async function guardarPagina(chave, r) {
+  const html = await r.clone().text();
+  await guardar(CACHE.paginas, chave, r, LIMITE.paginas);
+  const re = /<link rel="stylesheet" href="(\/_astro\/[^"?#]+\.css)"|<script type="module" src="(\/_astro\/[^"?#]+\.js)"/g;
+  let depois = null;
+  for (const m of html.matchAll(re)) { const u = m[1] || m[2]; if (!indice[CACHE.astro].has(u)) depois = guardarDepois(CACHE.astro, u, LIMITE.astro); }
+  if (depois) await depois; // o SW fica acordado até a fila andar
+}
+
 async function guardarDaRede(caminho) {
   try {
     const r = await fetch(caminho, { credentials: 'same-origin' });
-    if (paginaBoa(r)) await guardar(CACHE.paginas, new URL(caminho, self.location.origin).pathname, r, LIMITE.paginas);
+    if (paginaBoa(r)) await guardarPagina(new URL(caminho, self.location.origin).pathname, r);
   } catch (e) { /* sem rede: fica sem cópia */ }
 }
 
@@ -177,13 +206,37 @@ async function imutavel(event, chave) {
 async function artes(event, chave) {
   const cache = await abrir(CACHE.artes);
   const c = (await cache.match(chave)) || (CASCO.includes(chave) ? await (await abrir(CACHE.casco)).match(chave) : undefined);
+  const id = c ? idade(c) : Infinity;
+  // a guardada com até 1 h: sem pedido nenhum. Depois: a guardada na hora e a nova por trás (até 7 dias)
+  if (id < UMA_HORA) return c;
   const rede = fetch(event.request);
   event.waitUntil(rede.then((r) => {
     if (r.ok && r.type === 'basic') return guardar(CACHE.artes, chave, r.clone(), LIMITE.artes);
-    if (r.status === 404) return cache.delete(chave);
+    if (r.status === 404) { indice[CACHE.artes].delete(chave); return cache.delete(chave); }
   }).catch(() => {}));
-  if (c && idade(c) < SETE_DIAS) return c;
+  if (id < SETE_DIAS) return c;
   try { return await rede; } catch (e) { if (c) return c; throw e; }
+}
+
+// o que foi direto à rede é guardado depois (do cache HTTP: o navegador acabou de baixar), em fila, sem pressa
+const fila = new Map();
+let andando = null;
+function guardarDepois(nome, chave, limite) {
+  if (desligado) return Promise.resolve();
+  fila.set(chave, [nome, limite]);
+  andando = andando || esperar(1500).then(async () => {
+    while (fila.size && !desligado) {
+      // o CSS primeiro (é o que a cópia precisa para abrir desenhada)
+      const [u, [n, l]] = [...fila.entries()].find(([x]) => x.endsWith('.css')) || fila.entries().next().value;
+      fila.delete(u);
+      if (indice[n] && indice[n].has(u)) continue;
+      try {
+        const r = await fetch(u, { credentials: 'same-origin' });
+        if (r.ok && r.type === 'basic') await guardar(n, u, r, l);
+      } catch (e) { /* sem rede: fica para a próxima vez que a página pedir */ }
+    }
+  }).finally(() => { andando = null; });
+  return andando;
 }
 
 // ---- casco fora do /_astro (ícone, logo): rede primeiro, o guardado sem rede ----
@@ -201,14 +254,15 @@ async function guardar(nome, chave, r, limite) {
   if (desligado) return;
   const cache = await abrir(nome);
   const velho = await cache.match(chave);
-  if (velho && igual(velho, r)) return; // o mesmo arquivo (ETag): não grava de novo
+  if (velho && igual(velho, r)) { if (indice[nome]) indice[nome].add(chave); return; } // o mesmo arquivo (ETag): não grava de novo
   await cache.put(chave, r);
+  if (indice[nome]) indice[nome].add(chave);
   // apara no máximo a cada 5 s por cache: as entradas mais antigas (a ordem das chaves é a da gravação) saem
   const agora = Date.now();
   if (aparado[nome] && agora - aparado[nome] < 5000) return;
   aparado[nome] = agora;
   const ks = await cache.keys();
-  for (let i = 0; i < ks.length - limite; i++) await cache.delete(ks[i]);
+  for (let i = 0; i < ks.length - limite; i++) { await cache.delete(ks[i]); if (indice[nome]) indice[nome].delete(chaveDe(ks[i])); }
 }
 function igual(a, b) {
   const ea = a.headers.get('etag'), eb = b.headers.get('etag');
@@ -225,7 +279,7 @@ async function vencidas() {
   const cache = await abrir(CACHE.artes);
   for (const k of await cache.keys()) {
     const r = await cache.match(k);
-    if (r && idade(r) >= SETE_DIAS) await cache.delete(k);
+    if (r && idade(r) >= SETE_DIAS) { await cache.delete(k); indice[CACHE.artes].delete(chaveDe(k)); }
   }
 }
 
@@ -250,6 +304,8 @@ async function checarDesligar(forcar) {
 async function desligar() {
   desligado = true;
   for (const k of Object.keys(abertos)) delete abertos[k];
+  for (const k of Object.keys(indice)) indice[k].clear();
+  fila.clear();
   for (const k of await caches.keys()) if (k.startsWith('izzat-')) await caches.delete(k);
   await self.registration.unregister();
 }
