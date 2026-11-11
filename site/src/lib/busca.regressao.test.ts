@@ -1,37 +1,66 @@
-// Tabela de regressão da busca (rodada 14, cliente oculto 10/11, atrito 6). O gabarito de cada consulta é lido do próprio
-// estoque (lib/busca.regressao.ts): a 1ª peça tem de ser do tipo, do carro e do lado pedidos; quando a peça não existe,
-// nada pode aparecer como achado (zero, ou parecida da família com o aviso). Os casos do relatório ficam escritos à mão.
+// Tabela de regressão da busca (rodada 14, cliente oculto 10/11, atrito 6), em duas partes:
+//
+//  1. AS REGRAS NO ESTOQUE DO DIA (public/dados/busca.json, o que o robô acabou de gerar). O gabarito de cada consulta sai,
+//     por regra, do próprio estoque testado (lib/busca.regressao.ts): a 1ª peça tem de ser do tipo, do carro e do lado
+//     pedidos; quando a peça não existe, nada pode aparecer como achado (zero, ou parecida da família com o aviso). São
+//     invariantes: valem com qualquer estoque. NADA nesta parte pode citar uma peça, um carro que "tem" alguma coisa ou
+//     uma contagem: o robô roda isto a cada 30 min e uma venda não pode travar a loja (11/11/2026: a última lanterna do
+//     XC60 vendeu e a rodada 14 foi recusada). A prova: `node scripts/estoque-perturbado.mjs` (30 estoques mexidos).
+//
+//  2. OS CASOS ESCRITOS À MÃO (os do cliente oculto e os da revisão), que citam peças: rodam no ESTOQUE CONGELADO de
+//     09/11/2026 (testes/fixtures/estoque-busca.json), que não muda. Guardam o motor contra mudança de código.
+//
+// As mesmas regras da parte 1 com o estoque congelado mexido (as vendas de 11/11, um tipo inteiro vendido, um carro que
+// some): lib/busca.vendas.test.ts.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { Busca } from './busca';
-import { casos, avaliar } from './busca.regressao';
+import { falhasDe } from './busca.regressao';
 
-const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf8'));
+/** O estoque do dia (o robô gera antes de testar). */
+const dia = JSON.parse(readFileSync('public/dados/busca.json', 'utf8'));
+/** O estoque congelado de 09/11/2026: os casos escritos à mão. */
+const ix = JSON.parse(readFileSync('testes/fixtures/estoque-busca.json', 'utf8'));
 const b = () => new Busca(ix);
 const nomes = (q: string) => b().procurar({ q }).map((it) => it.n);
 
-describe('busca: tabela de regressão (gabarito pelo estoque)', () => {
-  it('todas as consultas geradas acertam (tipo, carro, lado e código; sem achado errado como certo)', () => {
-    const lista = casos(ix);
-    expect(lista.length).toBeGreaterThanOrEqual(120);
-    const { rows } = avaliar(Busca, ix, lista);
-    const falhas = rows.filter((r) => !r.ok).map((r) => `${r.q} | ${r.motivo} | ${r.top1}`);
-    expect(falhas).toEqual([]);
+
+describe('busca: as regras no ESTOQUE DO DIA (valem com qualquer estoque)', () => {
+  it('todas as consultas geradas cumprem as regras (tipo, carro, lado e código; nada errado como achado)', () => {
+    expect(falhasDe(Busca, dia), 'regra da busca quebrada com o estoque de agora (lib/busca.regressao.ts explica cada motivo)').toEqual([]);
   }, 120000);
 
-  it('sem código repetido e com 120+ consultas do jeito de falar, código, carro e lado', () => {
-    const grupos = new Set(casos(ix).map((c) => c.grupo));
-    expect([...grupos].sort()).toEqual(['carro', 'codigo', 'familia', 'lado', 'tipo']);
+  it('o número do anúncio e o código gravado acham a peça (um anúncio e um código quaisquer do estoque)', () => {
+    const bb = new Busca(dia);
+    // qualquer anúncio do estoque, pelo número dele
+    const k = Math.floor(dia.id.length / 2);
+    expect(bb.procurar({ q: dia.id[k] }).map((it) => it.id)).toEqual([dia.id[k]]);
+    // qualquer código de 8 números do estoque, com "cod" na frente e com espaço no meio
+    const kc = dia.o.findIndex((o: string) => /^\d{8}$/.test(o));
+    if (kc >= 0) {
+      const cod = dia.o[kc];
+      expect(bb.procurar({ q: `cod ${cod}` })[0].o.split(' ')).toContain(cod);
+      expect(bb.procurar({ q: `${cod.slice(0, 4)} ${cod.slice(4)}` })[0].o.split(' ')).toContain(cod);
+    }
   });
 });
 
-describe('busca: os casos do cliente oculto (rodada 14)', () => {
+describe('busca: os casos do cliente oculto (rodada 14), no estoque congelado de 09/11', () => {
   it('"sinaleira direita tracker": o Tracker não tem lanterna direita, e a esquerda não aparece como se fosse a certa', () => {
     const bb = b();
     expect(bb.procurar({ q: 'sinaleira direita tracker' })).toEqual([]);
     // (fem: a peça é feminina, "lanterna": a tela escreve "Nenhuma lanterna direita")
     expect(bb.faltou).toEqual({ lado: 'D', pos: undefined, fem: true });
     expect(bb.outrosLados.map((it) => it.l)).toEqual(['E']);
+  });
+
+  it('"retrovisor direito xc60": o XC60 só tem o esquerdo; a lista sai vazia, diz o que faltou e dá o esquerdo de dica', () => {
+    const bb = b();
+    expect(bb.procurar({ q: 'retrovisor direito xc60' })).toEqual([]);
+    expect(bb.ladoDaBusca).toBe('D');
+    expect(bb.faltou?.lado).toBe('D');
+    expect(bb.outrosLados.length).toBeGreaterThan(0);
+    expect(bb.outrosLados.every((x) => x.l === 'E')).toBe(true);
   });
 
   it('"sinaleira do Tracker": uma só exata (a esquerda)', () => {
@@ -94,7 +123,7 @@ describe('busca: os casos do cliente oculto (rodada 14)', () => {
 
 // Revisão independente da rodada 14 (o que barrou a publicação). O juiz completo está em busca.diferencial.test.ts; aqui
 // ficam os casos da revisão escritos um a um, para quem ler saber o que cada regra protege.
-describe('busca: a revisão da rodada 14', () => {
+describe('busca: a revisão da rodada 14, no estoque congelado de 09/11', () => {
   const xc60 = { b: 'Volvo', m: 'XC60', y: 2019 };
   const nome1 = (q: string) => b().procurar({ q })[0]?.n ?? '';
 
@@ -251,7 +280,7 @@ describe('busca: o que a pessoa digitou, sem o carro (o pedido do pátio)', () =
   });
 });
 
-describe('busca: apelido de carro unido digitado', () => {
+describe('busca: apelido de carro unido digitado, no estoque congelado de 09/11', () => {
   it('"modulo c180": os módulos do Classe C, com os que dizem C180 primeiro', () => {
     const r = b().procurar({ q: 'modulo c180' });
     const diz = r.map((it) => (it.ms ?? [it.m]).includes('C180'));
