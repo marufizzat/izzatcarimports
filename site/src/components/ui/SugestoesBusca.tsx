@@ -14,7 +14,7 @@ import {
 import { Busca, capaItem, carroAnos, type Atalho, type Item, type Sugestoes } from '../../lib/busca';
 import { icone } from '../catalogo/etiqueta';
 import { whatsUrl } from '../../lib/whats';
-import { pedidoPatio } from '../../lib/patio';
+import { pedidoPatioAchou } from '../../lib/patio';
 import { lerMeuCarro } from '../../lib/meuCarro';
 import { guardarBusca, lerRecentes, limparRecentes } from '../../lib/buscasRecentes';
 import './sugestoes.css';
@@ -187,7 +187,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
 
   // o pedido do pátio: o texto do campo agora (não o atrasado do debounce), o carro digitado e o salvo
   const linkPatio = comPatio
-    ? whatsUrl(pedidoPatio({ q: textoBusca, carroDaBusca: res?.carros[0] ?? null, meuCarro: lerMeuCarro() }).texto)
+    ? whatsUrl(pedidoPatioAchou({ q: textoBusca, carroDaBusca: res?.carros[0] ?? null, meuCarro: lerMeuCarro(), achadas: res && !res.aproximado ? res.total : 0 }).texto)
     : '';
   const escolher = (op: Op) => {
     if (op.tipo === 'recente') {

@@ -167,7 +167,7 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
           <span className="etiqueta-confia"><span>90 dias de garantia</span>{it.q === 1 && <b>Peça única</b>}</span>
         </div>
       </a>
-      <a className="etiqueta-acao" href={linkWhats(msgWhats(it, urlPeca(it.h)))} target="_blank" rel="noopener"
+      <a className="etiqueta-acao" href={linkWhats(msgWhats(it, urlPeca(it.h)))} target="_blank" rel="noopener" data-botao="pedir-cartao"
          aria-label={`Pedir no WhatsApp: ${it.n}`}><Whats />Pedir no WhatsApp</a>
     </div>
   );
@@ -823,7 +823,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
               </div>
               <div className="cat-erro-botoes">
                 <button type="button" className="botao botao-laranja" onClick={carregar}>Tentar de novo</button>
-                <a className="botao botao-linha" href={whatsUrl(`Procuro ${procuro}. Tem no pátio?`)} target="_blank" rel="noopener"><Whats />Chamar no WhatsApp</a>
+                <a className="botao botao-linha" href={whatsUrl(`Procuro ${procuro}. Tem no pátio?`)} target="_blank" rel="noopener" data-botao="chamar-catalogo"><Whats />Chamar no WhatsApp</a>
               </div>
             </div>
           )}
