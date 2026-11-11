@@ -4,6 +4,7 @@
 // Estado: lib/lista.ts (localStorage + evento 'lista'). Toque = retorno na hora e o aviso para o leitor de tela. O botão
 // só PÕE; com a peça na lista, o verde é um link que leva à lista (tocar no verde nunca tira a peça sem avisar: revisão
 // 12, P3.1). Tirar: o "Tirar" escrito ao lado (compra) ou na própria /lista.html.
+import { avisarListaCheia, TXT_LISTA_CHEIA } from '../ui/avisoLista';
 import { lerLista, tem, adicionarNaLista, salvarLista, remover, pecasTxt, EVENTO_LISTA, MAX_LISTA, PAGINA_LISTA, type ItemLista } from '../../lib/lista';
 import { icone } from '../../lib/icones';
 
@@ -150,7 +151,7 @@ export function ligarVaiJunto(raiz: HTMLElement) {
     window.addEventListener(EVENTO_LISTA, pintar);
     b.addEventListener('click', () => {
       const r = adicionarNaLista(item, 'vai-junto');
-      if (r === 'cheia') { avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Mande estas no WhatsApp e comece outra.`); return; }
+      if (r === 'cheia') { avisarLista(TXT_LISTA_CHEIA); avisarListaCheia(); return; }
       pintar();
       na.focus({ preventScroll: true });
       avisarLista(`${nome} está na sua lista de orçamento: ${pecasTxt(lerLista().length)}.`);

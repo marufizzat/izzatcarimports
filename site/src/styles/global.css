@@ -195,15 +195,20 @@
   .etiqueta-cx:hover .etiqueta { box-shadow: 0 0 0 1px var(--line-2), var(--shadow-2); }
   .etiqueta-cx:hover .etiqueta-foto img { transform: scale(1.045); }
 }
-/* selo das peças mais novas: discreto (pílula clara com o ponto laranja), para não gritar em 24 cartões seguidos */
+/* selo das peças mais novas: discreto (pílula clara com o ponto laranja), para não gritar em 24 cartões seguidos.
+   No PÉ da foto, à esquerda (revisão 14, P1-7): o canto de cima à esquerda é do botão da lista e o da direita é do logo
+   da capa; nada fica por cima de nada. É o mesmo lugar do "Serve no seu XC60": quando ele aparece, o "Chegou agora" sai
+   (um selo só no pé da foto; "serve no seu carro" vale mais). Com mouse, some junto quando a faixa do WhatsApp entra. */
 .etiqueta-novo {
-  position: absolute; z-index: 1; top: 10px; left: 10px;
+  position: absolute; z-index: 1; bottom: 10px; left: 10px;
   display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px 0 9px; border-radius: 99px;
   background: rgb(255 255 255 / .94); color: #1d1d1f; font-size: 12px; font-weight: 700; font-stretch: 94%; line-height: 1; white-space: nowrap;
   box-shadow: 0 0 0 1px rgb(16 16 20 / .06), 0 2px 8px -3px rgb(16 16 20 / .28);
+  transition: opacity .2s ease;
 }
 .etiqueta-novo::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgb(255 106 0 / .22); }
-@container etiqueta (max-width: 214px) { .etiqueta-novo { top: 8px; left: 8px; height: 22px; padding: 0 8px 0 7px; gap: 5px; font-size: 11px; } }
+.etiqueta:has(.etiqueta-serve:not([hidden])) .etiqueta-novo { display: none; }
+@container etiqueta (max-width: 214px) { .etiqueta-novo { bottom: 8px; left: 8px; height: 22px; padding: 0 8px 0 7px; gap: 5px; font-size: 11px; } }
 .etiqueta-dados { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; padding: 12px 14px 14px; }
 /* esqueleto do cartão (trilhos da home e "Você também viu" da peça, components/v2/trilhoPessoal.ts): as mesmas classes
    do cartão (a mesma altura), com as linhas em cinza claro até os cartões de verdade chegarem */
@@ -345,24 +350,51 @@
    nome e o preço ficam livres; os cantos são os do cartão naquela altura (retos: a faixa é parte dele, não um botão
    solto). Entra só com um fade curto (sem subir: nada se mexe debaixo do mouse). */
 .etiqueta-acao { display: none; }
-/* "+ Lista": canto de cima da foto, longe do preço e da faixa do WhatsApp. 44 px de toque (sem mudar a altura do cartão:
-   o botão é absoluto, o cartão não se mexe). Soft: branco com a borda clara; na lista, o tom laranja suave. */
+/* Botão da lista de orçamento no cartão (revisão 14, P1-7). Canto de cima à ESQUERDA da foto: o da direita é do logo da
+   capa, o pé é dos selos ("Chegou agora", "Serve no seu…") e, com mouse, da faixa do WhatsApp; o preço fica embaixo. Assim
+   ele nunca cobre selo, logo, preço nem a faixa. UM sinal de mais só: o desenho "lista +" (o mesmo ícone da página da
+   peça); o texto do botão é "Lista" (antes o desenho punha um "+" e o texto outro: "+ + Lista").
+   Celular (< 700 px): redondo, 44×44, só o ícone (o nome acessível diz "Adicionar à Lista de orçamento: <peça>"); o texto
+   fica no botão (letra 0) e volta de 700 px para cima, na pílula "Lista". Área de toque segura: 10 px além do desenho,
+   com os cantos quase retos (::after), para o dedo que erra por pouco não abrir a peça. Absoluto: o cartão não muda de altura. */
 .etiqueta-lista {
-  position: absolute; z-index: 3; top: 10px; right: 10px; min-height: 44px; min-width: 44px; padding: 0 13px 0 11px;
-  display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; cursor: pointer;
-  background: rgb(255 255 255 / .96); color: var(--ink); font: inherit; font-size: 14px; font-weight: 650; white-space: nowrap;
-  box-shadow: inset 0 0 0 1px var(--line-2), 0 4px 12px -6px rgb(0 0 0 / .22);
+  position: absolute; z-index: 3; top: 8px; left: 8px; width: 44px; height: 44px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 999px; cursor: pointer;
+  background: rgb(255 255 255 / .96); color: var(--ink); font: inherit; font-size: 0; font-weight: 650; line-height: 1; white-space: nowrap;
+  box-shadow: inset 0 0 0 1px var(--line-2), 0 4px 12px -6px rgb(0 0 0 / .26);
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: background-color .2s, transform .15s;
 }
-.etiqueta-lista::before { content: ""; width: 10px; height: 10px; flex: none; background: var(--accent-text);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 1v8M1 5h8' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 1v8M1 5h8' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
-.etiqueta-lista.na { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 70%); }
-.etiqueta-lista.na::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.2 4 7.6 8.6 2.6' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.2 4 7.6 8.6 2.6' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.etiqueta-lista::before { content: ""; width: 20px; height: 20px; flex: none; background: var(--accent-text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 12H3M16 6H3M16 18H3M18 9v6M21 12h-6'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 12H3M16 6H3M16 18H3M18 9v6M21 12h-6'/%3E%3C/svg%3E") center / contain no-repeat; }
+.etiqueta-lista::after { content: ""; position: absolute; inset: -10px; border-radius: 18px; }
+.etiqueta-lista.na { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 70%), 0 4px 12px -6px rgb(0 0 0 / .2); }
+.etiqueta-lista.na::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 12H3M16 6H3M16 18H3m12-5.5 2.2 2.2L22 10'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 12H3M16 6H3M16 18H3m12-5.5 2.2 2.2L22 10'/%3E%3C/svg%3E"); }
 .etiqueta-lista:hover { filter: brightness(.98); }
-.etiqueta-lista:active { transform: scale(.96); }
+.etiqueta-lista:active { transform: scale(.94); }
 .etiqueta-lista:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 2px; }
-@media (max-width: 359px) { .etiqueta-lista { font-size: 13px; padding: 0 10px 0 9px; } .etiqueta-lista::before { display: none; } }
+@media (min-width: 700px) {
+  .etiqueta-lista { top: 10px; left: 10px; width: auto; min-width: 44px; padding: 0 14px 0 11px; font-size: 14px; }
+  .etiqueta-lista::before { width: 18px; height: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .etiqueta-lista { transition: none; } }
+/* Aviso à vista da lista (components/ui/avisoLista.ts): a lista cheia (30 peças) não podia avisar só o leitor de tela
+   (revisão 14, item 26). Pílula grafite no pé da tela, acima da barra de compra; some sozinha. */
+.aviso-lista {
+  position: fixed; z-index: 60; left: 12px; right: 12px; bottom: calc(18px + env(safe-area-inset-bottom)); margin-inline: auto;
+  display: flex; align-items: center; gap: 12px; width: fit-content; max-width: min(460px, calc(100% - 24px)); padding: 12px 14px 12px 16px;
+  border-radius: 16px; background: #1d1d1f; color: #f5f5f7; font-size: 14.5px; font-weight: 560; line-height: 1.35;
+  box-shadow: 0 12px 32px -10px rgb(0 0 0 / .45), 0 0 0 1px rgb(255 255 255 / .06);
+  opacity: 0; transform: translateY(10px); transition: opacity .22s ease, transform .22s cubic-bezier(.2,.8,.2,1);
+}
+.aviso-lista[hidden] { display: none; }
+.aviso-lista.visivel { opacity: 1; transform: none; }
+.aviso-lista a { flex: none; display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 10px; background: rgb(255 255 255 / .12); color: #fff; font-weight: 700; white-space: nowrap; }
+.aviso-lista a:hover { background: rgb(255 255 255 / .2); }
+.aviso-lista a:focus-visible { outline: 3px solid #ffb27a; outline-offset: 2px; }
+body:has(.barra-compra.visivel) .aviso-lista { bottom: calc(92px + env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion: reduce) { .aviso-lista { transition: none; transform: none; } }
 @media (hover: hover) and (pointer: fine) {
   .etiqueta-acao {
     position: absolute; z-index: 2; left: 0; right: 0; top: calc(100cqi - 44px); height: 44px;
@@ -376,6 +408,7 @@
   .etiqueta-acao svg { width: 18px; height: 18px; flex: none; }
   .etiqueta-cx:hover .etiqueta-acao, .etiqueta-cx:focus-within .etiqueta-acao { opacity: 1; pointer-events: auto; }
   .etiqueta-cx:hover .etiqueta-serve, .etiqueta-cx:focus-within .etiqueta-serve { opacity: 0; }
+  .etiqueta-cx:hover .etiqueta-novo, .etiqueta-cx:focus-within .etiqueta-novo { opacity: 0; }
   .etiqueta-acao:hover { filter: brightness(1.05); }
   /* teclado: o anel por dentro da faixa (por fora ele cobriria o nome do cartão) */
   .etiqueta-acao:focus-visible { outline: 3px solid #1d1d1f; outline-offset: -3px; }
