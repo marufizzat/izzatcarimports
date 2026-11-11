@@ -26,7 +26,9 @@ let memo: GaragemG | null = null;
 
 /** Arte do carro (marca + modelo exatamente como nos dados), se existir. */
 function arteDo(b: string, m: string): Pick<ModeloG, 'a' | 'as'> {
-  const k = resumo().carros.find((c) => c.b === b && c.m === m)?.k;
+  const r = resumo();
+  // o apelido salvo (C180 -> Classe C) usa a arte do principal
+  const k = r.carros.find((c) => c.b === b && c.m === m)?.k ?? r.aliases?.find((a) => a.b === b && a.de === m)?.para;
   if (!k || !existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`))) return {};
   const ss = srcsetArte(`/arte/v2/carro-${k}.webp`);
   const as = ss ? [...ss.matchAll(/ (\d+)w/g)].map((x) => Number(x[1])) : [];
@@ -36,11 +38,14 @@ function arteDo(b: string, m: string): Pick<ModeloG, 'a' | 'as'> {
 export function garagem(): GaragemG {
   if (memo) return memo;
   const lista = marcasVisiveis();
+  // apelido de carro unido (C180, New Fiesta): sai do seletor (a peça conta no principal); o Meu carro salvo com ele segue
+  const apelidos = new Set((resumo().aliases ?? []).map((a) => `${a.b}|${a.de}`));
   const modelos = new Map<string, Map<string, { n: string; c: number; ya: Map<number, number> }>>(lista.map((m) => [m.n, new Map()]));
   for (const p of pecas()) {
     const doMarca = p.b && p.m ? modelos.get(p.b) : undefined;
     if (!doMarca) continue;
     for (const m of modelosDa(p)) {
+      if (apelidos.has(`${p.b}|${m}`)) continue;
       let mo = doMarca.get(m);
       if (!mo) { mo = { n: m, c: 0, ya: new Map() }; doMarca.set(m, mo); }
       mo.c++;

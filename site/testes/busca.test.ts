@@ -523,3 +523,16 @@ describe('lado e posição', () => {
     expect(mini.procurar({ q: 'lanterna dianteira/traseira' }).length).toBeGreaterThanOrEqual(0);
   });
 });
+
+describe('carro unido (C180 -> Classe C, decisao do dono 10/11)', () => {
+  it('o apelido sai da lista de modelos; o filtro do principal e o "Meu carro" salvo com o apelido seguem achando as pecas', (ctx) => {
+    if (!(ix.apelidos ?? []).includes('Mercedes-Benz|C180')) return ctx.skip();
+    const f = b.facetas({ marca: 'Mercedes-Benz' } as Parameters<Busca['facetas']>[0]);
+    const nomes = f.modelos.map(([m]) => m);
+    expect(nomes).not.toContain('C180');
+    expect(nomes).toContain('Classe C');
+    const salvo = b.itens.filter((it) => it.b === 'Mercedes-Benz' && serveNoModelo(it, 'C180'));
+    expect(salvo.length).toBeGreaterThan(0);
+    for (const it of salvo) expect(serveNoModelo(it, 'Classe C')).toBe(true);
+  });
+});

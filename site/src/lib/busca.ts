@@ -17,6 +17,8 @@ import { MAPA_SINONIMOS, MAPA_FORA, MAIOR_GATILHO, VAZIAS, singulares } from './
 
 export type Indice = {
   v: number; updated: string; marcas: string[]; familias: string[]; tipos: string[];
+  /** apelidos de carro unido ("Mercedes-Benz|C180"): fora das listas de modelo; a busca e o filtro ainda os acham */
+  apelidos?: string[];
   id: string[]; t: string[]; n: string[]; p: number[]; i: string[]; h: string[]; f: string;
   b: number[]; m: string[]; y: ([number, number] | 0)[]; c: number[]; s: number[]; o: string[];
   e?: string; // capa de estúdio por peça: '0' nenhuma, '1' automática, '2' maquiada (estudio-pro)
@@ -165,9 +167,9 @@ const doCarro = (it: Item, c: Carro) => it.b === c.b && serveNoModelo(it, c.m);
 const dentro = (ano: number, y: [number, number] | null) => (y ? ano >= y[0] && ano <= y[1] : false);
 
 /** Contagem por modelo (a peça de 2+ carros conta em cada um), da maior para a menor. */
-function contarModelos(itens: Item[]): [string, number][] {
+function contarModelos(itens: Item[], apelidos: Set<string>): [string, number][] {
   const m = new Map<string, number>();
-  for (const it of itens) for (const k of it.ms ?? [it.m]) if (k) m.set(k, (m.get(k) || 0) + 1);
+  for (const it of itens) for (const k of it.ms ?? [it.m]) if (k && !apelidos.has(`${it.b}|${k}`)) m.set(k, (m.get(k) || 0) + 1);
   return [...m.entries()].sort((a, b) => b[1] - a[1]);
 }
 
@@ -230,7 +232,9 @@ export class Busca {
   private _anosCarro = new Map<string, [number, number]>();
   private _codigos: string[] | null = null;
 
+  private apelidos: Set<string>;
   constructor(ix: Indice) {
+    this.apelidos = new Set(ix.apelidos ?? []);
     this.itens = ix.id.map((id, k) => {
       const it: Item = {
         k, id, t: ix.t[k], n: ix.n[k], p: ix.p[k], i: ix.i[k], h: ix.h[k], f: ix.f[k] === '1', e: ix.e?.[k] || '0',
@@ -631,7 +635,7 @@ export class Busca {
     };
     return {
       marcas: conta('marca', (i) => i.b),
-      modelos: f.marca ? contarModelos(lista({ ...f, modelo: undefined })) : [],
+      modelos: f.marca ? contarModelos(lista({ ...f, modelo: undefined }), this.apelidos) : [],
       tipos: conta('tipo', (i) => i.c),
       // tipos de peça dentro do sistema escolhido (como os modelos dentro da marca)
       subs: f.tipo ? conta('sub', (i) => i.s) : [],
