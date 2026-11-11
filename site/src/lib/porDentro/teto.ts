@@ -35,7 +35,7 @@ export const PONTOS: PontoQuente[] = [
   },
   // o estoque não separa o airbag de cortina: o link é o tipo inteiro (airbags, módulos e sensores) e o nome diz isso
   {
-    k: 'airbags', nome: 'Airbags (o de cortina e os outros)', procuro: 'o airbag de cortina', ancora: [1379, 850], tipo: 'Airbag e Segurança', sub: 'Airbags, Módulos e Sensores',
+    k: 'airbags', nome: 'Airbags (o de cortina e os outros)', procuro: 'o airbag de cortina', ancora: [1379, 850], tipo: 'Airbag e Segurança', sub: 'Airbags, Módulos e Sensores', eh: { cab: 'airbag cortina bolsa' },
     poligonos: [
       '1442,560 1427,547 1395,552 1387,561 1368,541 1340,570 1313,561 1212,567 1212,580 1197,568 1111,574 1088,560 1080,574 1085,582 1066,597 1051,584 1052,576 991,581 971,595 970,608 1294,592 1438,575',
       '1466,842 1453,827 1393,837 1379,823 1359,843 1266,848 1177,864 1141,863 1133,849 1122,848 1111,869 1016,877 998,893 996,908 1315,879 1460,856',

@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { PONTOS_DA_ZONA } from './porDentro/todas';
 import { pontosLateral } from './porDentro/lateral';
-import { contarPontos, filtrosDoQuente } from './porDentro/base';
+import { contarPontos, filtrosDoQuente, ehDoPonto, type PontoQuente } from './porDentro/base';
 import { VISTAS, ARTE_VISTA, ARQUIVO_DENTRO, arteDaVista } from './raioXVistas';
 import { ZONAS, ARTE, linkLinha, filtrosLinha, zonasDaPeca } from './raioX';
 import { Busca, type Lado, type Posicao } from './busca';
@@ -139,8 +139,10 @@ describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do c
         const doPonto = b.procurar(filtrosLinha(l, carro)).map((it) => it.id).sort();
         const doLink = b.procurar({ ...f, ordem: 'novos' }).map((it) => it.id).sort();
         expect(doPonto, p.k).toEqual(doLink);
-        // o número que a vista mostra é o do catálogo naquele link
-        expect(contas[p.k], p.k).toBe(doLink.length);
+        // o número que a vista mostra é o do catálogo naquele link; o ponto com regra de nome ou de posição cujo link
+        // não tem NENHUMA peça que seja a do desenho mostra 0 (cinza: "a gente procura no pátio"), nunca outra coisa
+        const doDesenho = b.procurar({ ...f, ordem: 'novos' }).filter((it) => ehDoPonto(p, it));
+        expect(contas[p.k], p.k).toBe((p.eh || p.fora) && !doDesenho.length ? 0 : doLink.length);
         // lado e posição de verdade: nenhuma peça do link diz o outro lado
         for (const it of b.procurar({ ...f, ordem: 'novos' })) {
           if (p.lado) expect(it.l, `${p.k} ${it.id}`).toBe(p.lado);
@@ -161,6 +163,46 @@ describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do c
       }
     }
     expect(fora).toEqual([]);
+  });
+});
+
+// Revisão 15, P2-2: o ponto cujo tipo do estoque junta a peça e os acessórios dela. Nomes escritos aqui (não dependem
+// do estoque): só o acessório = ponto de pátio; a peça de verdade = o número do catálogo.
+describe('vistas por dentro: a peça do link é a do desenho', () => {
+  const ponto = (zona: string, k: string): PontoQuente => PONTOS_DA_ZONA[zona].find((p) => p.k === k)!;
+  const casos: [string, string, { n: string; pos?: string }, boolean][] = [
+    ['embaixo', 'escapamento', { n: 'Defletor escapamento' }, false],
+    ['embaixo', 'escapamento', { n: 'Atuador válvula escape' }, false],
+    ['embaixo', 'escapamento', { n: 'Escapamento traseiro silencioso', pos: 'T' }, true],
+    ['embaixo', 'cardan', { n: 'Suporte cardan' }, false],
+    ['embaixo', 'cardan', { n: 'Cardan' }, true],
+    ['embaixo', 'diferencial', { n: 'Diferencial dianteiro', pos: 'D' }, false],
+    ['embaixo', 'diferencial', { n: 'Diferencial traseiro', pos: 'T' }, true],
+    ['teto', 'airbags', { n: 'Cortina airbag teto' }, true],
+    ['teto', 'airbags', { n: 'Módulo airbag deflagrado' }, false],
+    ['teto', 'airbags', { n: 'Sensor impacto airbag' }, false],
+    ['traseira', 'sensores', { n: 'Sensor estacionamento traseiro', pos: 'T' }, true],
+    ['traseira', 'sensores', { n: 'Sensor estacionamento dianteiro', pos: 'D' }, false],
+    ['traseira', 'sensores', { n: 'Módulo sensor estacionamento' }, false],
+    ['frente', 'alma', { n: 'Alma para-choque' }, true],
+    ['frente', 'alma', { n: 'Absorvedor impacto' }, true],
+    ['frente', 'alma', { n: 'Alma para-choque traseiro', pos: 'T' }, false],
+    ['frente', 'intercooler', { n: 'Chicote radiador intercooler' }, false],
+    ['frente', 'intercooler', { n: 'Intercooler radiador' }, true],
+    ['lateral-esquerda', 'forros', { n: 'Forro porta dianteira esquerda', pos: 'D' }, true],
+    ['lateral-esquerda', 'forros', { n: 'Forro esquerdo porta-malas' }, false],
+    ['lateral-direita', 'macanetas', { n: 'Suporte maçaneta traseira direita', pos: 'T' }, false],
+  ];
+  it.each(casos)('%s / %s × %o = %s', (zona, k, peca, esperado) => {
+    expect(ehDoPonto(ponto(zona, k), peca)).toBe(esperado);
+  });
+  it('só com o acessório no link, o ponto conta 0 (pátio); com a peça, o número do link inteiro', () => {
+    const p = ponto('embaixo', 'escapamento');
+    const so = [{ id: 'a', n: 'Defletor escapamento' }, { id: 'b', n: 'Atuador válvula escape' }];
+    expect(contarPontos(() => so, {}, [p])).toEqual({ escapamento: 0 });
+    expect(contarPontos(() => [...so, { id: 'c', n: 'Escapamento silencioso traseiro' }], {}, [p])).toEqual({ escapamento: 3 });
+    const semRegra = ponto('embaixo', 'tanque');
+    expect(contarPontos(() => so, {}, [semRegra])).toEqual({ tanque: 2 });
   });
 });
 

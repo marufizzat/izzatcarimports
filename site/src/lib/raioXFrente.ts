@@ -48,7 +48,7 @@ export const PONTOS_QUENTES: PontoQuente[] = [
   // a alma sem a posição: o estoque quase nunca escreve "dianteiro" nela ("Absorvedor impacto", "Alma para-choque");
   // o catálogo mostra todas e o nome de cada uma diz quando é a traseira
   {
-    k: 'alma', nome: 'Alma do para-choque', procuro: 'a alma do para-choque', ancora: [560, 566], tipo: 'Para-choques e Lataria', sub: 'Almas do Para-choque',
+    k: 'alma', nome: 'Alma do para-choque', procuro: 'a alma do para-choque', ancora: [560, 566], tipo: 'Para-choques e Lataria', sub: 'Almas do Para-choque', fora: 'T',
     poligonos: ['322,492 350,486 380,498 400,520 700,572 740,562 792,590 795,610 770,640 720,645 700,615 400,560 330,530'],
   },
   {
@@ -60,11 +60,11 @@ export const PONTOS_QUENTES: PontoQuente[] = [
     poligonos: ['606,308 642,292 884,320 892,335 890,438 800,428 700,408 612,390'],
   },
   {
-    k: 'condensador', nome: 'Condensador do ar-condicionado', procuro: 'o condensador do ar-condicionado', ancora: [926, 418], tipo: 'Ar-condicionado', sub: 'Condensadores',
+    k: 'condensador', nome: 'Condensador do ar-condicionado', procuro: 'o condensador do ar-condicionado', ancora: [926, 418], tipo: 'Ar-condicionado', sub: 'Condensadores', eh: { cab: 'condensador radiador', tem: 'condensador' },
     poligonos: ['716,268 742,262 742,280 938,300 950,310 958,400 962,432 940,440 894,438 892,332 884,318 720,300'],
   },
   {
-    k: 'intercooler', nome: 'Intercooler', procuro: 'o intercooler', ancora: [880, 264], tipo: 'Filtro de Ar e Turbo', sub: 'Intercoolers',
+    k: 'intercooler', nome: 'Intercooler', procuro: 'o intercooler', ancora: [880, 264], tipo: 'Filtro de Ar e Turbo', sub: 'Intercoolers', eh: [{ cab: 'intercooler' }, { cab: 'radiador', tem: 'intercooler' }],
     poligonos: ['766,240 790,236 996,266 1002,280 1002,428 962,430 958,310 940,298 770,278'],
   },
   {
