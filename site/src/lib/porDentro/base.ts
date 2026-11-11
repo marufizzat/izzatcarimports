@@ -6,6 +6,9 @@
 import type { Filtros, Lado, Posicao } from '../busca';
 import { nomeEh, type Eh } from '../raioX';
 
+/** O título do ponto é o próprio tipo do catálogo ("Painel (acabamentos)"): toda peça do link é a do título. */
+export const TIPO_INTEIRO = 'tipo-inteiro' as const;
+
 export type PontoQuente = {
   k: string;
   /** o nome que aparece ("Farol esquerdo") */
@@ -18,10 +21,13 @@ export type PontoQuente = {
   poligonos: string[];
   /** o tipo do catálogo (sem ele: peça de pátio, o estoque não tem esse tipo) */
   tipo?: string; sub?: string; lado?: Lado; pos?: Posicao;
-  /** o tipo do estoque junta a peça do desenho e os acessórios dela ("Escapamentos" só com defletor e atuador;
-   *  "Airbags, Módulos e Sensores" só com sensor): qual NOME é a peça desenhada (a regra de lib/raioX.ts, `nomeEh`).
-   *  Sem nenhuma peça assim no link, o ponto é de pátio ("a gente procura"), não um link para outra coisa. */
-  eh?: Eh | Eh[];
+  /** Qual NOME é a peça do título do ponto (a regra de lib/raioX.ts, `nomeEh`, a MESMA da lista do conserto: a 1ª
+   *  palavra do nome é a da peça). TODO ponto com tipo diz a sua (revisão 16, P2-1: antes só alguns diziam, e os
+   *  outros contavam o acessório como se fosse a peça: "Motor do teto solar · 1" era uma mangueira de drenagem,
+   *  "Fechadura da tampa · 4" não tinha fechadura, "Tampão do porta-malas · 6" eram suportes). Sem NENHUMA peça assim
+   *  no link, o ponto é de pátio ("a gente procura"), não um link para outra coisa. `TIPO_INTEIRO`: o título do ponto
+   *  é o próprio tipo do catálogo (um grupo de acabamentos), toda peça do link vale. */
+  eh?: Eh | Eh[] | typeof TIPO_INTEIRO;
   /** a peça que DIZ esta posição não é a do desenho (a alma TRASEIRA na vista da frente): o estoque quase nunca escreve
    *  "dianteiro", então o link segue sem posição, mas um ponto só com peça da outra ponta vira pátio */
   fora?: Posicao;
@@ -34,19 +40,19 @@ export type CarroDoQuente = Partial<Pick<Filtros, 'marca' | 'modelo' | 'ano'>>;
 export const filtrosDoQuente = (p: PontoQuente, carro: CarroDoQuente = {}): Filtros =>
   ({ ...carro, tipo: p.tipo, sub: p.sub, lado: p.lado, pos: p.pos, ordem: 'novos' });
 
-/** A peça do link É a do desenho do ponto? Sem regra no ponto, toda peça do link é. */
+/** A peça do link É a do título do ponto? Ponto sem regra (não deve existir: o teste cobra): nenhuma é. */
 export const ehDoPonto = (p: PontoQuente, it: { n?: string; pos?: string }): boolean =>
-  (!p.eh || nomeEh(p.eh, it.n ?? '')) && !(p.fora && it.pos === p.fora);
+  (p.eh === TIPO_INTEIRO || nomeEh(p.eh, it.n ?? '')) && !(p.fora && it.pos === p.fora);
 
 /** Quantas peças cada ponto quente tem, pela busca do catálogo (`procurar` = Busca.procurar): { 'farol-esquerdo': 4 }.
- *  O número é o do link (o catálogo com os filtros do ponto). Ponto de pátio (sem tipo): 0. Ponto com regra de nome ou
- *  de posição (`eh`, `fora`) cujo link não tem NENHUMA peça que seja a do desenho: 0 também (revisão 15, P2-2: o
- *  "Escapamento" abria um atuador e dois defletores; os "Airbags" do XC60, sensores) — o ponto fica cinza e vira o
- *  pedido "a gente procura no pátio". */
+ *  Ponto de pátio (sem tipo): 0. Ponto cujo link não tem NENHUMA peça que seja a do título (`ehDoPonto`: a regra do
+ *  nome e a guarda de posição): 0 também — o ponto fica cinza e vira o pedido "a gente procura no pátio" (revisão 15,
+ *  P2-2, e revisão 16, P2-1: vale para todo ponto). Com a peça do título no link, o número é o do link (o catálogo
+ *  com os filtros do ponto). */
 export function contarPontos(procurar: (f: Filtros) => { id: string; n?: string; pos?: string }[], carro: CarroDoQuente, pontos: PontoQuente[]): Record<string, number> {
   return Object.fromEntries(pontos.map((p) => {
     if (!p.tipo) return [p.k, 0];
     const itens = procurar(filtrosDoQuente(p, carro));
-    return [p.k, (p.eh || p.fora) && !itens.some((it) => ehDoPonto(p, it)) ? 0 : itens.length];
+    return [p.k, itens.some((it) => ehDoPonto(p, it)) ? itens.length : 0];
   }));
 }

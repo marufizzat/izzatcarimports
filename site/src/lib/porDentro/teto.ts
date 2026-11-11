@@ -18,7 +18,7 @@ export const PONTOS: PontoQuente[] = [
     ],
   },
   {
-    k: 'antena', nome: 'Antena', procuro: 'a antena', ancora: [1349, 144], tipo: 'Som e Multimídia', sub: 'Antenas',
+    k: 'antena', nome: 'Antena', procuro: 'a antena', ancora: [1349, 144], tipo: 'Som e Multimídia', sub: 'Antenas', eh: { cab: 'antena' },
     poligonos: ['1387,98 1380,94 1346,108 1279,157 1269,170 1270,176 1289,185 1307,185 1324,201 1339,207 1386,205 1402,200 1404,191 1398,185 1356,198 1335,197 1326,190 1332,181 1388,164 1390,157 1380,141'],
   },
   {
@@ -30,7 +30,7 @@ export const PONTOS: PontoQuente[] = [
     poligonos: ['1269,480 1263,457 1241,454 1174,393 1147,392 1083,353 354,407 324,430 375,539 415,575 450,582 1033,510 1193,504'],
   },
   {
-    k: 'motor-teto', nome: 'Motor do teto solar', procuro: 'o motor do teto solar', ancora: [190, 519], tipo: 'Vidro Elétrico', sub: 'Motores do Teto Solar',
+    k: 'motor-teto', nome: 'Motor do teto solar', procuro: 'o motor do teto solar', ancora: [190, 519], tipo: 'Vidro Elétrico', sub: 'Motores do Teto Solar', eh: { cab: 'motor', tem: 'teto' },
     poligonos: ['134,511 135,520 145,528 143,544 148,548 162,548 171,568 180,560 208,561 216,548 230,542 268,565 285,564 289,559 285,548 260,552 227,531 232,524 269,520 274,516 282,496 265,477 225,481 218,477 208,478 199,468 190,467 181,482 166,484 155,501 141,503'],
   },
   // o estoque não separa o airbag de cortina: o link é o tipo inteiro (airbags, módulos e sensores) e o nome diz isso
@@ -46,7 +46,7 @@ export const PONTOS: PontoQuente[] = [
     poligonos: ['330,691 367,668 400,661 602,646 801,635 899,633 1000,622 1078,621 1190,633 1223,654 1363,736 1389,750 1389,764 1363,772 1218,780 1139,797 921,814 703,831 647,845 540,860 468,876 451,873 442,853 333,705'],
   },
   {
-    k: 'alcas', nome: 'Alças de teto', procuro: 'a alça de teto', ancora: [939, 885], tipo: 'Acabamentos e Forros', sub: 'Alças e Puxadores',
+    k: 'alcas', nome: 'Alças de teto', procuro: 'a alça de teto', ancora: [939, 885], tipo: 'Acabamentos e Forros', sub: 'Alças e Puxadores', eh: { cab: 'alca pega' },
     poligonos: [
       '665,622 660,608 645,595 630,592 584,595 557,599 541,605 528,619 523,637 529,643 550,641 555,636 554,624 558,620 607,612 631,612 633,626 640,632 659,631 663,629',
       '924,593 917,578 904,568 889,565 851,567 812,573 800,578 786,594 782,610 790,617 808,615 814,610 814,598 819,592 847,587 888,584 892,587 893,601 902,606 921,603 924,600',
@@ -55,14 +55,14 @@ export const PONTOS: PontoQuente[] = [
     ],
   },
   {
-    k: 'quebra-sois', nome: 'Quebra-sóis', procuro: 'o quebra-sol', ancora: [140, 866], tipo: 'Acabamentos e Forros', sub: 'Quebra-sóis',
+    k: 'quebra-sois', nome: 'Quebra-sóis', procuro: 'o quebra-sol', ancora: [140, 866], tipo: 'Acabamentos e Forros', sub: 'Quebra-sóis', eh: { cab: 'quebra-sol' },
     poligonos: [
       '75,650 76,660 99,703 105,706 126,704 137,710 279,710 288,702 281,671 297,663 289,641 269,638 261,641 262,655 258,658 108,634 83,638',
       '352,836 341,816 317,817 316,834 297,839 265,833 143,829 122,835 115,854 135,894 146,904 161,901 184,907 266,902 340,893 345,878 336,850 350,843',
     ],
   },
   {
-    k: 'luz-teto', nome: 'Luz de teto', procuro: 'a luz de teto', ancora: [213, 769], tipo: 'Acabamentos e Forros', sub: 'Luzes Internas',
+    k: 'luz-teto', nome: 'Luz de teto', procuro: 'a luz de teto', ancora: [213, 769], tipo: 'Acabamentos e Forros', sub: 'Luzes Internas', eh: { cab: 'luz', tem: 'teto' },
     poligonos: ['107,748 111,764 128,795 160,813 176,813 190,807 201,811 229,810 236,806 251,809 273,807 295,796 302,784 301,763 295,741 288,734 273,730 231,727 149,729 120,734 111,740'],
   },
 ];

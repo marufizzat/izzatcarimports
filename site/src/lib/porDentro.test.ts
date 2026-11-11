@@ -6,11 +6,11 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { PONTOS_DA_ZONA } from './porDentro/todas';
 import { pontosLateral } from './porDentro/lateral';
-import { contarPontos, filtrosDoQuente, ehDoPonto, type PontoQuente } from './porDentro/base';
+import { contarPontos, filtrosDoQuente, ehDoPonto, TIPO_INTEIRO, type PontoQuente } from './porDentro/base';
 import { VISTAS, ARTE_VISTA, ARQUIVO_DENTRO, arteDaVista } from './raioXVistas';
 import { ZONAS, ARTE, linkLinha, filtrosLinha, zonasDaPeca } from './raioX';
 import { Busca, type Lado, type Posicao } from './busca';
-import { estoques, carroMaisCheio, indiceFixo, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
+import { estoques, carroMaisCheio, carrosDoIndice, indiceDoCarro, indiceFixo, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
 
 const VISTAS_K = Object.keys(VISTAS);
 
@@ -118,6 +118,15 @@ describe.each(VISTAS_K)('vista por dentro de "%s": os nomes dos pontos quentes',
       expect(p.sub && tipos.has(p.sub), `${p.k}: ${p.sub}`).toBe(true);
     }
   });
+  it('todo ponto com tipo diz qual nome É a peça do título (eh), como toda linha da lista do conserto; o de pátio não', () => {
+    // revisão 16, P2-1: a regra é uma só (nomeEh) e vale para TODO ponto, não para uma lista de exceções
+    for (const p of PONTOS) {
+      if (!p.tipo) { expect(p.eh, p.k).toBeUndefined(); continue; }
+      expect(p.eh, `${zona} ${p.k}`).toBeDefined();
+      if (p.eh === TIPO_INTEIRO) continue;
+      for (const e of Array.isArray(p.eh) ? p.eh : [p.eh!]) expect(e.cab.trim().length, p.k).toBeGreaterThan(0);
+    }
+  });
 });
 
 const CASOS = estoques().flatMap((e) => VISTAS_K.map((zona) => ({ ...e, zona })));
@@ -142,7 +151,7 @@ describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do c
         // o número que a vista mostra é o do catálogo naquele link; o ponto com regra de nome ou de posição cujo link
         // não tem NENHUMA peça que seja a do desenho mostra 0 (cinza: "a gente procura no pátio"), nunca outra coisa
         const doDesenho = b.procurar({ ...f, ordem: 'novos' }).filter((it) => ehDoPonto(p, it));
-        expect(contas[p.k], p.k).toBe((p.eh || p.fora) && !doDesenho.length ? 0 : doLink.length);
+        expect(contas[p.k], p.k).toBe(doDesenho.length ? doLink.length : 0);
         // lado e posição de verdade: nenhuma peça do link diz o outro lado
         for (const it of b.procurar({ ...f, ordem: 'novos' })) {
           if (p.lado) expect(it.l, `${p.k} ${it.id}`).toBe(p.lado);
@@ -150,6 +159,27 @@ describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do c
         }
       }
     }
+  });
+  it('em todo carro: o ponto que mostra um número tem, no link, pelo menos uma peça cujo nome ABRE com a peça do título', () => {
+    // a conta do teste é outra (a 1ª palavra do nome, sem "kit/par/jogo", contra as palavras da regra do ponto), não a
+    // função do site: só o acessório no link ("Mangueira drenagem teto solar" no "Motor do teto solar") = 0, pátio
+    const plano = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/-/g, '');
+    const cabeca = (nome: string) => plano(nome).split(/[^a-z0-9]+/).filter((w) => w && !['kit', 'par', 'jogo', 'conjunto'].includes(w))[0] ?? '';
+    const abre = (p: PontoQuente, nome: string) => p.eh === TIPO_INTEIRO || (Array.isArray(p.eh) ? p.eh : p.eh ? [p.eh] : [])
+      .some((e) => e.cab.split(' ').map(plano).some((c) => [c, `${c}s`, `${c}es`, c.replace(/m$/, 'ns'), c.replace(/l$/, 'is'), c.replace(/ao$/, 'oes')].includes(cabeca(nome))));
+    const erros: string[] = [];
+    for (const c of [null, ...carrosDoIndice(ix)]) {
+      const bc = c ? new Busca(indiceDoCarro(ix, c.marca, c.modelo)) : b;
+      const carro = c ?? {};
+      const contas = contarPontos((f) => bc.procurar(f), carro, PONTOS);
+      for (const p of PONTOS) {
+        if (!contas[p.k]) continue;
+        const doLink = bc.procurar(filtrosDoQuente(p, carro));
+        if (contas[p.k] !== doLink.length) erros.push(`${c ? `${c.marca} ${c.modelo}` : 'sem carro'} ${p.k}: mostra ${contas[p.k]}, o link tem ${doLink.length}`);
+        if (!doLink.some((it) => abre(p, it.n) && !(p.fora && it.pos === p.fora))) erros.push(`${c ? `${c.marca} ${c.modelo}` : 'sem carro'} ${p.k} (${p.nome}): ${contas[p.k]} no link e nenhuma é a peça do título: ${doLink.slice(0, 3).map((it) => it.n).join('; ')}`);
+      }
+    }
+    expect(erros.slice(0, 10)).toEqual([]);
   });
   // a frente (o piloto) tem a regra dela em raioXFrente.test.ts (o para-lama fica na lateral, a alma vai sem posição)
   it.skipIf(zona === 'frente')('no estoque inteiro, as peças de cada ponto são peças DESTA parte do carro no painel do Raio-x', () => {
@@ -185,7 +215,25 @@ describe('vistas por dentro: a peça do link é a do desenho', () => {
     ['traseira', 'sensores', { n: 'Sensor estacionamento dianteiro', pos: 'D' }, false],
     ['traseira', 'sensores', { n: 'Módulo sensor estacionamento' }, false],
     ['frente', 'alma', { n: 'Alma para-choque' }, true],
-    ['frente', 'alma', { n: 'Absorvedor impacto' }, true],
+    // revisão 16, P2-1: a MESMA regra da lista do conserto (a alma é "Alma…"; o absorvedor e a espuma são peça ligada)
+    ['frente', 'alma', { n: 'Absorvedor impacto' }, false],
+    ['frente', 'painel-frontal', { n: 'Suporte radiador direito' }, false],
+    ['frente', 'painel-frontal', { n: 'Suporte radiador' }, false],
+    ['frente', 'painel-frontal', { n: 'Suporte braço direito radiador' }, false],
+    ['frente', 'painel-frontal', { n: 'Suporte travessa radiador' }, true],
+    ['frente', 'painel-frontal', { n: 'Painel frontal' }, true],
+    ['teto', 'motor-teto', { n: 'Mangueira drenagem teto solar' }, false],
+    ['teto', 'motor-teto', { n: 'Motor teto solar' }, true],
+    ['traseira', 'fechadura', { n: 'Sensor tampa traseira' }, false],
+    ['traseira', 'fechadura', { n: 'Batente tampa traseira' }, false],
+    ['traseira', 'fechadura', { n: 'Maçaneta tampa traseira' }, false],
+    ['traseira', 'fechadura', { n: 'Acabamento trava porta-malas' }, false],
+    ['traseira', 'fechadura', { n: 'Fechadura tampa traseira' }, true],
+    ['traseira', 'tampao', { n: 'Suporte direito bagagito' }, false],
+    ['traseira', 'tampao', { n: 'Acabamento bagagito traseiro' }, false],
+    ['traseira', 'tampao', { n: 'Tampão bagagito porta-malas' }, true],
+    ['motor', 'caixa-filtro', { n: 'Ressonador filtro ar' }, false],
+    ['motor', 'caixa-filtro', { n: 'Caixa filtro ar' }, true],
     ['frente', 'alma', { n: 'Alma para-choque traseiro', pos: 'T' }, false],
     ['frente', 'intercooler', { n: 'Chicote radiador intercooler' }, false],
     ['frente', 'intercooler', { n: 'Intercooler radiador' }, true],
@@ -201,8 +249,10 @@ describe('vistas por dentro: a peça do link é a do desenho', () => {
     const so = [{ id: 'a', n: 'Defletor escapamento' }, { id: 'b', n: 'Atuador válvula escape' }];
     expect(contarPontos(() => so, {}, [p])).toEqual({ escapamento: 0 });
     expect(contarPontos(() => [...so, { id: 'c', n: 'Escapamento silencioso traseiro' }], {}, [p])).toEqual({ escapamento: 3 });
-    const semRegra = ponto('embaixo', 'tanque');
-    expect(contarPontos(() => so, {}, [semRegra])).toEqual({ tanque: 2 });
+    // o ponto que é o tipo inteiro (um grupo de acabamentos): toda peça do link vale
+    const inteiro = ponto('interior', 'painel');
+    expect(inteiro.eh).toBe(TIPO_INTEIRO);
+    expect(contarPontos(() => so, {}, [inteiro])).toEqual({ painel: 2 });
   });
 });
 

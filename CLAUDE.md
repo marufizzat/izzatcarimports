@@ -311,7 +311,11 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      que são a peça, depois as outras do tipo, a mais barata na frente em cada grupo; a linha principal que só tem peça
      LIGADA vira o título no pátio + a ligada em "Também costuma ir junto" com "(peça ligada)" no nome, sem marcar:
      `linhasDoPainel`, `marcadasDeInicio`; o teste confere em TODO carro e ponto, nos dois estoques. Linha nova = dizer
-     o `eh` dela) (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
+     o `eh` dela. **"Painel frontal"** (revisão 16, P1-1): o nome tem de DIZER a peça inteira, "painel" ou
+     "travessa" (`EH_PAINEL_FRONTAL` em `lib/raioX.ts`, a mesma regra na vista por dentro da frente); "Suporte radiador"
+     sozinho é peça ligada (no Kardian era um suporte pequeno com coxim, marcado e somado como painel); o "Suporte
+     travessa radiador" do S60 vale (pela foto, a barra comprida de um lado ao outro). O teste cobra em toda linha: nome
+     que abre com "Suporte" só é a peça do título numa linha de suporte/guia ou dizendo a peça inteira) (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
      "Outra opção" (passa pelas outras peças da mesma linha; nunca a palavra "trocar") e o total ao vivo (`somaPrecos`, em centavos). Regras do kit:
      peça que vem em par é pedida com o LADO do ponto; a que não tem lado entra sem ele e a guarda do ponto tira só a que
      DIZ o lado/posição oposta (o estoque quase nunca escreve "dianteiro" em grade, alma e guia); linha **principal** sem
@@ -357,11 +361,13 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      (`pontosLateral(lado)`: o lado vai nos links; o desenho é o do lado esquerdo, e a nota do painel diz).
      Cada peça é um link com a FORMA dela (`PontoQuente`, `lib/porDentro/base.ts`: contornos tirados da arte), com o
      nome e quantas há; o número é o do catálogo com os filtros do link (`contarPontos`; sem carro:
-     `/dados/raio-x-dentro.json`, um arquivo para todas as vistas). O ponto cujo tipo junta a peça e os acessórios
-     dela leva a regra do nome (`eh`, a mesma da lista do conserto: `nomeEh` em `lib/raioX.ts`) e/ou a guarda de
-     posição (`fora`): sem NENHUMA peça que seja a do desenho no link, conta 0 e vira pedido de pátio (revisão 15,
-     P2-2: o "Escapamento" abria um atuador e dois defletores; os "Airbags" do XC60, sensores; a "Alma" da frente do
-     E-Pace, a traseira). Com a peça, o número segue o do link (o catálogo não sabe tirar "a que diz traseiro"). Sem peça, ou tipo que o estoque não tem (capô,
+     `/dados/raio-x-dentro.json`, um arquivo para todas as vistas). **TODO ponto com tipo diz qual nome é a peça do
+     título** (`eh`, a mesma regra da lista do conserto: `nomeEh` em `lib/raioX.ts`; revisão 16, P2-1: antes só 13 dos
+     120 diziam e os outros contavam acessório como a peça: "Motor do teto solar · 1" era uma mangueira de drenagem,
+     "Fechadura da tampa · 4" não tinha fechadura, a "Caixa do filtro de ar" do Onix era um ressonador), mais a guarda
+     de posição (`fora`) onde a vista é de uma ponta: sem NENHUMA peça que seja a do título no link, conta 0 e vira
+     pedido de pátio. `TIPO_INTEIRO` só para o ponto que é o próprio tipo ("Painel (acabamentos)"). Ponto novo = dizer o
+     `eh` dele (o teste cobra; onde a batida tem a mesma linha, a mesma regra). Com a peça, o número segue o do link (o catálogo não sabe tirar "a que diz traseiro"). Sem peça, ou tipo que o estoque não tem (capô,
      tampa traseira, vidro e quadro do teto solar, forro do teto, longarinas, bancos, disco de freio, protetor de
      cárter): cinza e o link é o WhatsApp "a gente procura no pátio" (`linkProcuraPeca` em `lib/aviso.ts`,
      `data-botao="raio-x"`). Zona sem peça do carro também mostra o botão (a vista vira a lista de pedidos de pátio).

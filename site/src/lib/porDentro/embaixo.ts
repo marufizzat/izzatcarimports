@@ -11,19 +11,19 @@ import type { PontoQuente } from './base';
 // Na ordem do Tab e da lista: da frente para trás: o câmbio, a transmissão até o diferencial, o escapamento, o tanque.
 export const PONTOS: PontoQuente[] = [
   {
-    k: 'cambio', nome: 'Câmbio', procuro: 'o câmbio', ancora: [342, 515], tipo: 'Câmbio e Transmissão', sub: 'Câmbios e Peças Internas',
+    k: 'cambio', nome: 'Câmbio', procuro: 'o câmbio', ancora: [342, 515], tipo: 'Câmbio e Transmissão', sub: 'Câmbios e Peças Internas', eh: { cab: 'cambio caixa', tem: 'cambio' },
     poligonos: ['188,378 162,440 162,493 189,577 214,601 255,607 291,627 338,640 456,610 491,571 495,555 487,544 501,535 508,513 495,487 504,439 493,429 490,409 466,406 458,397 413,402 336,394 308,375 280,372 272,379 232,360'],
   },
   {
-    k: 'coxim-cambio', nome: 'Coxim do câmbio', procuro: 'o coxim do câmbio', ancora: [175, 668], tipo: 'Câmbio e Transmissão', sub: 'Coxins do Câmbio',
+    k: 'coxim-cambio', nome: 'Coxim do câmbio', procuro: 'o coxim do câmbio', ancora: [175, 668], tipo: 'Câmbio e Transmissão', sub: 'Coxins do Câmbio', eh: { cab: 'coxim calco suporte' },
     poligonos: ['179,605 174,604 169,611 151,618 151,627 142,635 142,648 132,662 131,673 126,677 114,675 105,683 106,692 128,706 133,720 128,736 136,743 146,743 165,733 186,704 197,705 209,700 247,710 262,707 267,702 264,691 242,685 238,674 218,666 211,655 210,633 202,626 201,617 184,611'],
   },
   {
-    k: 'modulo-cambio', nome: 'Módulo do câmbio', procuro: 'o módulo do câmbio', ancora: [415, 334], tipo: 'Câmbio e Transmissão', sub: 'Módulos do Câmbio e da Tração',
+    k: 'modulo-cambio', nome: 'Módulo do câmbio', procuro: 'o módulo do câmbio', ancora: [415, 334], tipo: 'Câmbio e Transmissão', sub: 'Módulos do Câmbio e da Tração', eh: { cab: 'modulo' },
     poligonos: ['469,340 468,333 459,329 454,322 418,304 406,308 395,308 361,315 352,319 346,326 340,325 336,331 340,339 350,343 380,363 387,359 401,358 410,364 447,357 451,354 454,345 463,345'],
   },
   {
-    k: 'caixa-transferencia', nome: 'Caixa de transferência', procuro: 'a caixa de transferência', ancora: [602, 475], tipo: 'Câmbio e Transmissão', sub: 'Caixas de Transferência',
+    k: 'caixa-transferencia', nome: 'Caixa de transferência', procuro: 'a caixa de transferência', ancora: [602, 475], tipo: 'Câmbio e Transmissão', sub: 'Caixas de Transferência', eh: { cab: 'caixa' },
     poligonos: ['576,402 564,409 561,420 552,428 555,436 552,458 546,463 535,454 525,460 522,484 526,505 534,517 543,517 552,508 561,509 576,525 584,541 615,544 622,536 639,531 643,513 657,505 662,494 675,487 683,490 693,487 695,462 688,448 683,446 671,454 653,454 634,430 635,419 617,414 612,401 599,400 592,410'],
   },
   {
@@ -42,11 +42,11 @@ export const PONTOS: PontoQuente[] = [
     ],
   },
   {
-    k: 'catalisador', nome: 'Catalisador', procuro: 'o catalisador', ancora: [339, 230], tipo: 'Escapamento', sub: 'Catalisadores',
+    k: 'catalisador', nome: 'Catalisador', procuro: 'o catalisador', ancora: [339, 230], tipo: 'Escapamento', sub: 'Catalisadores', eh: { cab: 'catalisador' },
     poligonos: ['428,134 410,126 391,130 377,144 361,180 342,174 303,180 284,189 250,228 239,209 211,219 225,281 256,297 271,279 287,285 321,281 342,285 411,273 432,257 446,259 453,236 447,215 401,186 379,184 387,144 403,133 425,142'],
   },
   {
-    k: 'flexivel', nome: 'Tubo flexível do escapamento', procuro: 'o tubo flexível do escapamento', ancora: [561, 228], tipo: 'Escapamento', sub: 'Tubos Flexíveis',
+    k: 'flexivel', nome: 'Tubo flexível do escapamento', procuro: 'o tubo flexível do escapamento', ancora: [561, 228], tipo: 'Escapamento', sub: 'Tubos Flexíveis', eh: { cab: 'tubo flexivel' },
     poligonos: ['621,221 616,207 607,197 601,198 593,207 567,203 520,209 495,221 486,212 477,211 473,216 473,241 484,261 489,266 495,267 500,264 501,256 510,252 528,257 577,250 594,242 612,251 618,247'],
   },
   // o tipo "Escapamentos" do estoque junta o tubo, o silencioso e os defletores: o nome do ponto é o do tipo
@@ -55,11 +55,11 @@ export const PONTOS: PontoQuente[] = [
     poligonos: ['1400,165 1319,147 1282,115 1167,135 1148,103 1127,112 1153,111 1155,134 1101,147 1084,179 949,174 931,140 911,149 935,149 937,171 891,185 846,225 800,229 733,201 649,195 639,222 654,250 669,235 734,232 767,247 783,277 804,268 783,269 782,257 860,251 918,206 1032,196 1148,229 1299,198 1322,174 1383,188'],
   },
   {
-    k: 'tanque', nome: 'Tanque de combustível', procuro: 'o tanque de combustível', ancora: [802, 791], tipo: 'Injeção e Combustível', sub: 'Tanques de Combustível',
+    k: 'tanque', nome: 'Tanque de combustível', procuro: 'o tanque de combustível', ancora: [802, 791], tipo: 'Injeção e Combustível', sub: 'Tanques de Combustível', eh: { cab: 'tanque' },
     poligonos: ['1253,756 1243,712 1189,674 1076,674 1002,697 971,738 927,744 807,686 731,697 671,737 659,773 683,833 747,869 747,881 785,888 900,877 925,864 914,858 924,847 973,842 1005,847 987,858 1005,867 1126,859 1158,848 1152,834 1229,803'],
   },
   {
-    k: 'bomba-combustivel', nome: 'Bomba de combustível', procuro: 'a bomba de combustível', ancora: [907, 637], tipo: 'Injeção e Combustível', sub: 'Bombas de Combustível',
+    k: 'bomba-combustivel', nome: 'Bomba de combustível', procuro: 'a bomba de combustível', ancora: [907, 637], tipo: 'Injeção e Combustível', sub: 'Bombas de Combustível', eh: { cab: 'bomba' },
     poligonos: ['865,538 860,555 873,567 876,604 868,616 869,679 883,690 916,693 942,684 945,649 950,644 982,658 1001,656 1012,662 1041,654 1040,640 1026,634 1000,640 998,649 989,654 946,636 940,578 953,554 953,544 946,537 924,533 914,524 885,526 881,534'],
   },
   {
