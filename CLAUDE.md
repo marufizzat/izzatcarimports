@@ -9,6 +9,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    descrições que faltam (até 150 por rodada).
 2. `preparar_dados.py` lê o `products.json` e gera:
    - `site/src/data/pecas.json` e `resumo.json` (usados para montar as páginas);
+   - `site/src/data/unidos.json` (carros unidos: "marca|apelido" -> principal; vai no JS do navegador, item 13);
    - `site/public/dados/busca.json` (o índice que a busca do navegador usa).
    Aqui ficam a leitura de **marca, modelo e ano** pelo título e o **nome limpo** da peça.
    - **Tipo da peça** (`s`, os cartões "Por tipo" da categoria): a árvore do ML vira o nome da loja em `TIPO_LOJA`
@@ -231,6 +232,38 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Me avise quando chegar" (`linkAvisoParte` em `lib/aviso.ts`). Véu laranja e véu escuro = duas camadas SVG com
    `filter: blur` do CSS (o filtro do SVG custava 60–110 ms por toque com CPU 6×). Tipo novo no estoque: conferir a zona
    dele em `ZONAS` (o teste avisa nome de bloco/tipo que sumiu).
+
+13. **Correções da revisão 14 (11/11/2026)** — o que ficou valendo:
+   - **Carros unidos** (C180/C200/C320 = Classe C, 320i/330i = Série 3, 530i = Série 5, GLA200 = GLA, New Fiesta = Fiesta,
+     New Civic = Civic): o `preparar_dados.py` grava `site/src/data/unidos.json` (`"marca|apelido" -> principal`, TODOS os
+     pares, também o apelido com menos de 8 peças). `lib/meuCarro.ts` lê o arquivo (`UNIDOS`, `import.meta.glob`) e:
+     (1) o **Meu carro salvo com o apelido vira o principal na leitura** (`carroDe`/`lerMeuCarro`, mesmo ano, regrava o
+     localStorage uma vez; antes da pintura na home, no catálogo e na página do carro: `components/MigrarCarro.astro` no
+     `<head>`, que também troca o `?modelo=<apelido>` do catálogo); (2) **a tela e o WhatsApp mostram o carro uma vez, pelo
+     principal** (`gruposModelos`, `nomeModelos`: "Mercedes-Benz Classe C", nunca "Classe C, C180 e C200"); (3) **o que o
+     Google lê guarda as versões** (`nomeModelosVersoes`: "Classe C (C180, C200)" no `<title>`, description, JSON-LD, feed e
+     no "Serve em" da ficha técnica; quando não cabe, a forma do anúncio "Mercedes-Benz C320", `nomeSoVersoes`). A arte do
+     carro principal sem arte própria é a do apelido (`arteDoCarro` em `lib/dados.ts`: Série 3 usa a do 320i).
+   - **Botão da lista no cartão** (`.etiqueta-lista`, `styles/global.css`): canto de cima à ESQUERDA da foto (o da direita é
+     do logo da capa); redondo 44×44 só com o ícone abaixo de 700 px, pílula "Lista" acima; um "+" só (o do desenho); área
+     de toque 8 px maior (`::after`). O selo "Chegou agora" fica no PÉ da foto e sai quando aparece o "Serve no seu…".
+     Lista cheia (30): aviso à vista (`components/ui/avisoLista.ts`), não só para leitor de tela.
+   - **Página da peça, "Antes de comprar"**: a pergunta é "E se a peça der problema?" (só a garantia de 90 dias e como
+     acionar). Nunca "E se não servir?": o dono confirmou garantia e NENHUMA troca; encaixe é assunto de antes da compra.
+   - **Raio-x sem carro salvo**: o painel abre com o estoque inteiro e o "Ver todas no catálogo" é `linkZona(k, filtro)`
+     (`lib/raioX.ts`: `/catalogo.html?zona=<k>` sem carro; sempre o MESMO filtro das contagens). O Tab só acende a parte;
+     Enter/Espaço abre; o painel que troca sem foco é dito no `role=status`.
+   - **WhatsApp**: `data-botao` em todo link (valores novos: `pedir-peca`, `pedir-barra`, `pedir-cartao`, `serve-no-carro`,
+     `foto-codigo`, `rodape`, `banner-*`, `chamada-*`, `vendida-avise`, `404-*`, `carro-avise`, `procuro-*`, `meu-carro-*`…;
+     os antigos não mudam). O evento `contato_whatsapp` sai com ou sem `data-botao` (o `rastreio.js` conta todo link `wa.me`).
+     Mensagem de dúvida com a lacuna "Meu carro é ____": o carro salvo entra no clique (`comCarroNaFrase`, ouvinte do
+     `Cabecalho.astro`). Pátio com peça na tela: `pedidoPatioAchou` (`lib/patio.ts`), nunca "Não achei no site".
+   - **404 de endereço de peça** (`conferirAntes` em `lib/vendida.ts`, inline no `<head>`): só o `<main>` fica escondido, o
+     arquivo do estoque é pedido no `<head>` e a peça à venda abre sem esperar o script da página; 400 ms: "Abrindo a
+     peça…"; 2,5 s: "Conferindo a peça…" com saídas (nunca "Página não encontrada" antes de saber, e daí em diante nada
+     navega sozinho: botão "Abrir a peça"). "mlb" minúsculo e barra no fim valem (`caminhoLimpo`). Anúncio do
+     `excluir_do_site.json`: abre o gêmeo à venda; sem gêmeo, "Essa peça saiu do site" (nunca "já foi vendida").
+   - **Tela cheia da foto**: o "Voltar" do aparelho fecha a foto (estado no histórico, `GaleriaTelaCheia.ts`).
 
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
