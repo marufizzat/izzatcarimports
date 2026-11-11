@@ -135,7 +135,8 @@ export function ligarVaiJunto(raiz: HTMLElement) {
       // <small>2018–2024</small><small>Cód. <code>X</code></small> (o dos anos é o <small> sem o <code>)
       anos: anosDoCartao([...li.querySelectorAll('small')].find((s) => !s.querySelector('code'))?.textContent || ''),
       cod: li.querySelector('code')?.textContent?.trim() || '',
-      preco: precoDoTexto(li.querySelector('.num')?.textContent || ''),
+      // o preço CHEIO (o riscado): a lista guarda o do site e calcula o do WhatsApp (HTML antigo em cache: o .num inteiro)
+      preco: precoDoTexto((li.querySelector('.num s') ?? li.querySelector('.num'))?.textContent || ''),
       capa: img ? capaPequenaDe(img.getAttribute('src') || '', id) : '',
     };
     // o nome acessível começa pelo texto que se vê ("Lista", "Na lista") e diz qual peça

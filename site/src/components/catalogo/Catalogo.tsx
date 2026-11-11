@@ -24,7 +24,7 @@ import { chaveCarro } from '../../lib/chegouCarro';
 import { adicionarNaLista, lerLista, EVENTO_LISTA, PAGINA_LISTA } from '../../lib/lista';
 import { itemDeDados, rotulo, avisar, CLASSE_LISTA } from '../ui/listaCartao';
 import {
-  linhaCarro, codigoPeca, precoPartes, msgWhats, linkWhats, urlPeca, dadosCarro,
+  linhaCarro, codigoPeca, precoCartao, SELO_WHATS, msgWhats, linkWhats, urlPeca, dadosCarro,
   CLASSE_CARTAO, VITRINE_CLARA, icone,
 } from './etiqueta';
 import { whatsUrl } from '../../lib/whats';
@@ -132,7 +132,8 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
   };
   const lr = rotulo(!!naLista, it.n);
   const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
-  const [reais, cent] = precoPartes(it.p);
+  // o preço do WhatsApp em destaque, o do anúncio riscado (o MESMO desenho do CartaoPeca.astro e do cartaoHtml)
+  const pc = precoCartao(it.p);
   const cod = codigoPeca(it.o);
   // foto que não carregou: a capa leve (srcset) dá lugar à capa inteira; ela, à foto do ML; se essa também falhar, fica a
   // placa clara (nunca o ícone quebrado com o título cru do anúncio). 0 tudo certo, 1 sem a leve, 2 foto do ML, 3 placa
@@ -161,12 +162,9 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
           {carro && <span className="etiqueta-carro"><span className="etiqueta-modelo">{carro}</span>{it.dif && <> <span className="etiqueta-dif">{it.dif}</span></>}{anos && <span className="etiqueta-anos"><span className="etiqueta-sep"> · </span>{anos}</span>}</span>}
           <h3 className="etiqueta-nome">{it.n}</h3>
           {cod && <span className="etiqueta-cod" title="Código gravado na peça">Cód. <span className="oem">{cod}</span></span>}
-          <span className="sr-only">R$ {reais},{cent}</span>
-          <span className="etiqueta-preco num" aria-hidden="true"><small>R$</small>{reais}<small>{cent}</small></span>
-          <span className="etiqueta-confia">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone('garantia')} /></svg>
-            <span><span className="etiqueta-confia-longo">Original · </span>90 dias de garantia</span>
-          </span>
+          <span className="sr-only">{pc.sr}</span>
+          <span className="etiqueta-valor num" aria-hidden="true"><s>R$ {pc.de}</s><span className="etiqueta-preco"><small>R$</small>{pc.reais}<small>{pc.cent}</small></span><span className="etiqueta-wa">{SELO_WHATS}</span></span>
+          <span className="etiqueta-confia"><span>90 dias de garantia</span>{it.q === 1 && <b>Peça única</b>}</span>
         </div>
       </a>
       <a className="etiqueta-acao" href={linkWhats(msgWhats(it, urlPeca(it.h)))} target="_blank" rel="noopener"

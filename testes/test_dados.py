@@ -1256,6 +1256,12 @@ def test_lado_e_posicao_pelo_nome():
             for n, t, l, p in zip(ix["n"], tipos, ix["l"], ix["pos"]):
                 assert lado_posicao(n, t) == (l.replace("0", ""), p.replace("0", "")), n
             assert ix["l"].count("E") + ix["l"].count("D") > 1000
+        # "Peça única" do cartão (coluna "q"): '1' só com 1 em estoque no anúncio; nada de urgência inventada
+        if "q" in ix:
+            por_id = {p["id"]: p for p in json.loads(pecas.read_text(encoding="utf-8"))}
+            assert len(ix["q"]) == len(ix["id"]) and set(ix["q"]) <= set("01")
+            for i, q in zip(ix["id"], ix["q"]):
+                assert (por_id[i].get("q") == 1) == (q == "1"), i
 
 
 # ---- auditoria de dados 10/11/2026: regras R1–R13 ----

@@ -3724,6 +3724,8 @@ def main():
         # lado e posição pelo nome (lado_posicao; a posição, senão, pelo tipo): uma letra por peça, '0' quando não diz
         "l": "".join(lado_posicao(x["n"], x["s"])[0] or "0" for x in pecas),
         "pos": "".join(lado_posicao(x["n"], x["s"])[1] or "0" for x in pecas),
+        # peca unica (estoque 1 no anuncio do ML): '1' ou '0' por peca; o cartao so diz "Peca unica" com o dado
+        "q": "".join("1" if x.get("q") == 1 else "0" for x in pecas),
     }
 
     marcar_datas(pecas, prods)

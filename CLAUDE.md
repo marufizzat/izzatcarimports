@@ -152,6 +152,16 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Preço no site" + "No WhatsApp (10% de desconto)", "Meu carro: …", "Serve e ainda tem?" e o link por último
    (`cabecaPeca` + `linhaMeuCarro` + `caudaPeca`; o frete pelo CEP usa a mesma ficha: `*COTAÇÃO DE FRETE*`). Só Brasil
    (sem versão em espanhol).
+   **O preço grande é o do WhatsApp (pedido do dono, 11/11)**: em TODO cartão (`CartaoPeca.astro`, `Etiqueta` do catálogo,
+   `cartaoHtml`, "Vai junto") o preço do anúncio vem riscado em cima, o do WhatsApp é o grande e o selo verde "−10% no
+   WhatsApp" fica colado nele (`precoCartao`/`SELO_WHATS` em `catalogo/etiqueta.ts`; o leitor de tela lê "de R$ X por R$ Y
+   no WhatsApp", e é desse texto que os scripts tiram o preço CHEIO: `precoCheioDoTexto`; a lista e a mensagem do WhatsApp
+   continuam partindo do cheio). Depois do fio: "90 dias de garantia" e, só com 1 em estoque no anúncio, "Peça única"
+   (coluna `q` do busca.json, '1'/'0' por peça; cartão sem o dado não diz nada). Na página da peça o preço grande também
+   é o do WhatsApp; o selo "−10% no WhatsApp" + o preço do anúncio riscado ficam presos no canto do botão laranja (celular)
+   ou numa linha com "no Mercado Livre" (PC), e o botão do Mercado Livre leva o preço cheio em toda largura. NÃO mudam: o
+   JSON-LD `Product` (preço cheio, o do Mercado Livre), og/meta, o feed, e o filtro e a ordem por preço do catálogo (pelo
+   preço cheio). As sugestões da busca seguem com o preço do anúncio.
 
 10. **Lista de orçamento (rodada 12, nov/2026)**: o "carrinho" de quem compra pelo WhatsApp. Estado só no navegador em
    `site/src/lib/lista.ts` (`localStorage['izzatcar.lista']`, até 30 peças, evento `lista` com a ação; funções puras

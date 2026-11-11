@@ -13,8 +13,8 @@ export const SIZES_PESSOAL = '(min-width: 1304px) 194px, (min-width: 1280px) cal
  *  tem a altura do cartão mais comum. */
 export const ESQ_CARTAO = '<div class="etiqueta-cx tema-estudio tp-esq" aria-hidden="true"><div class="etiqueta"><div class="etiqueta-foto"></div>'
   + '<div class="etiqueta-dados"><span class="etiqueta-carro">&nbsp;<br>&nbsp;</span><span class="etiqueta-nome">&nbsp;<br>&nbsp;</span>'
-  + '<span class="etiqueta-cod">&nbsp;</span><span class="etiqueta-preco"><small>&nbsp;</small>&nbsp;</span>'
-  + '<span class="etiqueta-confia">&nbsp;</span></div></div></div>';
+  + '<span class="etiqueta-cod">&nbsp;</span><span class="etiqueta-valor"><s>&nbsp;</s><span class="etiqueta-preco"><small>&nbsp;</small>&nbsp;</span>'
+  + '<span class="etiqueta-wa">&nbsp;</span></span><span class="etiqueta-confia">&nbsp;</span></div></div></div>';
 
 /** Depois do "load" e quando o navegador folgar (nunca disputa a rede e a CPU com a 1ª tela). */
 export function depoisDaCarga(fn: () => void, espera = 2500) {
