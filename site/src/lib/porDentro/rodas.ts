@@ -63,7 +63,7 @@ export const PONTOS: PontoQuente[] = [
     poligonos: ['958,829 935,816 905,823 877,817 886,799 886,769 869,756 849,754 831,762 818,782 753,805 708,836 694,824 694,800 681,798 677,825 663,848 669,877 663,886 673,893 699,894 810,877 950,881 958,864'],
   },
   {
-    k: 'braco', nome: 'Braço da suspensão', procuro: 'o braço da suspensão', ancora: [1055, 807], tipo: 'Suspensão e Direção', sub: 'Braços da Suspensão', eh: { cab: 'braco' },
+    k: 'braco', nome: 'Braço da suspensão', procuro: 'o braço da suspensão', ancora: [1055, 807], tipo: 'Suspensão e Direção', sub: 'Braços da Suspensão', eh: { cab: 'braco bandeja' },
     poligonos: ['1259,765 1252,754 1226,747 1200,766 1076,786 1053,777 1041,778 1030,787 1025,800 1027,815 1034,824 1028,832 1053,834 1122,822 1130,815 1208,800 1216,804 1254,800 1259,796 1255,791'],
   },
   {

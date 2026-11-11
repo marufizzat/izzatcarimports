@@ -286,6 +286,13 @@ export const EH_PAINEL_FRONTAL: Eh[] = [
   { cab: 'travessa suporte', tem: 'travessa', sem: 'esquerdo direito esquerda direita coxim braco placa inferior superior lateral' },
 ];
 
+/** O nome diz pelo menos UMA destas palavras? (palavras separadas por espaço, sem acento; o plural vale; a composta
+ *  vale inteira: "porta" não é "porta-malas"). A mesma leitura de `nomeEh`. */
+export function nomeDiz(nome: string, palavras: string): boolean {
+  const ws = palavrasDoNome(nome);
+  return lista(palavras).filter(Boolean).some((w) => ws.some((t) => mesma(t, w)));
+}
+
 /** A peça como a zona precisa dela: o bloco, o tipo e o lado/posição que o nome diz (os campos c, s, l, pos do índice). */
 export type PecaZona = { c: string; s: string; l?: Lado | '' | '0'; pos?: Posicao | 'A' | '' | '0' };
 /** A peça cabe no grupo? A MESMA regra da busca do catálogo (lib/busca.ts): bloco e tipo iguais, o lado igual, e a
