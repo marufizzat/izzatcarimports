@@ -4,6 +4,7 @@
 // Estado: lib/lista.ts (localStorage + evento 'lista'). Toque = retorno na hora e o aviso para o leitor de tela. O botão
 // só PÕE; com a peça na lista, o verde é um link que leva à lista (tocar no verde nunca tira a peça sem avisar: revisão
 // 12, P3.1). Tirar: o "Tirar" escrito ao lado (compra) ou na própria /lista.html.
+import { avisarListaCheia, TXT_LISTA_CHEIA } from '../ui/avisoLista';
 import { lerLista, tem, adicionarNaLista, salvarLista, remover, pecasTxt, EVENTO_LISTA, MAX_LISTA, PAGINA_LISTA, type ItemLista } from '../../lib/lista';
 import { icone } from '../../lib/icones';
 
@@ -91,10 +92,10 @@ export function ligarListaPeca() {
   botao.addEventListener('click', () => {
     const r = adicionarNaLista(item, 'peca');
     if (r === 'cheia') {
-      avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Peça essas no WhatsApp e comece outra.`);
+      avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Mande estas no WhatsApp e comece outra.`);
       if (!cheia) {
         cheia = Object.assign(document.createElement('p'), { className: 'cl-cheia' });
-        cheia.innerHTML = `Sua lista já tem ${MAX_LISTA} peças, o máximo. <a href="${PAGINA_LISTA}">Peça essas no WhatsApp</a> e comece outra.`;
+        cheia.innerHTML = `Sua lista já tem ${MAX_LISTA} peças, o máximo. <a href="${PAGINA_LISTA}">Mande estas no WhatsApp</a> e comece outra.`;
         caixa.append(cheia);
       }
       return;
@@ -135,7 +136,8 @@ export function ligarVaiJunto(raiz: HTMLElement) {
       // <small>2018–2024</small><small>Cód. <code>X</code></small> (o dos anos é o <small> sem o <code>)
       anos: anosDoCartao([...li.querySelectorAll('small')].find((s) => !s.querySelector('code'))?.textContent || ''),
       cod: li.querySelector('code')?.textContent?.trim() || '',
-      preco: precoDoTexto(li.querySelector('.num')?.textContent || ''),
+      // o preço CHEIO (o riscado): a lista guarda o do site e calcula o do WhatsApp (HTML antigo em cache: o .num inteiro)
+      preco: precoDoTexto((li.querySelector('.num s') ?? li.querySelector('.num'))?.textContent || ''),
       capa: img ? capaPequenaDe(img.getAttribute('src') || '', id) : '',
     };
     // o nome acessível começa pelo texto que se vê ("Lista", "Na lista") e diz qual peça
@@ -149,7 +151,7 @@ export function ligarVaiJunto(raiz: HTMLElement) {
     window.addEventListener(EVENTO_LISTA, pintar);
     b.addEventListener('click', () => {
       const r = adicionarNaLista(item, 'vai-junto');
-      if (r === 'cheia') { avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Peça essas no WhatsApp e comece outra.`); return; }
+      if (r === 'cheia') { avisarLista(TXT_LISTA_CHEIA); avisarListaCheia(); return; }
       pintar();
       na.focus({ preventScroll: true });
       avisarLista(`${nome} está na sua lista de orçamento: ${pecasTxt(lerLista().length)}.`);

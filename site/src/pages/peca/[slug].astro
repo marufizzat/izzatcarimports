@@ -9,7 +9,7 @@ import VaiJunto from '../../components/peca/VaiJunto.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
 import { blocoPeca, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
-import { modelosDa } from '../../lib/meuCarro';
+import { gruposModelos, nomeModelosVersoes } from '../../lib/meuCarro';
 import { doMesmoCarro, vaiJunto } from '../../lib/relacionadas';
 import { nomeModelos } from '../../lib/meuCarro';
 import { nomeCompleto, nomeMensagem, titulosPecas } from '../../lib/nomePeca';
@@ -106,8 +106,11 @@ const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
 const anosTxt = anosDe(p.y, ' a ');
 // ficha: "Serve em": todos os carros da peça ("Volvo S60 e XC60" quando o título diz os dois), com os anos.
 // Só com a marca: "Carro" (sem prometer o modelo); sem marca: só "Anos" (antes saía "Carro: , 2015 a 2024")
+// O carro unido aparece uma vez na tela ("Mercedes-Benz Classe C"); a ficha técnica diz também as versões do anúncio
+// ("Mercedes-Benz Classe C (C180, C200)"): é o detalhe honesto para quem confere a versão.
 const carros = nomeModelos(p);
-const serve = carros ? carros + (anosTxt ? `, ${anosTxt}` : '') : anosTxt;
+const carrosFicha = nomeModelosVersoes(p);
+const serve = carrosFicha ? carrosFicha + (anosTxt ? `, ${anosTxt}` : '') : anosTxt;
 const serveRotulo = p.m ? 'Serve em' : p.b ? 'Carro' : 'Anos';
 const unica = p.q === 1;
 // código só quando parece código de verdade (5+ com letra e número, ou 6+ dígitos), em maiúsculas
@@ -137,7 +140,9 @@ const fotosMl = fotosGaleria(p.fotos);
 // WhatsApp (lib/whats.ts): a peça pelo nome limpo, carro, anos e código (nunca o título cru do anúncio); o carro da
 // pessoa já vem com a marca e o modelo da peça (só o ano em branco), como no botão "Pedir no WhatsApp".
 const pecaMsg = blocoPeca({ linha: linhaPeca, url });
-const meuCarroMsg = !p.b ? 'Meu carro é ____ (modelo) ____ (ano).' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____.` : `Meu carro é ${carros} ano ____.`;
+// Com carro salvo, o clique troca a lacuna pelo carro DA PESSOA ("Meu carro é Volvo XC60 2019."): comCarroNaFrase,
+// lib/whats.ts, no ouvinte único do Cabecalho.astro (antes ia "Meu carro é Renault ____" para quem tem um XC60).
+const meuCarroMsg = !p.b ? 'Meu carro é ____ (modelo) ____ (ano).' : gruposModelos(p).length > 1 ? `Meu carro é ${p.b} ____, ano ____.` : `Meu carro é ${carros}, ano ____.`;
 
 const ld = {
   '@context': 'https://schema.org',
@@ -187,7 +192,7 @@ const ld = {
       <span class="barra-de num">no WhatsApp · <s>R$ {brl(p.p)}</s></span>
     </div>
     {/* o link (com a mensagem pronta e o carro salvo) é o mesmo do botão principal: o script do PecaTopo copia */}
-    <a class="botao botao-laranja" data-whats-espelho tabindex="-1"><Icone nome="whats" /><span><span class="barra-pedir">Pedir no </span>WhatsApp</span><span class="sr-only">, com {DESCONTO_WHATS}% de desconto</span></a>
+    <a class="botao botao-laranja" data-botao="pedir-barra" data-whats-espelho tabindex="-1"><Icone nome="whats" /><span><span class="barra-pedir">Pedir no </span>WhatsApp</span><span class="sr-only">, com {DESCONTO_WHATS}% de desconto</span></a>
   </div>
 
   <AbasDetalhes p={p} serve={serve} serveRotulo={serveRotulo} />
@@ -202,14 +207,14 @@ const ld = {
   )}
   {!temCarro && daMarca.length > 0 && (
     <DoMesmoCarro titulo={marca ? `Mais peças ${marca.n}` : 'Mais peças'} carro={marca ? marca.n : ''}
-                  sub={marca ? `De outros modelos ${marca.n}: confira o carro e o ano em cada cartão.` : 'Do nosso estoque: confira o carro e o ano em cada cartão.'}
+                  sub={marca ? `De outros modelos ${marca.n}: confira o carro e o ano em cada cartão.` : 'Do pátio: confira o carro e o ano em cada cartão.'}
                   link={marca ? `/marca/${marca.k}.html` : '/catalogo.html'} total={marca ? marca.c : r.total} pecas={daMarca} />
   )}
 
   <section class="secao">
     <div class="moldura">
-      <BannerV2 nome="banner-serve" href={whatsUrl(`Quero confirmar se esta peça serve no meu carro:\n\n${pecaMsg}\n\n${meuCarroMsg}`)}
-        texto="Serve no meu carro? Mande o modelo e o ano. A gente confere no pátio e responde com foto. Chamar no WhatsApp" />
+      <BannerV2 nome="banner-serve" botao="serve-no-carro" href={whatsUrl(`Quero confirmar se esta peça serve no meu carro:\n\n${pecaMsg}\n\n${meuCarroMsg}`)}
+        texto="Serve no meu carro? Mande o modelo e o ano. A gente confere no pátio e responde pelo WhatsApp. Chamar no WhatsApp" />
     </div>
   </section>
 </Pagina>

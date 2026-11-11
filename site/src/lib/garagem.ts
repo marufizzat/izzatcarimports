@@ -7,10 +7,8 @@
 // A peça que serve em 2+ carros ("Volvo S60 Xc60") conta em cada um, com a faixa de anos daquele carro.
 // Arte do carro (o "cartão do seu carro" da abertura): a mesma public/arte/v2/carro-<k>.webp do /carros, com o k do
 // resumo; `as` = as larguras do srcset (só se as variantes foram feitas da arte atual, lib/variantes.ts).
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { pecas, marcasVisiveis, logoInfo, resumo } from './dados';
-import { modelosDa, anosNoModelo } from './meuCarro';
+import { pecas, marcasVisiveis, logoInfo, resumo, arteDoCarro } from './dados';
+import { modelosDa, anosNoModelo, principalDe } from './meuCarro';
 import { srcsetArte } from './variantes';
 
 /** a = chave da arte (/arte/v2/carro-<a>.webp), as = larguras do srcset ([600, 900, 1200]: -600, -900 e a inteira). */
@@ -26,8 +24,9 @@ let memo: GaragemG | null = null;
 
 /** Arte do carro (marca + modelo exatamente como nos dados), se existir. */
 function arteDo(b: string, m: string): Pick<ModeloG, 'a' | 'as'> {
-  const k = resumo().carros.find((c) => c.b === b && c.m === m)?.k;
-  if (!k || !existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`))) return {};
+  // a arte do carro; o principal sem arte própria usa a do apelido (Série 3: a do 320i), lib/dados.ts
+  const k = arteDoCarro(resumo().carros.find((c) => c.b === b && c.m === m)?.k);
+  if (!k) return {};
   const ss = srcsetArte(`/arte/v2/carro-${k}.webp`);
   const as = ss ? [...ss.matchAll(/ (\d+)w/g)].map((x) => Number(x[1])) : [];
   return as.length ? { a: k, as } : { a: k };
@@ -36,11 +35,14 @@ function arteDo(b: string, m: string): Pick<ModeloG, 'a' | 'as'> {
 export function garagem(): GaragemG {
   if (memo) return memo;
   const lista = marcasVisiveis();
+  // apelido de carro unido (C180, New Fiesta, 330i): sai do seletor (a peça conta no principal); o Meu carro salvo com
+  // ele vira o principal na leitura (lib/meuCarro.ts: carroDe)
   const modelos = new Map<string, Map<string, { n: string; c: number; ya: Map<number, number> }>>(lista.map((m) => [m.n, new Map()]));
   for (const p of pecas()) {
     const doMarca = p.b && p.m ? modelos.get(p.b) : undefined;
     if (!doMarca) continue;
     for (const m of modelosDa(p)) {
+      if (principalDe(p.b, m)) continue;
       let mo = doMarca.get(m);
       if (!mo) { mo = { n: m, c: 0, ya: new Map() }; doMarca.set(m, mo); }
       mo.c++;

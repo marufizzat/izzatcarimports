@@ -9,6 +9,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    descrições que faltam (até 150 por rodada).
 2. `preparar_dados.py` lê o `products.json` e gera:
    - `site/src/data/pecas.json` e `resumo.json` (usados para montar as páginas);
+   - `site/src/data/unidos.json` (carros unidos: "marca|apelido" -> principal; vai no JS do navegador, item 13);
    - `site/public/dados/busca.json` (o índice que a busca do navegador usa).
    Aqui ficam a leitura de **marca, modelo e ano** pelo título e o **nome limpo** da peça.
    - **Tipo da peça** (`s`, os cartões "Por tipo" da categoria): a árvore do ML vira o nome da loja em `TIPO_LOJA`
@@ -70,6 +71,14 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      filtros automáticos; `sem_capa` = nenhuma foto serve (o robô apaga a capa e o site mostra a foto do ML);
      `ok` = falso alarme conferido (não volta ao `_revisar.json`). Ajuste novo/mudado refaz a capa (assinatura em
      `<saída>/_ajustes_aplicados.json`, que vai junto no ramo). Teste: `python testes/test_capas_ajustes.py`.
+   - **Tom azul da luz** (nov/2026): a luz do vendedor deixa a peça preta azul-marinho nos escuros. `corrigir_azul()` tira só
+     o croma do lado do azul da luz (luminância e textura intactas, nunca passa do neutro: cromado não amarela; poupa
+     vermelho/laranja/amarelo/verde, os claros e o azul saturado ou bem acima do típico: fio, conector, ícone), só nos pixels
+     da peça. `decidir_cor()`: ajuste `cor` (`"neutra"`|`"manter"`) > azul escrito no título/nome/ficha, lataria pintada ou
+     azul forte nos claros da foto (fica) > outras fotos do anúncio (classe `p`, `-O` na caixa, 1º quartil do B−R escuro
+     ≤ 30: neutra) > só o excesso + "cor a conferir" no `_revisar.json` (o "preto" do título só vai anotado); registro em
+     `<saída>/_cor.json`. A ficha "Cor: Preto" é o padrão do vendedor (não conta). `ESTUDIO_COR=0` desliga, `ESTUDIO_COR_PROVA`
+     prova; maquiadas pelo `marca_pro.py`. Teste: `python testes/test_capas_cor.py`.
    - **Fotos do anúncio na galeria da peça** (depois da capa): o mesmo quadro quadrado da capa, fundo do estúdio
      (`#F4F3F0→#E7E5E1`) e a foto "multiplicando" sobre ele (o branco cru do ML vira o tom do estúdio). A peça fica
      centrada ocupando ~84% quando a foto deixa (`site/src/lib/quadroFoto.ts`, só CSS, a foto do ML não é copiada), com
@@ -144,6 +153,16 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Preço no site" + "No WhatsApp (10% de desconto)", "Meu carro: …", "Serve e ainda tem?" e o link por último
    (`cabecaPeca` + `linhaMeuCarro` + `caudaPeca`; o frete pelo CEP usa a mesma ficha: `*COTAÇÃO DE FRETE*`). Só Brasil
    (sem versão em espanhol).
+   **O preço grande é o do WhatsApp (pedido do dono, 11/11)**: em TODO cartão (`CartaoPeca.astro`, `Etiqueta` do catálogo,
+   `cartaoHtml`, "Vai junto") o preço do anúncio vem riscado em cima, o do WhatsApp é o grande e o selo verde "−10% no
+   WhatsApp" fica colado nele (`precoCartao`/`SELO_WHATS` em `catalogo/etiqueta.ts`; o leitor de tela lê "de R$ X por R$ Y
+   no WhatsApp", e é desse texto que os scripts tiram o preço CHEIO: `precoCheioDoTexto`; a lista e a mensagem do WhatsApp
+   continuam partindo do cheio). Depois do fio: "90 dias de garantia" e, só com 1 em estoque no anúncio, "Peça única"
+   (coluna `q` do busca.json, '1'/'0' por peça; cartão sem o dado não diz nada). Na página da peça o preço grande também
+   é o do WhatsApp; o selo "−10% no WhatsApp" + o preço do anúncio riscado ficam presos no canto do botão laranja (celular)
+   ou numa linha com "no Mercado Livre" (PC), e o botão do Mercado Livre leva o preço cheio em toda largura. NÃO mudam: o
+   JSON-LD `Product` (preço cheio, o do Mercado Livre), og/meta, o feed, e o filtro e a ordem por preço do catálogo (pelo
+   preço cheio). As sugestões da busca seguem com o preço do anúncio.
 
 10. **Lista de orçamento (rodada 12, nov/2026)**: o "carrinho" de quem compra pelo WhatsApp. Estado só no navegador em
    `site/src/lib/lista.ts` (`localStorage['izzatcar.lista']`, até 30 peças, evento `lista` com a ação; funções puras
@@ -199,6 +218,52 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      `izzatcar.continuar`.
    - **Tela cheia da peça (celular)**: a conta do toque em `components/ui/zoomToque.ts` (pinça em volta dos dedos, toque
      duplo 2,5×, limite pela foto desenhada, elástico); o mouse continua como era.
+
+12. **Raio-x do carro (rodada 14, nov/2026)** — quem não sabe o nome da peça aponta onde ela fica. `v2/RaioX.astro` na home
+   (depois das categorias) e na página do carro (no lugar de "Peças por categoria"; abaixo de 1024 px vem recolhido num
+   cartão com a miniatura: a arte inteira na 1ª tela virava o LCP). Arte `public/arte/v2/raio-x.webp` (ChatGPT, vista
+   fantasma, aprovada pelo dono; variantes 320/900 pelo `variantes-imagens.mjs`). As 9 zonas em `lib/raioX.ts` (`ZONAS`:
+   área de toque que reparte a arte inteira, contorno que acende, ponto, etiqueta e os GRUPOS do estoque: bloco `c`,
+   tipos `s`, lado/posição); cada linha do painel é um link EXATO do catálogo (tipo + sub + lado/pos + carro) e o número
+   é o do catálogo (`contarZonas` usa `Busca.procurar`; teste `raioX.test.ts` com o estoque real). O catálogo entende UM
+   tipo e UM sub: a zona inteira não cabe num endereço, então o botão "Ver as peças da frente" mostra as 12 mais novas
+   no próprio painel (com carro: `/dados/carro/<k>.json`; sem carro: `/dados/raio-x.json`, `pages/dados/raio-x.json.ts`).
+   Com carro salvo, as contas do carro saem no 1º toque (uma zona por vez, sem tarefa longa); zona sem peça = cinza com
+   "Me avise quando chegar" (`linkAvisoParte` em `lib/aviso.ts`). Véu laranja e véu escuro = duas camadas SVG com
+   `filter: blur` do CSS (o filtro do SVG custava 60–110 ms por toque com CPU 6×). Tipo novo no estoque: conferir a zona
+   dele em `ZONAS` (o teste avisa nome de bloco/tipo que sumiu).
+
+13. **Correções da revisão 14 (11/11/2026)** — o que ficou valendo:
+   - **Carros unidos** (C180/C200/C320 = Classe C, 320i/330i = Série 3, 530i = Série 5, GLA200 = GLA, New Fiesta = Fiesta,
+     New Civic = Civic): o `preparar_dados.py` grava `site/src/data/unidos.json` (`"marca|apelido" -> principal`, TODOS os
+     pares, também o apelido com menos de 8 peças). `lib/meuCarro.ts` lê o arquivo (`UNIDOS`, `import.meta.glob`) e:
+     (1) o **Meu carro salvo com o apelido vira o principal na leitura** (`carroDe`/`lerMeuCarro`, mesmo ano, regrava o
+     localStorage uma vez; antes da pintura na home, no catálogo e na página do carro: `components/MigrarCarro.astro` no
+     `<head>`, que também troca o `?modelo=<apelido>` do catálogo); (2) **a tela e o WhatsApp mostram o carro uma vez, pelo
+     principal** (`gruposModelos`, `nomeModelos`: "Mercedes-Benz Classe C", nunca "Classe C, C180 e C200"); (3) **o que o
+     Google lê guarda as versões** (`nomeModelosVersoes`: "Classe C (C180, C200)" no `<title>`, description, JSON-LD, feed e
+     no "Serve em" da ficha técnica; quando não cabe, a forma do anúncio "Mercedes-Benz C320", `nomeSoVersoes`). A arte do
+     carro principal sem arte própria é a do apelido (`arteDoCarro` em `lib/dados.ts`: Série 3 usa a do 320i).
+   - **Botão da lista no cartão** (`.etiqueta-lista`, `styles/global.css`): canto de cima à ESQUERDA da foto (o da direita é
+     do logo da capa); redondo 44×44 só com o ícone abaixo de 700 px, pílula "Lista" acima; um "+" só (o do desenho); área
+     de toque 8 px maior (`::after`). O selo "Chegou agora" fica no PÉ da foto e sai quando aparece o "Serve no seu…".
+     Lista cheia (30): aviso à vista (`components/ui/avisoLista.ts`), não só para leitor de tela.
+   - **Página da peça, "Antes de comprar"**: a pergunta é "E se a peça der problema?" (só a garantia de 90 dias e como
+     acionar). Nunca "E se não servir?": o dono confirmou garantia e NENHUMA troca; encaixe é assunto de antes da compra.
+   - **Raio-x sem carro salvo**: o painel abre com o estoque inteiro e o "Ver todas no catálogo" é `linkZona(k, filtro)`
+     (`lib/raioX.ts`: `/catalogo.html?zona=<k>` sem carro; sempre o MESMO filtro das contagens). O Tab só acende a parte;
+     Enter/Espaço abre; o painel que troca sem foco é dito no `role=status`.
+   - **WhatsApp**: `data-botao` em todo link (valores novos: `pedir-peca`, `pedir-barra`, `pedir-cartao`, `serve-no-carro`,
+     `foto-codigo`, `rodape`, `banner-*`, `chamada-*`, `vendida-avise`, `404-*`, `carro-avise`, `procuro-*`, `meu-carro-*`…;
+     os antigos não mudam). O evento `contato_whatsapp` sai com ou sem `data-botao` (o `rastreio.js` conta todo link `wa.me`).
+     Mensagem de dúvida com a lacuna "Meu carro é ____": o carro salvo entra no clique (`comCarroNaFrase`, ouvinte do
+     `Cabecalho.astro`). Pátio com peça na tela: `pedidoPatioAchou` (`lib/patio.ts`), nunca "Não achei no site".
+   - **404 de endereço de peça** (`conferirAntes` em `lib/vendida.ts`, inline no `<head>`): só o `<main>` fica escondido, o
+     arquivo do estoque é pedido no `<head>` e a peça à venda abre sem esperar o script da página; 400 ms: "Abrindo a
+     peça…"; 2,5 s: "Conferindo a peça…" com saídas (nunca "Página não encontrada" antes de saber, e daí em diante nada
+     navega sozinho: botão "Abrir a peça"). "mlb" minúsculo e barra no fim valem (`caminhoLimpo`). Anúncio do
+     `excluir_do_site.json`: abre o gêmeo à venda; sem gêmeo, "Essa peça saiu do site" (nunca "já foi vendida").
+   - **Tela cheia da foto**: o "Voltar" do aparelho fecha a foto (estado no histórico, `GaleriaTelaCheia.ts`).
 
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
@@ -270,6 +335,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`: até 2 núcleos, até 4 GB no Chrome ou economia de
   dados; o Safari informa sempre 4 ou 8 núcleos, então iPhone não entra): sem vidro desfocado, sem 3D no coverflow,
   sem o "respirar" da abertura e sem animação de altura nas perguntas.
+- **Busca em camadas (rodada 14, depois da revisão que barrou a 1ª versão do "tipo manda")**: o MiniSearch acha como sempre (todas as palavras) e `Busca.calcular()` ordena o que ele achou, sem esconder nada: (0/1) as que SÃO o que foi digitado, a 1ª palavra do nome é a da busca ("Farol direito", "Módulo ABS", "Motor vidro"); (2) as que citam no nome ("Suporte farol", "Alavanca freio mão"); (3) as que só o anúncio cita. `busca.nExatas` = quantas do começo são a peça (o catálogo escreve "12 peças para “farol” e mais 66 ligadas" e o bloco "Outras peças ligadas a “farol”"); `busca.citam` = nenhuma peça do estoque tem esse nome, a palavra é o lugar ou o assunto ("teto", "porta-malas", "capô", "ar condicionado", "suspensão xc60": "N peças ligadas a …", nunca "para"). `aproximado` (aviso "Nada exato" + pátio) quando: a peça existe no estoque mas não para o carro digitado ou não com as outras palavras ("alternador gol" só com o "Suporte alternador" do Gol: o do Gol primeiro, depois o alternador dos outros carros; "caixa de direção"); ou nada tem todas as palavras, e aí vêm as PARECIDAS DO TIPO, o carro digitado primeiro ("forro de teto": forros; "lanterna led gol": as lanternas do Gol; "farol compass": as luzes do Compass e depois os faróis), nunca zero com o tipo no estoque e nunca outro tipo. O "tipo" é a 1ª unidade digitada que é nome de peça (`casador()`: `cabecas`, `unNaCabeca`, `todas`); as palavras dos nomes ficam em índices montados uma vez (`montarVocab`, fora do busca.json e fora das peças). Regras que a revisão cobrou e têm teste: composta com espaço vale junta quando a junção é palavra de nome do estoque ("porta luvas", "para choque", "semi eixo"; antes de tirar as vazias) e duas palavras do estoque digitadas juntas se separam ("arcondicionado"); "d'água"/"dagua"/"d agua" = água (`limpar`); gatilho e destino do sinônimo são UMA unidade ("espelho retrovisor"); carro e marca valem só como palavra inteira ("gol" não é "Golf"), "vw"/"gm"/"volks" valem pela marca e o apelido de carro unido pelo principal ("new fiesta" = Fiesta, na busca e no filtro `modelo=`); 2 letras no fim só valem como começo quando não são palavra de nome ("sensor de ré" não é Renault; "modulo ab" segue achando ABS); erro de digitação é corrigido ANTES das camadas (`corrigir`: 1 letra, 2 invertidas ou o mesmo som: "retrovizor", "alternadro", "fexadura", "sinalera"); o carro salvo sobe dentro de cada parte da lista sem esconder as outras (`procurar(f, meuCarro)`, `sugestoes(q, n, meuCarro)`); "MLB…" acha o anúncio e "cod 123" o código. **O juiz**: `lib/busca.diferencial.test.ts` roda 541 consultas (as 291 do revisor, as da revisão e 190 do jeito que o cliente digita) com gabarito escrito pelo ESTOQUE, no candidato e no motor do ar (commit fixo de `origin/master`, lido pelo git para `node_modules/.cache/busca-no-ar`): o candidato não pode falhar o gabarito nem perder para o do ar em nenhuma (hoje 541/541, 192 vitórias, 0 derrotas; o do ar cumpre 354). `BUSCA_RELATORIO=arquivo` grava a tabela consulta a consulta; `BUSCA_CANDIDATO=/caminho/busca.mjs` julga outro motor. Mexeu na busca ou em `sinonimos.ts`: rodar o juiz. Tabela antiga: `lib/busca.regressao.ts` (926 consultas geradas; o cabeçalho genérico não conta mais como o tipo: o "Suporte alternador" não é o alternador).
 - Busca: UMA regra para o catálogo e as sugestões (`lib/busca.ts`): ano solto vira filtro; todas as palavras, depois com
   erro de digitação (nunca em termo com número), depois as parecidas (`aproximado`); o carro digitado vem primeiro.
   O índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
@@ -288,7 +354,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   **Lado e posição digitados viram filtro** ("retrovisor direito xc60": os DIREITOS do XC60, pela coluna `l`;
   "motorista" = esquerdo; "dianteira", "traseira", "frontal", "esq", "dir", "tras"): saem do texto (`separarLadoPos`),
   filtram e marcam a ficha; a peça cujo nome diz a mesma palavra sobe ("amortecedor traseiro" antes da "tampa
-  traseira"). Se o filtro não deixar nada, a busca volta ao texto de antes (nunca pior). As fichas "Lado e posição" do
+  traseira"). Rodada 14: se o estoque tem a peça digitada mas não desse lado/posição, NÃO volta ao texto nem mostra as que só citam: a lista sai vazia e `busca.faltou` diz o que faltou (lado, posição e `fem`, o gênero lido do nome das peças, para a tela escrever "Nenhum retrovisor direito para Volvo XC60" / "Nenhuma lanterna traseira direita"), com `busca.outrosLados` (o outro lado na MESMA posição, para a dica "Do lado esquerdo a gente tem…") e o "Não achou? A gente procura no pátio" (nunca trocar por outro lado em silêncio; peça que não diz o lado no nome não entra como "a direita"). Posição que o estoque não registra para a peça ("grade dianteira") não filtra. Na tela vazia cada texto tem a sua linha (`.cat-vazio-texto` e `.cat-vazio-pe` em `catalogo.astro`). As fichas "Lado e posição" do
   catálogo (`Catalogo.tsx`, depois do Ano, só com peça na lista) contam sem o próprio filtro; tocar numa tira a palavra
   da busca (`Busca.semLadoPos`).
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela

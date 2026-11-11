@@ -5,7 +5,7 @@
 import Icone from '../Icone.astro';
 import { whatsUrl } from '../../lib/dados';
 const msg = 'Sou de oficina/revenda e quero mandar uma lista de peças. Carro e ano: ____. Peças: ____';
-const passos = ['Mande a lista com o carro e o ano', 'A gente confere no pátio', 'Responde com foto e código'];
+const passos = ['Mande a lista com o carro e o ano', 'A gente confere no pátio', 'Responde pelo WhatsApp, com o código'];
 ---
 <section class="faixa-escura ofi" aria-labelledby="ofi-titulo">
   <picture class="ofi-arte">
@@ -15,11 +15,11 @@ const passos = ['Mande a lista com o carro e o ano', 'A gente confere no pátio'
   </picture>
   <div class="ofi-texto">
     <p class="ofi-antes"><img src="/icones/oficina-96.webp" alt="" width="96" height="96" loading="lazy" decoding="async" />Oficinas e revendas</p>
-    <h2 class="ofi-titulo" id="ofi-titulo">Separamos as peças para a sua oficina.</h2>
+    <h2 class="ofi-titulo" id="ofi-titulo">A gente separa as peças da sua oficina.</h2>
     <ul class="ofi-passos">
       {passos.map((t) => <li><Icone nome="check" /><span>{t}</span></li>)}
     </ul>
-    <a class="botao botao-laranja ofi-botao" href={whatsUrl(msg)} rel="noopener"><Icone nome="whats" />Mandar a lista no WhatsApp</a>
+    <a class="botao botao-laranja ofi-botao" href={whatsUrl(msg)} rel="noopener" data-botao="oficinas"><Icone nome="whats" />Mandar a lista no WhatsApp</a>
   </div>
 </section>
 <style>
