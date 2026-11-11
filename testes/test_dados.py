@@ -1417,11 +1417,24 @@ def test_carro_unido_mantem_enderecos_e_peca():
     resumo = json.loads((ROOT / "site" / "src" / "data" / "resumo.json").read_text(encoding="utf-8"))
     chaves = {c["k"] for c in resumo["carros"]}
     al = resumo.get("aliases", [])
-    assert ENDERECOS_ANTIGOS <= (chaves | {a["k"] for a in al}), ENDERECOS_ANTIGOS - (chaves | {a["k"] for a in al})
+    by = _pecas()
+    # O endereco antigo existe enquanto o apelido tem 8+ pecas (MIN_CARRO do preparar_dados: a mesma regra de toda
+    # pagina de carro). Com menos, ele sai, como a pagina de qualquer carro com menos de 8 pecas: isso NAO pode travar a
+    # publicacao (rodada 14b: o 530i tinha 13 pecas e o New Civic 11; vendidas 6, este teste recusava a rodada).
+    # A regra, com o estoque de agora: todo apelido com 8+ pecas tem o endereco; os que sairam, so avisa.
+    tem = chaves | {a["k"] for a in al}
+    for (marca, apelido) in pd.UNIR_CARRO_PARES:
+        k = pd.chave_url(f"{marca} {apelido}")
+        n = sum(1 for x in by.values()
+                if x["b"] == marca and any(pd.gi.chave_modelo(c) == pd.gi.chave_modelo(apelido) for c in _carros(x)))
+        if n >= 8:
+            assert k in tem, (k, n, "apelido com 8+ pecas sem o endereco antigo")
+        elif k in ENDERECOS_ANTIGOS and k not in tem:
+            print(f"AVISO: endereco antigo /carros/{k}.html fora do ar ({n} pecas do apelido; volta com 8+)")
+    assert ENDERECOS_ANTIGOS <= {pd.chave_url(f"{m} {a}") for (m, a) in pd.UNIR_CARRO_PARES}, "endereco antigo que nao e apelido conhecido"
     assert not ({a["k"] for a in al} & chaves), "apelido nao pode ser pagina de carro (sitemap e menus)"
     for a in al:
         assert a["para"] in chaves, a
-    by = _pecas()
     for (marca, apelido), principal in pd.UNIR_CARRO_PARES.items():
         for x in by.values():
             if x["b"] == marca and apelido in _carros(x):
