@@ -36,7 +36,9 @@ const ARTES = /^\/(?:estudio[\w-]*|arte|marcas|icones[\w-]*|identidade)\/|^\/ico
 let desligado = false;
 // os caches abertos ficam guardados (abrir de novo a cada pedido custa uma ida ao armazenamento do navegador)
 const abertos = {};
-const abrir = (nome) => (abertos[nome] = abertos[nome] || caches.open(nome));
+// desligado (botão de pânico): um cache de mentira, vazio, que não grava (abrir um apagado o criaria de novo)
+const NADA = { match: async () => undefined, put: async () => {}, keys: async () => [], delete: async () => false, addAll: async () => {} };
+const abrir = (nome) => (desligado ? Promise.resolve(NADA) : (abertos[nome] = abertos[nome] || caches.open(nome)));
 // o que está guardado em /_astro/ e nas artes, na memória: o fetch decide NA HORA se responde (só o que tem) ou deixa o
 // navegador ir à rede. Carrega quando o SW acorda (enquanto não carrega, tudo vai à rede, como sem o SW).
 const indice = { [CACHE.astro]: new Set(), [CACHE.artes]: new Set() };
@@ -289,18 +291,17 @@ async function vencidas() {
 }
 
 // ---- botão de pânico ----
-let proxima = 0;
+// a hora da última conferência fica no cache (a memória do SW some quando ele dorme, e um SW acordado há horas também
+// precisa conferir): lida a cada navegação, por trás, sem atrasar a página
 async function checarDesligar(forcar) {
-  if (desligado || (!forcar && Date.now() < proxima)) return;
+  if (desligado) return;
   try {
     const ctl = await abrir(CACHE.ctl);
     if (!forcar) {
       const r = await ctl.match('/__checado');
       const t = r ? Number(await r.text()) || 0 : 0;
-      proxima = t + SEIS_HORAS;
-      if (Date.now() < proxima) return;
+      if (Date.now() < t + SEIS_HORAS) return;
     }
-    proxima = Date.now() + SEIS_HORAS;
     await ctl.put('/__checado', new Response(String(Date.now())));
     const r = await fetch('/sw-desligar.txt', { cache: 'no-store' });
     if (r.ok && (await r.text()).trim() === '1') await desligar();
@@ -311,6 +312,10 @@ async function desligar() {
   for (const k of Object.keys(abertos)) delete abertos[k];
   for (const k of Object.keys(indice)) indice[k].clear();
   fila.clear();
-  for (const k of await caches.keys()) if (k.startsWith('izzat-')) await caches.delete(k);
+  const apagarTudo = async () => { for (const k of await caches.keys()) if (k.startsWith('izzat-')) await caches.delete(k); };
+  await apagarTudo();
   await self.registration.unregister();
+  // um pedido que já estava no meio pode ter aberto (e recriado) um cache: 2ª varrida
+  await esperar(3000);
+  await apagarTudo();
 }
