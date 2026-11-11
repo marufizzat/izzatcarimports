@@ -179,7 +179,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Copiar o link da lista" (`/lista.html?i=MLB1,MLB2`: quem abre vê a mesma lista, só para ver e pedir, e "Guardar na
    minha lista" junta sem apagar a dele); preço e disponibilidade conferidos no `/dados/ativas.json` (o leve: id, preço,
    capa; peça fora dele = "Já vendida", fora do total; sem rede, ou o arquivo vazio, ficam os valores guardados com um
-   aviso: nunca "tudo vendido"). O índice inteiro (`busca.json`, e a busca com o MiniSearch, sob demanda) só na lista de
+   aviso: nunca "tudo vendido"). Voltar/avançar (bfcache): o `pageshow` com `persisted` dispara o mesmo aviso de "mudou noutra
+   aba" (`ouvirOutrasAbas`, `lib/lista.ts`): os cartões e o número do cabeçalho acompanham a lista. O índice inteiro (`busca.json`, e a busca com o MiniSearch, sob demanda) só na lista de
    um link (precisa de nome, carro, anos e código), quando falta um dado que o leve não tem (nome, endereço, a foto do ML
    de peça sem capa de estúdio) ou UMA vez na lista de antes da rodada 13 (`izzatcar.lista.conferida`, marcada ao começar
    uma lista nova: o nome e o carro guardados já são os de agora). A capa só é pedida depois de saber se a peça existe (a
@@ -188,12 +189,20 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Não deu para abrir as peças desta lista agora. Tentar de novo" (nunca "R$ 0,00" nem "Anúncio MLB…" como nome; sem preço
    conferido, a linha fica sem o bloco do preço; "Guardar" só depois que as peças abriram). GA4 `lista_adicionar`
    (`rastreio.js`).
-   **"Vai junto"** (`components/peca/VaiJunto.astro`, logo depois da compra): até 4 peças do MESMO carro e geração que
-   costumam ser trocadas com a vista, pela regra `GRUPOS`/`JUNTO` de `lib/relacionadas.ts` (`vaiJunto`: lado e
-   frente/trás pelo nome, nunca o outro lado nem a outra ponta, nunca a mesma peça repetida); sem peça que combine, o
-   bloco não aparece. Nos grupos de motor (`GRUPOS_MOTOR`) nunca entra nome com tampa traseira/porta-malas/rebatimento/
-   banco/porta (`FORA_DO_MOTOR`; "banco 1" do motor fica); a válvula do turbo tem o grupo dela (`turbo-valvula`) e o botão
-   da tampa vai com a tampa (`tampa-botao`). As peças dele saem do "Do mesmo carro" e do "Mais peças <marca>": sem outra
+   **"Vai junto"** (`components/peca/VaiJunto.astro`, logo depois da compra; regra refeita na rodada 15): 1 a 3 peças do
+   MESMO carro e geração que entram NO MESMO SERVIÇO que a vista. Em `lib/relacionadas.ts`, cada peça tem um PAPEL
+   (`PAPEIS`: o tipo `s` + o que o nome diz: "Suporte farol", "Mangueira radiador", "Moldura botão vidro") e cada papel
+   lista os papéis que a oficina troca ou precisa junto, do mais ligado ao menos (farol -> suporte, friso, guia do
+   para-choque, para-choque, grade; bomba d'água -> termostática, mangueira da bomba, tensor; máquina de vidro -> botão e
+   forro da MESMA porta; lanterna -> a lanterna da tampa do mesmo lado, soquete, guia do para-choque traseiro...). Papel
+   sem companheiro de serviço (botão do pisca-alerta, sensor solto, capa do motor, console) não tem bloco. `casa()`: lado e
+   posição iguais quando as duas dizem; só uma diz = vale se a outra for peça "de uma só" (`lat`/`fz`); na porta (`porta`)
+   a porta tem de ser a mesma ("motorista" = dianteira esquerda). Nunca a mesma peça de novo: mesmo código, mesmo nome, o
+   mesmo nome noutro canto (`esqueleto`) ou com palavras a mais (`contida`). Sem companheira certa, o bloco não aparece
+   (nov/2026: 1.543 de 5.311 páginas; a tabela de antes, por grupos largos, dava 4.173 com sugestão sem sentido). Tipo
+   novo no estoque: conferir se cabe num papel. Amostra para conferir uma a uma: `npx vite-node scripts/amostra-vai-junto.ts`
+   (na pasta `site/`, semente fixa, espalhada pelos blocos). As peças dele saem do "Do mesmo carro" e do "Mais peças
+   <marca>": sem outra
    peça do carro, o "Do mesmo carro" não aparece (nunca volta à lista inteira e repete). Cartão: o texto num `<span>`
    (nome, anos, e o "Cód." numa linha só dele, inteiro, quebra sem reticências), o preço e o "+ Lista" ESCRITO (nome
    acessível "Adicionar à Lista de orçamento: <peça>"); já na lista, o verde "Na lista" leva à lista. O `<li data-carro>`
@@ -264,6 +273,23 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      navega sozinho: botão "Abrir a peça"). "mlb" minúsculo e barra no fim valem (`caminhoLimpo`). Anúncio do
      `excluir_do_site.json`: abre o gêmeo à venda; sem gêmeo, "Essa peça saiu do site" (nunca "já foi vendida").
    - **Tela cheia da foto**: o "Voltar" do aparelho fecha a foto (estado no histórico, `GaleriaTelaCheia.ts`).
+
+14. **Página do carro por família (rodada 15, nov/2026; cliente oculto 2, atrito 8)** — `pages/carros/[k].astro` +
+   `lib/carroPagina.ts` + `components/AnosDoCarro.astro`. As **fichas de ano** ficam DENTRO da caixa do carro (na 1ª tela
+   do celular de 360×640); o ano do carro salvo deste modelo já vem aceso e à vista antes da 1ª pintura (script inline,
+   `rolarFila`); tocar num ano filtra a página e **salva o "Meu carro"** ("Salvo como seu carro · Desfazer"; se havia
+   outro carro, "Salvo no lugar do Onix 2015"; o Desfazer devolve o carro e o ano de antes); "Todos" não mexe no carro
+   salvo. No PC as fichas têm largura fixa (a quebra de linha não muda quando a letra chega: era o CLS 0,11 das páginas
+   pequenas, revisão 14). As **peças** saem agrupadas pelos blocos (`agrupar`: mais peças primeiro, "Outros" no fim), com
+   a barra de fichas presa sob o cabeçalho (`.gp-barra`, só as famílias com peça no ano, pela contagem; pula para o grupo
+   com `scroll-margin-top`; a ficha ativa acompanha a rolagem) e, em cada grupo, 8 cartões no HTML (o CSS mostra 4 no
+   celular, 6 no tablet, 8 no PC) + "Ver as N de <família>" (catálogo com `marca`, `modelo`, `tipo` e `ano`). Carro com
+   mais de 48 peças: só os primeiros grupos levam os cartões no HTML (`cartoesNoHtml`, 40 cartões; antes eram 48 soltos) e
+   os outros chegam de `/dados/carro/<k>.json` quando o navegador folga, com o lugar guardado (`data-espera`); a vista do
+   ano é montada do mesmo arquivo, um grupo por tarefa. TODA peça segue com link de verdade na lista "Todas as N peças".
+   Carro com menos de 20 peças (ou de uma família só): a grade simples. **Selo do carro unido** (revisão 14, B7): a peça
+   de UMA versão (`data-v1`/`it.v1`, `versaoUnica` em `catalogo/etiqueta.ts`: "C180" dentro do Classe C, "New Fiesta"
+   dentro do Fiesta) não ganha "Serve no seu…": ganha "Confira a versão".
 
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
@@ -360,9 +386,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
   de anos com mais peças (na página do carro, num `<script is:inline>` antes da 1ª pintura); o "Todos" fica fixo à
   esquerda (`.ac-fixo`/`.mc-fixo`, sticky). Só o scrollLeft da fila, nunca a página.
-- Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (um por modelo da garagem; só as peças do carro, feito no
-  build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entra em partes (12 cartões, o resto, a lista completa em
-  fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`.
+- Página do carro: a vista do ano e os grupos que não vêm no HTML saem de `/dados/carro/<k>.json` (um por modelo da garagem; só as peças do carro, feito no
+  build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entram um grupo por tarefa (a lista completa em
+  fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`. Ver o item 14.
 - **Troca de página sem tela branca** (nov/2026): transição entre documentos (`@view-transition` no fim do
   `global.css`; Chrome/Edge 126+ e Safari 18.2+, quem não tem navega como antes), até 250 ms, nenhuma com
   `prefers-reduced-motion` e o `html.leve` pula no `pageswap`. O cabeçalho fica parado (grupo `cab`, fundo cheio só

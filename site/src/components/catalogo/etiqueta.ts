@@ -72,10 +72,19 @@ export function idsMaisNovos(ids: string[], n = QTD_CHEGOU): Set<string> {
   return new Set(ord.slice(-n));
 }
 
+/** Peça de UMA versão de um carro unido (revisão 14, B7): o carro "Classe C" junta C180, C200 e C320, e o "Fiesta" junta o
+ *  New Fiesta. A peça que diz UMA delas ("Módulo SAM C180") devolve o apelido ("C180"); a que diz várias, ou nenhuma, ''.
+ *  O cartão não diz "Serve no seu Classe C" para ela: diz "Confira a versão" (a página da peça já avisa).
+ *  `apelidos` = os "Marca|Apelido" do resumo/busca.json. */
+export function versaoUnica(b: string | null | undefined, ms: readonly string[] | null | undefined, apelidos: ReadonlySet<string>): string {
+  const v = (ms ?? []).filter((m) => apelidos.has(`${b}|${m}`));
+  return v.length === 1 ? v[0] : '';
+}
+
 /** Atributos que a equipe "Meu carro" lê no cartão (data-a0/data-a1 no script do build, data-y no catálogo).
  *  Peça de 2+ carros: data-ms="S60|XC60" e, quando a faixa muda de um carro para outro, data-ys. */
 export function dadosCarro(b?: string | null, m?: string | null, y?: [number, number] | null,
-                           ms?: string[] | null, ys?: ([number, number] | null)[] | null) {
+                           ms?: string[] | null, ys?: ([number, number] | null)[] | null, v1?: string | null) {
   return {
     'data-b': b || undefined,
     'data-m': m || undefined,
@@ -83,6 +92,7 @@ export function dadosCarro(b?: string | null, m?: string | null, y?: [number, nu
     'data-a1': y ? y[1] : undefined,
     'data-y': y ? `${y[0]}-${y[1]}` : undefined,
     ...atributosModelos(ms, ys),
+    'data-v1': v1 || undefined,
   };
 }
 

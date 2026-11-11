@@ -8,7 +8,7 @@
 import type { Peca } from '../lib/dados';
 import { fotoCartaoPeca, resumo } from '../lib/dados';
 import { SIZES_CARTAO } from '../lib/busca';
-import { linhaCarro, codigoPeca, precoCartao, SELO_WHATS, dadosCarro, CLASSE_CARTAO } from './catalogo/etiqueta';
+import { linhaCarro, codigoPeca, precoCartao, SELO_WHATS, dadosCarro, versaoUnica, CLASSE_CARTAO } from './catalogo/etiqueta';
 interface Props {
   p: Peca; base?: string; eager?: boolean; /** selo "Chegou agora"; sem a prop, vale resumo().chegou */ novo?: boolean;
   /** largura da foto do cartão em cada tela (SIZES_CARTAO de lib/busca.ts); sem a prop, a da grade de 2/3/4 colunas */
@@ -22,9 +22,11 @@ const pc = precoCartao(p.p);
 // capa de estúdio com as versões leves de 400/640 px no srcset (o celular não baixa a de 1000 px); sem capa, a foto do ML
 const f = fotoCartaoPeca(p, sizes);
 const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
+// peça de UMA versão de um carro unido (C180 dentro do Classe C): o selo do carro salvo vira "Confira a versão"
+const v1 = p.ms ? versaoUnica(p.b, p.ms, new Set((resumo().aliases ?? []).map((a) => `${a.b}|${(a as { de?: string }).de ?? ''}`))) : '';
 ---
 <div class={CLASSE_CARTAO}>
-  <a class="etiqueta" href={`${base}${p.slug}.html`} {...dadosCarro(p.b, p.m, p.y, p.ms, p.ys)}>
+  <a class="etiqueta" href={`${base}${p.slug}.html`} {...dadosCarro(p.b, p.m, p.y, p.ms, p.ys, v1)}>
     <div class="etiqueta-foto">
       <img srcset={f.srcset} sizes={f.sizes} src={f.src} class:list={[{ estudio: f.estudio }]}
            alt="" loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} decoding="async" width="800" height="800" />
@@ -63,9 +65,12 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
       const selo = el.querySelector<HTMLElement>('.etiqueta-serve');
       if (!selo) return;
       const ano = naPagina && s === 'confira-ano';
-      const txt = ano ? 'Confira o ano' : s === 'sim' && !naPagina ? `Serve no seu ${c!.m}` : '';
+      // carro unido (Classe C = C180 + C200 + C320; Fiesta = Fiesta + New Fiesta): a peça de UMA versão que não é a do
+      // carro salvo não ganha o verde (revisão 14, B7): "Confira a versão", como a página da peça avisa
+      const versao = s === 'sim' && !naPagina && !!d.v1 && norm(d.v1) !== norm(c!.m);
+      const txt = ano ? 'Confira o ano' : versao ? 'Confira a versão' : s === 'sim' && !naPagina ? `Serve no seu ${c!.m}` : '';
       selo.hidden = !txt;
-      selo.classList.toggle('etiqueta-serve-ano', ano);
+      selo.classList.toggle('etiqueta-serve-ano', ano || versao);
       if (txt) selo.textContent = txt;
     });
   }

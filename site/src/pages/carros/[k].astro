@@ -1,14 +1,20 @@
 ---
 // Página do carro. Ordem pensada para as peças chegarem cedo na tela:
-//  1. topo: a contagem real e os anos no lead, "Ver as N peças", "É o meu carro" e "Avise-me quando chegar peça";
+//  1. topo: a contagem real e os anos no lead, as FICHAS DE ANO (na 1ª tela do celular; tocar filtra a página e salva o
+//     "Meu carro", com "Desfazer"), "Ver as N peças", "É o meu carro" e "Avise-me quando chegar peça";
 //  2. o Raio-x do carro (só em carro com 20+ peças): a arte com as partes tocáveis e as contagens DESTE carro, já no
 //     build (components/v2/RaioX.astro). Ocupa o lugar dos cartões "Peças por categoria": as partes do carro levam aos
 //     tipos de peça com o link exato do catálogo (os blocos continuam no filtro do catálogo e na home);
-//  3. a grade, com título; o texto de apoio vai para o fim.
+//  3. as peças, agrupadas por FAMÍLIA (rodada 15, cliente oculto 2, atrito 8: eram 48 cartões em ordem de chegada): uma
+//     barra de fichas presa sob o cabeçalho ("Motor 82 · Faróis e Lanternas 14…", só as famílias com peça, pela contagem)
+//     pula para cada grupo; cada grupo mostra os cartões mais novos e o "Ver as N de <família>" (o catálogo filtrado).
+//     No carro grande só os primeiros grupos levam os cartões no HTML (o resto chega de /dados/carro/<k>.json: o peso da
+//     página não sobe); TODA peça continua com link de verdade na lista "Todas as N peças". Carro com menos de 20 peças:
+//     a grade simples, como antes. O texto de apoio vai para o fim. Lógica: lib/carroPagina.ts.
 import MigrarCarro from '../../components/MigrarCarro.astro';
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
-import GradePecas from '../../components/GradePecas.astro';
+import CartaoPeca from '../../components/CartaoPeca.astro';
 import TodasAsPecas from '../../components/categoria/TodasAsPecas.astro';
 import RaioX from '../../components/v2/RaioX.astro';
 import TextoApoio from '../../components/TextoApoio.astro';
@@ -23,6 +29,7 @@ import { linkAviso } from '../../lib/aviso';
 import { SIZES } from '../../lib/variantes';
 import { serveNoModelo } from '../../lib/meuCarro';
 import { garagem } from '../../lib/garagem';
+import { agrupar, cartoesNoHtml, chaveGrupo, nomeGrupo, textoMais, AGRUPAR_A_PARTIR_DE, CARTOES_NO_HTML, POR_GRUPO, POR_GRUPO_ESTREITO, POR_GRUPO_CELULAR, classeMais } from '../../lib/carroPagina';
 // endereço antigo de carro unido (C180 -> Classe C): a MESMA página do principal, com canonical para ele (não some, não 404)
 export function getStaticPaths() {
   const r = resumo();
@@ -59,14 +66,24 @@ const arteCarro = `/arte/v2/carro-${arteDoCarro(c.k) ?? c.k}.webp`;
 const og = existe(arteCarro) ? arteCarro : '/identidade/og.jpg';
 // a arte do carro como a garagem a vê (a/as): vai junto quando a pessoa salva este carro (a abertura já nasce com ela)
 const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n === c.m);
+// as famílias (os blocos da loja), pela contagem; a ordem da loja desempata
+const ordem = r.familias.map((f) => f.n);
+const grupos = agrupar(lista, ordem);
+const agrupada = N >= AGRUPAR_A_PARTIR_DE && grupos.length > 1;
+// carro com até 48 peças: todos os cartões no HTML (como antes); acima disso, os primeiros grupos (o resto pelo arquivo)
+const noHtml = N > 48 ? cartoesNoHtml(grupos.map((g) => g.itens.length), CARTOES_NO_HTML) : grupos.map((g) => g.itens.length);
+const linkGrupo = (fam: string) => `${base}&tipo=${encodeURIComponent(fam)}`;
+// quantas fileiras o grupo sem cartão vai ter (2, 3 e 4 colunas): o lugar fica guardado até os cartões chegarem
+const fileiras = (n: number) => `--f2:${Math.ceil(Math.min(n, POR_GRUPO_CELULAR) / 2)};--f3:${Math.ceil(Math.min(n, POR_GRUPO_ESTREITO) / 3)};--f4:${Math.ceil(Math.min(n, POR_GRUPO) / 4)}`;
 ---
 <Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta} canonical={canonicoCarro}>
   <MigrarCarro slot="head" />
   <TopoArte trilha={[['Início', '/'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
     antes={c.b} antesNoTitulo titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} arteSizes={SIZES.topoCarro} encaixe="meio" lead={lead}>
     <Fragment slot="acoes">
+      <AnosDoCarro lista={lista} b={c.b} m={c.m} a={arteG?.a} as={arteG?.as} />
       <div class="carro-acoes">
-        <a class="botao botao-grafite" href={verTodas}>Ver as {fmt(N)} {N === 1 ? 'peça' : 'peças'}</a>
+        <a class="botao botao-grafite" href={verTodas} data-ver-todas>Ver as {fmt(N)} {N === 1 ? 'peça' : 'peças'}</a>
         <button class="botao botao-linha carro-meu" type="button" data-este-carro data-b={c.b} data-m={c.m} data-a={arteG?.a} data-as={arteG?.as?.join(',')}>
           <Icone nome="carro" class="ic-carro" /><Icone nome="check" class="ic-ok" /><span data-este-txt>É o meu carro</span>
         </button>
@@ -81,16 +98,43 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
     {N >= RAIO_X_A_PARTIR_DE && <div class="carro-raiox"><RaioX carro={{ b: c.b, m: c.m }} compacto recolhido /></div>}
   </TopoArte>
   <div class="moldura">
-    <section class="carro-pecas" id="pecas" aria-labelledby="h-pecas">
+    <section class="carro-pecas" id="pecas" aria-labelledby="h-pecas" data-b={c.b} data-m={c.m} data-base={base} data-n={N}
+             data-dados={`/dados/carro/${c.k}.json`}>
       <div class="grade-cabeca">
         <h2 class="titulo-secao" id="h-pecas">Peças do {nome}</h2>
-        <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{N > 1 ? ' · as mais novas primeiro' : ''}</p>
-        <AnosDoCarro lista={lista} b={c.b} m={c.m} base={base} k={c.k} />
+        <p class="num">{fmt(N)} {N === 1 ? 'peça' : 'peças'}{agrupada ? ' · por tipo, as mais novas primeiro' : N > 1 ? ' · as mais novas primeiro' : ''}</p>
       </div>
-      <GradePecas lista={lista.slice(0, 48)} total={N} linkTodas={base} />
-      {/* toda peça do carro com um link de verdade (a grade mostra 48; o "Ver as N" vai para o catálogo filtrado, que o
-          Google não indexa): sem esta lista, 2.310 peças de 40 carros não tinham link na página do próprio carro (SEO, 10/11) */}
+      {agrupada ? (
+        <div class="gp" data-gp>
+          <nav class="gp-barra" aria-label={`Tipos de peça do ${nome}`}>
+            <div class="gp-fila">
+              {grupos.map((g) => <a class="gp-ficha" href={`#${chaveGrupo(g.c)}`}>{nomeGrupo(g.c)} <small class="num">{fmt(g.itens.length)}</small></a>)}
+            </div>
+          </nav>
+          <div class="gp-estatico">
+            {grupos.map((g, gi) => {
+              const k = chaveGrupo(g.c), n = g.itens.length;
+              return (
+                <div class="gp-grupo" id={k} data-c={g.c}>
+                  <h3 class="gp-titulo">{nomeGrupo(g.c)} <span class="num">{fmt(n)}</span></h3>
+                  {noHtml[gi] > 0
+                    ? <div class="gp-grade">{g.itens.slice(0, N > 48 ? noHtml[gi] : n).map((p, i) => <CartaoPeca p={p} eager={gi === 0 && i < 2} />)}</div>
+                    : <div class="gp-grade" data-espera style={fileiras(n)}></div>}
+                  {n > POR_GRUPO_CELULAR && <a class={`gp-mais${classeMais(n)}`} href={linkGrupo(g.c)}>{textoMais(n, g.c)}</a>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div class="grade-pecas grade-simples">{lista.slice(0, 48).map((p, i) => <CartaoPeca p={p} eager={i < 2} />)}</div>
+      )}
+      {N > 48 && <div class="grade-mais"><a class="botao botao-grafite" href={base}>Ver as {fmt(N)} peças no catálogo</a></div>}
+      {/* toda peça do carro com um link de verdade (os grupos mostram só as mais novas; o "Ver as N" vai para o catálogo
+          filtrado, que o Google não indexa): sem esta lista, 2.310 peças de 40 carros não tinham link na página do próprio
+          carro (SEO, 10/11) */}
       {N > 48 && <TodasAsPecas lista={lista} titulo={`Todas as ${fmt(N)} peças do ${nome}`} />}
+      <noscript><style>{`.gp-grade[data-espera]{display:none}`}</style></noscript>
     </section>
     {apoio.length > 0 && <div class="carro-apoio"><TextoApoio paragrafos={apoio} /></div>}
     {/* depois da grade: o Maruf apontando a peça (faixa baixa 1536×512 no PC, em pé no celular). Substitui a faixa
@@ -102,6 +146,10 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
     </section>
   </div>
 </Pagina>
+<script>
+  import { iniciarPaginaCarro } from '../../lib/carroPagina';
+  iniciarPaginaCarro();
+</script>
 <script>
   import { lerMeuCarro, salvarMeuCarro, norm, EVENTO, type MeuCarro } from '../../lib/meuCarro';
   import { linkAviso } from '../../lib/aviso';
@@ -119,7 +167,7 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
       const txt = botao.querySelector<HTMLElement>('[data-este-txt]');
       const meu = eh(c);
       botao.classList.toggle('ativo', meu);
-      if (txt) txt.textContent = meu ? (c.y ? `Seu ${M} ${c.y}` : `Seu ${M} · escolher o ano`) : 'É o meu carro';
+      if (txt) txt.textContent = meu ? (c.y ? `Seu ${M} ${c.y}` : `Seu ${M} · escolher o ano`) : 'É o meu carro';   // o ano: as fichas logo acima, ou a caixa do cabeçalho
       botao.setAttribute('aria-label', meu ? `Este é o seu carro${c.y ? `, ano ${c.y}` : ''}. Trocar o ano ou tirar` : `Salvar o ${B} ${M} como o meu carro e escolher o ano`);
     }
     // o aviso leva o ano só quando o carro salvo é ESTE (nunca o ano de outro carro)
@@ -153,11 +201,81 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
     .carro-aviso { justify-content: flex-start; }
   }
 
+  /* as fichas de ano dentro da caixa do carro: a fila corre até a borda da caixa no celular; o "Todos" fixo cobre com a cor da caixa */
+  /* as ações na largura toda da coluna do texto: a largura das fichas não depende da largura dos botões (que muda quando a
+     letra do site chega: as fichas mudavam de linha e a página pulava no PC) */
+  :global(.topo-arte-wrap .topo-acoes) { width: 100%; }
+  :global(.topo-arte-wrap .anos-carro) { --ac-fundo: #f4f3f0; margin-top: 2px; }
+  /* carro sem arte, no PC (o disco da marca ao lado do texto): a coluna do disco tem a largura DELE desde o começo. Com
+     "auto", quando o navegador pintava a página antes de o disco chegar no HTML, o texto ocupava a largura toda, as fichas
+     de ano cabiam em menos linhas e, com o disco, mudavam de linha (CLS de 0,03–0,06 em 1 de cada 3 cargas a 1024 px) */
+  @media (min-width: 900px) { :global(section.topo-arte-wrap.com-disco .topo-caixa) { grid-template-columns: minmax(0, 1fr) clamp(190px, 24vw, 280px); } }
+  :global(.topo-arte-wrap.com-disco .anos-carro), :global(.topo-arte-wrap:not(.com-arte) .anos-carro) { --ac-fundo: var(--bg); }
+  @media (max-width: 899px) {
+    :global(.topo-arte-wrap.com-arte .anos-carro .ac-trilho) { margin-right: -22px; }
+    :global(.topo-arte-wrap.com-arte .anos-carro .ac-lista) { padding-right: 22px; scroll-padding-right: 22px; }
+  }
   .carro-raiox { margin-top: clamp(8px, 1.6vw, 16px); }
   .carro-pecas { padding-top: clamp(32px, 4.4vw, 52px); }
-  .grade-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; margin-bottom: clamp(18px, 2.4vw, 26px); }
+  .grade-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; margin-bottom: clamp(10px, 1.6vw, 16px); }
   .grade-cabeca h2 { margin: 0; }
   .grade-cabeca p { margin: 0; font-size: 15px; color: var(--ink-2); }
+  .grade-simples, .gp-grade { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grade-simples { margin-top: clamp(8px, 1.4vw, 12px); }
+  @media (min-width: 700px) { .grade-simples, .gp-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
+  @media (min-width: 1100px) { .grade-simples, .gp-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
+  .grade-mais { display: flex; justify-content: center; margin-top: 32px; }
+
+  /* ---- as peças por família ---- */
+  .gp { --cab-a: 69px; --barra-a: 60px; }
+  @media (min-width: 960px) { .gp { --cab-a: 85px; } }
+  /* a barra: presa sob o cabeçalho enquanto os grupos estão na tela; rola de lado; de ponta a ponta no celular */
+  .gp-barra { position: sticky; top: var(--cab-a); z-index: 30; height: var(--barra-a); margin-inline: -16px; padding: 8px 0;
+              background: color-mix(in oklab, var(--bg), transparent 6%); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+              border-bottom: 1px solid color-mix(in oklab, var(--line), transparent 30%); }
+  :global(html.leve) .gp-barra { background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .gp-fila { display: flex; gap: 6px; height: 44px; padding-inline: 16px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; scroll-padding-inline: 16px; }
+  .gp-fila::-webkit-scrollbar { display: none; }
+  .gp :global(.gp-ficha) { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px; border-radius: 99px;
+              background: var(--surface); color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--line-2);
+              font-size: 14.5px; font-weight: 640; font-stretch: 94%; line-height: 1; white-space: nowrap;
+              transition: background-color .16s ease, color .16s ease, box-shadow .16s ease; }
+  .gp :global(.gp-ficha small) { font-size: 12px; font-weight: 600; color: var(--ink-3); }
+  @media (hover: hover) { .gp :global(.gp-ficha:hover) { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink-3); } }
+  .gp :global(.gp-ficha[aria-current]) { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent), transparent 45%); }
+  .gp :global(.gp-ficha[aria-current] small) { color: var(--accent-text); }
+  .gp :global(.gp-ficha:focus-visible) { outline-offset: -3px; box-shadow: none; }
+  @media (min-width: 900px) and (pointer: fine) { .gp-barra { --barra-a: 56px; } .gp-fila, .gp :global(.gp-ficha) { height: 40px; } }
+  /* cada grupo: o título com a contagem, os cartões mais novos e o "Ver as N" (quando há mais do que os que aparecem) */
+  .gp :global(.gp-grupo) { padding-top: clamp(22px, 3vw, 30px); scroll-margin-top: calc(var(--cab-a) + var(--barra-a) - 92px); }   /* o html já desconta 88 px do cabeçalho (scroll-padding-top, global.css) */
+  .gp :global(.gp-titulo) { margin: 0 0 12px; font-stretch: 86%; font-weight: 800; font-size: clamp(20px, 2.2vw, 24px); line-height: 1.15; color: var(--ink); }
+  .gp :global(.gp-titulo:focus) { outline: none; }
+  .gp :global(.gp-titulo .num) { margin-left: 4px; font-stretch: 100%; font-weight: 560; font-size: .68em; color: var(--ink-3); }
+  .gp :global(.gp-grade) { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* celular: 4 cartões (um grupo por tela); tablet: 6; PC: 8 (os outros esperam no "Ver as N") */
+  .gp :global(.gp-grade > :nth-child(n+5)) { display: none; }
+  @media (min-width: 700px) {
+    .gp :global(.gp-grade) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .gp :global(.gp-grade > :nth-child(n+5)) { display: flex; }
+    .gp :global(.gp-grade > :nth-child(n+7)) { display: none; }
+    .gp :global(.gp-mais-celular) { display: none; }
+  }
+  @media (min-width: 1100px) {
+    .gp :global(.gp-grade) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+    .gp :global(.gp-grade > :nth-child(n+7)) { display: flex; }
+    .gp :global(.gp-grade > :nth-child(n+9)) { display: none; }
+  }
+  /* grupo que ainda espera os cartões (carro grande): o lugar das fileiras fica guardado */
+  .gp-grade[data-espera] { --cartao-a: calc((100vw - 44px) / 2 + 232px); min-height: calc(var(--f2) * var(--cartao-a) + (var(--f2) - 1) * 12px); border-radius: 16px;
+                           background: linear-gradient(color-mix(in oklab, var(--ink), transparent 96%), transparent 420px); }
+  @media (min-width: 700px) { .gp-grade[data-espera] { --cartao-a: calc((100vw - 64px) / 3 + 196px); min-height: calc(var(--f3) * var(--cartao-a) + (var(--f3) - 1) * 16px); } }
+  @media (min-width: 1100px) { .gp-grade[data-espera] { --cartao-a: calc((min(100vw - 32px, 1240px) - 54px) / 4 + 190px); min-height: calc(var(--f4) * var(--cartao-a) + (var(--f4) - 1) * 18px); } }
+  .gp :global(.gp-mais) { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 8px; padding: 0 2px; font-size: 15px; font-weight: 680; color: var(--ink);
+              text-decoration: underline; text-decoration-color: var(--line-2); text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  .gp :global(.gp-mais::after) { content: "→"; text-decoration: none; display: inline-block; color: var(--accent-text); transition: transform .16s ease; }
+  @media (hover: hover) { .gp :global(.gp-mais:hover) { text-decoration-color: currentColor; } .gp :global(.gp-mais:hover::after) { transform: translateX(3px); } }
+  @media (min-width: 1100px) { .gp :global(.gp-mais-estreito) { display: none; } }
+  .gp :global([hidden]) { display: none !important; }
   .carro-apoio { padding-top: clamp(40px, 5vw, 64px); }
   .carro-banner { padding-block: clamp(40px, 5vw, 64px) clamp(56px, 7vw, 88px); }
 </style>
