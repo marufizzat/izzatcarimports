@@ -298,7 +298,14 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **"Bati o carro"** (o seletor de dois modos acima da arte; `v2/raioXBatida.ts` + `.css`): a arte troca as 9 zonas
      pelos **8 pontos da batida** (`lib/batida.ts`: `PONTOS`, medidos na arte; o lado de lá fica na borda visível, com a
      etiqueta dizendo o lado) e o painel vira a **lista do conserto**: as linhas na ordem da oficina, com a peça mais
-     barata de cada uma (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
+     barata de cada uma **que É a peça do título da linha** (revisão 15, P1-2: o tipo do estoque junta a peça e os
+     acessórios dela, e "a mais barata" punha o suporte na linha da maçaneta, o forro do porta-malas na do forro da
+     porta e a polaina na do para-choque, já marcados e somados: 98 de 708 linhas nos carros com 20+ peças. Cada linha
+     diz qual nome é a peça dela, `eh` = a 1ª palavra do nome, como o "tipo" da busca; `itensDaLinha` ordena primeiro as
+     que são a peça, depois as outras do tipo, a mais barata na frente em cada grupo; a linha principal que só tem peça
+     LIGADA vira o título no pátio + a ligada em "Também costuma ir junto" com "(peça ligada)" no nome, sem marcar:
+     `linhasDoPainel`, `marcadasDeInicio`; o teste confere em TODO carro e ponto, nos dois estoques. Linha nova = dizer
+     o `eh` dela) (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
      "Outra opção" (passa pelas outras peças da mesma linha; nunca a palavra "trocar") e o total ao vivo (`somaPrecos`, em centavos). Regras do kit:
      peça que vem em par é pedida com o LADO do ponto; a que não tem lado entra sem ele e a guarda do ponto tira só a que
      DIZ o lado/posição oposta (o estoque quase nunca escreve "dianteiro" em grade, alma e guia); linha **principal** sem
