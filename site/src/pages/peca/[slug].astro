@@ -7,6 +7,7 @@ import AbasDetalhes from '../../components/peca/AbasDetalhes.astro';
 import DoMesmoCarro from '../../components/peca/DoMesmoCarro.astro';
 import VaiJunto from '../../components/peca/VaiJunto.astro';
 import GuiaCodigo from '../../components/peca/GuiaCodigo.astro';
+import OndeFica from '../../components/peca/OndeFica.astro';
 import { pecas, pecaPorId, resumo, foto, brl, whatsUrl, SITE, capaEstudio, codigoDaPeca } from '../../lib/dados';
 import { blocoPeca, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
 import { modelosDa } from '../../lib/meuCarro';
@@ -191,6 +192,7 @@ const ld = {
   </div>
 
   <AbasDetalhes p={p} serve={serve} serveRotulo={serveRotulo} />
+  <OndeFica id={p.id} carro={carro} />
 
   {codigo && <GuiaCodigo cod={codigo} peca={pecaMsg} />}
 

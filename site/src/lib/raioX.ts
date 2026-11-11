@@ -18,6 +18,8 @@ export type Zona = {
   nome: string;
   /** "da frente": "Ver os 9 tipos da frente", "Agora não há peça da frente…" */
   de: string;
+  /** "na frente do carro": a legenda do "Onde fica" da página da peça ("Fica na frente do carro") */
+  fica: string;
   /** onde fica o pontinho (e o rótulo flutuante do celular) na arte, em pixels da arte */
   ancora: [number, number];
   /** a etiqueta fixa da arte larga (640+ px): no fundo do estúdio, fora do carro, com uma linha-guia até o ponto.
@@ -59,7 +61,7 @@ const lateral = (lado: Lado): Grupo[] => [
 // área dela é o retrovisor de lá e o fundo acima do carro.
 export const ZONAS: Zona[] = [
   {
-    k: 'frente', nome: 'Frente', de: 'da frente', ancora: [238, 598], etiqueta: [178, 965],
+    k: 'frente', nome: 'Frente', de: 'da frente', fica: 'na frente do carro', ancora: [238, 598], etiqueta: [178, 965],
     poligonos: ['0,0 170,0 205,440 300,500 300,675 440,705 405,790 360,1024 0,1024'],
     realce: ['192,468 300,505 304,672 440,700 432,742 372,790 336,846 262,826 200,748 180,612'],
     grupos: [
@@ -72,7 +74,7 @@ export const ZONAS: Zona[] = [
     ],
   },
   {
-    k: 'motor', nome: 'Motor', de: 'do motor', ancora: [405, 528], etiqueta: [232, 62],
+    k: 'motor', nome: 'Motor', de: 'do motor', fica: 'no motor, debaixo do capô', ancora: [405, 528], etiqueta: [232, 62],
     poligonos: ['170,0 440,0 470,312 530,450 590,600 560,615 470,640 440,705 300,675 300,500 205,440'],
     realce: ['206,452 300,388 392,350 468,318 520,446 566,584 512,640 440,690 304,668 300,505'],
     grupos: [
@@ -90,19 +92,19 @@ export const ZONAS: Zona[] = [
     ],
   },
   {
-    k: 'lateral-esquerda', nome: 'Lateral esquerda', de: 'da lateral esquerda', ancora: [935, 556], etiqueta: [1112, 965],
+    k: 'lateral-esquerda', nome: 'Lateral esquerda', de: 'da lateral esquerda', fica: 'na lateral esquerda, o lado do motorista', ancora: [935, 556], etiqueta: [1112, 965],
     poligonos: ['590,600 680,515 800,500 1210,395 1230,440 1200,480 1150,530 1070,590 900,628 700,660 650,690'],
     realce: ['606,602 690,524 792,516 1204,404 1226,446 1112,560 1104,700 664,780 650,690'],
     grupos: lateral('E'),
   },
   {
-    k: 'lateral-direita', nome: 'Lateral direita', de: 'da lateral direita', ancora: [572, 236], etiqueta: [522, 62],
+    k: 'lateral-direita', nome: 'Lateral direita', de: 'da lateral direita', fica: 'na lateral direita, o lado do passageiro', ancora: [572, 236], etiqueta: [522, 62],
     poligonos: ['440,0 1300,0 1290,140 1235,185 1150,122 700,190 610,282 470,312'],
     realce: ['472,314 536,252 544,206 590,198 602,262 700,186 1150,118 1292,168 1302,204 1150,152 702,216 612,292'],
     grupos: lateral('D'),
   },
   {
-    k: 'interior', nome: 'Interior e painel', de: 'do interior e do painel', ancora: [842, 438], etiqueta: [852, 62],
+    k: 'interior', nome: 'Interior e painel', de: 'do interior e do painel', fica: 'dentro do carro, no interior ou no painel', ancora: [842, 438], etiqueta: [852, 62],
     poligonos: ['470,312 610,282 700,190 690,330 760,385 1110,320 1230,265 1210,395 800,500 680,515 590,600 530,450'],
     realce: ['484,322 612,290 700,214 690,330 760,385 1110,320 1222,276 1204,400 800,504 690,520 602,598 540,470'],
     grupos: [
@@ -122,7 +124,7 @@ export const ZONAS: Zona[] = [
     ],
   },
   {
-    k: 'teto', nome: 'Teto', de: 'do teto', ancora: [915, 252], etiqueta: [1112, 62],
+    k: 'teto', nome: 'Teto', de: 'do teto', fica: 'no teto', ancora: [915, 252], etiqueta: [1112, 62],
     poligonos: ['700,190 1150,122 1235,185 1230,265 1110,320 760,385 690,330'],
     realce: ['704,196 1150,128 1230,188 1226,262 1108,316 762,380 694,330'],
     grupos: [
@@ -132,7 +134,7 @@ export const ZONAS: Zona[] = [
     ],
   },
   {
-    k: 'traseira', nome: 'Traseira', de: 'da traseira', ancora: [1352, 402], etiqueta: [1384, 62],
+    k: 'traseira', nome: 'Traseira', de: 'da traseira', fica: 'na traseira do carro', ancora: [1352, 402], etiqueta: [1384, 62],
     poligonos: ['1300,0 1536,0 1536,1024 1340,1024 1335,560 1330,470 1200,480 1230,440 1210,395 1230,265 1235,185 1290,140'],
     realce: ['1240,192 1300,204 1366,296 1390,420 1382,556 1338,600 1300,560 1240,470 1212,398 1230,268'],
     grupos: [
@@ -146,7 +148,7 @@ export const ZONAS: Zona[] = [
     ],
   },
   {
-    k: 'rodas', nome: 'Rodas e suspensão', de: 'das rodas e da suspensão', ancora: [520, 796], etiqueta: [508, 965],
+    k: 'rodas', nome: 'Rodas e suspensão', de: 'das rodas e da suspensão', fica: 'nas rodas e na suspensão', ancora: [520, 796], etiqueta: [508, 965],
     poligonos: [
       '440,705 470,640 560,615 590,600 650,690 660,820 640,1024 360,1024 405,790',
       '1080,600 1150,548 1335,560 1340,1024 1060,1024 1075,770',
@@ -160,7 +162,7 @@ export const ZONAS: Zona[] = [
     ],
   },
   {
-    k: 'embaixo', nome: 'Embaixo', de: 'da parte de baixo', ancora: [758, 690], etiqueta: [826, 965],
+    k: 'embaixo', nome: 'Embaixo', de: 'da parte de baixo', fica: 'embaixo do carro', ancora: [758, 690], etiqueta: [826, 965],
     poligonos: ['650,690 700,660 900,628 1070,590 1150,530 1200,480 1330,470 1335,560 1150,548 1080,600 1075,770 1060,1024 640,1024 660,820'],
     realce: ['580,658 700,662 800,664 1000,634 1080,596 1150,536 1204,488 1328,478 1334,562 1204,562 1150,584 1084,640 1000,688 800,722 700,728 596,716'],
     grupos: [
@@ -223,6 +225,24 @@ export function pecasDaZona(procurar: (f: Filtros) => Item[], carro: CarroFiltro
     for (const f of pedidos) for (const it of procurar(f)) if (!g.sem?.includes(it.s)) vistas.set(it.id, it);
   }
   return [...vistas.values()].sort((a, b) => b.id.length - a.id.length || (b.id > a.id ? 1 : b.id < a.id ? -1 : 0));
+}
+
+/** A peça como a zona precisa dela: o bloco, o tipo e o lado/posição que o nome diz (os campos c, s, l, pos do índice). */
+export type PecaZona = { c: string; s: string; l?: Lado | '' | '0'; pos?: Posicao | 'A' | '' | '0' };
+/** A peça cabe no grupo? A MESMA regra da busca do catálogo (lib/busca.ts): bloco e tipo iguais, o lado igual, e a
+ *  posição igual ou "A" (serve nas duas). */
+function noGrupo(p: PecaZona, g: Grupo): boolean {
+  if (p.c !== g.tipo) return false;
+  if (g.subs ? !g.subs.includes(p.s) : !!g.sem?.includes(p.s)) return false;
+  if (g.lado && p.l !== g.lado) return false;
+  if (g.pos && p.pos !== g.pos && p.pos !== 'A') return false;
+  return true;
+}
+/** As zonas da peça, na ordem do carro (ZONAS). Quase toda peça tem UMA; a que serve na frente e atrás ("motor do
+ *  limpador dianteiro/traseiro", pos "A") tem duas; a que a tabela não alcança (um tipo sem lugar certo, a peça de
+ *  porta sem lado no nome), nenhuma. O "Onde fica" da página da peça usa a 1ª (components/peca/OndeFica.astro). */
+export function zonasDaPeca(p: PecaZona, zonas: Zona[] = ZONAS): Zona[] {
+  return zonas.filter((z) => z.grupos.some((g) => noGrupo(p, g)));
 }
 
 // lado e posição no endereço do catálogo, por extenso (os mesmos de catalogo/Catalogo.tsx: LADOS e POSICOES)
