@@ -79,36 +79,64 @@ function ligar(botao: HTMLButtonElement, item: () => ItemLista | null, origem: s
   });
 }
 
-/** O botão da caixa de compra: "Adicionar à lista de orçamento" -> "Na sua lista" (aria-pressed) + "Ver lista (n)". */
+/** A caixa de compra: "Adicionar à lista de orçamento" (só põe) e, com a peça na lista, o verde que LEVA à lista
+ *  ("Na sua lista · Ver lista (n)", um link) com o "Tirar" pequeno e escrito ao lado: tocar no verde nunca tira a peça
+ *  sem avisar (revisão 12, P3.1). O foco segue o toque (pôr -> o verde; tirar -> o "Adicionar") e o aviso sai no
+ *  role=status. Com outras peças na lista (e esta fora), o "Ver lista (n)" à direita, como antes. */
 export function ligarListaPeca() {
   const caixa = document.querySelector<HTMLElement>('.compra-lista');
   const botao = caixa?.querySelector<HTMLButtonElement>('button');
   if (!caixa || !botao) return;
   const item = itemDaPagina();
   if (!item || !item.preco) { caixa.hidden = true; return; }
-  const rotulo = botao.querySelector('span')!;
-  const desenho = botao.querySelector('svg');
   const ver = Object.assign(document.createElement('a'), { className: 'cl-ver', href: PAGINA_LISTA });
-  ver.hidden = true;
-  caixa.append(ver);
+  // o verde: um link para a lista (o ladrilho com o visto + "Na sua lista · Ver lista (n)")
+  const na = Object.assign(document.createElement('a'), { className: 'cl-na', href: PAGINA_LISTA });
+  const tirar = Object.assign(document.createElement('button'), { type: 'button', className: 'cl-tirar' });
+  tirar.innerHTML = 'Tirar <span class="sr-only">da lista de orçamento</span>';
+  // o nome vem do texto ("Na sua lista Ver lista (3)"); no celular estreito, "Na lista · Ver lista (3)". Montado uma vez:
+  // só o número muda (o visto não "pula" de novo a cada mudança da lista)
+  na.innerHTML = `${SVG('lista-ok')}<span class="cl-na-txt"><b>Na <span class="cl-sua">sua </span>lista</b><span class="cl-sep" aria-hidden="true"> · </span><span class="cl-ir">Ver lista <span class="num"></span></span></span>${SETA}`;
+  const naNum = na.querySelector<HTMLElement>('.num')!;
+  ver.hidden = na.hidden = tirar.hidden = true;
+  caixa.append(na, tirar, ver);
   let cheia: HTMLElement | null = null;
-  ligar(botao, () => item, 'peca', (na, n) => {
-    botao.setAttribute('aria-pressed', String(na));
-    botao.classList.toggle('na-lista', na);
-    rotulo.innerHTML = na ? 'Na sua lista' : 'Adicionar à lista<span class="cl-longo"> de orçamento</span>';
-    botao.title = na ? 'Tirar da lista' : '';
-    desenho?.querySelector('use')?.setAttribute('href', icone(na ? 'lista-ok' : 'lista-mais'));
-    ver.hidden = !n;
+  const pintar = () => {
+    const l = lerLista(), n = l.length, dentro = tem(l, item.id);
+    botao.hidden = dentro;
+    na.hidden = tirar.hidden = !dentro;
+    ver.hidden = dentro || !n;
+    naNum.textContent = `(${n})`;
     // o nome é o próprio texto ("Ver lista (3)"); o título diz por extenso
     ver.innerHTML = `<span>Ver lista</span> <span class="num">(${n})</span>${SETA}`;
     ver.title = `Ver a lista de orçamento: ${pecasTxt(n)}`;
     if (cheia && n < MAX_LISTA) { cheia.remove(); cheia = null; }
+  };
+  pintar();
+  window.addEventListener(EVENTO_LISTA, pintar);
+  botao.addEventListener('click', () => {
+    const r = adicionarNaLista(item, 'peca');
+    if (r === 'cheia') {
+      avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Peça essas no WhatsApp e comece outra.`);
+      if (!cheia) {
+        cheia = Object.assign(document.createElement('p'), { className: 'cl-cheia' });
+        cheia.innerHTML = `Sua lista já tem ${MAX_LISTA} peças, o máximo. <a href="${PAGINA_LISTA}">Peça essas no WhatsApp</a> e comece outra.`;
+        caixa.append(cheia);
+      }
+      return;
+    }
+    pintar();
+    na.focus({ preventScroll: true });
+    avisarLista(`${item.nome} está na sua lista de orçamento: ${pecasTxt(lerLista().length)}.`);
   });
-  caixa.addEventListener('lista-cheia', () => {
-    if (cheia) return;
-    cheia = Object.assign(document.createElement('p'), { className: 'cl-cheia' });
-    cheia.innerHTML = `Sua lista já tem ${MAX_LISTA} peças, o máximo. <a href="${PAGINA_LISTA}">Peça essas no WhatsApp</a> e comece outra.`;
-    caixa.append(cheia);
+  tirar.addEventListener('click', () => {
+    const l = lerLista();
+    if (!tem(l, item.id)) return;
+    salvarLista(remover(l, item.id), 'remover', item.id, 'peca');
+    pintar();
+    botao.focus({ preventScroll: true });
+    const n = lerLista().length;
+    avisarLista(`${item.nome} saiu da sua lista.${n ? ` Ficaram ${pecasTxt(n)}.` : ' A lista ficou vazia.'}`);
   });
 }
 

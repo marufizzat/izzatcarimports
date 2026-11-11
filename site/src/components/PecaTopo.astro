@@ -713,26 +713,39 @@ const perguntas = [
   .compra-botoes .botao { --h: var(--botao-g); font-size: 16.5px; }
   /* Lista de orçamento: o 3º caminho, discreto (sem caixa: um ladrilho com o ícone + o texto), e o "Ver lista (n)" à
      direita. Altura fixa de 44 px (alvo de toque) e numa linha só em toda largura: o link que chega com o script não
-     empurra nada. "Na sua lista": o ladrilho fica verde (verde = é seu, como o "Serve no seu carro"). */
+     empurra nada. Com a peça na lista, o verde é um LINK para a lista ("Na sua lista · Ver lista (n)", verde = é seu,
+     como o "Serve no seu carro") e o "Tirar" pequeno e escrito ao lado (tocar no verde nunca tira a peça: revisão 12). */
   .compra-lista { display: flex; align-items: center; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; min-height: 44px; margin: -2px 0 -4px; }
-  .compra-lista > button { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px 0 0; border: 0; border-radius: 12px;
-    background: none; color: var(--ink); font-size: 15px; font-weight: 650; font-stretch: 96%; text-align: left; -webkit-tap-highlight-color: transparent; }
-  .compra-lista > button svg { flex: none; box-sizing: content-box; width: 20px; height: 20px; padding: 7px; border-radius: 10px; color: var(--accent-text);
-    background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 74%); transition: background-color .2s, color .2s, transform .2s; }
-  .compra-lista > button > span { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; transition: text-decoration-color .2s; }
-  @media (hover: hover) { .compra-lista > button:hover > span { text-decoration-color: currentColor; } }
-  .compra-lista > button:active svg { transform: scale(.92); }
-  .compra-lista > button.na-lista svg { color: var(--serve-ink); background: var(--serve-bg); box-shadow: inset 0 0 0 1px var(--serve-borda); animation: cl-ok .4s cubic-bezier(.3,1.5,.5,1); }
+  .compra-lista [hidden] { display: none !important; }
+  .compra-lista > button:first-child, .compra-lista .cl-na { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; min-width: 0; padding: 0 12px 0 0; border: 0;
+    border-radius: 12px; background: none; color: var(--ink); font-size: 15px; font-weight: 650; font-stretch: 96%; text-align: left; -webkit-tap-highlight-color: transparent; }
+  .compra-lista > button:first-child svg, .compra-lista .cl-na > svg:first-child { flex: none; box-sizing: content-box; width: 20px; height: 20px; padding: 7px; border-radius: 10px;
+    color: var(--accent-text); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 74%); transition: background-color .2s, color .2s, transform .2s; }
+  .compra-lista > button:first-child > span { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; transition: text-decoration-color .2s; }
+  @media (hover: hover) { .compra-lista > button:first-child:hover > span { text-decoration-color: currentColor; } }
+  .compra-lista > button:first-child:active svg { transform: scale(.92); }
+  .compra-lista .cl-na > svg:first-child { color: var(--serve-ink); background: var(--serve-bg); box-shadow: inset 0 0 0 1px var(--serve-borda); animation: cl-ok .4s cubic-bezier(.3,1.5,.5,1); }
   @keyframes cl-ok { 40% { transform: scale(1.14); } }
+  .compra-lista .cl-na { padding-right: 4px; }
+  .compra-lista .cl-na-txt { min-width: 0; white-space: nowrap; }
+  .compra-lista .cl-na b { font-weight: 700; }
+  .compra-lista .cl-sep { color: var(--ink-3); }
+  .compra-lista .cl-ir { font-size: 14.5px; font-weight: 700; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  .compra-lista .cl-ir .num { font-weight: 650; color: var(--ink-2); }
+  .compra-lista .cl-na > svg:last-child { flex: none; width: 16px; height: 16px; margin-left: -4px; }
+  .compra-lista .cl-tirar { flex: none; min-height: 44px; padding: 0 2px; border: 0; background: none; font-size: 14px; font-weight: 600; color: var(--ink-2);
+    text-decoration: underline; text-underline-offset: 3px; -webkit-tap-highlight-color: transparent; }
+  .compra-lista .cl-tirar:hover { color: var(--ink); }
   .compra-lista .cl-ver { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; font-size: 14.5px; font-weight: 700; color: var(--ink); white-space: nowrap; }
   .compra-lista .cl-ver > span:first-child { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
-  .compra-lista .cl-ver[hidden] { display: none; }
   .compra-lista .cl-ver .num { font-weight: 650; color: var(--ink-2); }
   .compra-lista .cl-ver svg { width: 16px; height: 16px; }
   .compra-lista .cl-cheia { flex-basis: 100%; margin: 0 0 6px; font-size: 13.5px; line-height: 1.4; color: var(--ink-2); }
   .compra-lista .cl-cheia a { color: var(--ink); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
   @media (max-width: 419px) { .compra-lista .cl-longo { display: none; } }
-  @media (prefers-reduced-motion: reduce) { .compra-lista > button.na-lista svg { animation: none; } }
+  /* celular estreito (320): "Na lista · Ver lista (3)" + "Tirar" numa linha só */
+  @media (max-width: 359px) { .compra-lista .cl-sua { display: none; } .compra-lista .cl-na { gap: 8px; } }
+  @media (prefers-reduced-motion: reduce) { .compra-lista .cl-na > svg:first-child { animation: none; } }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .compra-facil b { font-weight: 650; color: var(--ink-2); }
 
