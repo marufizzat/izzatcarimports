@@ -36,8 +36,8 @@ type Esp = {
   /** a peça certa: regex no nome (sem acento, minúsculo, com o hífen do estoque: "^para-choque") */
   tipo?: string; nao?: string;
   car?: string; marca?: string; l?: 'E' | 'D'; pos?: 'D' | 'T'; ano?: number; cod?: string;
-  /** quando o estoque não tem a peça: a família aceita no topo das parecidas (regex no nome + sistema). Padrão: o tipo
-   *  sem a âncora, em qualquer carro */
+  /** quando o estoque não tem a peça: a família aceita no topo das parecidas (regex no nome + tipo "s" + bloco "c", as
+   *  "famílias" do busca.json). Padrão: o tipo sem a âncora, em qualquer carro */
   fam?: string;
   /** a busca tem palavra que nenhuma peça certa tem ("led", "completo", "reserva"): o aviso de parecidas é aceito */
   aprox?: 'livre';
@@ -48,7 +48,7 @@ type Esp = {
   /** de onde veio a consulta */
   de: string;
 };
-type Peca = { k: number; n: string; s: string; b: string; ms: string[]; ys?: ([number, number] | null)[]; y: [number, number] | null; l?: string; pos?: string; o: string; id: string };
+type Peca = { k: number; n: string; s: string; c: string; b: string; ms: string[]; ys?: ([number, number] | null)[]; y: [number, number] | null; l?: string; pos?: string; o: string; id: string };
 
 const XC60: Meu = { b: 'Volvo', m: 'XC60', y: 2019 };
 const Q: Esp[] = [];
@@ -72,7 +72,7 @@ grupo('revisor', [
   ['farol', '^farol'],
   ['farol de milha', '^farol.*(milha|neblina|aux)|^milha'],
   ['farol milha kardian', '^farol.*(milha|neblina|aux)', { car: 'Kardian', fam: 'farol' }],
-  ['farol compass', '^farol', { car: 'Compass' }],
+  ['farol compass', '^farol', { car: 'Compass', fam: 'farol|farois|lanterna' }],
   ['farolete', '^farol.*(milha|neblina|aux)|^farolete'],
   ['farol esquerdo xc60', '^farol', { car: 'XC60', l: 'E' }],
   ['farol de neblina direito', '^farol.*(milha|neblina|aux)', { l: 'D' }],
@@ -465,7 +465,7 @@ grupo('cliente', [
   ['chave reserva', '^chave (canivete|presen)', { aprox: 'livre' }], ['chave xc60', '^chave', { car: 'XC60' }], ['chave presença', '^chave.*presen'],
   ['chave de seta', '^chave seta'], ['chave de seta onix', '^chave seta', { car: 'Onix' }], 
   // forro, teto, interior
-  ['forro teto', '^forro.*teto', { fam: '^forro' }], ['forro do teto gol', '^forro.*teto', { car: 'Gol', fam: 'forro|teto' }], ['forro de porta gol', '^forro.*porta', { car: 'Gol' }],
+  ['forro teto', '^forro.*teto', { fam: '^forro' }], ['forro do teto gol', '^forro.*teto', { car: 'Gol', fam: 'forro|teto' }], ['forro de porta gol', '^forro.*porta', { car: 'Gol', fam: 'forro' }],
   ['forro porta dianteira esquerda', '^forro.*porta', { l: 'E', pos: 'D' }], ['teto solar', 'teto solar'], ['alça de teto', '^alca.*teto'],
   ['console central', '^console central'], ['painel de instrumentos palio 2010', '^painel instrumento', { car: 'Palio', ano: 2010 }], ['volante gol', '^volante', { car: 'Gol' }],
   ['cinto de segurança dianteiro', '^cinto', { pos: 'D' }], 
@@ -505,7 +505,7 @@ grupo('cliente', [
 // O estoque como o gabarito o lê (nada do motor)
 // ---------------------------------------------------------------------------------------------------------------------
 const PECAS: Peca[] = ix.id.map((id: string, k: number) => ({
-  k, id, n: nrm(ix.n[k]), s: nrm(ix.tipos[ix.s[k]] ?? ''), b: ix.marcas[ix.b[k]] ?? '', ms: ix.ms?.[k] ?? [ix.m[k]], ys: ix.ys?.[k],
+  k, id, n: nrm(ix.n[k]), s: nrm(ix.tipos[ix.s[k]] ?? ''), c: nrm(ix.familias[ix.c[k]] ?? ''), b: ix.marcas[ix.b[k]] ?? '', ms: ix.ms?.[k] ?? [ix.m[k]], ys: ix.ys?.[k],
   y: ix.y[k] || null, l: ix.l?.[k], pos: ix.pos?.[k], o: ix.o[k] ?? '', t: nrm(ix.t[k]),
 }));
 // carro unido: o apelido ("New Fiesta", "C180") vale pelo carro principal (o modelo que mais aparece nas peças dele)
@@ -571,7 +571,7 @@ function julgar(motor: Motor, e: Esp): Veredito {
     // o estoque não tem a peça pedida: nada pode aparecer como achado exato; as parecidas do topo são da família
     if (lista.length && nExatas > 0) falhas.push('EXATO_ERRADO');
     const fam = new RegExp(e.fam ?? (e.tipo ?? '').replace(/\^/g, ''));
-    if (lista.length && (e.fam || e.tipo) && !lista.slice(0, 5).every((it) => fam.test(`${PECAS[it.k].n} ${PECAS[it.k].s}`))) falhas.push('FAMILIA');
+    if (lista.length && (e.fam || e.tipo) && !lista.slice(0, 5).every((it) => fam.test(`${PECAS[it.k].n} ${PECAS[it.k].s} ${PECAS[it.k].c}`))) falhas.push('FAMILIA');
     // lado/posição que falta, com a peça do outro lado no estoque: a tela diz o que faltou e oferece o outro lado
     if (!lista.length && e.l) {
       const outro = PECAS.some((p) => certa(p, { ...e, l: e.l === 'E' ? 'D' : 'E' }));

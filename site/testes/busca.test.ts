@@ -436,7 +436,10 @@ describe('sinônimos e plural', () => {
     const ids = new Set(b.procurar({ q: 'pisca' }).map((x) => x.id));
     expect(antes.every((x) => ids.has(x.id))).toBe(true);
     expect(b.procurar({ q: 'pisca' }).some((x) => /chave seta/.test(normal(x.n)))).toBe(true);
-    expect(b.procurar({ q: 'pisca' }).some((x) => /chicote/.test(normal(x.n)))).toBe(false);
+    // conserto da rodada 14 (revisão: nada some): o chicote cita "pisca" no nome e fica DEPOIS das exatas, em "Outras
+    // peças ligadas a…"; nunca entre as que são a peça
+    const r = b.procurar({ q: 'pisca' });
+    expect(r.slice(0, b.nExatas).some((x) => /chicote/.test(normal(x.n)))).toBe(false);
   });
 });
 

@@ -161,7 +161,8 @@ export function avaliar(Busca: new (ix: any) => any, ix: any, lista: Caso[]): { 
       // parecida: o tipo no nome, ou a família do tipo (o sistema "s" ou o bloco "c" da peça tem a palavra)
       const tk = TIPOS.find((T) => T.re === c.tipo)?.tk;
       const naFamilia = !!topItem && !!tk && [topItem.n, topItem.s, topItem.c].some((t) => palavrasDo(t).some((x) => tk.test(x)));
-      ok = !res.length || (!!topItem && (casa(topItem, tipoSo) || naFamilia) && !!b.aproximado);
+      // (citam: a tela diz "peças ligadas a…", nunca "peças para…": também não é achado exato)
+      ok = !res.length || (!!topItem && (casa(topItem, tipoSo) || naFamilia) && (!!b.aproximado || !!b.citam));
       motivo = ok ? (res.length ? 'parecida (aviso)' : 'zero + pátio') : 'achado errado como certo';
     }
     const todas = res.map((r: any) => r.k as number);

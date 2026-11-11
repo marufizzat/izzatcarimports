@@ -283,8 +283,6 @@ type PorTexto = {
   /** nenhuma peça do estoque tem esse nome; a lista é das peças ligadas à palavra: as que a citam no nome ("capô": a
    *  "Fechadura capô") e, quando a palavra é o nome de um bloco ("suspensão"), o bloco */
   citam: boolean;
-  /** as peças que só o anúncio liga à busca (o nome não tem as palavras) */
-  fracas: Set<number> | null;
   /** a busca tem palavra de peça (não é só carro, marca ou ano) */
   temTipo: boolean;
 };
@@ -589,12 +587,17 @@ export class Busca {
   private composta(ws: { w: string; carro: boolean }[], i: number, ultima: string): { n: number; junta: string } | null {
     for (const n of [3, 2]) {
       const partes = ws.slice(i, i + n);
-      if (partes.length < n || partes.some((x) => x.carro || /\d/.test(x.w)) || partes[n - 1].w.length < 3) continue;
+      if (partes.length < n || partes.some((x) => x.carro || /\d/.test(x.w))) continue;
       const j = partes.map((x) => x.w).join('');
-      if (this._nome.has(j)) return { n, junta: j };
-      const sing = singulares(j).find((s) => this._nome.has(s));
-      if (sing) return { n, junta: sing };
-      if (this._nome.has(`${j}s`)) return { n, junta: `${j}s` };
+      // a última parte com 2 letras só vale pela metade, no fim da busca ao vivo ("porta lu" a caminho de "porta luvas")
+      const curta = partes[n - 1].w.length < 3;
+      if (curta && !(n === 2 && partes[1].w.length === 2 && partes[1].w === ultima && i + n === ws.length)) continue;
+      if (!curta) {
+        if (this._nome.has(j)) return { n, junta: j };
+        const sing = singulares(j).find((s) => this._nome.has(s));
+        if (sing) return { n, junta: sing };
+        if (this._nome.has(`${j}s`)) return { n, junta: `${j}s` };
+      }
       if (n === 2 && this._prefixos.has(partes[0].w) && j.length >= 7) {
         const k = `+${j}${partes[1].w === ultima && i + n === ws.length ? '*' : ''}`;
         let m = this._casam.get(k);
@@ -794,7 +797,7 @@ export class Busca {
    *  "alternador"; não é o alternador), e quantas unidades o nome tem. A última palavra digitada pode estar pela metade
    *  ("retrov"): vale o começo quando nenhuma palavra do estoque é ela inteira. */
   private casador(U: Unidade[], ultima: string) {
-    const nt = this._nt!, st = this._st!;
+    const nt = this._nt!;
     const conj = new Map<string, Set<string>>();
     const de = (w: string) => {
       let s = conj.get(w);
@@ -803,7 +806,14 @@ export class Busca {
     };
     const temW = (k: number, w: string) => { const s = de(w); for (const t of nt[k]) if (s.has(t)) return true; return false; };
     // o "fora" tira a peça do caminho do sinônimo (formas 1 em diante): a palavra no nome ou no tipo
-    const foraOk = (k: number, u: Unidade) => !u.fora.length || !(nt[k].some((t) => u.fora.some((x) => t.startsWith(x))) || st[k].some((t) => u.fora.some((x) => t.startsWith(x))));
+    // (nas palavras soltas: o "falante" de "Grade alto-falante", o "tras" de "traseira")
+    const soltas = new Map<number, string[]>();
+    const foraOk = (k: number, u: Unidade) => {
+      if (!u.fora.length) return true;
+      let ws = soltas.get(k);
+      if (!ws) { ws = palavras(`${this.itens[k].n} ${this.itens[k].s}`); soltas.set(k, ws); }
+      return !ws.some((t) => u.fora.some((x) => t.startsWith(x)));
+    };
     const vale = (k: number, u: Unidade, i: number) => i === 0 || foraOk(k, u);
     const unNoNome = (k: number, u: Unidade) => u.formas.some((f, i) => vale(k, u, i) && f.every((w) => temW(k, w)));
     const unNaCabeca = (k: number, u: Unidade) => {
@@ -839,7 +849,7 @@ export class Busca {
       cita: (u: Unidade, onde: 'o' | 's' | 'c') => {
         const m = onde === 'o' ? this._nome : onde === 's' ? this._sis : this._bloco;
         const ks: number[] = [];
-        for (const f of u.formas) if (f.length === 1 || onde === 'o') for (const t of de(f[0])) for (const k of m.get(t) ?? []) ks.push(k);
+        u.formas.forEach((f, i) => { if (f.length === 1 || onde === 'o') for (const t of de(f[0])) for (const k of m.get(t) ?? []) if (vale(k, u, i)) ks.push(k); });
         return ks;
       },
     };
@@ -872,19 +882,20 @@ export class Busca {
     // número do anúncio ("MLB4779038537"): a peça
     if (/^mlb\d{6,}$/.test(chave)) {
       const it = this.itens.find((x) => x.id.toLowerCase() === chave);
-      if (it) return { base: [it], aproximado: false, carros: [], exatas: null, citam: false, fracas: null, temTipo: false };
+      if (it) return { base: [it], aproximado: false, carros: [], exatas: null, citam: false, temTipo: false };
     }
     let ent = this.entender(chave);
     let av = this.arvore(chave, ent);
     const ms = this.ms;
     const comErro = (t: string) => (t.length >= 5 && !/\d/.test(t) ? 0.2 : false);
     const tokenize = (s: string) => [s];
-    // a última palavra pode estar pela metade (busca ao vivo): vale o começo dela a partir de 3 letras; com 2 letras, só
-    // quando é a única palavra ou quando a palavra inteira não achou nada ("sensor de ré" não é "sensor … Renault").
-    // Carro e marca: só a palavra inteira ("gol" não é "Golf")
+    // a última palavra pode estar pela metade (busca ao vivo): vale o começo dela a partir de 2 letras ("modulo ab" a
+    // caminho de "abs"). Quando as 2 letras já são uma palavra de nome do estoque ("ré", "ar"), vale a palavra inteira, e o
+    // começo só se ela não achar nada ("sensor de ré" não é "sensor … Renault"). Carro e marca: só a palavra inteira
+    // ("gol" não é "Golf")
     const buscar = (a: Arvore, como: 'AND' | 'OR', erro: boolean, curta: boolean) => ms.search(
       { combineWith: como, queries: a.grupos },
-      { prefix: (t: string) => !a.exatos.has(t) && (t.length >= 3 || (t === a.ultima && t.length >= 2 && (curta || a.n === 1))), fuzzy: erro ? comErro : false, tokenize, combineWith: 'AND' },
+      { prefix: (t: string) => !a.exatos.has(t) && (t.length >= 3 || (t === a.ultima && t.length >= 2 && (curta || a.n === 1 || !this._nome.has(t)))), fuzzy: erro ? comErro : false, tokenize, combineWith: 'AND' },
     );
     let r: SearchResult[] = av.grupos.length ? buscar(av, 'AND', false, false) : [];
     if (!r.length && av.grupos.length && av.ultima.length === 2 && av.n > 1) r = buscar(av, 'AND', false, true);
@@ -933,7 +944,6 @@ export class Busca {
     let aproximado = false;
     let exatas: Set<number> | null = null;
     let citam = false;
-    let fracas: Set<number> | null = null;
 
     if (r.length && !U.length) {
       // só carro, marca ou nada que seja peça: a ordem do texto, o carro digitado primeiro
@@ -949,13 +959,15 @@ export class Busca {
       // 0 = é a peça e o nome tem tudo; 1 = é a peça (o resto está no anúncio); 2 = o nome cita tudo; 3 = só o anúncio cita
       const nivel = new Map(ks.map((k) => [k, tipo && c.unNaCabeca(k, tipo) ? (todas.get(k) ? 0 : 1) : todas.get(k) ? 2 : 3]));
       const nExatas = ks.filter((k) => nivel.get(k)! <= 1).length;
-      fracas = new Set(ks.filter((k) => nivel.get(k) === 3));
       // o estoque tem peça com esse nome (em qualquer carro)? Sem nenhuma, a palavra é o lugar ou o assunto ("teto",
       // "porta-malas", "ar condicionado"): as peças que citam são o resultado, e a tela diz "com … no nome"
       const tipoExiste = () => U.some((u) => c.cabecas(u).length > 0);
+      // busca de SISTEMA: a palavra digitada é, letra por letra, o nome de um bloco do estoque ("freios", "suspensão")
+      // e de nenhuma peça ("painel" e "motor" são blocos, mas também são peças: sem a peça para o carro, é parecida)
+      const sistema = !nExatas && U.length === 1 && U[0].formas[0].length === 1 && this._bloco.has(U[0].formas[0][0]) && !this._cab.has(U[0].formas[0][0]);
       if (nExatas) exatas = new Set(ks.filter((k) => nivel.get(k)! <= 1));
-      else if (tipoExiste()) aproximado = true;
-      else citam = ks.some((k) => nivel.get(k) === 2);
+      else if (!sistema && tipoExiste()) aproximado = true;
+      else citam = sistema || ks.some((k) => nivel.get(k) === 2);
       base = ks.map((k) => this.itens[k]);
       if (aproximado) {
         // o carro digitado primeiro (o que ele tem de parecido); depois a peça dos outros carros
@@ -1006,7 +1018,9 @@ export class Busca {
           fam = [...new Set([...inteiras, ...[...tipos].flatMap((t) => this._porS.get(t) ?? []), ...c.cabecas(tipo).filter((k) => blocos.has(this.itens[k].c))])];
         } else {
           // ...não: a família do tipo (o nome começa pela palavra, cita a palavra, ou o tipo "s" tem a palavra)
-          fam = [...new Set([...c.cabecas(tipo), ...c.cita(tipo, 'o').filter((k) => c.unNoNome(k, tipo)), ...c.cita(tipo, 's')])];
+          // e, do carro digitado, as do bloco "c" que tem a palavra ("farol compass": as luzes do Compass primeiro)
+          const doCarroNoBloco = ent.carros.length ? c.cita(tipo, 'c').filter((k) => doDig(this.itens[k])) : [];
+          fam = [...new Set([...c.cabecas(tipo), ...c.cita(tipo, 'o').filter((k) => c.unNoNome(k, tipo)), ...c.cita(tipo, 's'), ...doCarroNoBloco])];
         }
       }
       if (doBloco.length) {
@@ -1048,7 +1062,7 @@ export class Busca {
       const comCodigo = base.filter(tem);
       if (comCodigo.length) { base = [...comCodigo, ...base.filter((it) => !tem(it))]; codigo = chave; }
     }
-    return { base, aproximado, carros: ent.carros, codigo, exatas, citam, fracas, temTipo: U.length > 0 };
+    return { base, aproximado, carros: ent.carros, codigo, exatas, citam, temTipo: U.length > 0 };
   }
 
   /** Todas as peças, das que chegaram agora para as mais antigas (os ids do ML crescem). */
@@ -1059,8 +1073,8 @@ export class Busca {
   /** A lista para os filtros, sem mexer no estado público (aproximado, carrosDaBusca).
    *  Lado e posição digitados ("retrovisor direito xc60") filtram como as fichas. Se o estoque tem a peça digitada mas
    *  não desse lado (ou nessa posição), a lista sai VAZIA e faltou diz o que faltou, com as do outro lado à parte (a dica
-   *  "tem a esquerda"): nunca troca de lado em silêncio. Lado ou posição que o estoque não registra para a peça ("grade
-   *  dianteira": nenhuma grade diz a posição) não filtra. */
+   *  "tem a esquerda"): nunca troca de lado em silêncio. A posição que o estoque não registra para a peça ("grade
+   *  dianteira": nenhuma grade diz a posição) não filtra; o lado é estrito. */
   private filtrar(f: Filtros, como: ComoFiltrar = {}): Filtrado {
     const sep = this.separar((f.q || '').trim());
     const o = f.ordem || 'rel';
@@ -1075,10 +1089,9 @@ export class Busca {
       let r: PorTexto;
       if (texto) r = this.porTexto(texto, derivado ? sep.textoCom : '');
       // sem texto, "relevantes" e "chegaram agora" são a mesma ordem: a lista já vem ordenada
-      else r = { base: o === 'rel' || o === 'novos' ? this.porNovos() : this.itens, aproximado: false, carros: [], exatas: null, citam: false, fracas: null, temTipo: false };
+      else r = { base: o === 'rel' || o === 'novos' ? this.porNovos() : this.itens, aproximado: false, carros: [], exatas: null, citam: false, temTipo: false };
       let ladoQ = derivado && !f.lado ? sep.lado : undefined;
       let posQ = derivado && !f.pos ? sep.pos : undefined;
-      let semLado: Lado | undefined;
       const zonaF = zonaDaChave(f.zona);
       const passa = (it: Item, lado?: Lado, pos?: Posicao) =>
         (!f.marca || it.b === f.marca) &&
@@ -1099,14 +1112,11 @@ export class Busca {
         nucleo = r.base.filter((it) => (!r.exatas || r.exatas.has(it.k)) && passa(it, f.lado, f.pos));
         // o estoque não registra a posição da peça ("grade dianteira": nenhuma grade diz): não filtra
         if (posQ && nucleo.length && !nucleo.some((it) => it.pos === 'D' || it.pos === 'T' || it.pos === 'A')) posQ = undefined;
-        // nem o lado ("farol de milha direito": o único não diz de que lado é): fica só o que não é do outro lado, e a
-        // lista vira parecida, com aviso (pode ser o lado certo; a gente confere)
-        if (ladoQ && nucleo.length && !nucleo.some((it) => it.l)) { semLado = ladoQ; ladoQ = undefined; }
+        // (o lado é estrito: peça que não diz o lado no nome não entra como "a direita"; a tela diz o que faltou)
       }
       const lado = como.semLado ? undefined : f.lado ?? ladoQ;
       const pos = como.semPos ? undefined : f.pos ?? posQ;
-      // (sem o lado registrado: sem as do outro lado e sem as que só o anúncio liga à busca)
-      let itens = r.base.filter((it) => passa(it, lado, pos) && (!semLado || como.semLado || (it.l !== outroLado(semLado) && !r.fracas?.has(it.k))));
+      let itens = r.base.filter((it) => passa(it, lado, pos));
       let faltou: Filtrado['faltou'];
       let outros: Item[] = [];
       if ((ladoQ || posQ) && !como.semLado && !como.semPos && (r.exatas ? nucleo.length > 0 && !itens.some((it) => r.exatas!.has(it.k)) : !itens.length)) {
@@ -1120,7 +1130,7 @@ export class Busca {
         itens = [];
       }
       // o carro digitado sem nenhuma peça na lista (ex.: a maçaneta do Gol só existe do lado direito): é parecida, com aviso
-      const aprox = r.aproximado || (!!semLado && itens.length > 0) || (r.carros.length > 0 && itens.length > 0 && !itens.some((it) => r.carros.some((c) => doCarro(it, c))));
+      const aprox = r.aproximado || (r.carros.length > 0 && itens.length > 0 && !itens.some((it) => r.carros.some((c) => doCarro(it, c))));
       return { itens, aproximado: aprox, carros: r.carros, comTexto: !!texto, codigo: r.codigo ?? '', derivado, ladoQ, posQ, faltou, outros, exatas: r.exatas, citam: r.citam, temTipo: r.temTipo };
     };
     if (!tem || como.derivado === false) return rodar(false);
@@ -1229,6 +1239,8 @@ export class Busca {
     const r = this.porTexto(texto);
     if (r.codigo) return lista.some((it) => codigosDa(it).includes(r.codigo!));
     if (!r.temTipo || this.entender(texto).familia) return true;
+    // só parecidas: a peça digitada não está na lista
+    if (r.aproximado) return false;
     return lista.some((it) => {
       if (r.exatas && !r.exatas.has(it.k)) return false;
       if (!alvo) return true;
