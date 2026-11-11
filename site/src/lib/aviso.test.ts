@@ -35,3 +35,14 @@ describe('Raio-x do carro: aviso e "a gente procura" de uma parte do carro', () 
     expect(linkProcuraParte('Volvo XC60', 'do teto').startsWith('https://wa.me/')).toBe(true);
   });
 });
+
+describe('Raio-x, a frente por dentro: uma peça que o site não tem agora', () => {
+  it('a peça com o artigo, o carro salvo, o da página (ano em branco) ou nenhum', async () => {
+    const { mensagemProcuraPeca, linkProcuraPeca } = await import('./aviso');
+    expect(mensagemProcuraPeca('o capô', 'Volvo XC60 2019')).toBe('Olá! Vim pelo site da Izzat Car. Procuro o capô para Volvo XC60 2019. Não achei no site, tem no pátio?');
+    expect(mensagemProcuraPeca('o farol esquerdo', 'Volvo XC60', false)).toContain('Procuro o farol esquerdo para Volvo XC60 ano ____.');
+    expect(mensagemProcuraPeca('o radiador', '')).toContain('Procuro o radiador para o meu carro: ____ (modelo e ano).');
+    expect(mensagemProcuraPeca('o capô', 'Fiat Toro 2018')).not.toMatch(/\b(dias?|horas?|semanas?|prazo|garant|frete)/i);
+    expect(decodeURIComponent(linkProcuraPeca('o capô', 'Jeep Compass 2020').split('text=')[1])).toBe(mensagemProcuraPeca('o capô', 'Jeep Compass 2020'));
+  });
+});

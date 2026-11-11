@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, linkLinha, linkZona, linkDoFiltro, falaDaZona, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
+import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, zonasDaPeca, linkLinha, linkZona, linkDoFiltro, falaDaZona, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
 import { Busca, type Indice } from './busca';
+import { indiceFixo, carroMaisCheio, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
 
 const buscaArq = 'public/dados/busca.json';
 
@@ -79,39 +80,37 @@ describe('linkZona: "Ver todas no catálogo" do painel', () => {
   });
 });
 
-// O mapa contra o estoque: muda a cada rodada (30 min). Nunca exige um tipo com peça (os de 1 peça zeram), só que o
-// nome exista no índice, que toda zona tenha peça e que o número de cada linha seja o do catálogo.
+// Os nomes do mapa conferem no VOCABULÁRIO da loja (testes/estoques.ts), nunca no estoque do dia: um tipo some do índice
+// quando a última peça dele vende (com 16% do estoque vendido, 5+ nomes do mapa saíam do índice e o robô parava a loja).
+describe('o mapa e o vocabulário da loja', () => {
+  it('todo bloco e todo tipo do mapa é um nome que a loja sabe escrever (pega acento errado e tipo renomeado)', () => {
+    const ruins: string[] = [];
+    for (const z of ZONAS) for (const g of z.grupos) {
+      if (!BLOCOS_DA_LOJA.has(g.tipo)) ruins.push(`${z.k}: bloco "${g.tipo}"`);
+      for (const s of [...(g.subs ?? []), ...(g.sem ?? [])]) if (!TIPOS_DA_LOJA.has(s)) ruins.push(`${z.k}: tipo "${s}" (${g.tipo})`);
+    }
+    expect(ruins).toEqual([]);
+  });
+  it('no estoque fixo, toda zona tem peça (o mapa aponta para o que a loja vende)', () => {
+    const fixa = new Busca(indiceFixo());
+    for (const c of contarZonas(fixa.procurar.bind(fixa))) { expect(c.n, c.k).toBeGreaterThan(0); expect(c.linhas.length, c.k).toBeGreaterThan(0); }
+  });
+});
+
+// O mapa contra o estoque do dia: muda a cada rodada (30 min). Só REGRAS: nunca exige peça numa zona nem num tipo (zona
+// sem peça fica cinza no site), só que o número de cada linha seja o do catálogo.
 describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () => {
   const ix = JSON.parse(readFileSync(buscaArq, 'utf-8')) as Indice;
   const toda = new Busca(ix);
   const procurar = toda.procurar.bind(toda);
   const contas = contarZonas(procurar);
 
-  it('todo bloco e todo tipo do mapa é um nome que a loja usa (pega acento errado e nome inventado)', () => {
-    // Um tipo some do índice quando a última peça dele vende: isso não é erro do mapa nem pode travar a publicação (o
-    // robô roda isto a cada 30 min). O nome vale se está no estoque de agora OU no estoque congelado de 09/11
-    // (testes/fixtures): erro de digitação não está em nenhum dos dois. Os que saíram do estoque de agora só avisam.
-    const fixo = JSON.parse(readFileSync('testes/fixtures/estoque-busca.json', 'utf-8')) as Indice;
-    const blocos = new Set(ix.familias), blocosFixos = new Set(fixo.familias);
-    const tipos = new Set(ix.tipos), tiposFixos = new Set(fixo.tipos);
-    const ruins: string[] = [], fora: string[] = [];
-    for (const z of ZONAS) for (const g of z.grupos) {
-      if (!blocos.has(g.tipo)) (blocosFixos.has(g.tipo) ? fora : ruins).push(`${z.k}: bloco "${g.tipo}"`);
-      for (const s of [...(g.subs ?? []), ...(g.sem ?? [])]) if (!tipos.has(s)) (tiposFixos.has(s) ? fora : ruins).push(`${z.k}: tipo "${s}" (${g.tipo})`);
-    }
-    if (fora.length) console.warn('raio-x: nomes sem peça no estoque de agora:', fora);
-    expect(ruins).toEqual([]);
-  });
-
-  it('toda linha de toda zona leva ao catálogo com o MESMO número (e as peças são do bloco e do tipo)', () => {
+  it('toda linha leva ao catálogo com o MESMO número (e as peças são do bloco e do tipo); zona com peça tem linha', () => {
     const resumo: string[] = [];
-    expect(contas.map((c) => c.k)).toEqual(ZONAS.map((z) => z.k));
     for (const c of contas) {
       const z = ZONAS.find((x) => x.k === c.k)!;
-      // (zona sem peça no estoque de agora não é erro: a tela mostra a parte em cinza com "Me avise quando chegar")
       expect(c.linhas.length > 0, z.nome).toBe(c.n > 0);
       for (const l of c.linhas) {
-        expect(l.n, `${z.nome} · ${l.sub}`).toBeGreaterThan(0);
         const lista = toda.procurar(filtrosLinha(l));
         expect(lista.length, `${z.nome} · ${l.sub}`).toBe(l.n);
         expect(lista.every((it) => it.c === l.tipo && it.s === l.sub)).toBe(true);
@@ -146,11 +145,10 @@ describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () =>
   });
 
   it('com o carro: o arquivo só do carro dá as MESMAS contas que o índice inteiro filtrado (marca, modelo, ano)', async () => {
-    // o carro com mais peças no estoque de agora (hoje, o Volvo XC60)
-    const conta = new Map<string, number>();
-    for (const it of toda.itens) if (it.b && it.m) conta.set(`${it.b}|${it.m}`, (conta.get(`${it.b}|${it.m}`) ?? 0) + 1);
-    const [marca, modelo] = [...conta].sort((x, y) => y[1] - x[1])[0][0].split('|');
-    const carro = { b: marca, m: modelo };
+    // o carro com mais peças do estoque do dia (nunca um carro escrito aqui: ele pode ficar sem peça)
+    const cheio = carroMaisCheio(ix);
+    if (!cheio) return;
+    const carro = { b: cheio.marca, m: cheio.modelo };
     const { GET } = await import('../pages/dados/carro/[k].json');
     const sub = await (GET as unknown as (c: { props: { b: string; m: string } }) => Response)({ props: carro }).json();
     const doCarro = new Busca(sub);
@@ -162,6 +160,9 @@ describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () =>
     expect(b.map((c) => [c.k, c.n, c.linhas.map((l) => `${l.sub}:${l.n}`).join('|')]))
       .toEqual(a.map((c) => [c.k, c.n, c.linhas.map((l) => `${l.sub}:${l.n}`).join('|')]));
     for (const c of b) for (const l of c.linhas) expect(doCarro.procurar(filtrosLinha(l, f)).length).toBe(l.n);
+    // nenhuma zona conta mais peças do que o carro tem
+    const doCarroN = toda.procurar(f).length;
+    for (const c of a) expect(c.n, c.k).toBeLessThanOrEqual(doCarroN);
   });
 });
 
@@ -201,5 +202,62 @@ describe.skipIf(!existsSync(buscaArq))('"Ver as peças da frente": as peças da 
       const ids = (sub.zonas[z.k] as number[]).map((i) => itens[i].id);
       expect(ids, z.nome).toEqual(pecasDaZona(procurar, {}, z).slice(0, NA_GALERIA).map((it) => it.id));
     }
+  });
+});
+
+describe('a zona de cada peça (o "Onde fica" da página da peça)', () => {
+  const ix = JSON.parse(readFileSync(buscaArq, 'utf-8')) as Indice;
+  const b = new Busca(ix);
+  it('é a MESMA conta do painel: as peças de cada zona pela busca do catálogo = as peças cuja zona é ela (estoque inteiro)', () => {
+    const daPeca = new Map<string, string[]>();
+    for (const it of b.itens) daPeca.set(it.id, zonasDaPeca({ c: it.c, s: it.s, l: it.l, pos: it.pos }).map((z) => z.k));
+    for (const z of ZONAS) {
+      const pelaBusca = pecasDaZona((f) => b.procurar(f), {}, z).map((it) => it.id).sort();
+      const pelaPeca = b.itens.filter((it) => daPeca.get(it.id)!.includes(z.k)).map((it) => it.id).sort();
+      expect(pelaPeca, z.k).toEqual(pelaBusca);
+    }
+  });
+  it('só a peça que serve na frente e atrás tem duas zonas; no estoque fixo, quase todo o estoque tem zona (94%+)', () => {
+    const medir = (itens: Busca['itens']) => {
+      let com = 0, duas = 0;
+      for (const it of itens) {
+        const zs = zonasDaPeca({ c: it.c, s: it.s, l: it.l, pos: it.pos });
+        if (zs.length) com++;
+        if (zs.length > 1) {
+          duas++;
+          expect(it.pos, it.n).toBe('A');
+          expect(zs.map((z) => z.k)).toEqual(['frente', 'traseira']);
+        }
+      }
+      return { com, duas };
+    };
+    medir(b.itens);   // a regra, no estoque do dia
+    // as proporções, só no estoque fixo (no do dia elas mudam com o que vendeu)
+    const fixa = new Busca(indiceFixo()).itens;
+    const m = medir(fixa);
+    expect(m.com / fixa.length).toBeGreaterThan(0.94);
+    expect(m.duas).toBeLessThan(10);
+  });
+  it('exemplos: farol na frente, lanterna na traseira, retrovisor esquerdo na lateral esquerda, sem lado = sem zona', () => {
+    const k = (p: Parameters<typeof zonasDaPeca>[0]) => zonasDaPeca(p).map((z) => z.k);
+    expect(k({ c: 'Faróis e Lanternas', s: 'Faróis', l: 'E' })).toEqual(['frente']);
+    expect(k({ c: 'Faróis e Lanternas', s: 'Lanternas Traseiras', l: 'D', pos: 'T' })).toEqual(['traseira']);
+    expect(k({ c: 'Retrovisores', s: 'Retrovisores Externos', l: 'E' })).toEqual(['lateral-esquerda']);
+    expect(k({ c: 'Retrovisores', s: 'Retrovisores Externos', l: 'D' })).toEqual(['lateral-direita']);
+    expect(k({ c: 'Retrovisores', s: 'Retrovisores Externos' })).toEqual([]);
+    expect(k({ c: 'Motor', s: 'Coxins do Motor' })).toEqual(['motor']);
+    expect(k({ c: 'Outros', s: 'Outros' })).toEqual([]);
+    for (const z of ZONAS) expect(z.fica.length).toBeGreaterThan(5);
+  });
+});
+
+describe('o "Onde fica" e a página do carro', () => {
+  it('o link só aponta para o Raio-x do carro quando a página dele tem o Raio-x (o MESMO limite nos dois arquivos)', () => {
+    const limite = (arq: string) => Number(/RAIO_X_A_PARTIR_DE = (\d+)/.exec(readFileSync(arq, 'utf-8'))?.[1]);
+    expect(limite('src/components/peca/OndeFica.astro')).toBeGreaterThan(0);
+    expect(limite('src/components/peca/OndeFica.astro')).toBe(limite('src/pages/carros/[k].astro'));
+  });
+  it('o endereço #raio-x=<zona> usa as chaves das zonas (só letras minúsculas e hífen)', () => {
+    for (const z of ZONAS) expect(z.k).toMatch(/^[a-z-]+$/);
   });
 });

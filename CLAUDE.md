@@ -179,7 +179,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Copiar o link da lista" (`/lista.html?i=MLB1,MLB2`: quem abre vê a mesma lista, só para ver e pedir, e "Guardar na
    minha lista" junta sem apagar a dele); preço e disponibilidade conferidos no `/dados/ativas.json` (o leve: id, preço,
    capa; peça fora dele = "Já vendida", fora do total; sem rede, ou o arquivo vazio, ficam os valores guardados com um
-   aviso: nunca "tudo vendido"). O índice inteiro (`busca.json`, e a busca com o MiniSearch, sob demanda) só na lista de
+   aviso: nunca "tudo vendido"). Voltar/avançar (bfcache): o `pageshow` com `persisted` dispara o mesmo aviso de "mudou noutra
+   aba" (`ouvirOutrasAbas`, `lib/lista.ts`): os cartões e o número do cabeçalho acompanham a lista. O índice inteiro (`busca.json`, e a busca com o MiniSearch, sob demanda) só na lista de
    um link (precisa de nome, carro, anos e código), quando falta um dado que o leve não tem (nome, endereço, a foto do ML
    de peça sem capa de estúdio) ou UMA vez na lista de antes da rodada 13 (`izzatcar.lista.conferida`, marcada ao começar
    uma lista nova: o nome e o carro guardados já são os de agora). A capa só é pedida depois de saber se a peça existe (a
@@ -188,12 +189,20 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Não deu para abrir as peças desta lista agora. Tentar de novo" (nunca "R$ 0,00" nem "Anúncio MLB…" como nome; sem preço
    conferido, a linha fica sem o bloco do preço; "Guardar" só depois que as peças abriram). GA4 `lista_adicionar`
    (`rastreio.js`).
-   **"Vai junto"** (`components/peca/VaiJunto.astro`, logo depois da compra): até 4 peças do MESMO carro e geração que
-   costumam ser trocadas com a vista, pela regra `GRUPOS`/`JUNTO` de `lib/relacionadas.ts` (`vaiJunto`: lado e
-   frente/trás pelo nome, nunca o outro lado nem a outra ponta, nunca a mesma peça repetida); sem peça que combine, o
-   bloco não aparece. Nos grupos de motor (`GRUPOS_MOTOR`) nunca entra nome com tampa traseira/porta-malas/rebatimento/
-   banco/porta (`FORA_DO_MOTOR`; "banco 1" do motor fica); a válvula do turbo tem o grupo dela (`turbo-valvula`) e o botão
-   da tampa vai com a tampa (`tampa-botao`). As peças dele saem do "Do mesmo carro" e do "Mais peças <marca>": sem outra
+   **"Vai junto"** (`components/peca/VaiJunto.astro`, logo depois da compra; regra refeita na rodada 15): 1 a 3 peças do
+   MESMO carro e geração que entram NO MESMO SERVIÇO que a vista. Em `lib/relacionadas.ts`, cada peça tem um PAPEL
+   (`PAPEIS`: o tipo `s` + o que o nome diz: "Suporte farol", "Mangueira radiador", "Moldura botão vidro") e cada papel
+   lista os papéis que a oficina troca ou precisa junto, do mais ligado ao menos (farol -> suporte, friso, guia do
+   para-choque, para-choque, grade; bomba d'água -> termostática, mangueira da bomba, tensor; máquina de vidro -> botão e
+   forro da MESMA porta; lanterna -> a lanterna da tampa do mesmo lado, soquete, guia do para-choque traseiro...). Papel
+   sem companheiro de serviço (botão do pisca-alerta, sensor solto, capa do motor, console) não tem bloco. `casa()`: lado e
+   posição iguais quando as duas dizem; só uma diz = vale se a outra for peça "de uma só" (`lat`/`fz`); na porta (`porta`)
+   a porta tem de ser a mesma ("motorista" = dianteira esquerda). Nunca a mesma peça de novo: mesmo código, mesmo nome, o
+   mesmo nome noutro canto (`esqueleto`) ou com palavras a mais (`contida`). Sem companheira certa, o bloco não aparece
+   (nov/2026: 1.543 de 5.311 páginas; a tabela de antes, por grupos largos, dava 4.173 com sugestão sem sentido). Tipo
+   novo no estoque: conferir se cabe num papel. Amostra para conferir uma a uma: `npx vite-node scripts/amostra-vai-junto.ts`
+   (na pasta `site/`, semente fixa, espalhada pelos blocos). As peças dele saem do "Do mesmo carro" e do "Mais peças
+   <marca>": sem outra
    peça do carro, o "Do mesmo carro" não aparece (nunca volta à lista inteira e repete). Cartão: o texto num `<span>`
    (nome, anos, e o "Cód." numa linha só dele, inteiro, quebra sem reticências), o preço e o "+ Lista" ESCRITO (nome
    acessível "Adicionar à Lista de orçamento: <peça>"); já na lista, o verde "Na lista" leva à lista. O `<li data-carro>`
@@ -265,6 +274,221 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      `excluir_do_site.json`: abre o gêmeo à venda; sem gêmeo, "Essa peça saiu do site" (nunca "já foi vendida").
    - **Tela cheia da foto**: o "Voltar" do aparelho fecha a foto (estado no histórico, `GaleriaTelaCheia.ts`).
 
+14. **Página do carro por família (rodada 15, nov/2026; cliente oculto 2, atrito 8)** — `pages/carros/[k].astro` +
+   `lib/carroPagina.ts` + `components/AnosDoCarro.astro`. As **fichas de ano** ficam DENTRO da caixa do carro (na 1ª tela
+   do celular de 360×640); o ano do carro salvo deste modelo já vem aceso e à vista antes da 1ª pintura (script inline,
+   `rolarFila`); tocar num ano filtra a página e **salva o "Meu carro"** ("Salvo como seu carro · Desfazer"; se havia
+   outro carro, "Salvo no lugar do Onix 2015"; o Desfazer devolve o carro e o ano de antes); "Todos" não mexe no carro
+   salvo. No PC as fichas têm largura fixa (a quebra de linha não muda quando a letra chega: era o CLS 0,11 das páginas
+   pequenas, revisão 14) e, no carro sem arte, a coluna do disco da marca tem a largura dele desde o começo (a regra mora em
+   `TopoArte.astro`: uma regra na página do carro perde para a do componente, por causa do atributo de escopo do Astro; com
+   `auto` as fichas mudavam de linha quando o disco chegava no HTML, CLS 0,02 a 0,05 em toda carga lenta). As **peças** saem agrupadas pelos blocos (`agrupar`: mais peças primeiro, "Outros" no fim), com
+   a barra de fichas presa sob o cabeçalho (`.gp-barra`, só as famílias com peça no ano, pela contagem; pula para o grupo
+   com `scroll-margin-top`; a ficha ativa acompanha a rolagem) e, em cada grupo, 8 cartões no HTML (o CSS mostra 4 no
+   celular, 6 no tablet, 8 no PC) + "Ver as N de <família>" (catálogo com `marca`, `modelo`, `tipo` e `ano`). Carro com
+   mais de 48 peças: só os primeiros grupos levam os cartões no HTML (`cartoesNoHtml`, 40 cartões; antes eram 48 soltos) e
+   os outros chegam de `/dados/carro/<k>.json` quando o navegador folga, com o lugar guardado (`data-espera`); a vista do
+   ano é montada do mesmo arquivo, um grupo por tarefa. TODA peça segue com link de verdade na lista "Todas as N peças".
+   Carro com menos de 20 peças (ou de uma família só): a grade simples. **Selo do carro unido** (revisão 14, B7): a peça
+   de UMA versão (`data-v1`/`it.v1`, `versaoUnica` em `catalogo/etiqueta.ts`: "C180" dentro do Classe C, "New Fiesta"
+   dentro do Fiesta) não ganha "Serve no seu…": ganha "Confira a versão".
+
+15. **Raio-x, 2º nível (rodadas 15 e 16, nov/2026)** — três coisas em cima do Raio-x; o código e o estilo de cada uma só descem
+   quando a pessoa usa (`import()` + CSS `?inline`: nada no CSS que trava a 1ª pintura, +0,4 KB no HTML da home).
+   - **"Bati o carro"** (o seletor de dois modos acima da arte; `v2/raioXBatida.ts` + `.css`): a arte troca as 9 zonas
+     pelos **8 pontos da batida** (`lib/batida.ts`: `PONTOS`, medidos na arte; o lado de lá fica na borda visível, com a
+     etiqueta dizendo o lado) e o painel vira a **lista do conserto**: as linhas na ordem da oficina, com a peça mais
+     barata de cada uma (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
+     "Outra opção" (passa pelas outras peças da mesma linha; nunca a palavra "trocar") e o total ao vivo (`somaPrecos`, em centavos). Regras do kit:
+     peça que vem em par é pedida com o LADO do ponto; a que não tem lado entra sem ele e a guarda do ponto tira só a que
+     DIZ o lado/posição oposta (o estoque quase nunca escreve "dianteiro" em grade, alma e guia); linha **principal** sem
+     peça fica como "a gente procura no pátio" (ficha de marcar: vai no pedido como item para procurar); linha **extra**
+     (dobradiça, emblema, defletor…) só aparece com peça, no grupo "Também costuma ir junto", e nunca vem marcada (o total
+     não infla sozinho). **Com carro** (o salvo na home; na página do carro, o da página, no ano do salvo se for o mesmo):
+     a conta sai do `/dados/carro/<k>.json` e as principais já vêm marcadas. **Sem carro**: o estoque inteiro pelo
+     `/dados/batida.json` (curto: cada peça uma vez), NADA marcado (são peças de carros diferentes), 6 linhas à vista e o
+     convite "Dizer o meu carro". Pé preso ao pé da tela: "Pedir o conserto no WhatsApp" (`mensagemConserto`,
+     `data-botao="raiox-conserto"` → `contato_whatsapp`; a ordem da mensagem é a da tela) e "Guardar na lista"
+     (`adicionarNaLista`). Nunca dizer que o kit está completo: "Peça usada: quando vende, acabou. A gente confere na peça
+     antes de você comprar." O desmanche vende muito mais peça pequena que lataria (8 faróis e 5 para-choques no estoque
+     inteiro): frente com poucas linhas é o estoque de verdade. Tipo novo no estoque: conferir as linhas (o teste avisa
+     tipo que sumiu). Testes: `lib/batida.test.ts` (estoque real, lado/posição, sem peça em dobro) e `lib/conserto.test.ts`.
+   - **"Onde fica"** (`components/peca/OndeFica.astro`, depois dos detalhes da peça): mini Raio-x com a zona DESTA peça
+     acesa, "Fica na frente do carro" (`Zona.fica`) e o link "Ver as outras peças da frente do XC60" →
+     `/carros/<k>.html#raio-x=<zona>` (carro sem Raio-x na página: `/#raio-x=<zona>`). A zona é a do painel
+     (`zonasDaPeca` em `lib/raioX.ts`, a mesma regra da busca; `zonaDaPecaId` em `lib/raioXDados.ts`); peça sem zona ou
+     em duas zonas (pos `A`) não mostra o bloco. HTML parado; estilo no arquivo com cache.
+   - **As vistas "por dentro"** (rodada 16: todas as zonas; a Frente foi o piloto da 15): o botão "Ver o motor por
+     dentro" do painel de cada zona troca a arte do carro pela vista explodida daquela parte no MESMO palco, com View
+     Transition onde existe (o zoom sai do ponto da zona). `lib/raioXVistas.ts` (`VISTAS`, pela chave da zona: a arte,
+     o título, o botão, a linha de apoio) é o ÚNICO pedaço que o script do Raio-x importa; o código
+     (`v2/raioXPorDentro.ts` + `.css`), a arte (`public/arte/v2/raio-x-<vista>.webp`, variantes 320/900 pelo
+     `variantes-imagens.mjs`) e a tabela das peças de CADA vista (`lib/raioXFrente.ts` e `lib/porDentro/<vista>.ts`,
+     um pedaço por vista: `TABELAS`) só descem no clique. As duas laterais usam a MESMA arte e a mesma tabela
+     (`pontosLateral(lado)`: o lado vai nos links; o desenho é o do lado esquerdo, e a nota do painel diz).
+     Cada peça é um link com a FORMA dela (`PontoQuente`, `lib/porDentro/base.ts`: contornos tirados da arte), com o
+     nome e quantas há; o número é o do catálogo com os filtros do link (`contarPontos`; sem carro:
+     `/dados/raio-x-dentro.json`, um arquivo para todas as vistas). Sem peça, ou tipo que o estoque não tem (capô,
+     tampa traseira, vidro e quadro do teto solar, forro do teto, longarinas, bancos, disco de freio, protetor de
+     cárter): cinza e o link é o WhatsApp "a gente procura no pátio" (`linkProcuraPeca` em `lib/aviso.ts`,
+     `data-botao="raio-x"`). Zona sem peça do carro também mostra o botão (a vista vira a lista de pedidos de pátio).
+     No toque, o 1º toque acende e mostra o rótulo, o 2º vai. Esc e "Voltar ao carro" devolvem a arte e o foco (o
+     botão por cima da arte desce para a fila quando a arte tem peça naquele canto: `data-canto`). Orientação: na
+     frente, o farol à direita de quem olha é o ESQUERDO do carro; na traseira (vista por trás), a lanterna à esquerda
+     de quem olha é a ESQUERDA. Ponto de outra zona, de propósito: o semieixo na suspensão e os airbags no teto.
+     **Arte nova ou trocada**: gerar no padrão da frente (estúdio claro, peças soltas com vão entre elas, sem marca e
+     sem texto), tirar os contornos da arte, pôr a tabela em `lib/porDentro/`, registrar em `VISTAS`, `TABELAS` e
+     `lib/porDentro/todas.ts`, rodar o `variantes-imagens.mjs`. Teste `lib/porDentro.test.ts` (todas as vistas, com o
+     estoque real: forma dentro da arte, números que não se encostam a 320 px, link = número do catálogo, peça da
+     parte certa do carro); o da frente continua em `raioXFrente.test.ts`.
+   - **Endereços que já abrem**: `#raio-x=<zona>`, `#raio-x=batida`, `#raio-x=batida:<ponto>`,
+     `#raio-x=por-dentro:<zona>` (sem a zona: a frente) (na home e na página do carro; só o `#`, nenhum endereço novo).
+
+16. **Abertura viva: "o estúdio vira o seu carro" (rodada 15, nov/2026)** — `v2/AberturaV2.astro` (marcação e CSS),
+   `v2/aberturaPalco.ts` (comportamento, chega depois da 1ª pintura) e `lib/abertura.ts` (contas puras, testadas com o
+   estoque real em `abertura.test.ts`). Conceito e os dois descartados: `site/SUPER-PLANEJAMENTO-v2.md` ("Abertura viva").
+   - **Título com a palavra viva**: "De qual peça o seu ___ precisa?" — "carro" -> a marca (passo 1 do seletor, lida do que
+     ele desenha: `olharSeletor`) -> o modelo e o ano (evento `meu-carro`). `palavraViva()` decide o texto e estima a
+     largura da 2ª linha pela classe de cada letra (`--ab-l`, em "em"; medido com os 374 nomes do estoque: erra de -1% a
+     +3,6%); o CSS diminui a letra só o necessário para a linha caber na coluna de cada tela (`--ab-col`) e a altura do h1
+     é fixa (2 linhas cheias). O h1 é UM bloco de texto (linha em `display: block`/`inline-block` dividiria a área dele e
+     o LCP do celular passaria para uma imagem: a palavra só vira caixa durante a troca, `.ab-anima`). O HTML continua
+     com "De qual peça o seu carro precisa?" (SEO); quem volta com carro salvo recebe o título dele no script do fim da
+     seção, antes da 1ª pintura (só se o `SeletorCarro` marcou `data-salvo`, isto é, o carro ainda tem peça).
+   - **Selos** (no lugar da frase cinza): "Desmanche legal · CDV Detran-RS nº 01060" (grafite) e "10% de desconto ·
+     comprando pelo WhatsApp" (verde, o ÚNICO verde da abertura; link com `data-botao="abertura-desconto"`, a mensagem
+     leva o carro salvo). Laranja só no botão principal do seletor e nos traços.
+   - **Palco** (à direita a partir de 1024 px; abaixo do cartão no celular/tablet): fundo de estúdio em CSS + peças
+     recortadas, uma por camada (`public/arte/v2/abertura/<k>-<largura>.webp`, medidas em `src/data/abertura-pecas.json`).
+     Cada peça é um LINK do bloco dela (`PECAS_PALCO`, 18 peças = 18 dos 25 blocos: farol-herói, retrovisor, pinça,
+     amortecedor e turbo na cena de abertura; as outras 13 só como atalho de carro). Com o carro escolhido:
+     a arte do carro entra (as 93 têm a mesma pose e o mesmo estúdio; o horizonte dela casa com o do palco:
+     `--ab-horizonte`) e as peças viram até 5 atalhos DELE, do bloco com mais peças para o de menos, com o número do
+     catálogo (`contarBlocos` sobre `/dados/carro/<k>.json`, o mesmo arquivo do "Chegou para o seu carro";
+     `linkAtalho` = `/catalogo.html?tipo=&marca=&modelo=&ano=`). Bloco sem peça não vira atalho; ano salvo sem peça =
+     os atalhos do modelo em todos os anos. A peça é ilustrativa do BLOCO (nunca dizer que é a peça do carro).
+   - **Peça nova no palco**: gerar sozinha em fundo liso `#DAD6D1` (super prompt no SUPER-PLANEJAMENTO), rodar
+     `python ferramentas/camada_abertura.py <png> <nome> --larguras 320,480` (recorte do Vision, borda firme, sem auréola;
+     conferir a 200% sobre claro e escuro), pôr em `PECAS_PALCO` com o nome EXATO do bloco (o teste confere) e commitar o
+     json. Trocar o farol: `--larguras 400,800,1200` (refaz também `farol-drl.webp`, a máscara por onde a luz corre).
+   - **Movimento** (tudo transform/opacity): entrada das peças quando as imagens estão decodificadas (80 ms entre elas),
+     luz correndo pelo DRL, "pisca" ao escolher marca/carro, deriva lenta em CSS, paralaxe pelo ponteiro (só mouse, laço
+     de rAF que para sozinho), saída em camadas na rolagem (CSS `animation-timeline`, só PC). Pausa fora da tela e com a
+     aba escondida (`data-ab-vivo`). `prefers-reduced-motion` e `html.leve`: a mesma cena, parada, trocas secas.
+   - **Orçamento (não estourar)**: celular — a única imagem da 1ª tela é o farolzinho do topo (`farol-400.webp`, ~20 KB)
+     e ela tem de continuar MENOR em área que o título (o LCP do celular é o h1); o palco fica abaixo do cartão e DORME
+     (`data-ab-dorme`: a cena com `display: none` e as imagens sem `srcset`, guardado em `data-srcset`) até chegar a 80 px
+     da tela — montado desde o começo ele custava um layout de 35 ms a mais com CPU 4× e baixava ~250 KB na 1ª visita.
+     PC — o LCP é o farol recortado (ou a arte do carro salvo), pedido no `<head>` pelo script de `index.astro` com o
+     MESMO `srcset`/`sizes` do `<img>` (`SIZES_HEROI`/`SIZES_AUTO`: mudou num, mude no outro; no celular o `sizes` é
+     menor que a tela de propósito, senão a tela 3x pede o arquivo de 1200 px). As peças fora da cena só baixam quando
+     viram atalho; com carro salvo, as da cena também não baixam. Nada entra empurrando: tudo no palco é absoluto; os
+     selos têm colunas de largura fixa e a grade do conteúdo é `minmax(0, 1fr)` (a fonte que chega depois não mexe em
+     nada: a fonte de espera "Ab Espera" tem as medidas verticais da Archivo). Estados (`data-ab`, `data-ab-vivo`,
+     `data-ab-entrada`) ficam no `.ab-palco`, não na seção. JS novo: um arquivo de ~4 KB gzip, sem biblioteca.
+   - **Medido em 11/11/2026** (A/B intercalado com a rodada 14, 7 cargas de cada; Moto G4, 4G lento pelo `proxy-lento.cjs`,
+     CPU 4×): 1ª visita — LCP 648 → 656 ms (o h1 nos dois), CLS 0,0008 → 0,0003, 1,0 tarefa longa por carga nos dois (a
+     da 1ª pintura, que já existia: 80 → 77 ms), 597 → 582 KB na rede; carro salvo — LCP 684 → 648 ms, CLS 0,0006 → 0,0002,
+     970 → 953 KB. PC 1440 sem freio: LCP 56–104 → 80–108 ms, nenhuma tarefa longa. O que a abertura pesa (gzip): HTML
+     +2,3 KB, CSS +3,0 KB, JS +4,5 KB; imagens da 1ª tela: celular 72,5 → 28 KB, PC 109 → 122 KB (tela 1x) ou ~207 KB (2x).
+   - **A arte do carro no palco**: o carro escolhido no seletor traz a chave (`a`/`as`); o salvo por outra página (ou antes
+     de a arte existir) NÃO traz — a chave vem da garagem (`arteDe`, o mesmo `/dados/meu-carro.json` do seletor). Modelo
+     sem arte própria (nenhum dos 173 em 11/11/2026, depois dos dois lotes; o modelo novo que entrar no estoque nasce sem): desenho "sem carro" (`data-ab-semarte`: os atalhos maiores, em duas
+     fileiras no meio do palco), nunca um buraco. A abertura segue o seletor também quando ele mostra um carro SEM o
+     evento `meu-carro` (etapa `pronto` no `olharSeletor`: apelido migrado na leitura, outra aba). Antes de mexer:
+     `node scripts/abertura-arte.cjs <url>` (confere `naturalWidth` da arte em todos os caminhos: nascer salvo com e sem a
+     chave, sem arte, escolher, trocar, esquecer, voltar pelo histórico, apelido) e `node scripts/abertura-fluxo.cjs <url>`.
+   - **Não quebrar**: o seletor (`ui/meuCarroPicker.ts`) não foi tocado — a abertura só OUVE (`meu-carro`,
+     MutationObserver no `[data-mc-conteudo]`, as classes `.mc-corpo[data-etapa]` e `.mc-campo-cheio[data-alvo="marca"]`);
+     quem mexer nessas classes confere o título. O slot `topo` ("Continuar") e o slot `busca` continuam iguais.
+
+17. **O app instalável (rodadas 14 e 15, nov/2026)** — o site vira app na tela de início (Android/Chrome e iPhone) SEM nunca
+   mostrar preço velho nem peça vendida "à venda". A mudança mais arriscada do site: um service worker errado prende o
+   site numa versão velha e é difícil de desfazer. Por isso ele é conservador.
+   - **Manifesto** (`public/site.webmanifest`): "Izzat Car Imports"/"Izzat Car", `start_url` `/?app=1` (a home; a canônica
+     e o `rastreio.js` não mudam, o GA só vê o `?app=1` no endereço), `display: standalone`, cores claras do site, ícones
+     192/512 + `maskable` (`icone-maskable-*.png`: o desenho original a 75% num fundo igual ao dele, dentro do círculo
+     seguro de 80%), atalhos Catálogo, Meu carro (`/carros.html`), Lista de orçamento e WhatsApp (`/contato.html`: o
+     `wa.me` é de outro domínio e o Chrome descarta atalho fora do site; ícones em `public/app/`). iPhone: o
+     `apple-touch-icon`, `apple-mobile-web-app-title` e a barra de status `default` (clara) no `Base.astro`.
+   - **Registro**: `components/app/app.ts`, um pedaço à parte que o script do cabeçalho (`Cabecalho.astro`, toda página
+     do site) pede só DEPOIS do `load` (um `<script>` no `<head>` do `Base.astro` era mais um pedido disputando a 1ª tela:
+     a LCP da home na 1ª visita piorava ~60 ms). O cabeçalho guarda a janela de instalar do Chrome que chega antes
+     (`window.__izzatInstalar`). O registro só 5 s depois do load, com o navegador folgando (a instalação caía em cima do
+     1º toque da 1ª visita). Página preparada pelo prerender não faz nada até ser aberta. O botão de pânico é conferido
+     antes do registro e, na página que JÁ tem o SW (ou com `?sw=0`), logo no load (sem os 5 s). O `/offline.html` não tem
+     cabeçalho nem registro (só aparece sem rede).
+   - **Service worker** (`public/sw.js`; a versão e o casco entram no build por `integracoes/service-worker.mjs`, a ÚLTIMA
+     integração do `astro.config.mjs`):
+
+     | Pedido | Estratégia |
+     |---|---|
+     | Página (navegação) | **Rede primeiro, sempre** (preload de navegação). Rede falhou ou passou de 3 s: a cópia guardada daquela página com a faixa "Você está sem conexão: mostrando a última versão que você viu" (ou "Sua conexão está lenta…") posta no HTML pelo SW (aparece na 1ª pintura, sem pulo) e `html[data-copia]`. Sem cópia: `/offline.html`; se só está lenta, espera a rede. 404/410 passa direto e apaga a cópia (peça vendida). Guarda só 200 + HTML, nunca redirecionado; chave = o caminho sem `?` (60 páginas). |
+     | Prerender/prefetch do Chrome (`Sec-Purpose`) e o fetch do `navegar.js` | Não toca (rede, como sem SW). A página preparada pede a própria cópia depois de aberta (sai do cache HTTP). |
+     | `/dados/*.json` (busca, ativas, carro) | **Rede primeiro**, sem prazo. A cópia só vai para a página que já é cópia (com a faixa); página que veio da rede segue como sem SW (mostra os avisos dela). |
+     | `/_astro/*` (nome com hash) | Cache primeiro, guardado na hora (250 itens). A cópia de uma página também põe na fila o CSS e os scripts dela. |
+     | Capas e artes (`/estudio*/`, `/arte/`, `/marcas/`, `/icones*`, `/identidade/`, fontes) | Só a que JÁ está guardada passa pelo SW (índice na memória): a guardada na hora, e a nova por trás quando ela passa de 1 h (300 itens, no máximo 7 dias). A nova vai direto à rede, com a prioridade do navegador, e é guardada ~1,5 s depois, do cache HTTP (sem baixar de novo). Medido: o SW respondendo toda foto nova da página preparada atrasava o CSS dela (home→carro no PC +350 ms). |
+     | Outro domínio (WhatsApp, Mercado Livre, fotos do ML, GA, Pixel), não-GET, `Range` | Nunca (as fotos do ML, GA e Pixel nem acordam o SW: rotas estáticas do Chrome 123+). |
+
+     Casco (baixado na instalação): só o `/offline.html` com o CSS, os scripts (e imports), o logo, o sprite e a fonte
+     latina (13 arquivos, ~190 KB). **Versão** = hash do `sw.js` + casco: o robô reconstrói a cada 30 min só com dados e a versão NÃO
+     muda (ninguém reinstala nada); muda quando o código do casco muda. Por isso o `offline.html` não pode ter dado do
+     estoque. Os caches de páginas/dados/artes têm a versão do formato (`R = 'v1'` no `sw.js`, trocar à mão se o jeito de
+     guardar mudar); a ativação apaga todo `izzat-*` que não é o atual. `skipWaiting` + `clients.claim`, nunca recarrega a
+     página sozinho (sem laço). O cache HTTP do GitHub Pages (`max-age=600`) continua igual: o SW não acrescenta atraso.
+   - **`/offline.html`** (`pages/offline.astro` + `components/app/paginaOffline.ts`, noindex, fora do sitemap): a
+     mensagem, "Tentar de novo", o WhatsApp, a lista de orçamento com o total e o "Pedir tudo no WhatsApp" e as peças
+     vistas (as guardadas no aparelho com o selo "Abre sem internet"). Voltou a conexão: recarrega sozinha.
+   - **Convite para instalar** (`lib/app.ts`, testado em `app.test.ts`; desenho em `components/app/convite.ts`, só desce
+     quando vai aparecer): no celular, só na 2ª visita, ou com peça na lista, ou depois de 3 peças abertas; uma vez por
+     sessão; o "×" lembra por 30 dias (`localStorage['izzatcar.app']`); nunca no app instalado nem na página com barra
+     fixa (peça, lista) nem por cima do pé da lista do conserto do Raio-x (`.rxb-fixo`: com ele na página o convite some; na
+     integração da rodada 15 ele cobria o "Pedir o conserto no WhatsApp"). O texto do convite não diz "na hora". Android/Chrome: guarda o `beforeinstallprompt` (a barra do Chrome não aparece sozinha) e o botão
+     "Instalar" abre a janela. iPhone (Safari/Chrome/Firefox/Edge, nunca o navegador do Instagram/Facebook): a dica
+     "Toque em Compartilhar → Adicionar à Tela de Início". GA4 `app_instalar` (`resultado`: aceito/dispensado, `onde`:
+     chrome/faixa/ios), pelo evento `app-instalar` no `rastreio.js`.
+   - **No app instalado** (`html.app`): link para fora (WhatsApp, Mercado Livre) abre fora do app; a área segura no
+     `global.css` (`@media (display-mode: standalone)`); voltou depois de 30 min ou mais em segundo plano = a página de
+     agora (recarrega, só com rede).
+   - **Medido em 11/11/2026** (Chromium, 4G lento 150 ms/1,6 Mbps com os cabeçalhos do GitHub Pages, CPU 4×; A/B
+     intercalado no MESMO build, "sem" = o proxy dando 404 para o `/sw.js` e o pedaço do app): toque→página pintada (LCP, mediana de 4, sem → com): celular catálogo→peça 916 → 836,
+     carro→peça 829 → 838 (rodada de 5: 897 → 794), home→carro 1.262 → 1.320 (rodadas anteriores: 1.278 → 1.287); PC
+     794 → 700, 723 → 689, 1.526 → 1.394. Carga da página (1ª visita, LCP): home 940 → 920, catálogo 708 → 636, peça
+     868 → 800; CLS igual; volta com o SW controlando: home 148 → 128, catálogo 532 → 572, peça 716 → 780 (o ruído entre
+     rodadas é ±80 ms). Prerender continua (Success, o HTML preparado desce 1 vez), transição entre páginas e bfcache
+     iguais (3/3 com e sem SW); 1 visita = 1 `page_view` (preparada e não aberta = 0). Sem rede: página vista abre em
+     ~40 ms com a faixa, nunca vista → `/offline.html` em ~15 ms; rede lenta (5 s): a cópia "lenta" em 3,1 s (sem SW:
+     10,6 s). Cache depois de 30 páginas: 10,7 MB. Página de peça: +129 bytes (só as 2 metas do iPhone).
+     Teste: o Playwright não deixa o Chrome fazer prerender nem desligar SW parado; use o CDP cru (`cdp-cru.cjs`) e, para
+     http com o domínio de verdade, `--unsafely-treat-insecure-origin-as-secure` no Chrome for Testing (o headless-shell
+     ignora).
+   - **Como DESLIGAR (botão de pânico)**: escrever `1` em `site/public/sw-desligar.txt` e publicar (push no master; o
+     robô publica). Toda página com o SW confere esse arquivo no load (sem cache; a que ainda não tem, antes de registrar)
+     e, com "1", desregistra o SW e apaga os caches `izzat-*`; o próprio SW confere na ativação e a cada 6 h (hora
+     gravada no cache `izzat-ctl-v1`, lida a cada navegação). Para religar:
+     voltar para `0` e publicar. Num aparelho só: abrir qualquer página com `?sw=0` no endereço. **Nunca** apagar o
+     `sw.js` nem o registro do `Base.astro` para "desligar": o SW instalado continua no aparelho; o `/sw.js` tem de ficar
+     sempre no MESMO endereço (é por ele que o navegador acha a versão nova). Último recurso: um `sw.js` que só se
+     desregistra (`self.addEventListener('activate', () => self.registration.unregister())`).
+
+## Testes e o estoque do dia (regra de 11/11/2026: o robô parou a loja por causa de teste)
+O robô roda `python testes/test_dados.py` e `npm --prefix site test` com o ESTOQUE DO DIA antes de publicar: teste vermelho
+= loja parada. Por isso nenhum teste pode depender do que está à venda hoje. Três fontes (`site/testes/estoques.ts`):
+- **Vocabulário da loja** (`site/testes/fixtures/vocabulario.json`): os nomes de bloco e de tipo que o `preparar_dados.py`
+  sabe escrever (`BLOCOS`, `_TIPOS_DO_BLOCO`). "Este nome existe?" pergunta-se a ele, nunca ao índice do dia (o tipo some
+  quando a última peça vende). Mudou um nome: `python ferramentas/vocabulario_loja.py` e commitar o json (o
+  `test_vocabulario_da_loja_em_dia` do `test_dados.py` confere, sem olhar o estoque).
+- **Estoque fixo** (`fixtures/estoque-busca.json` = o índice congelado de 09/11/2026, o mesmo dos testes da busca;
+  `fixtures/pecas-xc60.json` = as peças do XC60 de 11/11): tudo que precisa de peça para existir ("toda zona tem peça",
+  "a frente esquerda acha farol esquerdo", "pelo menos N", exemplos com o XC60). Não regenerar.
+- **Estoque do dia** (`public/dados/busca.json`, `src/data/pecas.json`): só REGRAS que valem para qualquer estoque (o número
+  do painel = o do catálogo, nenhuma peça do lado errado, nada em dobro), com o carro que o estoque tiver
+  (`carroMaisCheio`). Nunca um anúncio, um carro, uma peça ou uma quantidade escritos no teste.
+Prova antes de juntar ramo com teste novo: na pasta `site/`, `PYTHON=<python com as dependências> node
+scripts/estoque-perturbado.mjs` (30 estoques sorteados: 2–20% dos anúncios fora e, a cada 3, TODO um tipo de um carro; gera
+os dados como o robô e roda a suíte inteira; ver também o item "Teste que o robô roda…" em Peso e fluidez). Tudo verde ou
+não vai. É proibido pular, excluir ou afrouxar teste no robô.
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
@@ -283,12 +507,14 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 | Cores, fontes, botões, etiqueta da peça | `site/src/styles/global.css` |
 | Página da peça | `site/src/pages/peca/[slug].astro` e `site/src/components/PecaTopo.astro` |
 | Home | `site/src/pages/index.astro` e `site/src/components/v2/*` (abertura, selos, categorias, marcas, carros, banners) |
+| Abertura da home (título vivo, selos, palco com as peças e o carro) | `site/src/components/v2/AberturaV2.astro`, `aberturaPalco.ts`, `site/src/lib/abertura.ts`; camadas: `ferramentas/camada_abertura.py` |
 | Catálogo (busca e filtros) | `site/src/components/catalogo/Catalogo.tsx` e `site/src/lib/busca.ts` |
 | Leitura de marca/modelo/nome | `preparar_dados.py` |
 | GA4 / Meta Pixel | `site/public/rastreio.js` (só mede no domínio de verdade) |
 | Artes (v2: abertura, categorias, carros, selos, banners, passos, topos, história, 404) | `site/public/arte/v2/` — texto desenhado na arte; prompts em `site/SUPER-PLANEJAMENTO-v2.md` |
 | Artes dos blocos (`cat-<k>.webp` e o topo sem o nome) | `node scripts/instalar-cats.mjs [pasta dos PNG]` na pasta `site/` (PNG de 1536: cartão em 1200, topo em 1254, nunca aumenta; bloco sem arte: o nome num fundo de estúdio) |
 | Variantes menores das artes (srcset) | `node scripts/variantes-imagens.mjs` na pasta `site/` depois de pôr/trocar `carro-<k>.webp`, `cat-<k>.webp` ou `topo-cat-<k>.webp`: faz `-600`/`-900` (carro), `-600` (cat) e `-640` (topo) e o hash em `src/data/variantes-arte.json`; commitar junto. Sem rodar, a arte nova sai só no `src` (variante velha nunca aparece). `sizes` de cada lugar: `src/lib/variantes.ts` |
+| Arte nova de carro (`carro-<k>.webp`) | Um arquivo e um comando: `site/public/arte/v2/carro-<k>.webp` (1200×800, webp q84; `<k>` = a chave do carro, `chaveCarro()` em `lib/garagem.ts`, a mesma do `/carros/<k>.html`) + `node scripts/variantes-imagens.mjs`. Não há lista para registrar: o topo do carro, `/carros`, a marca, o cartão do seletor e a abertura acham a arte pelo arquivo (modelo com menos de 8 peças, sem página, também: a garagem usa a chave que a página teria). A arte tem de ser da família: 3/4 dianteira com a frente para a esquerda, carro de ~16% a ~94% da largura, rodas em ~83% da altura, filete laranja em ~70%, parede no tom `rgb(229 214 208)` (a abertura dissolve uma arte na outra e sobre o estúdio em CSS; parede mais rosada = emenda). Roteiros da rodada 16 (geração pelo Codex com 2 artes-âncora + foto real, medida do enquadramento, acerto do tom, instalação): `ferramentas/artes_carro/` (as lições dos dois lotes estão no topo do `carros.py`: âncora sempre da mesma carroceria, irmão de mesma frente, grade sem o lugar do símbolo). Modelo que divide o carro com um apelido ou versão (C230/C250 = Classe C W203, 330i = Série 3, Pajero = Pajero Full): cópia da arte aprovada, sem gerar. Provas: `npx vitest run src/lib/garagem.test.ts` e `node scripts/abertura-arte.cjs <url> "Marca|Modelo" ...` |
 | Logos das marcas | `site/public/marcas/` (simple-icons e car-logos-dataset; viewBox recortado) |
 
 ## Regras da marca (manual da vitrine)
@@ -334,7 +560,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   carro" são montados pelo script. "Do mesmo carro" mostra 6 cartões.
 - Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`: até 2 núcleos, até 4 GB no Chrome ou economia de
   dados; o Safari informa sempre 4 ou 8 núcleos, então iPhone não entra): sem vidro desfocado, sem 3D no coverflow,
-  sem o "respirar" da abertura e sem animação de altura nas perguntas.
+  sem movimento no palco da abertura e sem animação de altura nas perguntas.
 - **Busca em camadas (rodada 14, depois da revisão que barrou a 1ª versão do "tipo manda")**: o MiniSearch acha como sempre (todas as palavras) e `Busca.calcular()` ordena o que ele achou, sem esconder nada: (0/1) as que SÃO o que foi digitado, a 1ª palavra do nome é a da busca ("Farol direito", "Módulo ABS", "Motor vidro"); (2) as que citam no nome ("Suporte farol", "Alavanca freio mão"); (3) as que só o anúncio cita. `busca.nExatas` = quantas do começo são a peça (o catálogo escreve "12 peças para “farol” e mais 66 ligadas" e o bloco "Outras peças ligadas a “farol”"); `busca.citam` = nenhuma peça do estoque tem esse nome, a palavra é o lugar ou o assunto ("teto", "porta-malas", "capô", "ar condicionado", "suspensão xc60": "N peças ligadas a …", nunca "para"). `aproximado` (aviso "Nada exato" + pátio) quando: a peça existe no estoque mas não para o carro digitado ou não com as outras palavras ("alternador gol" só com o "Suporte alternador" do Gol: o do Gol primeiro, depois o alternador dos outros carros; "caixa de direção"); ou nada tem todas as palavras, e aí vêm as PARECIDAS DO TIPO, o carro digitado primeiro ("forro de teto": forros; "lanterna led gol": as lanternas do Gol; "farol compass": as luzes do Compass e depois os faróis), nunca zero com o tipo no estoque e nunca outro tipo. O "tipo" é a 1ª unidade digitada que é nome de peça (`casador()`: `cabecas`, `unNaCabeca`, `todas`); as palavras dos nomes ficam em índices montados uma vez (`montarVocab`, fora do busca.json e fora das peças). Regras que a revisão cobrou e têm teste: composta com espaço vale junta quando a junção é palavra de nome do estoque ("porta luvas", "para choque", "semi eixo"; antes de tirar as vazias) e duas palavras do estoque digitadas juntas se separam ("arcondicionado"); "d'água"/"dagua"/"d agua" = água (`limpar`); gatilho e destino do sinônimo são UMA unidade ("espelho retrovisor"); carro e marca valem só como palavra inteira ("gol" não é "Golf"), "vw"/"gm"/"volks" valem pela marca e o apelido de carro unido pelo principal ("new fiesta" = Fiesta, na busca e no filtro `modelo=`); 2 letras no fim só valem como começo quando não são palavra de nome ("sensor de ré" não é Renault; "modulo ab" segue achando ABS); erro de digitação é corrigido ANTES das camadas (`corrigir`: 1 letra, 2 invertidas ou o mesmo som: "retrovizor", "alternadro", "fexadura", "sinalera"); o carro salvo sobe dentro de cada parte da lista sem esconder as outras (`procurar(f, meuCarro)`, `sugestoes(q, n, meuCarro)`); "MLB…" acha o anúncio e "cod 123" o código. **O juiz**: `lib/busca.diferencial.test.ts` roda 541 consultas (as 291 do revisor, as da revisão e 190 do jeito que o cliente digita) com gabarito escrito à mão, no candidato e no motor do ar (commit fixo de `origin/master`, lido pelo git para `node_modules/.cache/busca-no-ar`; no robô o clone é raso e a comparação é pulada): o candidato não pode falhar o gabarito nem perder para o do ar em nenhuma (541/541, 192 vitórias, 0 derrotas; o do ar cumpre 354). `BUSCA_RELATORIO=arquivo` grava a tabela consulta a consulta; `BUSCA_CANDIDATO=/caminho/busca.mjs` julga outro motor. Mexeu na busca ou em `sinonimos.ts`: rodar o juiz.
 - **Teste que o robô roda não pode depender do estoque do dia (rodada 14b, 11/11/2026)**: o robô roda `npm --prefix site test` e `python testes/test_dados.py` ANTES de publicar, a cada 30 min, com o estoque do momento; teste vermelho = nada é publicado e o catálogo no ar congela. A rodada 14 foi recusada assim: vendeu a única lanterna do XC60 e dois testes tinham o estoque de 09/11 no gabarito. Daí em diante: (1) o que cita peça, carro que "tem" algo ou contagem roda no **estoque congelado** `site/testes/fixtures/estoque-busca.json` (o busca.json de 09/11, sem as colunas de foto; não regenerar): o juiz, os casos escritos à mão de `lib/busca.regressao.test.ts`, a conferência da tabela de sinônimos; (2) no **estoque do dia** só regra que sai do próprio estoque testado (`lib/busca.regressao.ts`: 926 consultas geradas; a peça existe = a 1ª é ela; não existe = zero ou lista com aviso e a 1ª da família; o que só o título do anúncio liga nunca antes do que o nome/tipo/bloco ligam); (3) `lib/busca.vendas.test.ts` tira peças do congelado (as 18 vendidas em 11/11, um tipo inteiro de um carro, um tipo do estoque inteiro, um carro) e exige as mesmas regras. **A prova antes de mandar ao robô**: na pasta `site/`, `PYTHON=<python com as dependências> node scripts/estoque-perturbado.mjs` (30 estoques sorteados: tira 2–20% dos anúncios e, a cada 3, um tipo inteiro de um carro; gera os dados como o robô e roda a suíte inteira; `--hoje` usa o `/dados/ativas.json` do site no ar; `--arquivo outro-products.json` testa outro estoque). Tudo verde ou não vai.
 - **O que a busca garante com qualquer estoque (rodada 14b)**: palavra que o estoque conhece (nome, tipo, bloco, carro, marca, gatilho do jeito de falar) nunca é lida como erro de digitação de outra (`casam().certa`, `mesmaForma`: "lanterna" não é "antena" nem "interna", "módulo" não é "modelo"; a aproximação do MiniSearch só vale para palavra desconhecida). Sem peça que SEJA o que foi digitado, nada conta como achado (`aproximado` ou `citam`, `nExatas` 0) e a ordem é: o que o nome cita, o que o tipo "s"/bloco "c" cita, a peça dos outros carros, e por último o que só o texto do anúncio liga (nível 4 em `calcular`). O carro digitado sozinho não faz "parecida" ("churrasqueira gol" sem churrasqueira no estoque = zero + pátio, nunca a lista das peças do Gol). O nome que começa pelo digitado, na ordem, é chave de ordem (não só peso).
@@ -362,9 +588,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
   de anos com mais peças (na página do carro, num `<script is:inline>` antes da 1ª pintura); o "Todos" fica fixo à
   esquerda (`.ac-fixo`/`.mc-fixo`, sticky). Só o scrollLeft da fila, nunca a página.
-- Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (um por modelo da garagem; só as peças do carro, feito no
-  build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entra em partes (12 cartões, o resto, a lista completa em
-  fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`.
+- Página do carro: a vista do ano e os grupos que não vêm no HTML saem de `/dados/carro/<k>.json` (um por modelo da garagem; só as peças do carro, feito no
+  build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entram um grupo por tarefa (a lista completa em
+  fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`. Ver o item 14.
 - **Troca de página sem tela branca** (nov/2026): transição entre documentos (`@view-transition` no fim do
   `global.css`; Chrome/Edge 126+ e Safari 18.2+, quem não tem navega como antes), até 250 ms, nenhuma com
   `prefers-reduced-motion` e o `html.leve` pula no `pageswap`. O cabeçalho fica parado (grupo `cab`, fundo cheio só

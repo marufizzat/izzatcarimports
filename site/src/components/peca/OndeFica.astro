@@ -1,0 +1,73 @@
+---
+// "Onde fica" (página da peça, depois dos detalhes): um mini Raio-x com a parte do carro onde ESTA peça fica acesa (o
+// mesmo véu laranja do Raio-x da home: components/v2/RaioX.astro) e a legenda por extenso ("Fica na frente do carro").
+// A zona sai da mesma tabela e do mesmo índice do painel (lib/raioXDados.ts: zonaDaPecaId). O link leva ao Raio-x do
+// carro da peça já com aquela parte aberta (#raio-x=<zona>; carro sem Raio-x na página dele: o da home).
+// HTML parado, funciona sem JavaScript, e a arte tem proporção fixa (nada pula). Peça que a tabela não alcança: nada.
+// Cada byte aqui vai em 5 mil páginas: classes curtas, a arte de 320 px (7,7 KB, só quando chega perto da tela) e o
+// estilo no arquivo com cache.
+import { ARTE } from '../../lib/raioX';
+import { zonaDaPecaId } from '../../lib/raioXDados';
+import { srcsetArte } from '../../lib/variantes';
+
+interface Props { id: string; carro?: { k: string; m: string; c: number } }
+const { id, carro } = Astro.props;
+const z = zonaDaPecaId(id);
+// a página do carro só tem o Raio-x a partir de 20 peças (pages/carros/[k].astro: RAIO_X_A_PARTIR_DE; o teste confere)
+const RAIO_X_A_PARTIR_DE = 20;
+const noCarro = !!carro && carro.c >= RAIO_X_A_PARTIR_DE;
+const href = z ? `${noCarro ? `/carros/${carro!.k}.html` : '/'}#raio-x=${z.k}` : '';
+const mini = srcsetArte(ARTE.src)?.includes('-320.webp') ? ARTE.src.replace(/\.webp$/, '-320.webp') : ARTE.src;
+const d = (p: string) => `M${p.trim().split(/\s+/).join('L')}Z`;
+---
+{z && (
+  <section class="of" aria-labelledby="of-t">
+    <div class="moldura">
+      <div class="of-cx">
+        <div class="of-a">
+          <img src={mini} alt="" width="320" height="213" loading="lazy" decoding="async" />
+          <svg viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} aria-hidden="true"><path fill-rule="evenodd" d={`M0,0H${ARTE.w}V${ARTE.h}H0Z${z.realce.map(d).join('')}`} /><path d={z.realce.map(d).join('')} /></svg>
+        </div>
+        <div class="of-t">
+          <h2 id="of-t">Onde fica</h2>
+          <p>Fica <b>{z.fica}</b>.</p>
+        </div>
+        <a href={href}>Ver as outras peças {z.de}{noCarro && ` do ${carro!.m}`}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></a>
+      </div>
+    </div>
+  </section>
+)}
+
+<style is:global>
+  .of { padding-block: 0 32px; }
+  /* celular: a arte e a legenda lado a lado, o link numa linha só dele embaixo; do tablet em diante, o link sob a legenda */
+  .of .of-cx { display: grid; grid-template-columns: 120px minmax(0, 1fr); grid-template-areas: "a t" "l l"; align-items: center; gap: 4px 14px; padding: 10px 14px 4px 10px; border-radius: 20px;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  /* a arte com a proporção guardada (1536×1024): a foto pode chegar depois, nada pula */
+  .of .of-a { position: relative; aspect-ratio: 3 / 2; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); isolation: isolate; }
+  .of .of-a img, .of .of-a svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  /* o resto do carro escurece de leve e a parte da peça acende em laranja, de borda esfumada */
+  .of .of-a svg { filter: blur(2.5px); }
+  .of .of-a path { fill: rgb(22 22 26 / .3); }
+  .of .of-a path + path { fill: rgb(255 106 0 / .5); }
+  .of .of-a { grid-area: a; }
+  .of .of-t { grid-area: t; display: grid; gap: 2px; justify-items: start; min-width: 0; }
+  .of .of-cx > a { grid-area: l; }
+  .of h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+  .of p { margin: 0; font-size: 17px; line-height: 1.3; color: var(--ink); text-wrap: balance; }
+  .of p b { font-weight: 760; }
+  .of a { display: inline-flex; align-items: center; justify-self: start; gap: 4px; min-height: 48px; padding-left: 4px; font-size: 14.5px; font-weight: 650; line-height: 1.3; color: var(--ink);
+    text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--accent), transparent 30%); text-decoration-thickness: 2px; text-underline-offset: 4px; text-wrap: pretty; }
+  .of a:hover { text-decoration-color: var(--accent); }
+  .of a svg { flex: none; width: 16px; height: 16px; fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  @media (min-width: 700px) {
+    .of .of-cx { grid-template-columns: 216px minmax(0, 1fr); grid-template-areas: "a t" "a l"; gap: 0 24px; width: fit-content; max-width: 100%; padding: 12px 32px 12px 12px; border-radius: 24px; }
+    .of .of-t { align-self: end; }
+    .of .of-cx > a { align-self: start; min-height: 44px; padding-left: 0; }
+    .of .of-a { border-radius: 14px; }
+    .of .of-a svg { filter: blur(4px); }
+    .of p { font-size: 20px; }
+    .of a { font-size: 15px; }
+  }
+  html.leve .of .of-a svg { filter: none; }
+</style>

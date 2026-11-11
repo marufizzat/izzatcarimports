@@ -57,305 +57,458 @@ export function doMesmoCarro(p: Peca, doModelo: Peca[], max = MAX_CARRO, minimo 
   return { mesma, outras, semAno: false };
 }
 
-// ---- "Vai junto": até 4 peças do MESMO carro (e da mesma geração) que costumam ser trocadas junto com esta ----
-// Regra por grupo de tipo (o `s` da peça, preparar_dados.py: TIPO_LOJA), às vezes afinada pelo nome: farol -> para-choque
-// dianteiro, grade, suporte do farol...; retrovisor -> capa, botão; lanterna -> para-choque traseiro, tampa, luz de placa;
-// maçaneta -> fechadura, máquina de vidro; módulo -> chicote, caixa de fusíveis. Lado e posição contam: farol direito
-// nunca chama a grade esquerda nem o para-choque traseiro; maçaneta traseira direita chama a fechadura traseira direita
-// (ou a sem lado dito). Sem peça que combine no estoque daquele carro: nada (o bloco não aparece).
+// ---- "Vai junto": 1 a 3 peças do MESMO carro (e da mesma geração) que entram NO MESMO SERVIÇO que esta ----
+// Regra de oficina (rodada 15; a tabela de antes juntava grupos largos: "Botão desembaçador -> Botão pisca-alerta",
+// "Luva eixo -> Cabeçote, Biela"): cada peça tem um PAPEL (o tipo `s` + o que o nome diz: "Suporte farol", "Mangueira
+// radiador", "Moldura botão vidro") e cada papel lista os papéis que o mecânico ou o funileiro troca ou precisa JUNTO, do
+// mais ligado ao menos: farol -> suporte e friso do farol, guia do para-choque, para-choque, grade; bomba d'água ->
+// termostática, tensor, mangueiras; radiador -> ventoinha, mangueiras do radiador, reservatório; amortecedor -> coxim,
+// mola e bieleta do mesmo eixo; máquina de vidro -> botão do vidro e forro da MESMA porta; fechadura -> maçaneta e miolo
+// da mesma porta; turbina -> mangueiras, intercooler, válvula; lanterna -> a outra lanterna do mesmo lado, soquete, guia
+// do para-choque; retrovisor -> capa do mesmo lado. Papel sem companheiro de serviço (botão do pisca-alerta, sensor
+// solto, capa do motor...) não tem "Vai junto". Lado e posição têm de bater quando a peça tem (regra em `casa`); sem
+// companheira certa no estoque daquele carro, nada (o bloco não aparece): poucas e certas valem mais que muitas.
 export type Zona = 'frente' | 'tras';
-type Grupo = {
-  /** tipos (`s`) do grupo */
-  tipos: string[];
-  /** só as peças do tipo cujo nome bate (afina tipo que junta coisas diferentes: "Amortecedores da Tampa e do Capô") */
-  nome?: RegExp;
-  /** a zona do carro quando o nome não diz (farol é da frente, lanterna é de trás) */
-  zona?: Zona;
+type Papel = {
+  /** tipos (`s`) em que o papel aparece */
+  t: string[];
+  /** o nome (sem acento, minúsculo) tem de bater / não pode bater */
+  n?: RegExp; x?: RegExp;
+  /** a ponta do carro quando o nome não diz (farol é da frente, lanterna é de trás) */
+  z?: Zona;
+  /** peça que existe uma de cada lado: sem o lado no nome não dá para dizer que é "a do mesmo lado" */
+  lat?: 1;
+  /** peça que existe na frente e atrás (para-choque, amortecedor): idem para a posição */
+  fz?: 1;
+  /** peça de porta: a porta (lado + dianteira/traseira) tem de ser a MESMA, também quando nenhuma das duas diz */
+  porta?: 1;
+  /** só vale para a peça que diz o lado ("Acabamento interno retrovisor esquerdo" é do retrovisor de fora) */
+  lado?: 1;
+  /** peça que existe "central" e "lateral" (difusor de ar): tem de ser igual */
+  meio?: 1;
+  /** conjunto de peças de nome parecido (mangueiras, coxins, braços): a companheira do MESMO papel pode começar pela
+   *  mesma palavra ("Mangueira superior radiador" e "Mangueira inferior radiador"). Sem isto, do mesmo papel só entra a de
+   *  outro começo ("Motor limpador" e "Braço limpador"; nunca "Sirene alarme" e "Sirena alarme antifurto") */
+  jogo?: 1;
   /** o fim da frase "…que costumam ser trocadas com o farol" */
   com: string;
+  /** os papéis que vão junto, do mais ligado ao menos (o próprio papel = outra peça do mesmo conjunto, com outro nome) */
+  j: string[];
 };
-const CAPO = /cap[oô]/i;
-const TAMPA = /tampa|porta-?malas|bagageiro/i;
-const FAROL = /farol|far[oó]is/i;
-/** A ordem conta: a peça cai no 1º grupo que serve (os afinados pelo nome vêm antes dos gerais do mesmo tipo). */
-export const GRUPOS: Record<string, Grupo> = {
-  // frente
-  farol: { tipos: ['Faróis'], zona: 'frente', com: 'o farol' },
-  milha: { tipos: ['Faróis de Milha'], zona: 'frente', com: 'o farol de milha' },
-  'farol-peca': { tipos: ['Suportes do Farol', 'Frisos dos Faróis', 'Módulos e Reatores do Farol'], zona: 'frente', com: 'esta peça do farol' },
-  'esguicho-farol': { tipos: ['Bombas e Esguichos do Lavador'], nome: FAROL, zona: 'frente', com: 'o esguicho do farol' },
-  grade: { tipos: ['Grades do Para-choque', 'Grades'], zona: 'frente', com: 'a grade' },
-  parachoque: { tipos: ['Para-choques', 'Almas do Para-choque', 'Guias e Suportes do Para-choque', 'Molduras do Para-choque', 'Spoilers'], com: 'esta peça do para-choque' },
-  capo: { tipos: ['Dobradiças do Capô', 'Fechaduras do Capô', 'Isolamentos do Capô'], zona: 'frente', com: 'esta peça do capô' },
-  'capo-mola': { tipos: ['Amortecedores da Tampa e do Capô', 'Cabos e Alavancas de Abertura'], nome: CAPO, zona: 'frente', com: 'esta peça do capô' },
-  paralama: { tipos: ['Para-lamas', 'Molduras do Para-lama', 'Para-barros'], com: 'esta peça do para-lama' },
-  'frente-radiador': { tipos: ['Suportes do Radiador', 'Radiadores', 'Condensadores', 'Eletroventiladores', 'Defletores', 'Motores de Ventilador', 'Relés da Ventoinha'], zona: 'frente', com: 'esta peça do radiador' },
-  // trás
-  lanterna: { tipos: ['Lanternas Traseiras'], zona: 'tras', com: 'a lanterna' },
-  brake: { tipos: ['Brake Light'], zona: 'tras', com: 'o brake light' },
-  placa: { tipos: ['Luzes de Placa', 'Suportes da Placa'], zona: 'tras', com: 'esta peça da placa' },
-  refletor: { tipos: ['Refletores'], zona: 'tras', com: 'o refletor' },
-  tampa: { tipos: ['Acabamentos da Tampa Traseira', 'Dobradiças da Tampa Traseira', 'Fechaduras do Porta-malas', 'Aerofólios', 'Tampões do Porta-malas'], zona: 'tras', com: 'esta peça da tampa traseira' },
-  // tipos de porta com "tampa traseira"/"porta-malas" no nome (a maçaneta e a trava da tampa não vão com as portas)
-  'tampa-mola': { tipos: ['Amortecedores da Tampa e do Capô', 'Cabos e Alavancas de Abertura', 'Forros', 'Maçanetas das Portas', 'Maçanetas Internas', 'Fechaduras das Portas', 'Botões da Trava Elétrica'], nome: TAMPA, zona: 'tras', com: 'esta peça da tampa traseira' },
-  'camera-re': { tipos: ['Câmeras de Ré'], zona: 'tras', com: 'a câmera de ré' },
-  estacionamento: { tipos: ['Sensores de Estacionamento'], com: 'o sensor de estacionamento' },
-  // portas
-  retrovisor: { tipos: ['Retrovisores Externos'], com: 'o retrovisor' },
-  // capa do retrovisor INTERNO (o tipo junta as duas) antes da do externo
-  'retrovisor-interno-capa': { tipos: ['Capas e Molduras do Retrovisor'], nome: /intern/i, com: 'esta peça do retrovisor interno' },
-  'retrovisor-peca': { tipos: ['Capas e Molduras do Retrovisor', 'Botões do Retrovisor'], com: 'esta peça do retrovisor' },
-  macaneta: { tipos: ['Maçanetas das Portas', 'Maçanetas Internas', 'Puxadores das Portas'], com: 'a maçaneta' },
-  fechadura: { tipos: ['Fechaduras das Portas', 'Botões da Trava Elétrica'], com: 'a fechadura' },
-  'cabo-porta': { tipos: ['Cabos e Alavancas de Abertura'], com: 'esta peça da porta' },
-  vidro: { tipos: ['Máquinas e Motores de Vidro Elétrico', 'Máquinas de Vidro Manuais', 'Peças da Máquina de Vidro', 'Guias e Canaletas do Vidro', 'Vidros Laterais'], com: 'a máquina de vidro' },
-  'botao-vidro': { tipos: ['Botões do Vidro Elétrico'], com: 'o botão do vidro' },
-  'forro-porta': { tipos: ['Forros', 'Apoios de Braço', 'Frisos das Portas', 'Molduras das Portas'], nome: /porta|apoio|friso|moldura/i, com: 'esta peça da porta' },
-  'porta': { tipos: ['Dobradiças e Limitadores de Porta', 'Borrachas de Vedação', 'Portas'], com: 'esta peça da porta' },
-  // elétrica e módulos
-  modulo: { tipos: ['Módulos de Conforto (BCM)', 'Módulos Eletrônicos', 'Antenas e Módulos Keyless', 'Alarmes e Sirenes', 'Conversores e Módulos de Bateria'], com: 'o módulo' },
-  'modulo-injecao': { tipos: ['Módulos de Injeção'], com: 'o módulo de injeção' },
-  imobilizador: { tipos: ['Módulos de Ignição e Imobilizador', 'Chaves do Carro', 'Cilindros e Comutadores de Ignição', 'Botões de Partida'], com: 'esta peça da partida' },
-  chicote: { tipos: ['Chicotes Elétricos', 'Chicotes de Chassi', 'Tomadas Elétricas'], com: 'o chicote' },
-  fusiveis: { tipos: ['Caixas de Fusíveis', 'Relés', 'Relés de Partida', 'Tampas da Caixa de Fusíveis'], com: 'a caixa de fusíveis' },
-  bateria: { tipos: ['Cabos e Terminais de Bateria', 'Caixas e Suportes da Bateria'], com: 'esta peça da bateria' },
-  // motor, admissão e injeção
-  coxim: { tipos: ['Coxins do Motor', 'Coxins do Câmbio'], com: 'o coxim' },
-  correia: { tipos: ['Tensores de Correia'], com: 'o tensor da correia' },
-  distribuicao: { tipos: ['Peças da Distribuição', 'Tampas da Distribuição', 'Tensores de Corrente', 'Comandos de Válvulas'], com: 'esta peça da distribuição' },
-  // a válvula solenoide do turbo (pressão da turbina, wastegate) é do turbo, não do cabeçote (revisão 12, P2.2)
-  'turbo-valvula': { tipos: ['Válvulas Solenoides'], nome: /turb|waste\s?gate/i, com: 'a válvula do turbo' },
-  cabecote: { tipos: ['Cabeçotes', 'Tampas de Válvulas', 'Parafusos do Cabeçote', 'Válvulas Solenoides', 'Tampas de Óleo'], com: 'esta peça do cabeçote' },
-  'motor-baixo': { tipos: ['Blocos do Motor', 'Bielas', 'Bronzinas', 'Pistões', 'Virabrequins', 'Cárteres', 'Bombas de Óleo', 'Retentores', 'Radiadores de Óleo', 'Suportes do Filtro de Óleo', 'Sensores de Pressão do Óleo'], com: 'esta peça do motor' },
-  admissao: { tipos: ['Coletores de Admissão', 'Corpos de Borboleta', 'Mangueiras de Admissão', 'Caixas do Filtro de Ar', 'Sensores MAF', 'Sensores MAP'], com: 'esta peça da admissão' },
-  injecao: { tipos: ['Bicos Injetores', 'Flautas de Combustível', 'Canos dos Injetores', 'Bombas de Alta Pressão', 'Reguladores de Pressão', 'Sensores de Pressão'], com: 'esta peça da injeção' },
-  combustivel: { tipos: ['Bombas de Combustível', 'Boias de Combustível', 'Tanques de Combustível', 'Portinholas e Tampas do Tanque', 'Válvulas e Filtros Canister'], com: 'esta peça do combustível' },
-  'sensor-motor': { tipos: ['Sensores de Detonação', 'Sensores de Posição', 'Sensores de Rotação', 'Sensores de Velocidade', 'Válvulas EGR', 'Sensores de Vácuo'], com: 'o sensor' },
-  turbo: { tipos: ['Turbinas', 'Intercoolers', 'Mangueiras do Turbo e Intercooler'], com: 'esta peça do turbo' },
-  escape: { tipos: ['Catalisadores', 'Escapamentos', 'Tubos Flexíveis', 'Coletores de Escapamento', 'Sondas Lambda'], com: 'esta peça do escapamento' },
-  bobina: { tipos: ['Bobinas de Ignição', 'Velas Aquecedoras'], com: 'a bobina' },
-  alternador: { tipos: ['Alternadores', 'Suportes do Alternador', 'Reguladores de Voltagem'], com: 'o alternador' },
-  arranque: { tipos: ['Motores de Arranque'], com: 'o motor de arranque' },
-  arrefecimento: { tipos: ['Bombas de Água', 'Válvulas Termostáticas', 'Reservatórios de Água', 'Sensores de Temperatura', 'Mangueiras de Arrefecimento', 'Mangueiras de Calefação'], com: 'esta peça do arrefecimento' },
-  // ar-condicionado
-  'ac-gas': { tipos: ['Compressores', 'Suportes do Compressor', 'Mangueiras de Ar Condicionado', 'Válvulas de Expansão', 'Sensores do Ar-condicionado', 'Kits de Ar Condicionado'], com: 'esta peça do ar-condicionado' },
-  'ac-caixa': { tipos: ['Atuadores e Motores do Ar', 'Evaporadores', 'Radiadores do Ar Quente', 'Resistências e Relés do Ar', 'Válvulas da Calefação'], com: 'esta peça da caixa de ar' },
-  'ac-comando': { tipos: ['Comandos de Ar Condicionado'], com: 'o comando do ar' },
-  difusor: { tipos: ['Difusores de Ar'], com: 'o difusor' },
-  // freios, suspensão, direção e câmbio
-  'freio-roda': { tipos: ['Pinças de Freio', 'Espelhos e Defletores do Disco', 'Mangueiras e Flexíveis do Freio'], com: 'esta peça do freio' },
-  'freio-hidro': { tipos: ['Hidrovácuos', 'Cilindros Mestres', 'Reservatórios de Fluido', 'Bombas de Vácuo'], com: 'esta peça do freio' },
-  abs: { tipos: ['Módulos ABS', 'Sensores ABS'], com: 'o ABS' },
-  'freio-mao': { tipos: ['Alavancas do Freio de Mão', 'Botões do Freio de Mão', 'Cabo do Freio de Mão'], com: 'o freio de mão' },
-  amortecedor: { tipos: ['Amortecedores', 'Coxins do Amortecedor', 'Molas', 'Bieletas e Barras Estabilizadoras', 'Suspensão a Ar e Nivelamento'], com: 'esta peça da suspensão' },
-  'suspensao-braco': { tipos: ['Bandejas da Suspensão', 'Braços da Suspensão', 'Buchas de Suspensão', 'Mangas de Eixo', 'Cubos de Roda', 'Quadros da Suspensão'], com: 'esta peça da suspensão' },
-  direcao: { tipos: ['Colunas de Direção', 'Caixas de Direção', 'Bombas de Direção e Suportes', 'Mangueiras da Direção'], com: 'esta peça da direção' },
-  'cambio-alavanca': { tipos: ['Alavancas e Manoplas de Câmbio', 'Trambuladores e Seletores'], com: 'esta peça do câmbio' },
-  'modulo-cambio': { tipos: ['Módulos do Câmbio e da Tração'], com: 'o módulo do câmbio' },
-  cambio: { tipos: ['Câmbios e Peças Internas', 'Caixas de Transferência', 'Diferenciais', 'Volantes de Embreagem', 'Cardans'], com: 'esta peça do câmbio' },
-  semieixo: { tipos: ['Semieixos', 'Semieixos e Suportes'], com: 'o semieixo' },
-  // interior
-  'painel-instr': { tipos: ['Painéis de Instrumentos', 'Displays e Telas'], com: 'o painel' },
-  'painel-acab': { tipos: ['Acabamentos do Painel', 'Porta-luvas', 'Cinzeiros', 'Tomadas USB e Acendedores'], com: 'esta peça do painel' },
-  console: { tipos: ['Consoles', 'Porta-copos'], com: 'o console' },
-  'capa-coluna': { tipos: ['Capas da Coluna de Direção'], com: 'a capa da coluna' },
-  'chave-seta': { tipos: ['Chaves de Seta e Luz', 'Chaves do Limpador'], com: 'a chave de seta' },
-  // botão da tampa traseira ("Botão abertura porta-malas", "Comando rebatimento tampa"): vai com a tampa, não com o painel
-  'tampa-botao': { tipos: ['Outros Botões'], nome: /tampa traseira|porta-?malas|bagageiro|rebatimento\s+(d[ao]\s+)?tampa/i, zona: 'tras', com: 'o botão da tampa traseira' },
-  'botoes-painel': { tipos: ['Botões do Pisca-alerta', 'Botões do Desembaçador', 'Outros Botões'], com: 'o botão' },
-  volante: { tipos: ['Volantes', 'Botões do Volante'], com: 'o volante' },
-  airbag: { tipos: ['Airbags, Módulos e Sensores', 'Cintos de Segurança'], com: 'esta peça do airbag' },
-  'pedal-freio': { tipos: ['Pedais'], nome: /freio|embreagem/i, com: 'o pedal' },
-  pedal: { tipos: ['Pedais', 'Cabos do Acelerador'], com: 'o pedal' },
-  limpador: { tipos: ['Motores do Limpador', 'Braços do Limpador', 'Sensores de Chuva', 'Grades do Para-brisa'], com: 'o limpador' },
-  lavador: { tipos: ['Reservatórios do Lavador', 'Bombas e Esguichos do Lavador'], com: 'o lavador' },
-  multimidia: { tipos: ['Centrais Multimídia', 'Rádios', 'Molduras da Multimídia', 'Suportes da Multimídia', 'Interfaces de Som', 'Antenas', 'Câmeras'], com: 'a multimídia' },
-  som: { tipos: ['Alto-falantes', 'Amplificadores', 'Grades de Alto-falante'], com: 'o som' },
-  'retrovisor-interno': { tipos: ['Retrovisores Internos'], com: 'o retrovisor interno' },
-  teto: { tipos: ['Quebra-sóis', 'Luzes Internas', 'Motores do Teto Solar', 'Botões do Teto Solar'], com: 'esta peça do teto' },
-  coluna: { tipos: ['Acabamentos de Coluna', 'Soleiras', 'Alças e Puxadores'], com: 'este acabamento' },
-  banco: { tipos: ['Peças de Banco', 'Encostos de Cabeça'], com: 'esta peça do banco' },
-  rodas: { tipos: ['Rodas', 'Calotas', 'Parafusos Prisioneiros', 'Sensores TPMS'], com: 'a roda' },
-  estepe: { tipos: ['Macacos e Chaves de Roda', 'Suportes do Estepe', 'Triângulos de Segurança', 'Ganchos de Reboque'], com: 'esta peça' },
+/** A ordem conta: a peça cai no 1º papel que serve (os afinados pelo nome antes dos gerais do mesmo tipo). */
+export const PAPEIS: Record<string, Papel> = {
+  // ---- frente (batida de frente) ----
+  farol: { t: ['Faróis'], z: 'frente', lat: 1, com: 'o farol', j: ['farol-suporte', 'farol-friso', 'farol-modulo', 'esguicho-farol', 'milha', 'guia-parachoque', 'parachoque', 'grade'] },
+  milha: { t: ['Faróis de Milha'], z: 'frente', lat: 1, com: 'o farol de milha', j: ['parachoque', 'grade', 'farol'] },
+  'farol-suporte': { t: ['Suportes do Farol'], n: /farol/, z: 'frente', lat: 1, com: 'o suporte do farol', j: ['farol', 'farol-friso', 'guia-parachoque'] },
+  'farol-friso': { t: ['Frisos dos Faróis'], z: 'frente', lat: 1, com: 'o friso do farol', j: ['farol', 'farol-suporte'] },
+  'farol-modulo': { t: ['Módulos e Reatores do Farol'], z: 'frente', com: 'o módulo do farol', j: ['farol'] },
+  'esguicho-farol': { t: ['Bombas e Esguichos do Lavador'], n: /farol/, z: 'frente', lat: 1, com: 'o esguicho do farol', j: ['farol', 'parachoque'] },
+  parachoque: { t: ['Para-choques'], fz: 1, com: 'o para-choque', j: ['alma', 'guia-parachoque', 'grade', 'parachoque-moldura', 'refletor', 'lanterna-parachoque'] },
+  alma: { t: ['Almas do Para-choque'], x: /tunel/, fz: 1, com: 'a alma do para-choque', j: ['parachoque', 'guia-parachoque', 'grade'] },
+  'guia-parachoque': { t: ['Guias e Suportes do Para-choque'], n: /para-?choque/, lat: 1, fz: 1, com: 'a guia do para-choque', j: ['parachoque', 'alma', 'farol', 'lanterna', 'refletor'] },
+  'parachoque-moldura': { t: ['Molduras do Para-choque'], n: /para-?choque/, fz: 1, com: 'a moldura do para-choque', j: ['parachoque', 'grade'] },
+  grade: { t: ['Grades do Para-choque', 'Grades'], x: /defletor/, z: 'frente', com: 'a grade', j: ['parachoque', 'alma', 'emblema-grade', 'grade'] },
+  'emblema-grade': { t: ['Emblemas'], n: /grade/, z: 'frente', com: 'o emblema da grade', j: ['grade'] },
+  'capo-dobradica': { t: ['Dobradiças do Capô'], z: 'frente', lat: 1, com: 'a dobradiça do capô', j: ['capo-fechadura', 'capo-mola', 'capo-isolamento'] },
+  'capo-fechadura': { t: ['Fechaduras do Capô'], x: /ativo/, z: 'frente', com: 'a fechadura do capô', j: ['capo-cabo', 'capo-dobradica', 'capo-mola'] },
+  'capo-cabo': { t: ['Cabos e Alavancas de Abertura'], n: /(cabo|alavanca|puxador).*capo/, z: 'frente', com: 'a abertura do capô', j: ['capo-fechadura', 'capo-cabo'] },
+  'capo-mola': { t: ['Amortecedores da Tampa e do Capô'], n: /capo/, z: 'frente', com: 'o amortecedor do capô', j: ['capo-dobradica', 'capo-fechadura'] },
+  'capo-isolamento': { t: ['Isolamentos do Capô'], n: /capo/, z: 'frente', com: 'o forro do capô', j: ['capo-dobradica'] },
+  paralama: { t: ['Para-lamas'], z: 'frente', lat: 1, com: 'o para-lama', j: ['paralama-moldura', 'para-barro', 'paralama-suporte', 'guia-parachoque', 'farol'] },
+  'paralama-moldura': { t: ['Molduras do Para-lama', 'Molduras Laterais'], n: /para-?lama/, lat: 1, com: 'a moldura do para-lama', j: ['paralama', 'para-barro'] },
+  'para-barro': { t: ['Para-barros'], lat: 1, fz: 1, com: 'o para-barro', j: ['paralama', 'paralama-moldura'] },
+  'paralama-suporte': { t: ['Suportes da Carroceria', 'Guias e Suportes do Para-choque'], n: /para-?lama/, lat: 1, com: 'o suporte do para-lama', j: ['paralama'] },
+  // ---- arrefecimento ----
+  radiador: { t: ['Radiadores'], com: 'o radiador', j: ['ventoinha', 'mang-radiador', 'radiador-suporte', 'radiador-defletor', 'reservatorio-agua', 'rele-ventoinha'] },
+  'radiador-suporte': { t: ['Suportes do Radiador'], com: 'o suporte do radiador', j: ['radiador', 'radiador-defletor', 'ventoinha'] },
+  'radiador-defletor': { t: ['Defletores'], n: /radiador/, com: 'o defletor do radiador', j: ['radiador', 'radiador-suporte'] },
+  ventoinha: { t: ['Eletroventiladores', 'Motores de Ventilador'], com: 'a ventoinha', j: ['rele-ventoinha', 'radiador', 'radiador-defletor'] },
+  'rele-ventoinha': { t: ['Relés da Ventoinha'], com: 'o módulo da ventoinha', j: ['ventoinha', 'radiador'] },
+  'bomba-agua-aux-peca': { t: ['Bombas de Água'], n: /auxiliar/, x: /^bomba/, com: 'esta peça da bomba auxiliar', j: ['bomba-agua-aux'] },
+  'bomba-agua-aux': { t: ['Bombas de Água'], n: /auxiliar/, com: "a bomba d'água auxiliar", j: ['bomba-agua-aux-peca'] },
+  'bomba-agua': { t: ['Bombas de Água'], n: /^bomba/, com: "a bomba d'água", j: ['termostatica', 'bomba-agua-peca', 'mang-bomba-agua', 'tensor-correia'] },
+  'bomba-agua-peca': { t: ['Bombas de Água'], com: "esta peça da bomba d'água", j: ['bomba-agua'] },
+  termostatica: { t: ['Válvulas Termostáticas'], com: 'a válvula termostática', j: ['termostatica', 'bomba-agua', 'sensor-temp'] },
+  'sensor-temp': { t: ['Sensores de Temperatura'], x: /turbina|intern|interior/, com: 'o sensor de temperatura', j: ['termostatica'] },
+  'reservatorio-agua': { t: ['Reservatórios de Água'], x: /inversor/, com: 'o reservatório de água', j: ['reservatorio-agua', 'mang-reservatorio'] },
+  'mang-bomba-agua': { t: ['Mangueiras de Arrefecimento'], n: /bomba (d')?agua/, com: "a mangueira da bomba d'água", j: ['bomba-agua', 'mang-arref'] },
+  'mang-reservatorio': { t: ['Mangueiras de Arrefecimento'], n: /reservatorio/, com: 'a mangueira do reservatório', j: ['reservatorio-agua'] },
+  'mang-radiador': { t: ['Mangueiras de Arrefecimento'], n: /radiador/, jogo: 1, com: 'a mangueira do radiador', j: ['radiador', 'mang-radiador'] },
+  'mang-arref': { t: ['Mangueiras de Arrefecimento'], n: /^mangueira/, jogo: 1, com: 'a mangueira de arrefecimento', j: ['mang-arref', 'mang-radiador'] },
+  'mang-calefacao': { t: ['Mangueiras de Calefação'], jogo: 1, com: 'a mangueira do ar quente', j: ['rad-ar-quente', 'mang-calefacao', 'valvula-calefacao'] },
+  'rad-ar-quente': { t: ['Radiadores do Ar Quente'], n: /quente|calefa/, com: 'o radiador do ar quente', j: ['mang-calefacao', 'valvula-calefacao', 'caixa-ar'] },
+  'valvula-calefacao': { t: ['Válvulas da Calefação'], com: 'a válvula do aquecedor', j: ['mang-calefacao', 'rad-ar-quente'] },
+  // ---- ar-condicionado ----
+  compressor: { t: ['Compressores'], com: 'o compressor do ar', j: ['compressor-suporte', 'mang-ac', 'condensador', 'valvula-expansao', 'pressostato'] },
+  'compressor-suporte': { t: ['Suportes do Compressor'], n: /compressor/, x: /modulo/, com: 'o suporte do compressor', j: ['compressor'] },
+  'mang-ac': { t: ['Mangueiras de Ar Condicionado'], x: /dreno/, jogo: 1, com: 'a mangueira do ar-condicionado', j: ['compressor', 'condensador', 'valvula-expansao', 'pressostato', 'mang-ac'] },
+  condensador: { t: ['Condensadores'], n: /condensador/, com: 'o condensador', j: ['compressor', 'mang-ac', 'radiador', 'ventoinha'] },
+  'caixa-ar': { t: ['Evaporadores', 'Kits de Ar Condicionado', 'Condensadores'], com: 'a caixa de ar', j: ['valvula-expansao', 'ventilador-interno', 'resistencia-ar', 'rad-ar-quente', 'chicote-caixa-ar'] },
+  'valvula-expansao': { t: ['Válvulas de Expansão'], com: 'a válvula de expansão', j: ['caixa-ar', 'mang-ac', 'compressor'] },
+  'ventilador-interno': { t: ['Atuadores e Motores do Ar'], n: /ventila/, com: 'o ventilador interno', j: ['resistencia-ar', 'caixa-ar'] },
+  'resistencia-ar': { t: ['Resistências e Relés do Ar'], com: 'a resistência do ar', j: ['ventilador-interno', 'caixa-ar'] },
+  'comando-ac-moldura': { t: ['Comandos de Ar Condicionado'], n: /^moldura/, com: 'a moldura do comando do ar', j: ['comando-ac'] },
+  'comando-ac': { t: ['Comandos de Ar Condicionado'], n: /^(comando|modulo)/, x: /tracao|teto/, com: 'o comando do ar', j: ['comando-ac-moldura', 'sensor-temp-interna'] },
+  pressostato: { t: ['Sensores do Ar-condicionado'], n: /press/, com: 'o pressostato', j: ['mang-ac', 'compressor'] },
+  'sensor-temp-interna': { t: ['Sensores do Ar-condicionado'], n: /temperatura/, com: 'o sensor de temperatura interna', j: ['comando-ac'] },
+  'chicote-caixa-ar': { t: ['Chicotes Elétricos'], n: /evaporadora|caixa ar/, com: 'o chicote da caixa de ar', j: ['caixa-ar', 'ventilador-interno'] },
+  // ---- motor: correia, partida e carga ----
+  'coxim-motor': { t: ['Coxins do Motor'], n: /coxi[mn]|calco|^suporte (inferior |superior |lateral )?(do )?motor/, lat: 1, fz: 1, jogo: 1, com: 'o coxim do motor', j: ['coxim-motor', 'coxim-cambio'] },
+  'coxim-cambio': { t: ['Coxins do Câmbio'], n: /coxi[mn]|calco|^suporte (inferior |superior )?(do )?cambio/, lat: 1, fz: 1, jogo: 1, com: 'o coxim do câmbio', j: ['coxim-cambio', 'coxim-motor'] },
+  'tensor-correia': { t: ['Tensores de Correia'], com: 'o tensor da correia', j: ['alternador', 'alternador-suporte', 'bomba-agua', 'compressor'] },
+  alternador: { t: ['Alternadores'], com: 'o alternador', j: ['tensor-correia', 'alternador-suporte', 'regulador', 'chicote-alternador'] },
+  'alternador-suporte': { t: ['Suportes do Alternador'], n: /alternador/, com: 'o suporte do alternador', j: ['alternador', 'tensor-correia'] },
+  regulador: { t: ['Reguladores de Voltagem'], com: 'o regulador de voltagem', j: ['alternador'] },
+  'chicote-alternador': { t: ['Chicotes Elétricos'], n: /alternador/, com: 'o chicote do alternador', j: ['alternador'] },
+  arranque: { t: ['Motores de Arranque'], com: 'o motor de arranque', j: ['rele-partida', 'bateria-cabo-positivo'] },
+  'rele-partida': { t: ['Relés de Partida'], com: 'o relé de partida', j: ['arranque'] },
+  'bobina-peca': { t: ['Bobinas de Ignição'], n: /^suporte/, com: 'o suporte da bobina', j: ['bobina'] },
+  bobina: { t: ['Bobinas de Ignição'], com: 'a bobina', j: ['bobina-peca'] },
+  // ---- injeção e combustível ----
+  'chicote-bico': { t: ['Bicos Injetores', 'Flautas de Combustível', 'Módulos de Injeção', 'Chicotes Elétricos'], n: /^chicote.*(bico|flauta|injet)/, com: 'o chicote dos bicos', j: ['bico', 'flauta'] },
+  'sensor-flauta': { t: ['Flautas de Combustível', 'Sensores de Pressão'], n: /^sensor/, com: 'o sensor de pressão do combustível', j: ['flauta', 'bomba-alta'] },
+  bico: { t: ['Bicos Injetores'], n: /^(bico|kit)/, x: /oleo/, com: 'os bicos injetores', j: ['flauta', 'chicote-bico', 'sensor-flauta', 'cano-alta', 'bomba-alta'] },
+  flauta: { t: ['Flautas de Combustível'], n: /^(flauta|kit)/, com: 'a flauta', j: ['bico', 'chicote-bico', 'sensor-flauta', 'cano-alta', 'bomba-alta'] },
+  'cano-alta': { t: ['Canos dos Injetores'], n: /alta/, com: 'o cano de alta pressão', j: ['bomba-alta', 'flauta'] },
+  'bomba-alta': { t: ['Bombas de Alta Pressão'], n: /^bomba/, com: 'a bomba de alta pressão', j: ['cano-alta', 'bomba-alta-suporte', 'flauta', 'sensor-flauta'] },
+  'bomba-alta-suporte': { t: ['Bombas de Alta Pressão'], com: 'o suporte da bomba de alta', j: ['bomba-alta'] },
+  'bomba-comb-modulo': { t: ['Bombas de Combustível'], n: /^(rele|modulo)/, com: 'o módulo da bomba de combustível', j: ['bomba-comb'] },
+  'bomba-comb-peca': { t: ['Bombas de Combustível', 'Portinholas e Tampas do Tanque'], n: /(trava|anel|tampa|suporte).*bomba/, com: 'esta peça da bomba de combustível', j: ['bomba-comb'] },
+  'bomba-comb': { t: ['Bombas de Combustível'], n: /^bomba/, com: 'a bomba de combustível', j: ['bomba-comb-peca', 'bomba-comb-modulo', 'boia'] },
+  boia: { t: ['Boias de Combustível'], com: 'a boia do combustível', j: ['bomba-comb', 'tanque'] },
+  tanque: { t: ['Tanques de Combustível'], n: /^tanque/, com: 'o tanque', j: ['tanque-peca', 'bomba-comb', 'boia'] },
+  portinhola: { t: ['Portinholas e Tampas do Tanque', 'Tanques de Combustível'], n: /portinhola|tampa tanque/, com: 'a portinhola do tanque', j: ['portinhola-trava', 'portinhola'] },
+  'tanque-peca': { t: ['Tanques de Combustível'], com: 'esta peça do tanque', j: ['tanque', 'tanque-peca'] },
+  'portinhola-trava': { t: ['Cabos e Alavancas de Abertura'], n: /portinhola|tanque/, com: 'a abertura da portinhola', j: ['portinhola', 'portinhola-trava'] },
+  canister: { t: ['Válvulas e Filtros Canister'], n: /canister/, jogo: 1, com: 'esta peça do canister', j: ['canister'] },
+  // ---- admissão e turbo ----
+  'tbi-flange': { t: ['Corpos de Borboleta'], n: /^flange/, com: 'a flange do corpo de borboleta', j: ['tbi'] },
+  tbi: { t: ['Corpos de Borboleta'], n: /borboleta|tbi/, com: 'o corpo de borboleta', j: ['tbi-flange', 'coletor-adm', 'mang-filtro-ar', 'map'] },
+  'coletor-adm': { t: ['Coletores de Admissão'], n: /^coletor/, com: 'o coletor de admissão', j: ['tbi', 'map', 'coletor-adm-peca'] },
+  'coletor-adm-peca': { t: ['Coletores de Admissão'], x: /gaiola/, com: 'esta peça do coletor', j: ['coletor-adm'] },
+  'caixa-filtro': { t: ['Caixas do Filtro de Ar'], x: /^suporte coletor/, com: 'a caixa do filtro de ar', j: ['caixa-filtro', 'duto-ar', 'mang-filtro-ar', 'maf'] },
+  'duto-ar': { t: ['Mangueiras de Admissão'], n: /ressonador|captador|entrada/, x: /respiro/, com: 'o duto de entrada de ar', j: ['caixa-filtro'] },
+  maf: { t: ['Sensores MAF'], com: 'o sensor MAF', j: ['caixa-filtro', 'mang-filtro-ar'] },
+  map: { t: ['Sensores MAP'], x: /turbina/, com: 'o sensor MAP', j: ['coletor-adm', 'tbi'] },
+  'mang-respiro': { t: ['Mangueiras de Admissão', 'Mangueiras e Linhas do Motor'], n: /respiro/, com: 'a mangueira do respiro', j: ['tampa-valvulas', 'valvula-pcv'] },
+  'mang-filtro-ar': { t: ['Mangueiras de Admissão'], n: /filtro|duto|admissao|tubo/, x: /intercooler|turbina|arrefecimento|abracadeira/, com: 'a mangueira do filtro de ar', j: ['caixa-filtro', 'maf', 'tbi'] },
+  'turbo-valvula': { t: ['Válvulas Solenoides', 'Turbinas'], n: /valvula.*(turb|waste)/, com: 'a válvula do turbo', j: ['turbina'] },
+  turbina: { t: ['Turbinas'], n: /^turbina/, com: 'a turbina', j: ['mang-turbo', 'intercooler', 'turbo-valvula', 'turbina-peca', 'coletor-escape'] },
+  'mang-turbo': { t: ['Mangueiras do Turbo e Intercooler'], n: /intercooler|turbina|pressuriza/, x: /oleo|vacuo|solenoide|agua/, jogo: 1, com: 'a mangueira do turbo', j: ['mang-turbo', 'intercooler', 'turbina'] },
+  'turbina-peca': { t: ['Turbinas', 'Mangueiras e Linhas do Motor', 'Mangueiras do Turbo e Intercooler'], n: /turbina/, com: 'esta peça da turbina', j: ['turbina'] },
+  intercooler: { t: ['Intercoolers'], n: /^intercooler/, com: 'o intercooler', j: ['mang-turbo', 'turbina'] },
+  // ---- cabeçote, distribuição e parte de baixo ----
+  'tampa-valvulas': { t: ['Tampas de Válvulas'], n: /^tampa/, com: 'a tampa de válvulas', j: ['mang-respiro', 'valvula-pcv', 'tampa-oleo'] },
+  'tampa-oleo': { t: ['Tampas de Óleo'], com: 'a tampa do óleo', j: ['tampa-valvulas'] },
+  'valvula-pcv': { t: ['Válvulas Solenoides'], n: /pcv/, com: 'a válvula PCV', j: ['tampa-valvulas', 'mang-respiro'] },
+  cabecote: { t: ['Cabeçotes'], n: /^cabecote/, com: 'o cabeçote', j: ['parafuso-cabecote', 'comando', 'tampa-valvulas'] },
+  'parafuso-cabecote': { t: ['Parafusos do Cabeçote'], com: 'os parafusos do cabeçote', j: ['cabecote'] },
+  comando: { t: ['Comandos de Válvulas'], n: /comando/, com: 'o comando de válvulas', j: ['polia-vvt', 'distribuicao', 'solenoide-vvt', 'cabecote'] },
+  'polia-vvt': { t: ['Peças da Distribuição'], n: /vvt|polia.*comando/, com: 'a polia do comando', j: ['solenoide-vvt', 'comando', 'distribuicao'] },
+  distribuicao: { t: ['Peças da Distribuição', 'Tensores de Corrente', 'Tampas da Distribuição'], x: /^tampa (do )?motor/, jogo: 1, com: 'esta peça da distribuição', j: ['distribuicao', 'polia-vvt', 'comando'] },
+  'solenoide-vvt': { t: ['Válvulas Solenoides'], n: /vvt|comando|cabecote/, com: 'a solenoide do comando', j: ['polia-vvt', 'sensor-fase', 'comando'] },
+  'sensor-fase': { t: ['Sensores de Posição', 'Sensores de Rotação'], n: /comando|fase/, com: 'o sensor de fase', j: ['solenoide-vvt'] },
+  biela: { t: ['Bielas'], com: 'a biela', j: ['pistao', 'bronzina', 'virabrequim'] },
+  pistao: { t: ['Pistões'], com: 'os pistões', j: ['biela', 'bronzina'] },
+  bronzina: { t: ['Bronzinas'], n: /bronzina/, com: 'as bronzinas', j: ['biela', 'virabrequim'] },
+  virabrequim: { t: ['Virabrequins'], n: /^(virabrequim|eixo virabrequim)/, com: 'o virabrequim', j: ['virabrequim-peca', 'biela', 'bronzina', 'volante-motor'] },
+  'virabrequim-peca': { t: ['Virabrequins', 'Blocos do Motor', 'Retentores'], n: /virabrequim|retentor/, com: 'esta peça do virabrequim', j: ['virabrequim'] },
+  carter: { t: ['Cárteres'], com: 'o cárter', j: ['carter', 'bomba-oleo', 'sensor-oleo'] },
+  'cambio-oleo': { t: ['Bombas de Óleo', 'Radiadores de Óleo'], n: /cambio/, com: 'esta peça do óleo do câmbio', j: ['cambio'] },
+  'bomba-oleo': { t: ['Bombas de Óleo'], com: 'a bomba de óleo', j: ['carter', 'bomba-oleo', 'sensor-oleo'] },
+  'filtro-oleo': { t: ['Suportes do Filtro de Óleo', 'Radiadores de Óleo'], com: 'o suporte do filtro de óleo', j: ['filtro-oleo', 'sensor-oleo'] },
+  'sensor-oleo': { t: ['Sensores de Pressão do Óleo'], n: /oleo/, com: 'o sensor de pressão do óleo', j: ['filtro-oleo', 'bomba-oleo'] },
+  'bomba-vacuo': { t: ['Bombas de Vácuo'], n: /^bomba vacuo( freio)?$/, com: 'a bomba de vácuo', j: ['hidrovacuo', 'mang-vacuo-freio'] },
+  // ---- escapamento ----
+  catalisador: { t: ['Catalisadores'], n: /^catalisador/, com: 'o catalisador', j: ['catalisador-peca', 'sonda', 'coletor-escape', 'flexivel'] },
+  'catalisador-peca': { t: ['Catalisadores'], com: 'esta peça do catalisador', j: ['catalisador'] },
+  sonda: { t: ['Sondas Lambda'], com: 'a sonda lambda', j: ['catalisador'] },
+  'coletor-escape-peca': { t: ['Coletores de Escapamento'], n: /defletor/, com: 'o defletor do coletor', j: ['coletor-escape'] },
+  'coletor-escape': { t: ['Coletores de Escapamento'], n: /^coletor escape/, com: 'o coletor de escape', j: ['coletor-escape-peca', 'catalisador', 'turbina'] },
+  flexivel: { t: ['Tubos Flexíveis'], com: 'o flexível do escapamento', j: ['catalisador'] },
+  // ---- módulos, chave e bateria ----
+  'modulo-injecao-suporte': { t: ['Módulos de Injeção'], n: /^suporte/, com: 'o suporte do módulo de injeção', j: ['modulo-injecao'] },
+  'modulo-injecao': { t: ['Módulos de Injeção'], n: /^(modulo|kit)/, com: 'o módulo de injeção', j: ['modulo-injecao-suporte', 'imobilizador', 'cilindro-ignicao', 'chave'] },
+  imobilizador: { t: ['Módulos de Ignição e Imobilizador'], n: /imobilizador|mobilizador/, com: 'o imobilizador', j: ['imobilizador', 'cilindro-ignicao', 'modulo-injecao', 'chave'] },
+  'cilindro-ignicao': { t: ['Cilindros e Comutadores de Ignição'], com: 'o cilindro de ignição', j: ['imobilizador', 'chave', 'modulo-injecao'] },
+  chave: { t: ['Chaves do Carro'], com: 'a chave', j: ['keyless-modulo', 'start-stop', 'imobilizador', 'cilindro-ignicao'] },
+  'keyless-modulo': { t: ['Antenas e Módulos Keyless'], n: /^modulo/, com: 'o módulo keyless', j: ['keyless-antena', 'chave', 'start-stop'] },
+  'keyless-antena': { t: ['Antenas e Módulos Keyless'], com: 'a antena do keyless', j: ['keyless-modulo'] },
+  'start-stop': { t: ['Botões de Partida'], com: 'o botão de partida', j: ['start-stop', 'keyless-modulo', 'chave'] },
+  alarme: { t: ['Alarmes e Sirenes', 'Outros Sensores'], n: /alarme/, com: 'esta peça do alarme', j: ['alarme'] },
+  'fusiveis-tampa': { t: ['Tampas da Caixa de Fusíveis', 'Caixas de Fusíveis'], n: /^(tampa|moldura|acabamento)/, x: /bateria/, com: 'a tampa da caixa de fusíveis', j: ['fusiveis'] },
+  'fusiveis-suporte': { t: ['Caixas de Fusíveis'], n: /^suporte/, com: 'o suporte da caixa de fusíveis', j: ['fusiveis'] },
+  fusiveis: { t: ['Caixas de Fusíveis'], n: /^caixa/, com: 'a caixa de fusíveis', j: ['fusiveis-tampa', 'fusiveis-suporte'] },
+  'bateria-cabo-positivo': { t: ['Cabos e Terminais de Bateria'], n: /^(cabo|chicote).*positivo/, com: 'o cabo positivo da bateria', j: ['bateria-cabo', 'arranque'] },
+  'bateria-cabo': { t: ['Cabos e Terminais de Bateria'], com: 'o cabo da bateria', j: ['bateria-cabo-positivo'] },
+  'bateria-suporte': { t: ['Caixas e Suportes da Bateria'], com: 'o suporte da bateria', j: ['bateria-suporte'] },
+  'ponto-cego': { t: ['Sensores de Estacionamento'], n: /radar|ponto cego/, lat: 1, com: 'o radar de ponto cego', j: ['ponto-cego'] },
+  'estac-display': { t: ['Sensores de Estacionamento'], n: /display|botao/, com: 'esta peça do sensor de estacionamento', j: ['estac-modulo', 'estac-sensor'] },
+  'estac-modulo': { t: ['Sensores de Estacionamento'], n: /^modulo.*(estacionamento|pdc)/, com: 'o módulo do sensor de estacionamento', j: ['estac-sensor', 'estac-display'] },
+  'estac-sensor': { t: ['Sensores de Estacionamento'], n: /^sensor/, com: 'o sensor de estacionamento', j: ['estac-modulo', 'estac-display'] },
+  'camera-re': { t: ['Câmeras de Ré'], z: 'tras', com: 'a câmera de ré', j: ['camera-re'] },
+  // ---- freios ----
+  'mang-vacuo-freio': { t: ['Hidrovácuos', 'Mangueiras e Flexíveis do Freio', 'Mangueiras e Linhas do Motor'], n: /(mangueira|tubo).*(hidrovacuo|servo|vacuo freio)/, com: 'a mangueira do hidrovácuo', j: ['hidrovacuo', 'bomba-vacuo', 'sensor-hidrovacuo'] },
+  'hidrovacuo-suporte': { t: ['Hidrovácuos'], n: /^suporte/, com: 'o suporte do hidrovácuo', j: ['hidrovacuo'] },
+  hidrovacuo: { t: ['Hidrovácuos'], n: /^(hidrovacuo|servo)/, com: 'o hidrovácuo', j: ['cilindro-mestre', 'mang-vacuo-freio', 'hidrovacuo-suporte', 'sensor-hidrovacuo', 'reservatorio-freio', 'bomba-vacuo'] },
+  'sensor-hidrovacuo': { t: ['Sensores do Freio'], n: /hidrovacuo|vacuo/, com: 'o sensor do hidrovácuo', j: ['hidrovacuo', 'mang-vacuo-freio'] },
+  'epb-modulo': { t: ['Outros', 'Cilindros Mestres'], n: /epb|modulo.*freio mao|atuador freio mao/, com: 'o módulo do freio de mão', j: ['epb-botao', 'pinca-peca'] },
+  'cilindro-mestre': { t: ['Cilindros Mestres', 'Reservatórios de Fluido'], n: /^cilindro mestre/, com: 'o cilindro mestre', j: ['reservatorio-freio', 'hidrovacuo'] },
+  'reservatorio-freio': { t: ['Reservatórios de Fluido'], com: 'o reservatório do fluido de freio', j: ['cilindro-mestre', 'hidrovacuo'] },
+  'abs-suporte': { t: ['Módulos ABS'], n: /^suporte/, com: 'o suporte do módulo ABS', j: ['abs'] },
+  abs: { t: ['Módulos ABS'], n: /^modulo.*abs/, com: 'o módulo ABS', j: ['abs-suporte', 'abs-tubo'] },
+  'abs-tubo': { t: ['Mangueiras e Flexíveis do Freio'], n: /abs/, com: 'o tubo do ABS', j: ['abs'] },
+  'sensor-abs': { t: ['Sensores ABS'], lat: 1, fz: 1, com: 'o sensor ABS', j: ['sensor-abs', 'cubo', 'manga'] },
+  pinca: { t: ['Pinças de Freio'], n: /^pinca/, lat: 1, fz: 1, com: 'a pinça de freio', j: ['pinca-peca', 'flexivel-freio', 'espelho-disco', 'manga'] },
+  'pinca-peca': { t: ['Pinças de Freio'], lat: 1, fz: 1, com: 'esta peça da pinça', j: ['pinca', 'epb-modulo'] },
+  'flexivel-freio': { t: ['Mangueiras e Flexíveis do Freio'], n: /flexivel/, lat: 1, fz: 1, com: 'o flexível do freio', j: ['pinca'] },
+  'espelho-disco': { t: ['Espelhos e Defletores do Disco'], lat: 1, fz: 1, com: 'o espelho do disco', j: ['pinca', 'manga', 'cubo'] },
+  'epb-botao': { t: ['Botões do Freio de Mão', 'Alavancas do Freio de Mão'], n: /botao/, com: 'o botão do freio de mão', j: ['epb-modulo', 'pinca-peca'] },
+  'freio-mao-acab': { t: ['Alavancas do Freio de Mão'], n: /^(moldura|acabamento)/, com: 'o acabamento do freio de mão', j: ['freio-mao'] },
+  'freio-mao': { t: ['Alavancas do Freio de Mão'], com: 'a alavanca do freio de mão', j: ['freio-mao-acab', 'freio-mao-cabo'] },
+  'freio-mao-cabo': { t: ['Cabo do Freio de Mão'], com: 'o cabo do freio de mão', j: ['freio-mao'] },
+  'pedal-freio-peca': { t: ['Pedais'], n: /(suporte|reparo).*(freio|embreagem)/, com: 'esta peça do pedal', j: ['pedal-freio'] },
+  'pedal-freio': { t: ['Pedais'], n: /^pedal.*(freio|embreagem)/, com: 'o pedal', j: ['pedal-freio-peca', 'sensor-pedal-freio'] },
+  'sensor-pedal-freio': { t: ['Sensores do Freio'], n: /pedal/, com: 'o sensor do pedal de freio', j: ['pedal-freio'] },
+  'pedal-acel-peca': { t: ['Pedais'], n: /suporte pedal acelerador/, com: 'o suporte do pedal', j: ['pedal-acel'] },
+  'pedal-acel': { t: ['Pedais'], n: /^pedal.*acelerador/, com: 'o pedal do acelerador', j: ['pedal-acel-peca'] },
+  // ---- suspensão, direção e câmbio ----
+  amortecedor: { t: ['Amortecedores'], lat: 1, fz: 1, com: 'o amortecedor', j: ['coxim-amortecedor', 'mola', 'bieleta'] },
+  'coxim-amortecedor': { t: ['Coxins do Amortecedor'], n: /coxim|batente/, lat: 1, fz: 1, com: 'o coxim do amortecedor', j: ['amortecedor', 'mola'] },
+  'mola-suporte': { t: ['Molas'], n: /suporte/, fz: 1, com: 'o suporte da mola', j: ['mola'] },
+  mola: { t: ['Molas'], x: /feixe/, fz: 1, com: 'a mola', j: ['amortecedor', 'coxim-amortecedor', 'mola-suporte'] },
+  bieleta: { t: ['Bieletas e Barras Estabilizadoras'], n: /bieleta/, lat: 1, fz: 1, com: 'a bieleta', j: ['barra-estab', 'amortecedor', 'bandeja'] },
+  'barra-estab': { t: ['Bieletas e Barras Estabilizadoras'], fz: 1, com: 'a barra estabilizadora', j: ['bieleta'] },
+  'bandeja-peca': { t: ['Bandejas da Suspensão'], n: /^(suporte|protecao|protetor)/, lat: 1, fz: 1, com: 'esta peça da bandeja', j: ['bandeja'] },
+  bandeja: { t: ['Bandejas da Suspensão', 'Braços da Suspensão'], lat: 1, fz: 1, jogo: 1, com: 'a bandeja', j: ['bandeja-peca', 'manga', 'bieleta', 'bucha', 'bandeja'] },
+  bucha: { t: ['Buchas de Suspensão'], com: 'a bucha da bandeja', j: ['bandeja'] },
+  manga: { t: ['Mangas de Eixo'], lat: 1, fz: 1, com: 'a manga de eixo', j: ['cubo', 'bandeja', 'sensor-abs', 'espelho-disco', 'pinca'] },
+  cubo: { t: ['Cubos de Roda'], lat: 1, fz: 1, com: 'o cubo de roda', j: ['manga', 'sensor-abs'] },
+  'coluna-dir-peca': { t: ['Colunas de Direção'], n: /cruzeta|cavalete|trava|suporte/, com: 'esta peça da coluna de direção', j: ['coluna-dir'] },
+  'modulo-dir': { t: ['Colunas de Direção'], n: /^modulo/, com: 'o módulo da direção elétrica', j: ['coluna-dir', 'caixa-dir'] },
+  'coluna-dir': { t: ['Colunas de Direção'], n: /^coluna/, com: 'a coluna de direção', j: ['coluna-dir-peca', 'modulo-dir', 'caixa-dir'] },
+  'caixa-dir': { t: ['Caixas de Direção'], com: 'a caixa de direção', j: ['coluna-dir', 'modulo-dir'] },
+  'bomba-dir-suporte': { t: ['Bombas de Direção e Suportes'], n: /^suporte/, com: 'o suporte da bomba de direção', j: ['bomba-dir'] },
+  'bomba-dir': { t: ['Bombas de Direção e Suportes'], n: /^bomba/, com: 'a bomba de direção', j: ['bomba-dir-suporte', 'mang-dir'] },
+  'mang-dir': { t: ['Mangueiras da Direção'], com: 'a mangueira da direção', j: ['bomba-dir'] },
+  'susp-ar': { t: ['Suspensão a Ar e Nivelamento'], com: 'esta peça da suspensão a ar', j: ['susp-ar'] },
+  'semieixo-suporte': { t: ['Semieixos', 'Semieixos e Suportes'], n: /^suporte/, com: 'o suporte do semieixo', j: ['semieixo'] },
+  semieixo: { t: ['Semieixos', 'Semieixos e Suportes'], n: /^semieixo/, lat: 1, com: 'o semieixo', j: ['semieixo-suporte'] },
+  'cambio-acab': { t: ['Alavancas e Manoplas de Câmbio', 'Trambuladores e Seletores', 'Consoles'], n: /^(moldura|coifa|acabamento).*(cambio|seletor|alavanca)/, com: 'o acabamento da alavanca', j: ['alavanca-cambio'] },
+  'cabo-trambulador': { t: ['Alavancas e Manoplas de Câmbio', 'Trambuladores e Seletores'], n: /^(cabo|suporte|base)/, com: 'esta peça do trambulador', j: ['alavanca-cambio'] },
+  'alavanca-cambio': { t: ['Alavancas e Manoplas de Câmbio', 'Trambuladores e Seletores'], n: /^(alavanca|trambulador|seletor|manopla)/, com: 'a alavanca do câmbio', j: ['cambio-acab', 'cabo-trambulador', 'alavanca-cambio'] },
+  'modulo-tracao': { t: ['Módulos do Câmbio e da Tração'], n: /tracao/, com: 'o módulo de tração', j: ['transferencia'] },
+  'modulo-cambio': { t: ['Módulos do Câmbio e da Tração'], n: /cambio|transmissao/, com: 'o módulo do câmbio', j: ['cambio'] },
+  conversor: { t: ['Câmbios e Peças Internas'], n: /conversor/, com: 'o conversor de torque', j: ['cambio'] },
+  cambio: { t: ['Câmbios e Peças Internas'], n: /^(cambio|caixa cambio)/, com: 'o câmbio', j: ['modulo-cambio', 'conversor', 'cambio-oleo', 'coxim-cambio'] },
+  'diferencial-suporte': { t: ['Diferenciais'], n: /^(suporte|contrapeso)/, com: 'o suporte do diferencial', j: ['diferencial'] },
+  diferencial: { t: ['Diferenciais'], n: /^diferencial/, com: 'o diferencial', j: ['diferencial-suporte', 'cardan', 'transferencia'] },
+  cardan: { t: ['Cardans'], com: 'o cardan', j: ['diferencial'] },
+  transferencia: { t: ['Caixas de Transferência'], com: 'a caixa de transferência', j: ['diferencial', 'modulo-tracao'] },
+  'volante-motor': { t: ['Volantes de Embreagem'], com: 'o volante do motor', j: ['volante-motor'] },
+  // ---- portas (a MESMA porta) ----
+  'maquina-vidro-peca': { t: ['Peças da Máquina de Vidro', 'Grampos e Presilhas'], n: /maquina vidro/, porta: 1, com: 'esta peça da máquina de vidro', j: ['maquina-vidro'] },
+  'maquina-vidro': { t: ['Máquinas e Motores de Vidro Elétrico', 'Máquinas de Vidro Manuais'], n: /^(motor|maquina)/, porta: 1, com: 'a máquina de vidro', j: ['botao-vidro', 'maquina-vidro-peca', 'guia-vidro', 'modulo-porta', 'forro-porta'] },
+  'botao-vidro-moldura': { t: ['Botões do Vidro Elétrico'], n: /^moldura/, porta: 1, com: 'a moldura do botão do vidro', j: ['botao-vidro'] },
+  'botao-vidro': { t: ['Botões do Vidro Elétrico'], porta: 1, com: 'o botão do vidro', j: ['botao-vidro-moldura', 'maquina-vidro'] },
+  'guia-vidro': { t: ['Guias e Canaletas do Vidro'], porta: 1, com: 'a canaleta do vidro', j: ['maquina-vidro', 'guia-vidro'] },
+  'modulo-porta': { t: ['Módulos de Conforto (BCM)'], n: /porta|vidro/, porta: 1, com: 'o módulo da porta', j: ['maquina-vidro', 'botao-vidro'] },
+  'cilindro-porta': { t: ['Fechaduras das Portas'], n: /miolo|cilindro/, porta: 1, com: 'o miolo da fechadura', j: ['macaneta-ext', 'fechadura'] },
+  'fechadura-peca': { t: ['Fechaduras das Portas'], n: /^(tampa|suporte)/, porta: 1, com: 'esta peça da fechadura', j: ['fechadura'] },
+  fechadura: { t: ['Fechaduras das Portas'], n: /^(fechadura|trava|motor)/, x: /tampa|porta-?malas|banco|capo/, porta: 1, com: 'a fechadura', j: ['macaneta-ext', 'macaneta-int', 'macaneta-suporte', 'cabo-macaneta', 'cilindro-porta', 'fechadura-peca'] },
+  'macaneta-moldura': { t: ['Maçanetas das Portas', 'Molduras Externas'], n: /^(moldura|tampa).*(macaneta|puxador)/, x: /interna/, porta: 1, com: 'a moldura da maçaneta', j: ['macaneta-ext'] },
+  'macaneta-suporte': { t: ['Maçanetas das Portas'], n: /^(suporte|base)/, porta: 1, com: 'o suporte da maçaneta', j: ['macaneta-ext', 'fechadura'] },
+  'macaneta-ext': { t: ['Maçanetas das Portas'], n: /^macaneta/, x: /interna|tampa|porta-?malas/, porta: 1, com: 'a maçaneta', j: ['macaneta-suporte', 'macaneta-moldura', 'fechadura', 'cilindro-porta'] },
+  'macaneta-int-moldura': { t: ['Maçanetas Internas', 'Maçanetas das Portas', 'Puxadores das Portas'], n: /^(moldura|suporte).*(interna|puxador)/, porta: 1, com: 'a moldura da maçaneta interna', j: ['macaneta-int'] },
+  'macaneta-int': { t: ['Maçanetas Internas'], n: /^(macaneta|puxador)/, x: /tampa/, porta: 1, com: 'a maçaneta interna', j: ['macaneta-int-moldura', 'cabo-macaneta', 'fechadura', 'forro-porta'] },
+  'cabo-macaneta': { t: ['Cabos e Alavancas de Abertura'], n: /macaneta|fechadura|trinco/, x: /tampa/, porta: 1, com: 'o cabo da maçaneta', j: ['macaneta-int', 'fechadura'] },
+  'forro-porta': { t: ['Forros'], n: /^forro (da )?portas?( |$)/, x: /malas/, porta: 1, com: 'o forro da porta', j: ['apoio-braco-porta', 'macaneta-int', 'botao-vidro', 'luz-porta', 'grade-af-porta'] },
+  'apoio-braco-porta': { t: ['Apoios de Braço'], n: /porta/, porta: 1, com: 'o apoio de braço da porta', j: ['forro-porta'] },
+  'luz-porta': { t: ['Luzes Internas'], n: /porta/, porta: 1, com: 'a luz da porta', j: ['forro-porta'] },
+  'grade-af-porta': { t: ['Grades de Alto-falante'], n: /porta/, porta: 1, com: 'a grade do alto-falante da porta', j: ['forro-porta'] },
+  'porta-dobradica': { t: ['Dobradiças e Limitadores de Porta'], porta: 1, com: 'esta peça da porta', j: ['porta-dobradica', 'porta'] },
+  porta: { t: ['Portas'], porta: 1, com: 'a porta', j: ['porta-dobradica', 'fechadura', 'maquina-vidro', 'macaneta-ext'] },
+  // ---- retrovisores ----
+  'retrovisor-peca': { t: ['Retrovisores Externos'], n: /^motor/, lat: 1, com: 'o motor do retrovisor', j: ['retrovisor'] },
+  retrovisor: { t: ['Retrovisores Externos'], lat: 1, com: 'o retrovisor', j: ['retrovisor-capa', 'retrovisor-peca'] },
+  'retrovisor-capa': { t: ['Capas e Molduras do Retrovisor'], n: /retrovisor|espelho/, lado: 1, lat: 1, com: 'o acabamento do retrovisor', j: ['retrovisor'] },
+  'retrovisor-interno-capa': { t: ['Capas e Molduras do Retrovisor'], n: /intern/, com: 'a capa do retrovisor interno', j: ['retrovisor-interno'] },
+  'retrovisor-interno': { t: ['Retrovisores Internos'], com: 'o retrovisor interno', j: ['retrovisor-interno-capa'] },
+  'botao-retrovisor-moldura': { t: ['Botões do Retrovisor', 'Capas e Molduras do Retrovisor'], n: /^moldura.*(botao|comando)/, com: 'a moldura do comando do retrovisor', j: ['botao-retrovisor'] },
+  'botao-retrovisor': { t: ['Botões do Retrovisor'], com: 'o comando do retrovisor', j: ['botao-retrovisor-moldura'] },
+  // ---- traseira ----
+  'lanterna-peca': { t: ['Lanternas Traseiras'], n: /^(circuito|soquete|acabamento)/, z: 'tras', lat: 1, com: 'esta peça da lanterna', j: ['lanterna', 'lanterna-tampa'] },
+  'lanterna-parachoque': { t: ['Lanternas Traseiras'], n: /para-?choque/, z: 'tras', lat: 1, com: 'a lanterna do para-choque', j: ['parachoque', 'refletor', 'guia-parachoque'] },
+  'lanterna-tampa': { t: ['Lanternas Traseiras'], n: /^lanterna.*(tampa|mala)/, z: 'tras', lat: 1, com: 'a lanterna da tampa', j: ['lanterna', 'lanterna-peca'] },
+  lanterna: { t: ['Lanternas Traseiras'], n: /^lanterna/, z: 'tras', lat: 1, com: 'a lanterna', j: ['lanterna-tampa', 'lanterna-peca', 'guia-parachoque', 'refletor'] },
+  refletor: { t: ['Refletores'], z: 'tras', lat: 1, com: 'o refletor', j: ['parachoque', 'guia-parachoque', 'lanterna-parachoque', 'lanterna'] },
+  'brake-moldura': { t: ['Brake Light'], n: /^moldura/, z: 'tras', com: 'a moldura do brake light', j: ['brake'] },
+  brake: { t: ['Brake Light'], z: 'tras', com: 'o brake light', j: ['brake-moldura', 'aerofolio'] },
+  aerofolio: { t: ['Aerofólios'], z: 'tras', com: 'o aerofólio', j: ['brake'] },
+  'tampa-cabo': { t: ['Cabos e Alavancas de Abertura', 'Fechaduras do Porta-malas'], n: /(tirante|cabo).*(tampa|porta-?malas)/, z: 'tras', com: 'o cabo da tampa traseira', j: ['tampa-fechadura'] },
+  'tampa-batente': { t: ['Fechaduras do Porta-malas'], n: /^(batente|acabamento)/, z: 'tras', com: 'o batente da tampa traseira', j: ['tampa-fechadura'] },
+  'tampa-fechadura': { t: ['Fechaduras do Porta-malas'], n: /^(fechadura|trava|atuador)/, z: 'tras', com: 'a fechadura da tampa traseira', j: ['tampa-batente', 'tampa-botao', 'tampa-puxador', 'tampa-cabo'] },
+  'tampa-botao': { t: ['Outros Botões', 'Botões da Trava Elétrica'], n: /porta-?malas|tampa traseira|^painel interruptor tampa/, x: /tanque/, z: 'tras', com: 'o botão da tampa traseira', j: ['tampa-fechadura', 'tampa-puxador'] },
+  'tampa-puxador': { t: ['Acabamentos da Tampa Traseira', 'Puxadores das Portas', 'Alças e Puxadores'], n: /^puxador.*(tampa|porta-?malas)/, z: 'tras', com: 'o puxador da tampa traseira', j: ['tampa-fechadura', 'tampa-botao'] },
+  'tampa-mola': { t: ['Amortecedores da Tampa e do Capô'], n: /tampa|porta-?malas/, z: 'tras', com: 'o amortecedor da tampa traseira', j: ['tampa-dobradica'] },
+  'tampa-dobradica-acab': { t: ['Dobradiças da Tampa Traseira'], n: /^(moldura|acabamento)/, z: 'tras', com: 'o acabamento da dobradiça', j: ['tampa-dobradica'] },
+  'tampa-dobradica': { t: ['Dobradiças da Tampa Traseira'], n: /^dobradica.*(tampa|porta-?malas)/, z: 'tras', com: 'a dobradiça da tampa traseira', j: ['tampa-mola', 'tampa-dobradica-acab'] },
+  bagagito: { t: ['Tampões do Porta-malas'], n: /bagagito/, z: 'tras', com: 'esta peça do bagagito', j: ['bagagito'] },
+  // ---- limpador e lavador ----
+  'limpador-tras': { t: ['Motores do Limpador', 'Braços do Limpador'], n: /tampa|traseir/, x: /para-?brisa/, z: 'tras', com: 'o limpador traseiro', j: ['limpador-tras'] },
+  limpador: { t: ['Motores do Limpador', 'Braços do Limpador'], n: /para-?brisa/, z: 'frente', com: 'o limpador do para-brisa', j: ['limpador', 'rele-limpador'] },
+  'rele-limpador': { t: ['Relés'], n: /limpador/, com: 'o relé do limpador', j: ['limpador'] },
+  lavador: { t: ['Reservatórios do Lavador', 'Bombas e Esguichos do Lavador'], com: 'esta peça do lavador', j: ['lavador'] },
+  // ---- painel, som e interior ----
+  'painel-instr-moldura': { t: ['Painéis de Instrumentos', 'Acabamentos do Painel'], n: /^moldura painel (de )?instrumentos?/, com: 'a moldura do painel de instrumentos', j: ['painel-instr'] },
+  'painel-instr': { t: ['Painéis de Instrumentos'], n: /^(painel|velocimetro)/, com: 'o painel de instrumentos', j: ['painel-instr-moldura'] },
+  'multimidia-moldura': { t: ['Molduras da Multimídia', 'Centrais Multimídia'], n: /^(moldura|carcaca)/, com: 'a moldura da multimídia', j: ['multimidia'] },
+  'multimidia-suporte': { t: ['Suportes da Multimídia'], com: 'o suporte da multimídia', j: ['multimidia'] },
+  'multimidia-comando': { t: ['Centrais Multimídia', 'Interfaces de Som'], n: /^comando/, com: 'o comando da multimídia', j: ['multimidia'] },
+  'multimidia-modulo': { t: ['Interfaces de Som', 'Centrais Multimídia'], n: /^modulo/, com: 'o módulo da multimídia', j: ['multimidia'] },
+  multimidia: { t: ['Centrais Multimídia', 'Rádios'], com: 'a multimídia', j: ['multimidia-moldura', 'multimidia-suporte', 'multimidia-comando', 'multimidia-modulo'] },
+  amplificador: { t: ['Amplificadores'], com: 'o amplificador', j: ['subwoofer'] },
+  subwoofer: { t: ['Alto-falantes'], n: /subwoofer/, com: 'o subwoofer', j: ['amplificador'] },
+  antena: { t: ['Antenas'], com: 'a antena', j: ['antena'] },
+  'porta-copos': { t: ['Porta-copos'], n: /porta-?copos/, com: 'o porta-copos', j: ['porta-copos'] },
+  'porta-luvas': { t: ['Porta-luvas'], n: /porta-?luvas/, com: 'o porta-luvas', j: ['porta-luvas'] },
+  'difusor-moldura': { t: ['Difusores de Ar'], n: /^(moldura|acabamento)/, x: /coluna|console|teto|tras/, lat: 1, meio: 1, com: 'a moldura do difusor', j: ['difusor'] },
+  difusor: { t: ['Difusores de Ar'], n: /^difusor/, x: /coluna|console|teto|tras/, lat: 1, meio: 1, com: 'o difusor de ar', j: ['difusor-moldura'] },
+  'capa-coluna': { t: ['Capas da Coluna de Direção'], n: /(superior|inferior)/, jogo: 1, com: 'a capa da coluna de direção', j: ['capa-coluna'] },
+  'chave-seta': { t: ['Chaves de Seta e Luz', 'Chaves do Limpador'], n: /^chave (seta|luz)/, x: /limpador/, com: 'a chave de seta', j: ['chave-limpador'] },
+  'chave-limpador': { t: ['Chaves de Seta e Luz', 'Chaves do Limpador'], n: /^chave limpador/, x: /seta/, com: 'a chave do limpador', j: ['chave-seta'] },
+  'volante-tampa': { t: ['Volantes'], n: /tampa.*(buzina|volante)/, com: 'a tampa do volante', j: ['volante'] },
+  'volante-botao': { t: ['Botões do Volante'], n: /volante|piloto|som|radio/, com: 'o comando do volante', j: ['volante'] },
+  volante: { t: ['Volantes'], n: /^volante/, com: 'o volante', j: ['volante-tampa', 'volante-botao'] },
+  'airbag-modulo': { t: ['Airbags, Módulos e Sensores'], n: /^modulo/, com: 'o módulo do airbag', j: ['airbag-sensor', 'airbag-bolsa'] },
+  'airbag-sensor': { t: ['Airbags, Módulos e Sensores'], n: /^sensor/, lat: 1, com: 'o sensor de impacto', j: ['airbag-modulo', 'airbag-bolsa'] },
+  'airbag-bolsa': { t: ['Airbags, Módulos e Sensores'], n: /^(bolsa|cortina|airbag)/, lat: 1, com: 'o airbag', j: ['airbag-modulo', 'airbag-sensor'] },
+  cinto: { t: ['Cintos de Segurança'], lat: 1, fz: 1, com: 'o cinto de segurança', j: ['cinto'] },
+  'teto-solar': { t: ['Motores do Teto Solar', 'Botões do Teto Solar'], x: /mangueira/, com: 'o teto solar', j: ['teto-solar'] },
+  // ---- rodas ----
+  estepe: { t: ['Rodas', 'Suportes do Estepe', 'Macacos e Chaves de Roda', 'Triângulos de Segurança'], n: /estepe|macaco|chave roda|triangulo/, com: 'esta peça do estepe', j: ['estepe'] },
+  roda: { t: ['Rodas'], n: /^roda aro/, com: 'a roda', j: ['calota', 'parafuso-roda'] },
+  calota: { t: ['Calotas'], com: 'a calota', j: ['roda'] },
+  'parafuso-roda': { t: ['Parafusos Prisioneiros'], com: 'os parafusos da roda', j: ['roda'] },
 };
 
-/** Para cada grupo, os grupos que vão junto, do mais ligado ao menos (o próprio grupo = outras peças do mesmo conjunto). */
-export const JUNTO: Record<string, string[]> = {
-  farol: ['parachoque', 'grade', 'farol-peca', 'esguicho-farol', 'milha', 'capo', 'capo-mola', 'paralama', 'frente-radiador'],
-  milha: ['parachoque', 'grade', 'farol'],
-  'farol-peca': ['farol', 'farol-peca', 'parachoque', 'grade'],
-  'esguicho-farol': ['farol', 'parachoque', 'lavador'],
-  grade: ['parachoque', 'farol', 'milha', 'grade', 'estacionamento', 'frente-radiador'],
-  parachoque: ['parachoque', 'grade', 'farol', 'milha', 'lanterna', 'refletor', 'estacionamento', 'camera-re', 'placa'],
-  capo: ['capo', 'capo-mola', 'grade', 'farol'],
-  'capo-mola': ['capo', 'capo-mola', 'grade'],
-  paralama: ['paralama', 'farol', 'parachoque', 'retrovisor'],
-  'frente-radiador': ['frente-radiador', 'arrefecimento', 'parachoque', 'farol'],
-  lanterna: ['parachoque', 'tampa', 'tampa-mola', 'refletor', 'placa', 'brake', 'camera-re', 'estacionamento'],
-  brake: ['tampa', 'tampa-mola', 'lanterna', 'placa'],
-  placa: ['tampa', 'placa', 'lanterna', 'camera-re', 'parachoque'],
-  refletor: ['parachoque', 'lanterna', 'refletor'],
-  tampa: ['tampa', 'tampa-mola', 'lanterna', 'placa', 'brake', 'camera-re', 'tampa-botao'],
-  'tampa-mola': ['tampa', 'tampa-mola', 'lanterna', 'placa', 'tampa-botao'],
-  'tampa-botao': ['tampa', 'tampa-mola', 'tampa-botao', 'lanterna', 'placa'],
-  'camera-re': ['placa', 'estacionamento', 'multimidia', 'tampa'],
-  estacionamento: ['parachoque', 'estacionamento', 'camera-re', 'modulo'],
-  retrovisor: ['retrovisor-peca'],
-  'retrovisor-peca': ['retrovisor', 'retrovisor-peca'],
-  macaneta: ['fechadura', 'macaneta', 'cabo-porta', 'vidro', 'botao-vidro', 'forro-porta'],
-  fechadura: ['macaneta', 'cabo-porta', 'fechadura', 'vidro', 'botao-vidro', 'forro-porta'],
-  'cabo-porta': ['fechadura', 'macaneta', 'forro-porta'],
-  vidro: ['botao-vidro', 'vidro', 'fechadura', 'macaneta', 'forro-porta'],
-  'botao-vidro': ['vidro', 'forro-porta', 'botao-vidro', 'retrovisor-peca', 'fechadura'],
-  'forro-porta': ['botao-vidro', 'macaneta', 'forro-porta', 'vidro', 'som'],
-  porta: ['porta', 'macaneta', 'fechadura', 'vidro', 'retrovisor'],
-  modulo: ['chicote', 'fusiveis', 'modulo', 'imobilizador'],
-  'modulo-injecao': ['chicote', 'imobilizador', 'sensor-motor', 'bobina', 'admissao'],
-  imobilizador: ['imobilizador', 'modulo-injecao', 'modulo', 'capa-coluna'],
-  chicote: ['modulo', 'fusiveis', 'chicote', 'modulo-injecao'],
-  fusiveis: ['fusiveis', 'modulo', 'chicote', 'bateria'],
-  bateria: ['bateria', 'fusiveis', 'arranque', 'alternador'],
-  coxim: ['coxim'],
-  correia: ['correia', 'alternador', 'arrefecimento', 'distribuicao'],
-  distribuicao: ['distribuicao', 'correia', 'arrefecimento', 'cabecote'],
-  cabecote: ['cabecote', 'bobina', 'distribuicao', 'admissao'],
-  'motor-baixo': ['motor-baixo', 'cabecote', 'distribuicao'],
-  admissao: ['admissao', 'injecao', 'turbo', 'modulo-injecao'],
-  injecao: ['injecao', 'admissao', 'combustivel'],
-  combustivel: ['combustivel', 'injecao'],
-  'sensor-motor': ['sensor-motor', 'modulo-injecao', 'escape'],
-  turbo: ['turbo', 'turbo-valvula', 'admissao', 'escape'],
-  'turbo-valvula': ['turbo', 'admissao', 'sensor-motor', 'turbo-valvula'],
-  escape: ['escape', 'sensor-motor', 'turbo'],
-  bobina: ['bobina', 'cabecote', 'modulo-injecao'],
-  alternador: ['alternador', 'correia', 'bateria'],
-  arranque: ['bateria', 'imobilizador', 'fusiveis'],
-  arrefecimento: ['arrefecimento', 'frente-radiador', 'distribuicao'],
-  'ac-gas': ['ac-gas', 'ac-caixa', 'frente-radiador'],
-  'ac-caixa': ['ac-caixa', 'ac-comando', 'ac-gas', 'difusor'],
-  'ac-comando': ['ac-caixa', 'difusor', 'painel-acab', 'ac-comando'],
-  difusor: ['difusor', 'painel-acab', 'ac-comando'],
-  'freio-roda': ['freio-roda', 'abs', 'suspensao-braco'],
-  'freio-hidro': ['freio-hidro', 'pedal-freio'],
-  abs: ['abs', 'chicote', 'freio-roda'],
-  'freio-mao': ['freio-mao', 'console', 'cambio-alavanca'],
-  amortecedor: ['amortecedor', 'suspensao-braco'],
-  'suspensao-braco': ['suspensao-braco', 'amortecedor', 'freio-roda', 'semieixo'],
-  direcao: ['direcao', 'capa-coluna', 'volante', 'chave-seta'],
-  'cambio-alavanca': ['cambio-alavanca', 'console', 'modulo-cambio'],
-  'modulo-cambio': ['cambio-alavanca', 'chicote', 'cambio'],
-  cambio: ['cambio', 'coxim', 'semieixo'],
-  semieixo: ['semieixo', 'suspensao-braco', 'cambio'],
-  'painel-instr': ['painel-acab', 'multimidia', 'chicote'],
-  'painel-acab': ['painel-acab', 'difusor', 'console', 'ac-comando'],
-  console: ['console', 'freio-mao', 'cambio-alavanca', 'painel-acab'],
-  'capa-coluna': ['chave-seta', 'direcao', 'imobilizador', 'volante'],
-  'chave-seta': ['chave-seta', 'capa-coluna', 'volante', 'direcao'],
-  'botoes-painel': ['painel-acab', 'ac-comando', 'botoes-painel'],
-  volante: ['volante', 'airbag', 'chave-seta', 'capa-coluna'],
-  airbag: ['airbag', 'volante', 'coluna'],
-  'pedal-freio': ['freio-hidro', 'pedal-freio'],
-  pedal: ['pedal'],
-  limpador: ['limpador', 'lavador', 'chave-seta'],
-  lavador: ['lavador', 'limpador'],
-  multimidia: ['multimidia', 'painel-acab', 'som', 'camera-re'],
-  som: ['som', 'multimidia'],
-  'retrovisor-interno': ['retrovisor-interno-capa', 'teto', 'retrovisor-interno'],
-  'retrovisor-interno-capa': ['retrovisor-interno', 'retrovisor-interno-capa'],
-  teto: ['teto', 'retrovisor-interno', 'coluna'],
-  coluna: ['coluna', 'teto', 'airbag'],
-  banco: ['banco'],
-  rodas: ['rodas'],
-  estepe: ['estepe'],
-};
-
-/** Até quantas o "Vai junto" mostra. */
-export const MAX_JUNTO = 4;
+/** Até quantas o "Vai junto" mostra (1 a 3: poucas e certas). */
+export const MAX_JUNTO = 3;
 
 /** Os códigos gravados da peça, em minúsculas ("1j0858601 1j0858601d" = 2 códigos). */
 export const codigosDe = (p: Pick<Peca, 'o'>): Set<string> => new Set((p.o || '').toLowerCase().split(/\s+/).filter(Boolean));
-/** Tampas de válvula e de óleo: são do cabeçote, não vão junto com bobina, sensor etc. */
-const TAMPAS = new Set(['Tampas de Válvulas', 'Tampas de Óleo']);
 
 type PecaJunto = Pick<Peca, 'id' | 'n' | 's' | 'o' | 'b' | 'm' | 'y' | 'ms' | 'ys'>;
 
-/** O grupo da peça (o 1º de GRUPOS cujo tipo e nome servem), ou null. */
-export function grupoDa(p: Pick<Peca, 's' | 'n'>): string | null {
-  for (const [k, g] of Object.entries(GRUPOS)) if (g.tipos.includes(p.s) && (!g.nome || g.nome.test(p.n))) return k;
-  return null;
-}
 const sem = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-/** Lado que o nome diz: 'E' (esquerdo, motorista), 'D' (direito, passageiro) ou null. */
+/** Lado que o nome diz: 'E' (esquerdo, motorista), 'D' (direito, passageiro) ou null (nenhum, ou os dois). */
 export function ladoDa(nome: string): 'E' | 'D' | null {
   const t = sem(nome);
-  const e = /\b(esquerd[oa]s?|esq|motorista)\b/.test(t), d = /\b(direit[oa]s?|dir|passageiro)\b/.test(t);
+  const e = /\b(esquerd[oa]s?|esq|motorista)\b/.test(t), d = /\b(direit[oa]s?|diret[oa]|dir|passageiro)\b/.test(t);   // "direto" = direito (erro de digitação do anúncio)
   return e === d ? null : e ? 'E' : 'D';
 }
-/** Frente ou trás: o que o nome diz; senão a zona do grupo (farol é da frente); senão null. */
-export function zonaDa(nome: string, grupo: string | null): Zona | null {
-  const t = sem(nome);
-  const f = /\b(diant\w*|frontal|frente|dianteir\w*)\b/.test(t), tr = /\b(tras\w*|traseir\w*|posterior)\b/.test(t);
-  if (f !== tr) return f ? 'frente' : 'tras';
-  return (grupo && GRUPOS[grupo]?.zona) || null;
+/** O papel da peça (o 1º de PAPEIS cujo tipo e nome servem), ou null: peça sem companheira de serviço. */
+export function papelDa(p: Pick<Peca, 's' | 'n'>): string | null {
+  const n = sem(p.n);
+  for (const [k, g] of Object.entries(PAPEIS)) {
+    if (g.t.includes(p.s) && (!g.n || g.n.test(n)) && !(g.x && g.x.test(n)) && (!g.lado || ladoDa(p.n))) return k;
+  }
+  return null;
 }
-const primeira = (n: string) => sem(n).split(/\s+/)[0] || '';
-/** Os grupos de motor (admissão, injeção, turbo, cabeçote...). */
-export const GRUPOS_MOTOR = new Set(['coxim', 'correia', 'distribuicao', 'turbo-valvula', 'cabecote', 'motor-baixo', 'admissao', 'injecao',
-  'combustivel', 'sensor-motor', 'turbo', 'escape', 'bobina', 'alternador', 'arranque', 'arrefecimento', 'modulo-injecao']);
-/** Nome que não é de motor (tampa traseira, porta-malas, rebatimento, banco, porta): nunca entra num grupo de motor, nem
- *  com tipo errado no estoque (o "Comando rebatimento tampa" já foi "Comandos de Válvulas": revisão 12, P2.2). O banco
- *  do motor ("Sonda lambda banco 1") fica. */
-export const FORA_DO_MOTOR = /tampa traseira|porta-?malas|rebatimento|\bbancos?\b(?!\s*\d)|\bportas?\b/;
+/** Frente ou trás: o que o nome diz; na porta, "motorista"/"passageiro" = dianteira; senão a do papel (farol é da
+ *  frente); senão null. */
+export function zonaDa(nome: string, papel: string | null): Zona | null {
+  const t = sem(nome);
+  const f = /\b(diant\w*|frontal|frente)\b/.test(t), tr = /\b(tras\w*)\b/.test(t);
+  if (f !== tr) return f ? 'frente' : 'tras';
+  const g = papel ? PAPEIS[papel] : undefined;
+  if (g?.porta && !f && /\b(motorista|passageiro)\b/.test(t)) return 'frente';
+  return (!f && g?.z) || null;
+}
+/** O nome sem lado nem posição ("Guia para-choque traseiro esquerdo" = "guia para-choque"): a mesma peça noutro canto. */
+export function esqueleto(nome: string): string {
+  return sem(nome).replace(/\b(esquerd[oa]s?|direit[oa]s?|diret[oa]|esq|dir|motorista|passageiro|diant\w*|tras\w*|frontal|lado)\b/g, ' ')
+    // plural = singular ("Suporte coxins câmbio" = "Suporte coxim câmbio", "Caixa fusíveis" = "Caixa fusível")
+    .replace(/ns\b/g, 'm').replace(/eis\b/g, 'el').replace(/oes\b/g, 'ao').replace(/([aeiou])s\b/g, '$1')
+    .replace(/\s+/g, ' ').trim();
+}
+const primeira = (t: string) => t.split(' ')[0] || '';
+/** Um nome é o outro com palavras a mais ("Mangueira radiador" e "Mangueira superior radiador", "Bandeja balança" e
+ *  "Balança bandeja suspensão"): pode ser a MESMA peça anunciada de dois jeitos. */
+function contida(a: string, b: string): boolean {
+  const x = new Set(a.split(' ')), y = new Set(b.split(' '));
+  const [menor, maior] = x.size <= y.size ? [x, y] : [y, x];
+  return [...menor].every((w) => maior.has(w));
+}
+const central = (nome: string) => /\bcentra(l|is)\b/.test(sem(nome));
 
-/** As peças que vão junto com `p`: só do MESMO carro (marca + o modelo de `p`, também as de 2+ carros que servem nele) e
- *  da MESMA geração (anos que se sobrepõem, mesmaGeracao); nunca outro lado nem a outra ponta do carro; nunca a mesma
- *  peça repetida (mesmo código, ou mesmo tipo com o mesmo nome de começo: outro "Farol"). Mistura os grupos (1 de cada, na
- *  ordem de JUNTO, depois a 2ª de cada...), o mesmo lado/posição primeiro. `com`: o fim da frase do subtítulo. */
+type Lida = { papel: string; g: Papel; lado: 'E' | 'D' | null; zona: Zona | null; meio: boolean };
+function ler(p: Pick<Peca, 's' | 'n'>): Lida | null {
+  const papel = papelDa(p);
+  return papel ? { papel, g: PAPEIS[papel], lado: ladoDa(p.n), zona: zonaDa(p.n, papel), meio: central(p.n) } : null;
+}
+/** Lado e posição batem? Os dois dizem: têm de ser iguais. Só um diz: vale se o outro for peça "de um só" (o
+ *  para-choque não tem lado; a mola diz o eixo mas não o lado). Na porta, a porta tem de ser a mesma (nenhuma das duas
+ *  dizer também vale: "Fechadura" e "Maçaneta externa"). */
+export function casa(a: Lida, b: Lida): boolean {
+  const porta = !!(a.g.porta || b.g.porta);
+  if (a.lado !== b.lado) {
+    if (a.lado && b.lado) return false;
+    if (porta) return false;
+    if (a.lado ? b.g.lat : a.g.lat) return false;
+  }
+  if (a.zona !== b.zona) {
+    if (a.zona && b.zona) return false;
+    if (porta) return false;
+    if (a.zona ? b.g.fz : a.g.fz) return false;
+  }
+  if ((a.g.meio || b.g.meio) && a.meio !== b.meio) return false;
+  return true;
+}
+
+/** As peças que vão junto com `p` no mesmo serviço: só do MESMO carro (marca + o modelo de `p`, também as de 2+ carros
+ *  que servem nele) e da MESMA geração (anos que se sobrepõem, mesmaGeracao); o papel dela tem de estar na lista do papel
+ *  de `p`; lado e posição batem (`casa`); nunca a mesma peça de novo (mesmo código, mesmo nome, ou o mesmo nome noutro
+ *  canto do carro) nem dois cartões com o mesmo código ou o mesmo nome. A mais ligada de cada papel primeiro, depois a
+ *  2ª de cada. `com`: o fim da frase do subtítulo. */
 export function vaiJunto(p: PecaJunto, doCarro: readonly PecaJunto[], max = MAX_JUNTO): { pecas: PecaJunto[]; com: string } {
-  const g = grupoDa(p);
-  const alvos = g ? JUNTO[g] : undefined;
   const nada = { pecas: [], com: '' };
+  const eu = ler(p);
   const anos = p.m ? anosNoModelo(p, p.m) : null;
-  if (!g || !alvos || !p.b || !p.m || !anos) return nada;
-  const lado = ladoDa(p.n), zona = zonaDa(p.n, g);
-  // os códigos gravados (um anúncio pode trazer 2 ou mais): nenhuma peça com um código que a peça já tem, nem repetida na lista
+  if (!eu || !p.b || !p.m || !anos) return nada;
+  const alvos = eu.g.j;
   const cods = codigosDe(p);
-  const nomeP = sem(p.n);
-  const filas = new Map<string, { x: PecaJunto; nota: number }[]>(alvos.map((k) => [k, []]));
+  const meuEsq = esqueleto(p.n);
+  const filas = new Map<string, { x: PecaJunto; nota: number; esq: string }[]>(alvos.map((k) => [k, []]));
   for (const x of doCarro) {
     if (x.id === p.id || x.b !== p.b || !serveNoModelo(x, p.m)) continue;
     if ([...codigosDe(x)].some((c) => cods.has(c))) continue;
-    // a tampa de válvula não vai junto com bobina nem sensor (são peças elétricas do cabeçote, não da tampa)
-    if (TAMPAS.has(x.s) && (g === 'bobina' || g === 'sensor-motor') && x.s !== p.s) continue;
     if (!mesmaGeracao(anos, anosNoModelo(x, p.m))) continue;
-    const gx = grupoDa(x);
-    if (!gx || !filas.has(gx)) continue;
-    if ((GRUPOS_MOTOR.has(g) || GRUPOS_MOTOR.has(gx)) && FORA_DO_MOTOR.test(sem(x.n))) continue;
-    if (x.s === p.s && primeira(x.n) === primeira(p.n)) continue;
-    const lx = ladoDa(x.n), zx = zonaDa(x.n, gx);
-    if (lado && lx && lado !== lx) continue;
-    if (zona && zx && zona !== zx) continue;
-    filas.get(gx)!.push({ x, nota: (lado && lx === lado ? 2 : 0) + (zona && zx === zona ? 1 : 0) });
+    const ela = ler(x);
+    if (!ela || !filas.has(ela.papel)) continue;
+    const esq = esqueleto(x.n);
+    if (esq === meuEsq || !casa(eu, ela)) continue;
+    if (ela.papel === eu.papel && ((!eu.g.jogo && primeira(esq) === primeira(meuEsq)) || contida(esq, meuEsq))) continue;
+    // coxim do motor e do câmbio: "Suporte coxim câmbio motor" e "Suporte coxim motor" podem ser a mesma peça
+    if (eu.g.jogo && ela.g.jogo && contida(esq, meuEsq)) continue;
+    filas.get(ela.papel)!.push({ x, esq, nota: (eu.lado && ela.lado === eu.lado ? 2 : 0) + (eu.zona && ela.zona === eu.zona ? 1 : 0) });
   }
   for (const f of filas.values()) f.sort((a, b) => b.nota - a.nota || a.x.n.localeCompare(b.x.n, 'pt-BR') || (a.x.id < b.x.id ? -1 : 1));
-  // 1ª volta: a melhor de cada grupo, sem repetir tipo; depois as seguintes, até `max`
   const pecas: PecaJunto[] = [];
-  const tipos = new Set<string>(), nomes = new Set<string>(), usados = new Set<string>();
+  const nomes = new Set<string>(), usados = new Set<string>();
   for (let volta = 0; pecas.length < max && volta < max; volta++) {
     for (const k of alvos) {
       const f = filas.get(k)!;
-      // o mesmo nome duas vezes (duas "Caixa fusível BSI" de anos diferentes) não: a 2ª sai da fila
-      const livre = (c: { x: PecaJunto }) => sem(c.x.n) !== nomeP && !nomes.has(sem(c.x.n)) && ![...codigosDe(c.x)].some((k) => usados.has(k));
-      while (f.length && !livre(f[0])) f.shift();
-      const i = volta === 0 ? f.findIndex((c) => !tipos.has(c.x.s) && livre(c)) : 0;
-      if (i < 0 || !f[i]) continue;
-      const [c] = f.splice(i, 1);
+      // a mesma peça duas vezes não (o mesmo código, ou o mesmo nome: duas "Caixa fusível BSI" de anos diferentes)
+      while (f.length && (nomes.has(f[0].esq) || [...codigosDe(f[0].x)].some((c) => usados.has(c)))) f.shift();
+      const c = f.shift();
+      if (!c) continue;
       pecas.push(c.x);
-      tipos.add(c.x.s);
-      nomes.add(sem(c.x.n));
-      codigosDe(c.x).forEach((k) => usados.add(k));
+      nomes.add(c.esq);
+      codigosDe(c.x).forEach((q) => usados.add(q));
       if (pecas.length >= max) break;
     }
   }
-  return pecas.length ? { pecas, com: GRUPOS[g].com } : nada;
+  return pecas.length ? { pecas, com: eu.g.com } : nada;
 }

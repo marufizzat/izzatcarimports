@@ -7,6 +7,8 @@
 // A peça que serve em 2+ carros ("Volvo S60 Xc60") conta em cada um, com a faixa de anos daquele carro.
 // Arte do carro (o "cartão do seu carro" da abertura): a mesma public/arte/v2/carro-<k>.webp do /carros, com o k do
 // resumo; `as` = as larguras do srcset (só se as variantes foram feitas da arte atual, lib/variantes.ts).
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { pecas, marcasVisiveis, logoInfo, resumo, arteDoCarro } from './dados';
 import { modelosDa, anosNoModelo, principalDe } from './meuCarro';
 import { srcsetArte } from './variantes';
@@ -22,11 +24,21 @@ export const LOGO_CAIXA: [number, number] = [46, 34];
 
 let memo: GaragemG | null = null;
 
+/** A chave do carro ("Honda" + "HR-V" -> "honda-hr-v"): a MESMA conta do chave_url() do preparar_dados.py (o teste
+ *  confere contra todos os carros do resumo). */
+export const chaveCarro = (b: string, m: string) =>
+  `${b} ${m}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
 /** Arte do carro (marca + modelo exatamente como nos dados), se existir. */
 function arteDo(b: string, m: string): Pick<ModeloG, 'a' | 'as'> {
-  // a arte do carro; o principal sem arte própria usa a do apelido (Série 3: a do 320i), lib/dados.ts
-  const k = arteDoCarro(resumo().carros.find((c) => c.b === b && c.m === m)?.k);
-  if (!k) return {};
+  const r = resumo();
+  // carro com página (/carros/<k>.html): a arte dele; o principal sem arte própria usa a do apelido (Série 3: a do 320i,
+  // lib/dados.ts: arteDoCarro, rodada 14); o apelido salvo (C180 -> Classe C) usa a do principal.
+  // Modelo com poucas peças (sem página, fora do resumo): a chave que a página dele teria; a arte vale no seletor e na
+  // abertura mesmo sem a página (rodada 16).
+  const comPagina = r.carros.find((c) => c.b === b && c.m === m)?.k ?? r.aliases?.find((a) => a.b === b && a.de === m)?.para;
+  const k = comPagina ? arteDoCarro(comPagina) : chaveCarro(b, m);
+  if (!k || !existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`))) return {};
   const ss = srcsetArte(`/arte/v2/carro-${k}.webp`);
   const as = ss ? [...ss.matchAll(/ (\d+)w/g)].map((x) => Number(x[1])) : [];
   return as.length ? { a: k, as } : { a: k };

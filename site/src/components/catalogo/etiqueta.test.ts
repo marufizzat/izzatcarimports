@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { precoCartao, precoCheioDoTexto, SELO_WHATS, brl } from './etiqueta';
+import { precoCartao, precoCheioDoTexto, SELO_WHATS, brl, versaoUnica, dadosCarro } from './etiqueta';
 import { cartaoHtml } from '../../lib/vendidaCartoes';
 import { precoWhats } from '../../lib/whats';
 import type { Item } from '../../lib/busca';
@@ -8,6 +8,23 @@ import type { Item } from '../../lib/busca';
 const item = (o: Partial<Item>): Item => ({
   k: 0, id: 'MLB123456789', t: 'Farol', n: 'Farol direito', p: 244.64, i: '', h: 'farol-direito-MLB123456789', f: false,
   b: 'Chevrolet', m: 'Cruze', y: [2017, 2021], c: 'Faróis e Lanternas', s: 'Faróis', o: 'E131464301', e: '1', ...o,
+});
+
+describe('selo do carro salvo no carro unido (revisão 14, B7)', () => {
+  const ap = new Set(['Mercedes-Benz|C180', 'Mercedes-Benz|C200', 'Mercedes-Benz|C320', 'Ford|New Fiesta']);
+  it('peça de UMA versão devolve o apelido; de várias ou de nenhuma, nada', () => {
+    expect(versaoUnica('Mercedes-Benz', ['Classe C', 'C180'], ap)).toBe('C180');
+    expect(versaoUnica('Mercedes-Benz', ['Classe C', 'C180', 'C200'], ap)).toBe('');
+    expect(versaoUnica('Mercedes-Benz', null, ap)).toBe('');
+    expect(versaoUnica('Ford', ['Fiesta', 'New Fiesta'], ap)).toBe('New Fiesta');
+    expect(versaoUnica('Ford', ['Fiesta', 'Ka'], ap)).toBe('');
+    expect(versaoUnica('BMW', ['Série 3', 'C180'], ap)).toBe('');   // o apelido é da marca
+  });
+  it('o cartão leva o apelido no data-v1 (o script troca o verde por "Confira a versão")', () => {
+    expect(dadosCarro('Ford', 'Fiesta', [2014, 2019], ['Fiesta', 'New Fiesta'], null, 'New Fiesta')['data-v1']).toBe('New Fiesta');
+    expect(dadosCarro('Ford', 'Fiesta', [2014, 2019], null, null, '')['data-v1']).toBeUndefined();
+    expect(cartaoHtml(item({ b: 'Ford', m: 'Fiesta', ms: ['Fiesta', 'New Fiesta'], v1: 'New Fiesta' }), '208px')).toContain('data-v1="New Fiesta"');
+  });
 });
 
 describe('preço do cartão: o do WhatsApp em destaque, o do anúncio riscado', () => {

@@ -47,6 +47,9 @@ const REGRAS = JSON.stringify({ prerender: [{ where: { href_matches: ['/peca/*',
   <link rel="icon" href="/icone-192.png" sizes="192x192" type="image/png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
+  {/* o app na tela de início do iPhone: o nome curto e a barra de status clara (o site é claro) */}
+  <meta name="apple-mobile-web-app-title" content="Izzat Car" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   {/* fotos do ML são <img> (sem CORS): o preconnect sem crossorigin é o que elas reaproveitam */}
   <link rel="preconnect" href="https://http2.mlstatic.com" />
   <meta property="og:type" content={ogTipo} />

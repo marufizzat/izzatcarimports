@@ -1,0 +1,187 @@
+// As vistas "por dentro" do Raio-x (todas: a frente, o piloto, e as 8 zonas que vieram depois):
+// a forma de cada ponto quente dentro da arte, o link EXATO do catálogo e o número igual ao que o catálogo mostra.
+// Estoque nos testes (testes/estoques.ts): nome de bloco/tipo confere no VOCABULÁRIO da loja; "tem de ter peça" só no
+// ESTOQUE FIXO; as regras (número = catálogo, lado, posição, a parte do carro) no fixo e no estoque do dia.
+import { describe, it, expect } from 'vitest';
+import { readFileSync, existsSync } from 'node:fs';
+import { PONTOS_DA_ZONA } from './porDentro/todas';
+import { pontosLateral } from './porDentro/lateral';
+import { contarPontos, filtrosDoQuente } from './porDentro/base';
+import { VISTAS, ARTE_VISTA, ARQUIVO_DENTRO, arteDaVista } from './raioXVistas';
+import { ZONAS, ARTE, linkLinha, filtrosLinha, zonasDaPeca } from './raioX';
+import { Busca, type Lado, type Posicao } from './busca';
+import { estoques, carroMaisCheio, indiceFixo, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
+
+const VISTAS_K = Object.keys(VISTAS);
+
+const pontos = (p: string) => p.trim().split(/\s+/).map((xy) => xy.split(',').map(Number) as [number, number]);
+function dentro([x, y]: [number, number], poli: [number, number][]): boolean {
+  let d = false;
+  for (let i = 0, j = poli.length - 1; i < poli.length; j = i++) {
+    const [xi, yi] = poli[i];
+    const [xj, yj] = poli[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) d = !d;
+  }
+  return d;
+}
+// os filtros que o catálogo lê do endereço (catalogo/Catalogo.tsx: LADOS e POSICOES por extenso)
+function filtrosDoLink(href: string) {
+  const u = new URL(href, 'https://x').searchParams;
+  const lado = ({ esquerdo: 'E', direito: 'D' } as Record<string, Lado>)[u.get('lado') ?? ''];
+  const pos = ({ dianteiro: 'D', traseiro: 'T' } as Record<string, Posicao>)[u.get('pos') ?? ''];
+  return { marca: u.get('marca') ?? undefined, modelo: u.get('modelo') ?? undefined, ano: u.get('ano') ? Number(u.get('ano')) : undefined,
+    tipo: u.get('tipo') ?? undefined, sub: u.get('sub') ?? undefined, lado, pos };
+}
+
+describe('vistas por dentro: uma por zona do Raio-x', () => {
+  it('toda zona tem a vista dela, a tabela e a arte (com as variantes de 320 e 900)', () => {
+    expect(VISTAS_K.sort()).toEqual(ZONAS.map((z) => z.k).sort());
+    expect(Object.keys(PONTOS_DA_ZONA).sort()).toEqual([...VISTAS_K].sort());
+    expect(ARTE_VISTA).toEqual({ w: ARTE.w, h: ARTE.h });
+    for (const k of VISTAS_K) {
+      const v = VISTAS[k];
+      for (const a of [arteDaVista(v), arteDaVista(v, 320), arteDaVista(v, 900)]) expect(existsSync(`public${a}`), a).toBe(true);
+      expect(v.botao, k).toMatch(/^Ver (o|a) /);
+      // a linha de apoio cabe numa linha do botão e nunca diz quantas peças a arte tem
+      expect(v.resumo, k).not.toMatch(/\d/);
+    }
+  });
+  it('o código da vista sabe baixar a tabela de toda zona (TABELAS de raioXPorDentro.ts)', () => {
+    const fonte = readFileSync('src/components/v2/raioXPorDentro.ts', 'utf-8');
+    const bloco = /const TABELAS: [^\n]*= \{\n([\s\S]*?)\n\};/.exec(fonte)![1];
+    const chaves = [...bloco.matchAll(/^\s+'?([a-z-]+)'?: \(\) => import/gm)].map((m) => m[1]);
+    expect(chaves.sort()).toEqual([...VISTAS_K].sort());
+  });
+  it('as duas laterais usam a mesma arte e as mesmas formas; só o lado dos links muda', () => {
+    expect(VISTAS['lateral-esquerda'].arte).toBe(VISTAS['lateral-direita'].arte);
+    const e = pontosLateral('E'), d = pontosLateral('D');
+    expect(e.map((p) => [p.k, p.nome, p.ancora, p.poligonos, p.tipo, p.sub, p.pos])).toEqual(d.map((p) => [p.k, p.nome, p.ancora, p.poligonos, p.tipo, p.sub, p.pos]));
+    for (const p of e) { expect(p.lado, p.k).toBe('E'); expect(p.procuro, p.k).toMatch(/esquerd[oa]$/); }
+    for (const p of d) { expect(p.lado, p.k).toBe('D'); expect(p.procuro, p.k).toMatch(/direit[oa]$/); }
+  });
+  it('lado da arte da traseira: vista por trás, a lanterna à ESQUERDA de quem olha é a ESQUERDA do carro', () => {
+    const t = PONTOS_DA_ZONA.traseira;
+    const p = (k: string) => t.find((q) => q.k === k)!;
+    expect(p('lanterna-esquerda').ancora[0]).toBeLessThan(p('lanterna-direita').ancora[0]);
+    expect(p('lanterna-esquerda').lado).toBe('E');
+    expect(p('lanterna-direita').lado).toBe('D');
+  });
+});
+
+describe.each(VISTAS_K)('vista por dentro de "%s": os pontos quentes na arte', (zona) => {
+  const PONTOS = PONTOS_DA_ZONA[zona];
+  it('de 10 a 16 peças; chaves e nomes únicos; o número fica dentro da peça; tudo dentro da arte', () => {
+    expect(PONTOS.length).toBeGreaterThanOrEqual(10);
+    expect(PONTOS.length).toBeLessThanOrEqual(16);
+    expect(new Set(PONTOS.map((p) => p.k)).size).toBe(PONTOS.length);
+    expect(new Set(PONTOS.map((p) => p.nome)).size).toBe(PONTOS.length);
+    for (const p of PONTOS) {
+      expect(p.k, p.k).toMatch(/^[a-z][a-z-]*$/);
+      expect(p.poligonos.some((poli) => dentro(p.ancora, pontos(poli))), p.k).toBe(true);
+      for (const poli of p.poligonos) {
+        expect(pontos(poli).length, p.k).toBeGreaterThanOrEqual(6);
+        for (const [x, y] of pontos(poli)) {
+          expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThanOrEqual(ARTE_VISTA.w);
+          expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThanOrEqual(ARTE_VISTA.h);
+        }
+      }
+    }
+  });
+  it('o número de uma peça nunca cai em cima da forma de outra desenhada DEPOIS dela (a de cima ganha o toque)', () => {
+    PONTOS.forEach((p, i) => {
+      const porCima = PONTOS.slice(i + 1).filter((q) => q.poligonos.some((poli) => dentro(p.ancora, pontos(poli)))).map((q) => q.k);
+      expect(porCima, p.k).toEqual([]);
+    });
+  });
+  it('os números não se encostam na arte de 288 px (celular de 320)', () => {
+    const escala = 288 / ARTE_VISTA.w;
+    for (const p of PONTOS) for (const q of PONTOS) {
+      if (p === q) continue;
+      expect(Math.hypot(p.ancora[0] - q.ancora[0], p.ancora[1] - q.ancora[1]) * escala, `${p.k} × ${q.k}`).toBeGreaterThan(20);
+    }
+  });
+});
+
+// O ponto que mostra uma peça de OUTRA parte do carro, de propósito: na roda a pessoa vê o semieixo (que o painel das
+// zonas guarda em "Embaixo") e no teto, o airbag de cortina (o estoque não o separa: o tipo inteiro é do interior).
+const DE_OUTRA_ZONA: Record<string, Record<string, string>> = { rodas: { semieixo: 'embaixo' }, teto: { airbags: 'interior' } };
+
+describe.each(VISTAS_K)('vista por dentro de "%s": os nomes dos pontos quentes', (zona) => {
+  const PONTOS = PONTOS_DA_ZONA[zona];
+  it('todo ponto com tipo usa nomes do vocabulário da loja (bloco e tipo); sem tipo = pátio, com o nome da mensagem', () => {
+    const blocos = BLOCOS_DA_LOJA;
+    const tipos = TIPOS_DA_LOJA;
+    for (const p of PONTOS) {
+      expect(p.procuro, p.k).toMatch(/^(o|a) /);
+      if (!p.tipo) { expect(p.sub ?? p.lado ?? p.pos, p.k).toBeUndefined(); continue; }
+      expect(blocos.has(p.tipo), `${p.k}: ${p.tipo}`).toBe(true);
+      expect(p.sub && tipos.has(p.sub), `${p.k}: ${p.sub}`).toBe(true);
+    }
+  });
+});
+
+const CASOS = estoques().flatMap((e) => VISTAS_K.map((zona) => ({ ...e, zona })));
+describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do catálogo ($nome)', ({ zona, ix, fixo }) => {
+  const PONTOS = PONTOS_DA_ZONA[zona];
+  const b = new Busca(ix);
+  const cheio = carroMaisCheio(ix);
+  // os carros do exemplo: no estoque fixo, o XC60 2019 e o E-Pace; no do dia, o carro com mais peças
+  const carros = fixo || !cheio ? [{}, { marca: 'Volvo', modelo: 'XC60', ano: 2019 }, { marca: 'Jaguar', modelo: 'E-Pace' }] : [{}, cheio];
+  it('o link leva o tipo, o sub, o lado e a posição do ponto, e o carro; o número é o da busca com os filtros DO LINK', () => {
+    for (const carro of carros) {
+      const contas = contarPontos((f) => b.procurar(f), carro, PONTOS);
+      for (const p of PONTOS) {
+        if (!p.tipo || !p.sub) { expect(contas[p.k], p.k).toBe(0); continue; }
+        const l = { tipo: p.tipo, sub: p.sub, lado: p.lado, pos: p.pos };
+        const href = linkLinha(l, carro);
+        const f = filtrosDoLink(href);
+        expect(f).toEqual({ marca: undefined, modelo: undefined, ano: undefined, ...carro, tipo: p.tipo, sub: p.sub, lado: p.lado, pos: p.pos });
+        const doPonto = b.procurar(filtrosLinha(l, carro)).map((it) => it.id).sort();
+        const doLink = b.procurar({ ...f, ordem: 'novos' }).map((it) => it.id).sort();
+        expect(doPonto, p.k).toEqual(doLink);
+        // o número que a vista mostra é o do catálogo naquele link
+        expect(contas[p.k], p.k).toBe(doLink.length);
+        // lado e posição de verdade: nenhuma peça do link diz o outro lado
+        for (const it of b.procurar({ ...f, ordem: 'novos' })) {
+          if (p.lado) expect(it.l, `${p.k} ${it.id}`).toBe(p.lado);
+          if (p.pos) expect(it.pos === p.pos || it.pos === 'A', `${p.k} ${it.id}`).toBe(true);
+        }
+      }
+    }
+  });
+  // a frente (o piloto) tem a regra dela em raioXFrente.test.ts (o para-lama fica na lateral, a alma vai sem posição)
+  it.skipIf(zona === 'frente')('no estoque inteiro, as peças de cada ponto são peças DESTA parte do carro no painel do Raio-x', () => {
+    const fora: string[] = [];
+    for (const p of PONTOS) {
+      if (!p.tipo || !p.sub) continue;
+      const esperada = DE_OUTRA_ZONA[zona]?.[p.k] ?? zona;
+      for (const it of b.procurar(filtrosDoQuente(p))) {
+        const zs = zonasDaPeca({ c: it.c, s: it.s, l: it.l, pos: it.pos }).map((z) => z.k);
+        if (!zs.includes(esperada)) fora.push(`${p.k}: ${it.n} (${zs.join('+') || 'sem zona'})`);
+      }
+    }
+    expect(fora).toEqual([]);
+  });
+});
+
+describe('vistas por dentro: o arquivo das contas do estoque inteiro', () => {
+  it('o endereço é o que a página gera (pages/dados/raio-x-dentro.json.ts)', () => {
+    expect(ARQUIVO_DENTRO).toBe('/dados/raio-x-dentro.json');
+    expect(existsSync('src/pages/dados/raio-x-dentro.json.ts')).toBe(true);
+  });
+  it('no estoque fixo, toda vista tem pelo menos 6 pontos com peça (as tabelas apontam para tipos que a loja vende)', () => {
+    // só no estoque fixo: no do dia um tipo pode zerar (a última peça vendeu) e a vista mostra o ponto cinza, sem erro
+    const b = new Busca(indiceFixo());
+    for (const k of VISTAS_K) {
+      const n = contarPontos((f) => b.procurar(f), {}, PONTOS_DA_ZONA[k]);
+      expect(Object.values(n).filter((x) => x > 0).length, k).toBeGreaterThanOrEqual(6);
+    }
+  });
+  it.each(estoques())('no $nome, a conta de todo ponto é um número (0 = cinza, pedido de pátio) e nunca passa do estoque', ({ ix }) => {
+    const b = new Busca(ix);
+    for (const k of VISTAS_K) {
+      const n = contarPontos((f) => b.procurar(f), {}, PONTOS_DA_ZONA[k]);
+      for (const p of PONTOS_DA_ZONA[k]) { expect(Number.isInteger(n[p.k]), `${k} ${p.k}`).toBe(true); expect(n[p.k]).toBeGreaterThanOrEqual(0); expect(n[p.k]).toBeLessThanOrEqual(ix.id.length); }
+    }
+  });
+});

@@ -52,6 +52,8 @@ export type Item = {
   dif?: string;
   /** lado e posição que o nome diz (só quando diz; a posição, senão, a do tipo; A = as duas) */
   l?: Lado; pos?: Posicao | 'A';
+  /** peça de UMA versão de um carro unido: o apelido ("C180", "New Fiesta"); o selo do cartão vira "Confira a versão" */
+  v1?: string;
   /** 1 = peça única (uma só em estoque no anúncio): o cartão diz "Peça única"; ausente = sem o dado ou mais de uma */
   q?: 1;
 };
@@ -409,6 +411,7 @@ export class Busca {
       if (ms) it.ms = ms;
       if (ys) it.ys = ys;
       if (dif) it.dif = dif;
+      if (ms && this.apelidos.size) { const v = ms.filter((x) => this.apelidos.has(`${it.b}|${x}`)); if (v.length === 1) it.v1 = v[0]; }
       return it;
     });
   }

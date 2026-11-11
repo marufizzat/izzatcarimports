@@ -1500,6 +1500,16 @@ def test_apelido_de_carro_unido_fora_das_listas():
     assert set(busca.get("apelidos", [])) == {f"{a['b']}|{a['de']}" for a in resumo.get("aliases", [])}
 
 
+def test_vocabulario_da_loja_em_dia():
+    """site/testes/fixtures/vocabulario.json (os nomes de bloco e de tipo que os testes do site aceitam nos mapas do
+    Raio-x, da batida e da abertura) e o MESMO que BLOCOS e _TIPOS_DO_BLOCO dizem. Nao olha o estoque: so o codigo.
+    Mudou um nome: python ferramentas/vocabulario_loja.py e commitar o json."""
+    sys.path.insert(0, str(ROOT / "ferramentas"))
+    import vocabulario_loja as _v
+    assert _v.ARQ.exists(), "falta site/testes/fixtures/vocabulario.json (python ferramentas/vocabulario_loja.py)"
+    assert _v.ARQ.read_text(encoding="utf-8") == _v.texto(), "vocabulario.json fora de dia: python ferramentas/vocabulario_loja.py"
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

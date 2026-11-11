@@ -1,0 +1,197 @@
+/* "Bati o carro" (components/v2/raioXBatida.ts): entra na página só com o modo (import ?inline), nunca no CSS que trava
+   a 1ª pintura. Tudo preso a .rxb* e ao data-vista da raiz do Raio-x (.rx). */
+
+/* ---- a arte: no modo de batida, as zonas saem e os 8 pontos entram (o palco é o mesmo: nada muda de tamanho) ---- */
+.rxb { position: absolute; inset: 0; z-index: 3; display: none; }
+.rx[data-vista="batida"] .rxb { display: block; }
+.rx[data-vista="batida"] :is(.rx-mapa, .rx-ponto, .rx-etiqueta, .rx-escuros, .rx-realces) { display: none; }
+/* as duas filas de fichas ocupam o MESMO lugar (a escondida guarda a altura): trocar de modo não empurra o painel */
+.rxb-fichas { visibility: hidden; }
+.rx[data-vista="batida"] .rxb-fichas { visibility: visible; }
+.rx[data-vista="batida"] .rx-fichas { visibility: hidden; }
+
+.rxb-camada { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; overflow: visible;
+  filter: blur(clamp(3px, 1.2cqw, 9px)); will-change: filter; }
+.rxb-escuros path { fill: rgb(22 22 26 / .3); opacity: 0; transition: opacity .16s ease; }
+.rxb-escuros path.aceso { opacity: 1; }
+.rxb-realces g { fill: #ff6a00; opacity: 0; transition: opacity .16s ease; }
+.rxb-realces g.aceso { opacity: .46; }
+.rxb-realces g.aquece, .rxb-escuros path.aquece { opacity: .01; transition: none; }
+
+.rxb-mapa { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rxb-toque polygon { fill: transparent; cursor: pointer; }
+.rxb-guias { display: none; pointer-events: none; }
+.rxb-guias line { stroke: #1d1d1f; stroke-opacity: .38; stroke-width: 1; vector-effect: non-scaling-stroke; transition: stroke .16s ease, stroke-opacity .16s ease; }
+.rxb-guias line.aceso { stroke: #ff6a00; stroke-opacity: 1; stroke-width: 2; }
+
+/* o ponto: um botão de 44 px com a bolinha no meio e um anel que pulsa de leve até a pessoa escolher */
+.rxb-ponto { position: absolute; z-index: 2; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; border: 0; border-radius: 50%;
+  background: none; display: grid; place-items: center; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+.rxb-ponto i { position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: #ff6a00; color: #1d1d1f; font-style: normal; font-size: 12.5px; font-weight: 800; line-height: 1;
+  box-shadow: 0 0 0 2.5px #fff, 0 2px 8px rgb(0 0 0 / .3); transition: transform .16s ease, box-shadow .16s ease; }
+.rxb-ponto::after { content: ""; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+  border: 2px solid #ff6a00; opacity: 0; pointer-events: none; animation: rxb-pulso 2.8s ease-out infinite; }
+.rxb-ponto:nth-of-type(2n)::after { animation-delay: .7s; }
+.rxb-ponto:nth-of-type(3n)::after { animation-delay: 1.4s; }
+.rxb-ponto:nth-of-type(4n)::after { animation-delay: 2.1s; }
+.rxb.rxb-escolhido .rxb-ponto::after { animation: none; }
+.rxb-ponto.aceso i { transform: scale(1.18); }
+.rxb-ponto.on i { box-shadow: 0 0 0 2.5px #1d1d1f, 0 2px 8px rgb(0 0 0 / .3); }
+.rxb-ponto:focus-visible i { box-shadow: 0 0 0 2.5px #fff, 0 0 0 5.5px #1d1d1f, 0 2px 8px rgb(0 0 0 / .3); }
+@keyframes rxb-pulso { 0% { transform: scale(.9); opacity: .65; } 70%, 100% { transform: scale(2.1); opacity: 0; } }
+@media (max-width: 359px) { .rxb-ponto i { width: 19px; height: 19px; font-size: 11px; } .rxb-ponto::after { width: 19px; height: 19px; margin: -9.5px 0 0 -9.5px; } }
+
+/* arte estreita: a pergunta no canto vazio da arte (some quando a pessoa escolhe) */
+.rxb-pergunta { position: absolute; right: 10px; bottom: 10px; z-index: 1; padding: 6px 11px; border-radius: 999px; pointer-events: none; white-space: nowrap;
+  background: rgb(255 255 255 / .94); color: #1d1d1f; font-size: 12.5px; font-weight: 700; font-stretch: 94%; line-height: 1.2;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 4px 12px -6px rgb(0 0 0 / .22); transition: opacity .16s ease; }
+.rxb.rxb-escolhido .rxb-pergunta { opacity: 0; }
+
+/* arte larga: a etiqueta fixa de cada ponto, no fundo do estúdio, com a linha-guia; o ponto fica pequeno e sem número */
+.rxb-etiqueta { position: absolute; z-index: 2; display: none; transform: translate(-50%, -50%); white-space: nowrap; cursor: pointer;
+  padding: 6px 11px; border-radius: 999px; background: rgb(255 255 255 / .94); color: #1d1d1f; font-size: 13px; font-weight: 700; font-stretch: 94%; line-height: 1.2;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 4px 12px -6px rgb(0 0 0 / .22); transition: background-color .16s ease; }
+.rxb-etiqueta.aceso { background: #ff6a00; }
+@container rxarte (min-width: 640px) {
+  .rxb-etiqueta { display: block; }
+  .rxb-guias { display: inline; }
+  .rxb-pergunta { display: none; }
+  .rxb-ponto i { width: 16px; height: 16px; font-size: 0; }
+  .rxb-ponto::after { width: 16px; height: 16px; margin: -8px 0 0 -8px; }
+}
+
+/* as fichas dos pontos: o desenho das fichas das zonas */
+.rxb-fichas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; margin: 0 -2px; scroll-padding-inline: 16px; align-content: start; }
+.rxb-fichas::-webkit-scrollbar { display: none; }
+.rxb-fichas button { flex: none; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 14px 0 8px; border: 0; border-radius: 999px;
+  background: var(--surface); color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 620; cursor: pointer;
+  box-shadow: inset 0 0 0 1.5px var(--line-2); -webkit-tap-highlight-color: transparent; transition: background-color .15s ease, box-shadow .15s ease; }
+.rxb-fichas i { font-style: normal; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: #ff6a00; color: #1d1d1f; font-size: 12.5px; font-weight: 800; }
+.rxb-fichas button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.rxb-fichas button.on { background: #ff6a00; color: #1d1d1f; box-shadow: none; }
+.rxb-fichas button.on i { background: #1d1d1f; color: #fff; }
+@container rxarte (min-width: 640px) { .rxb-fichas button { padding-left: 14px; } .rxb-fichas i { display: none; } }
+@media (min-width: 768px) { .rxb-fichas { flex-wrap: wrap; overflow: visible; } }
+
+/* PC: a lista do conserto é mais comprida que a arte; a arte acompanha a rolagem (a parte batida fica sempre à vista) */
+@media (min-width: 1024px) { .rx[data-vista="batida"] .rx-arte { position: sticky; top: 96px; align-self: start; } }
+
+/* ---- o painel: a lista do conserto ---- */
+.rxb-painel { display: flex; flex-direction: column; flex: 1; min-width: 0; container: rxbp / inline-size; }
+.rxb-convite { display: grid; gap: 10px; justify-items: start; margin: 0 0 14px; padding: 14px 16px; border-radius: 16px; background: var(--accent-soft); color: #1d1d1f; }
+.rxb-convite p { margin: 0; font-size: 14.5px; line-height: 1.45; text-wrap: pretty; }
+.rxb-convite .botao { --h: var(--botao-p); padding: 0 18px; font-size: 15px; }
+
+.rxb-linhas { list-style: none; margin: 0; padding: 0; display: grid; }
+.rxb-linha { display: grid; grid-template-columns: 44px 56px minmax(0, 1fr) auto; grid-template-areas: "c f t p" "c f a p"; column-gap: 8px; align-items: start; padding: 12px 4px 12px 0; margin-left: -6px; }
+.rxb-check { grid-area: c; } .rxb-foto { grid-area: f; } .rxb-txt { grid-area: t; } .rxb-preco { grid-area: p; } .rxb-acao { grid-area: a; }
+.rxb-linha + .rxb-linha { border-top: 1px solid var(--line); }
+/* a caixa de marcar: o <input> de verdade por cima da área inteira (44 px de toque), o desenho por baixo */
+.rxb-check { position: relative; display: grid; place-items: center; width: 44px; min-height: 56px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rxb-check input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.rxb-caixa { width: 24px; height: 24px; border-radius: 8px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ink-3);
+  display: grid; place-items: center; transition: background-color .12s ease, box-shadow .12s ease; }
+.rxb-caixa::after { content: ""; width: 12px; height: 7px; margin-top: -3px; border: solid #1d1d1f; border-width: 0 0 2.5px 2.5px; border-radius: 1px; transform: rotate(-45deg) scale(0); transition: transform .12s ease; }
+.rxb-check input:checked + .rxb-caixa { background: #ff6a00; box-shadow: inset 0 0 0 1.5px #e25d00; }
+.rxb-check input:checked + .rxb-caixa::after { transform: rotate(-45deg) scale(1); }
+.rxb-check input:focus-visible + .rxb-caixa { outline: 3px solid var(--foco); outline-offset: 2px; }
+.rxb-foto { width: 56px; height: 56px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); display: block; }
+.rxb-foto img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; display: block; }
+.rxb-txt { display: grid; justify-items: start; gap: 2px; min-width: 0; padding-top: 2px; }
+.rxb-nome { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-weight: 720; font-size: 15.5px; line-height: 1.3; color: var(--ink); cursor: pointer; text-wrap: pretty; }
+.rxb-tem { font-size: 12.5px; font-weight: 700; color: var(--ink-2); padding: 1px 8px; border-radius: 999px; background: var(--surface-2); white-space: nowrap; }
+.rxb-peca { font-size: 14px; line-height: 1.4; color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.rxb-peca:hover { color: var(--ink); text-decoration-color: var(--ink-3); }
+.rxb-de { font-size: 13px; line-height: 1.4; color: var(--ink-2); }
+.rxb-linha[hidden] { display: none; }
+.rxb-junto { margin: 14px 0 0; padding: 12px 4px 0; border-top: 1px solid var(--line); font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.rxb-junto-oculto { display: none; }
+/* sem peça principal no estoque, o grupo "também costuma ir junto" abre a lista: sem o traço em cima */
+.rx-p-cabeca + .rxb-junto, .rx-p-aviso + .rxb-junto, .rxb-convite + .rxb-junto { margin-top: 0; padding-top: 4px; border-top: 0; }
+.rxb-mais { display: flex; width: 100%; align-items: center; justify-content: center; min-height: 48px; margin-top: 4px; border: 0; border-radius: 12px;
+  background: var(--surface-2); color: var(--ink); font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; }
+.rxb-mais:hover { background: var(--bg-2); }
+.rxb-trocar, .rxb-ver { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin: 0 0 -10px -10px; padding: 0 12px 0 10px; border: 0; border-radius: 10px;
+  background: none; color: var(--ink); font: inherit; font-size: 14px; font-weight: 680; cursor: pointer; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.rxb-trocar svg { width: 16px; height: 16px; fill: none; stroke: var(--accent-text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rxb-trocar small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.rxb-trocar:hover, .rxb-ver:hover { background: var(--surface-2); }
+.rxb-seta { width: 16px; height: 16px; fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rxb-preco { display: grid; justify-items: end; gap: 1px; padding-top: 2px; text-align: right; white-space: nowrap; }
+.rxb-preco s { font-size: 13px; color: var(--ink-2); }
+.rxb-preco b { font-size: 16.5px; font-weight: 800; font-stretch: 90%; line-height: 1.2; color: var(--ink); }
+.rxb-preco small { font-size: 11.5px; font-weight: 600; color: var(--ink-2); }
+/* painel estreito (celular): o preço desce para baixo do nome, numa linha */
+@container rxbp (max-width: 419px) {
+  .rxb-linha { grid-template-columns: 44px 56px minmax(0, 1fr); grid-template-areas: "c f t" "c f p" "c f a"; }
+  .rxb-preco { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 0 8px; padding-top: 8px; text-align: left; }
+  .rxb-preco b { order: -1; }
+}
+@container rxbp (max-width: 300px) {
+  .rxb-linha { grid-template-columns: 44px 48px minmax(0, 1fr); column-gap: 6px; }
+  .rxb-check { min-height: 48px; }
+  .rxb-foto { width: 48px; height: 48px; }
+}
+
+/* o esqueleto da lista (o lugar guardado enquanto as peças do carro chegam) */
+.rxb-esq .rxb-linha { align-items: center; }
+.rxb-esq .rxb-foto { animation: rxb-brilho 1.2s ease-in-out infinite alternate; }
+.rxb-esq .rxb-txt i { display: block; height: 13px; width: 62%; border-radius: 6px; background: var(--surface-2); }
+.rxb-esq .rxb-txt i + i { width: 38%; margin-top: 8px; }
+@keyframes rxb-brilho { from { opacity: .55; } to { opacity: 1; } }
+
+/* "a gente procura no pátio": as peças principais sem anúncio, em fichas de marcar */
+.rxb-patio { min-width: 0; margin: 14px 0 0; padding: 14px 14px 12px; border: 0; border-radius: 16px; background: var(--surface-2); }
+.rxb-patio legend { float: left; width: 100%; padding: 0; font-size: 15px; font-weight: 760; line-height: 1.3; color: var(--ink); }
+.rxb-patio p { clear: both; margin: 0; padding-top: 3px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+.rxb-chips { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
+.rxb-chip { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 0 11px; border-radius: 999px; cursor: pointer;
+  background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 14.5px; font-weight: 620; line-height: 1.25; color: var(--ink);
+  -webkit-tap-highlight-color: transparent; transition: background-color .12s ease, box-shadow .12s ease; }
+.rxb-chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.rxb-chip span { display: inline-flex; align-items: center; gap: 8px; }
+.rxb-chip span::before { content: ""; flex: none; width: 18px; height: 18px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--ink-3); background: var(--surface)
+  center / 12px 12px no-repeat; transition: background-color .12s ease, box-shadow .12s ease; }
+.rxb-chip:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.rxb-chip:has(input:checked) { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px #ff6a00; color: #1d1d1f; }
+.rxb-chip:has(input:checked) span::before { background-color: #ff6a00; box-shadow: inset 0 0 0 1.5px #e25d00;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%231d1d1f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2.5 6.3 2.3 2.3 4.7-5'/%3E%3C/svg%3E"); }
+.rxb-chip:has(input:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
+
+/* o pé: o total e o botão ficam à vista enquanto a lista rola (presos ao pé da tela, dentro do painel) */
+.rxb-pe { padding-top: 10px; }
+.rxb-fixo { position: sticky; bottom: 0; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: auto -18px 0; padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface); border-top: 1px solid var(--line); }
+.rxb-fixo::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 18px; pointer-events: none;
+  background: linear-gradient(to top, color-mix(in oklab, var(--surface), transparent 8%), transparent); }
+@media (min-width: 600px) { .rxb-fixo { margin-inline: -22px; padding-inline: 22px; } }
+/* espaço entre a lista e o pé (a margem "auto" empurra o pé para baixo quando a lista é curta) */
+.rxb-painel > :is(.rxb-linhas, .rxb-patio, .rxb-mais):has(+ .rxb-fixo) { margin-bottom: 14px; }
+.rxb-total { margin: 0; min-height: 30px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 14px; color: var(--ink-2); font-size: 14px; line-height: 1.4; }
+.rxb-t-n { font-weight: 620; }
+.rxb-t-v { color: var(--ink); font-size: 14.5px; }
+.rxb-t-v s { color: var(--ink-2); white-space: nowrap; }
+.rxb-t-v b { font-size: 21px; font-weight: 850; font-stretch: 88%; letter-spacing: -.005em; white-space: nowrap; }
+.rxb-t-v small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.rxb-fixo.rxb-solto { position: static; }
+.rxb-pedir { width: 100%; }
+/* celular: o texto inteiro numa linha só (a regra geral do .botao quebraria em duas) */
+@media (max-width: 420px) { .rxb-fixo .rxb-pedir { height: var(--h); padding: 0 10px; gap: 8px; font-size: 15px; white-space: nowrap; } }
+@media (max-width: 339px) { .rxb-fixo .rxb-pedir { font-size: 14px; gap: 6px; padding: 0 6px; } .rxb-fixo .rxb-pedir svg { width: 18px; height: 18px; } }
+.rxb-pedir[aria-disabled="true"] { opacity: .45; filter: saturate(.5); box-shadow: none; cursor: not-allowed; }
+.rxb-guardar { --h: var(--botao-p); width: 100%; margin-top: 2px; font-size: 15px; }
+.rxb-guardar:disabled { opacity: .5; cursor: not-allowed; }
+.rxb-status { margin: 0; min-height: 22px; padding: 8px 2px 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+.rxb-status:empty { padding-top: 0; min-height: 8px; }
+.rxb-status-on { color: var(--ink); }
+.rxb-status a { display: inline-block; padding-block: 12px; margin-block: -12px; font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--accent), transparent 30%);
+  text-decoration-thickness: 2px; text-underline-offset: 4px; white-space: nowrap; }
+.rxb-honesto { margin: 6px 2px 8px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rxb-ponto::after, .rxb-esq .rxb-foto { animation: none; }
+  .rxb-escuros path, .rxb-realces g, .rxb-guias line, .rxb-etiqueta, .rxb-ponto i, .rxb-caixa, .rxb-caixa::after, .rxb-pergunta { transition: none; }
+}
+html.leve .rxb-ponto::after { animation: none; }
+html.leve .rxb-camada { filter: none; will-change: auto; }
