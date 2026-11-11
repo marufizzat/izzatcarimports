@@ -577,6 +577,23 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    (o WebKit não ancora a rolagem); e pôr a caixa `.rxg-lado` da vista da frente já no HTML (o 1º giro deixa de refazer
    o layout da vista inteira).
 
+20. **Rodada 18 (11/11/2026): o 1º giro leve e o giro em rede lenta**
+   - **A caixa da vista da frente já vem no HTML** (`<div class="rxg-lado" data-v="f">` dentro do `.rx-palco`, `RaioX.astro`;
+     +47 bytes por página com Raio-x). Antes o 1º giro punha a arte, os véus, o mapa, os pontos e as etiquetas dentro
+     dela na hora e o navegador refazia o layout da vista inteira num quadro (até 94 ms com CPU 4× na página do carro).
+     `raioXGirar.ts` só acrescenta a caixa de trás (cópia vazia da da frente, `display: none` até o giro). Quem mira os
+     filhos do palco tem de contar com a caixa (`raioXPorDentro.css`: `.rx-palco > :is(…, .rxg-lado)`).
+   - **A arte de trás desce cedo, com prioridade baixa**: no 1º contato com o Raio-x (mouse em cima, dedo, foco:
+     `pedirArteTras` no `cedo`, `RaioX.astro`), nunca para quem não chega à seção. O endereço e o srcset moram em
+     `lib/raioX.ts` (`ARTE_TRAS_SRC`, `SRCSET_TRAS`, `ARTE_TRAS_PEQUENA`): o Raio-x e o `raioXGirar.ts` pedem o MESMO
+     arquivo (o `<img>` que o Raio-x criou é entregue ao giro: `ctx.arte`).
+   - **Giro pedido com a arte ainda a caminho** (rede lenta, ou o 1º contato é o próprio toque): o painel abre na hora;
+     depois de 300 ms o palco mostra a espera (`data-giro-espera`: o ícone do botão gira e a pílula "Girando o carro…");
+     a arte PEQUENA (`raio-x-tras-320.webp`, 8 KB) é pedida junto com o código do giro e, se a grande não chegou 350 ms
+     depois de pedida, o carro gira com a pequena e a grande entra por cima quando chega (`preparar()` em
+     `raioXGirar.ts`). Medir em rede lenta SEM o `route()` do Playwright (ele desliga o cache do navegador e a arte é
+     baixada duas vezes): `_r18giro/scripts/giro-lento.cjs`.
+
 ## Testes e o estoque do dia (regra de 11/11/2026: o robô parou a loja por causa de teste)
 O robô roda `python testes/test_dados.py` e `npm --prefix site test` com o ESTOQUE DO DIA antes de publicar: teste vermelho
 = loja parada. Por isso nenhum teste pode depender do que está à venda hoje. Três fontes (`site/testes/estoques.ts`):

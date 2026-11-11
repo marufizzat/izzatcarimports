@@ -8,9 +8,10 @@
 // Contornos medidos sobre a arte e conferidos com ela por baixo (a prova fica fora do repositório). Só descem quando a
 // pessoa gira o carro: nada disto está no script que toda visita à home carrega.
 import { elipse } from './raioX';
+import { ARTE_TRAS_SRC } from './raioX';
 
 /** A arte da vista de trás (o mesmo tamanho da arte da frente: o palco não muda). */
-export const ARTE_TRAS = { src: '/arte/v2/raio-x-tras.webp', w: 1536, h: 1024 } as const;
+export const ARTE_TRAS = { src: ARTE_TRAS_SRC, w: 1536, h: 1024 } as const;
 
 /** Uma zona do Raio-x na vista de trás (a chave é a de ZONAS, lib/raioX.ts: o nome, os grupos e as contas são os dela). */
 export type ZonaTras = {

@@ -4,7 +4,7 @@
 /* a vista explodida ocupa o MESMO palco da arte do carro (a mesma proporção: nada muda de tamanho) */
 .rxf { position: absolute; inset: 0; z-index: 4; display: none; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); }
 .rx[data-vista="dentro"] .rxf { display: block; }
-.rx[data-vista="dentro"] .rx-palco > :is(img, svg, span, .rxb) { visibility: hidden; }
+.rx[data-vista="dentro"] .rx-palco > :is(img, svg, span, .rxb, .rxg-lado) { visibility: hidden; }
 .rx[data-vista="dentro"] .rx-fichas, .rx[data-vista="dentro"] .rxb-fichas { visibility: hidden; }
 .rxf-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 

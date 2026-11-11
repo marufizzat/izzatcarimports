@@ -102,6 +102,10 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   <div class="rx-corpo" id={`${id}-corpo`}>
     <div class="rx-arte">
       <div class="rx-palco" data-rx-palco>
+        {/* a vista da frente na caixa DELA desde o HTML (rodada 18): o 1º giro só acrescenta a caixa da vista de trás.
+            Antes o 1º giro punha a arte, os véus, o mapa, os pontos e as etiquetas dentro desta caixa na hora, e o
+            navegador refazia o layout da vista inteira num quadro só (64 ms com CPU 4× na página do carro). */}
+        <div class="rxg-lado" data-v="f">
         {/* prioridade baixa: na página do carro (PC) a arte cai na 1ª tela e disputava a rede com a arte do topo (o LCP) */}
         <img src={ARTE.src} {...srcArte(ARTE.src, sizes)} alt="" width={ARTE.w} height={ARTE.h} loading="lazy" decoding="async" fetchpriority="low" />
         {/* o véu escuro (o retângulo todo menos a parte acesa) e o véu laranja da parte: duas camadas só de desenho, com o
@@ -128,6 +132,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         {ZONAS.map((z) => (
           <span class:list={['rx-etiqueta', { vazia: !nZ(z.k), outro: outro(z.k) }]} data-etiqueta={z.k} style={`left:${pct(z.etiqueta[0], ARTE.w)};top:${pct(z.etiqueta[1], ARTE.h)}`} aria-hidden="true">{z.nome}<b class="num" data-etiqueta-n>{fmt(nZ(z.k))}</b></span>
         ))}
+        </div>
         {/* girar o carro: a outra vista (o código e a arte só descem no 1º giro) */}
         <button type="button" class="rx-girar" data-rx-girar aria-label="Girar o carro: ver a traseira e o lado direito">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9" /><path d="M20 3.6v4.9h-4.9" /></svg><span aria-hidden="true">Girar</span>
@@ -169,7 +174,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   import { lerMeuCarro, nomeCarro, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
   import { ARQUIVO_CARRO } from '../../lib/chegouCarro';
   import {
-    ZONAS, NA_FRENTE, NA_GALERIA, ARQUIVO_GALERIA, DO_OUTRO_LADO, outroLado, linkLinha, linkZona, linkDoFiltro, falaDaZona, qtdPecas, contarZonas, pecasDaZona, lerRaioX,
+    ZONAS, NA_FRENTE, NA_GALERIA, ARQUIVO_GALERIA, DO_OUTRO_LADO, ARTE_TRAS_SRC, ARTE_TRAS_PEQUENA, SRCSET_TRAS, outroLado, linkLinha, linkZona, linkDoFiltro, falaDaZona, qtdPecas, contarZonas, pecasDaZona, lerRaioX,
     type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel, type LadoArte,
   } from '../../lib/raioX';
   import { ARQUIVO_VIVO, vivoPorZona, type PecaViva, type VivoJson } from '../../lib/raioXVivo';
@@ -643,7 +648,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     const botaoGirar = raiz.querySelector<HTMLButtonElement>('[data-rx-girar]');
     let pegandoGiro: Promise<Girar> | null = null;
     const pegarGiro = () => (pegandoGiro ??= import('./raioXGirar').then((m) => {
-      giro = m.ligarGirar({ raiz, palco, sizes: raiz.dataset.sizes ?? '100vw' });
+      giro = m.ligarGirar({ raiz, palco, sizes: raiz.dataset.sizes ?? '100vw', arte: arteTras, pequena: () => arteTrasPequena, desde: arteTrasDesde });
       // as zonas de trás entram nos mesmos ouvintes e nas mesmas listas das da frente
       for (const a of giro.ancoras) ouvirZona(a);
       zonasA = [...raiz.querySelectorAll<SVGAElement>('a[data-z]')];
@@ -678,12 +683,53 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       if (giroEmCurso) await giroEmCurso;
       if (vista === 'achar' && DO_OUTRO_LADO[lado].includes(k)) await girar();
     }
+    // ---- a arte da outra vista, cedo (rodada 18) ----
+    // Pedida com prioridade BAIXA no 1º contato com o Raio-x (mouse em cima, dedo, foco): não disputa a rede com a
+    // 1ª tela e não desce para quem nunca chega à seção. Quando o giro é pedido de verdade, o pedido sai (ou já saiu)
+    // junto com o código do giro, não depois dele. É o MESMO srcset do <img> de raioXGirar.ts: ele acha no cache.
+    let arteTras: HTMLImageElement | null = null;
+    let arteTrasPequena: HTMLImageElement | null = null;
+    let arteTrasDesde = 0;
+    function pedirArteTras(urgente: boolean) {
+      if (giro) return;
+      if (!arteTras) {
+        arteTras = new Image();
+        arteTras.decoding = 'async';
+        arteTras.setAttribute('fetchpriority', urgente ? 'high' : 'low');
+        arteTras.sizes = raiz.dataset.sizes ?? '100vw';
+        arteTras.srcset = SRCSET_TRAS;
+        arteTras.src = ARTE_TRAS_SRC;
+        arteTrasDesde = performance.now();
+      }
+      // o giro foi pedido e a arte ainda não chegou (rede lenta, ou o 1º contato é o próprio toque): a pequena (8 KB)
+      // é pedida já, junto com o código do giro; o carro gira com ela e a grande entra por cima (raioXGirar.ts)
+      if (urgente && !arteTrasPequena && !(arteTras.complete && arteTras.naturalWidth)) {
+        arteTrasPequena = new Image();
+        arteTrasPequena.setAttribute('fetchpriority', 'high');
+        arteTrasPequena.src = ARTE_TRAS_PEQUENA;
+      }
+    }
+    // O giro esperando o código ou a arte (rede lenta): o painel já abriu; o palco diz que o carro vai girar (o ícone
+    // do botão gira no lugar e uma pílula "Girando o carro…"). Só aparece se a espera passa de 300 ms.
+    let pilulaGiro: HTMLElement | null = null;
+    function esperaGiro(on: boolean) {
+      if (on && !pilulaGiro) {
+        pilulaGiro = Object.assign(document.createElement('p'), { className: 'rx-espera', textContent: 'Girando o carro…' });
+        pilulaGiro.setAttribute('aria-hidden', 'true');
+        palco.appendChild(pilulaGiro);
+        void pilulaGiro.offsetWidth;
+      }
+      raiz.toggleAttribute('data-giro-espera', on);
+    }
     async function girarJa(para?: LadoArte, dir: 1 | -1 = 1): Promise<boolean> {
       const novo = para ?? outroLado(lado);
       if (novo === lado) return true;
       if (girando || vista === 'dentro') return false;
       girando = true;
       botaoGirar?.setAttribute('aria-busy', 'true');
+      pedirArteTras(true);
+      const sinal = setTimeout(() => esperaGiro(true), 300);
+      const semSinal = () => { clearTimeout(sinal); esperaGiro(false); };
       // o foco estava na arte (uma zona, um ponto): a peça focada some com a vista, o foco fica no botão de girar
       const naArte = !!document.activeElement && palco.contains(document.activeElement) && document.activeElement !== botaoGirar;
       try {
@@ -693,6 +739,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         // quem pediu o giro pode ter acabado de montar um painel (a parte do outro lado): a troca começa na tarefa
         // seguinte, depois da pintura (duas tarefas curtas em vez de uma longa)
         await new Promise<void>((ok) => requestAnimationFrame(() => setTimeout(ok, 0)));
+        semSinal();
         await g.trocar(dir, () => {
           lado = novo;
           raiz.dataset.lado = novo;
@@ -715,13 +762,14 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       } catch {
         return false;
       } finally {
+        semSinal();
         girando = false;
         botaoGirar?.removeAttribute('aria-busy');
       }
     }
     botaoGirar?.addEventListener('click', () => void girar());
     // o dedo ou o mouse encostou no botão: o código e a arte da outra vista começam a descer antes do clique
-    const cedoGiro = () => void pegarGiro().then((g) => g.preparar()).catch(() => {});
+    const cedoGiro = () => { pedirArteTras(false); void pegarGiro().then((g) => g.preparar()).catch(() => {}); };
     botaoGirar?.addEventListener('pointerenter', cedoGiro, { once: true });
     botaoGirar?.addEventListener('touchstart', cedoGiro, { once: true, passive: true });
     botaoGirar?.addEventListener('focus', cedoGiro, { once: true });
@@ -871,6 +919,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       // e o modo "Bati o carro" fica pronto (código, estilo e a camada dos pontos) quando o navegador folgar
       if ('requestIdleCallback' in window) requestIdleCallback(cedoBatida, { timeout: 3000 });
       else setTimeout(cedoBatida, 600);
+      // a arte da outra vista começa a descer, com prioridade baixa (o giro não espera por ela na hora do toque)
+      pedirArteTras(false);
     };
     raiz.addEventListener('pointerenter', cedo, { once: true });
     raiz.addEventListener('touchstart', cedo, { once: true, passive: true });
@@ -1015,6 +1065,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-arte { display: grid; gap: 12px; min-width: 0; align-content: start; container: rxarte / inline-size; }
   .rx-palco { position: relative; aspect-ratio: 1536 / 1024; border-radius: clamp(18px, 2.2vw, 28px); overflow: hidden;
     background: linear-gradient(180deg, #f4f3f0, #e7e5e1); box-shadow: var(--shadow-1); isolation: isolate; }
+  /* a caixa de cada vista do carro (a da frente vem no HTML; a de trás entra no 1º giro: raioXGirar.ts) */
+  .rxg-lado { position: absolute; inset: 0; }
   .rx-palco img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .rx-mapa { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .rx-mapa a { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -1104,6 +1156,15 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-girar:active { transform: scale(.94); }
   .rx-girar:focus-visible { outline: 3px solid #1d1d1f; outline-offset: 2px; box-shadow: 0 0 0 5px rgb(255 255 255 / .9); }
   .rx-girar[aria-busy="true"] { cursor: progress; }
+  /* o giro esperando a arte da outra vista (rede lenta): o ícone do botão gira no lugar e a pílula diz o que acontece */
+  .rx[data-giro-espera] .rx-girar svg { animation: rx-girando .9s linear infinite; }
+  @keyframes rx-girando { to { transform: rotate(360deg); } }
+  .rx-palco :global(.rx-espera) { position: absolute; z-index: 5; left: 66px; top: 17px; margin: 0; padding: 7px 12px; border-radius: 999px; background: rgb(29 29 31 / .88); color: #fff;
+    font-size: 13px; font-weight: 650; line-height: 1.2; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .18s ease; }
+  .rx[data-giro-espera] .rx-palco :global(.rx-espera) { opacity: 1; }
+  .rx[data-vista="dentro"] .rx-palco :global(.rx-espera) { display: none; }
+  @container rxarte (min-width: 640px) { .rx-palco :global(.rx-espera) { left: 80px; top: calc(16% + 13px); } }
+  @media (prefers-reduced-motion: reduce) { .rx[data-giro-espera] .rx-girar svg { animation: none; } }
   .rx[data-lado="tras"] .rx-girar svg { transform: scaleX(-1); }
   .rx[data-lado="tras"] .rx-girar:hover svg { transform: scaleX(-1) rotate(50deg); }
   /* na vista por dentro não há carro para girar */

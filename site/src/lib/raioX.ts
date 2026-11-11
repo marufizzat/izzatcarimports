@@ -183,6 +183,12 @@ export const DO_OUTRO_LADO: Record<LadoArte, readonly string[]> = {
   frente: ['lateral-direita', 'traseira'],
   tras: ['frente', 'motor', 'lateral-esquerda'],
 };
+/** A arte da vista de trás ("Girar o carro"): o endereço e o srcset num lugar só. O Raio-x pede a arte cedo, com
+ *  prioridade baixa (1º contato com a seção), e components/v2/raioXGirar.ts a põe na página: os dois têm de pedir o
+ *  MESMO arquivo (o que um baixou o outro acha no cache). A pequena (8 KB) é a que entra primeiro em rede lenta. */
+export const ARTE_TRAS_SRC = '/arte/v2/raio-x-tras.webp';
+export const ARTE_TRAS_PEQUENA = '/arte/v2/raio-x-tras-320.webp';
+export const SRCSET_TRAS = '/arte/v2/raio-x-tras-900.webp 900w, /arte/v2/raio-x-tras.webp 1536w';
 /** A outra vista. */
 export const outroLado = (l: LadoArte): LadoArte => (l === 'frente' ? 'tras' : 'frente');
 
