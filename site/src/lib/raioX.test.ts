@@ -286,6 +286,8 @@ describe('o "Onde fica" afirma o lugar: mais exigente que o painel', () => {
     ['Para-choques e Lataria', 'Vigas de Reforço', 'Barra reforco frontal superior', '', 'D', null],
     ['Módulos e Elétrica', 'Caixas de Fusíveis', 'Caixa fusíveis motor', '', '', null],
     ['Módulos e Elétrica', 'Caixas de Fusíveis', 'Caixa fusíveis', '', '', 'interior'],
+    ['Limpador e Lavador', 'Bombas e Esguichos do Lavador', 'Esguicho farol direito', 'D', '', null],
+    ['Limpador e Lavador', 'Bombas e Esguichos do Lavador', 'Bomba reservatório lavador', '', '', 'motor'],
     ['Faróis e Lanternas', 'Faróis', 'Farol esquerdo', 'E', '', 'frente'],
     ['Retrovisores', 'Retrovisores Externos', 'Retrovisor elétrico direito', 'D', '', 'lateral-direita'],
   ];

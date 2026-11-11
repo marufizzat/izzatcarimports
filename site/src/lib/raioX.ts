@@ -323,7 +323,8 @@ const OUTRO_LUGAR: Record<string, (ws: string[]) => boolean> = {
   rodas: (ws) => dizAlguma(ws, 'hidrovacuo vacuo servo modulo') || (dizAlguma(ws, 'mangueira tubo cano') && ws.includes('abs')),
   // o relé e o módulo da bomba ficam com os fusíveis; a portinhola, na lateral; a travessa e a barra da frente, na frente
   embaixo: (ws) => dizAlguma(ws, 'rele modulo portinhola frontal superior churrasqueira'),
-  motor: (ws) => ws.includes('tanque'),
+  // o esguicho e a bomba do lavador do FAROL ficam no para-choque, não debaixo do capô (revisão 16, P3-3)
+  motor: (ws) => ws.includes('tanque') || dizAlguma(ws, 'farol'),
 };
 /** A zona que a página da peça afirma: a do painel (zonasDaPeca), quando é UMA só, o tipo tem lugar certo e nem a
  *  posição nem o nome dizem outro lugar (o braço TRASEIRO do limpador não fica na frente; o sensor de estacionamento
