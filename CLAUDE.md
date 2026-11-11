@@ -72,8 +72,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      o croma do lado do azul da luz (luminância e textura intactas, nunca passa do neutro: cromado não amarela; poupa
      vermelho/laranja/amarelo/verde, os claros e o azul saturado ou bem acima do típico: fio, conector, ícone), só nos pixels
      da peça. `decidir_cor()`: ajuste `cor` (`"neutra"`|`"manter"`) > azul escrito no título/nome/ficha, lataria pintada ou
-     azul forte nos claros da foto (fica) > título diz preto/cinza/prata (neutra) > outras fotos do anúncio (classe `p`, `-O`
-     na caixa, 1º quartil do B−R escuro ≤ 30: neutra) > só o excesso + "cor a conferir" no `_revisar.json`; registro em
+     azul forte nos claros da foto (fica) > outras fotos do anúncio (classe `p`, `-O` na caixa, 1º quartil do B−R escuro
+     ≤ 30: neutra) > só o excesso + "cor a conferir" no `_revisar.json` (o "preto" do título só vai anotado); registro em
      `<saída>/_cor.json`. A ficha "Cor: Preto" é o padrão do vendedor (não conta). `ESTUDIO_COR=0` desliga, `ESTUDIO_COR_PROVA`
      prova; maquiadas pelo `marca_pro.py`. Teste: `python testes/test_capas_cor.py`.
    - **Fotos do anúncio na galeria da peça** (depois da capa): o mesmo quadro quadrado da capa, fundo do estúdio

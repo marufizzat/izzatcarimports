@@ -608,9 +608,9 @@ def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=Fal
 #                   (lataria: dobradiça, portinhola, para-lama, retrovisor externo...); ou azul FORTE também nos CLAROS
 #                   da peça acima do tom do fundo da própria foto (tinta/plástico azul: Kicks, portinhola BMW). As duas
 #                   últimas vão para o _revisar.json como "cor a conferir". Azul moderado nos claros: só o excesso.
-#   neutra ........ ajuste `cor: "neutra"`; o TÍTULO diz preto/cinza/grafite/prata/cromado (a ficha não: é o padrão);
-#                   ou as OUTRAS fotos do anúncio mostram a peça neutra (1º quartil do B−R das partes escuras <= PROVA,
-#                   em >= PROVA_MIN fotos da peça; classes de fotos-ml-caixas.json).
+#   neutra ........ ajuste `cor: "neutra"`, ou as OUTRAS fotos do anúncio mostram a peça neutra (1º quartil do B−R das
+#                   partes escuras <= PROVA, em >= PROVA_MIN fotos da peça; classes de fotos-ml-caixas.json). O título que
+#                   diz preto/cinza/prata só vai anotado no motivo (sozinho não basta: a portinhola azul diz "Preto").
 #   conservadora .. azulada sem evidência para nenhum lado: tira só o EXCESSO (deixa as partes escuras em ~ALVO_CONS de
 #                   B−R) e entra no _revisar.json como "cor a conferir".
 # A correção (corrigir_azul) muda só o CROMA e só para o lado do azul: a luminância de cada pixel fica (riscos e
@@ -638,8 +638,8 @@ LUMA = (0.299, 0.587, 0.114)
 # (Fiesta, Gol, Toro: R cai, G fica, B sobe); luminância zero (tirar croma nessa direção não muda o brilho)
 AZUL_LUZ = (-0.39, 0.02, 0.92)
 PALAVRA_AZUL = r"\b(azul|azuis|azulad[oa]s?|marinho|blue|navy|anil|turquesa|celeste|petr[oó]leo)\b"
-# cor NEUTRA escrita pelo vendedor no TÍTULO (a ficha "Cor: Preto" é o padrão dele e não conta): evidência de que a peça
-# não é azul — vale depois das travas (azul escrito, lataria pintada, azul forte nos claros)
+# cor NEUTRA escrita pelo vendedor no TÍTULO: só ANOTA o motivo (o dono aprova rápido na folha "cor a conferir"); sozinha
+# não neutraliza — a capa só fica neutra se as outras fotos mostram a peça neutra (a portinhola AZUL do BMW diz "Preto")
 PALAVRA_NEUTRA = r"\b(pret[oa]s?|black|cinza|grafite|prata|prateado|chumbo|cromad[oa]s?)\b"
 # peça PINTADA da cor do carro (lataria): a cor é a do carro de onde saiu — nunca neutralizar sem o olho humano
 PINTADA = (r"^(para-?lama|paralama|porta (dianteira|traseira)|para-?choque (dianteiro|traseiro)$|portinhola|spoiler|"
@@ -833,15 +833,14 @@ def decidir_cor(medida, peca=None, ajuste=None, guarda=None, prova=None, r=COR):
     if guarda is not None and guarda >= r["GUARDA_FORTE"]:
         return "manter", f"azul forte também nos claros da peça ({guarda:.0f} acima do fundo da foto)", True
     neutra = re.search(PALAVRA_NEUTRA, str(peca.get("t") or ""), re.I)
-    if neutra:
-        return "neutra", f"o título diz \"{neutra.group(1).lower()}\"", False
+    diz = f"; o título diz \"{neutra.group(1).lower()}\"" if neutra else ""
     if guarda is not None and guarda >= r["GUARDA"]:
-        return "conservadora", f"azul também nos claros da peça ({guarda:.0f} acima do fundo da foto)", True
+        return "conservadora", f"azul também nos claros da peça ({guarda:.0f} acima do fundo da foto{diz})", True
     if prova and prova.get("n", 0) >= r["PROVA_MIN"] and prova.get("q1") is not None and prova["q1"] <= r["PROVA"]:
         return "neutra", f"as outras fotos mostram a peça neutra (1º quartil {prova['q1']:.0f} em {prova['n']} fotos)", False
     if prova and prova.get("n", 0) >= r["PROVA_MIN"]:
-        return "conservadora", f"azul em todas as fotos (1º quartil {prova['q1']:.0f} em {prova['n']} fotos)", True
-    return "conservadora", "sem outras fotos da peça para conferir", True
+        return "conservadora", f"azul em todas as fotos (1º quartil {prova['q1']:.0f} em {prova['n']} fotos{diz})", True
+    return "conservadora", "sem outras fotos da peça para conferir" + (f" ({diz[2:]})" if diz else ""), True
 
 
 _CAIXAS_ML = None
@@ -915,7 +914,7 @@ def decisor_cor(peca=None, ajuste=None, baixar_foto=None, r=COR):
 
     def decide(medida, guarda, fonte):
         modo, motivo, conf = decidir_cor(medida, peca, ajuste, guarda, None, r)
-        if modo != "conservadora" or motivo != "sem outras fotos da peça para conferir":
+        if modo != "conservadora" or not motivo.startswith("sem outras fotos da peça para conferir"):
             return modo, motivo, conf, None          # ajuste, trava ou guarda decidiram: nada a baixar
         if fonte not in memo:
             fs = [k for k in (peca.get("fotos") or []) if k and not str(k).startswith("http")]
