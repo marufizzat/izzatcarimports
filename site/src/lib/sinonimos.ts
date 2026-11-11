@@ -37,6 +37,9 @@ export const SINONIMOS: [string[], string[], string[]?][] = [
   // de trás não é a frente (o amortecedor da tampa traseira vinha pelo tipo "Amortecedores da Tampa e do Capô")
   [['frente', 'frente completa'], ['grade', 'churrasqueira', 'farol', 'capo', 'parachoque dianteiro', 'paralama dianteiro', 'frontal'],
     ['painel', 'console', 'falante', 'tweeter', 'difusor', 'tras', 'porta-malas', 'portamalas', 'chave', 'botao', 'interruptor']],
+  // a churrasqueira no estoque quase sempre é a "Grade churrasqueira" (rodada 14b: com uma só peça chamada
+  // "Churrasqueira…", vendida ela a grade do carro virava "ligada", atrás da "Moldura churrasqueira")
+  [['churrasqueira'], ['grade churrasqueira']],
   [['espelho', 'espelho retrovisor', 'retrovisor externo'], ['retrovisor']],
   [['masaneta', 'massaneta', 'trinco'], ['macaneta']],
   [['trava eletrica', 'trava porta', 'trava eletrica porta'], ['fechadura eletrica', 'trava eletrica', 'fechadura trava']],

@@ -156,10 +156,14 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
   }
   if (marcas.length) {
     const base = modelos ? `${modelos} ${M(modelos)}` : '';
+    // a frase diz de que categoria fala: sem isso, duas categorias com os mesmos números saíam com o MESMO parágrafo
+    // ("Há peças para 103 modelos, de carros de 1999 a 2027; a marca com mais peças é Chevrolet." em Maçanetas e
+    // Fechaduras e em Vidro Elétrico, num estoque sorteado da rodada 14b) e o teste de parágrafo único travava o robô
+    const oQue = ehPeca ? tema : `peças de ${tema}`;
     paragrafos.push(base ? escolha(`${k}:3`, [
-      `As marcas com mais peças são ${juntar(marcas)}, e há peças para ${base}${anosFrase}.`,
-      `Há peças para ${base}${anosFrase}; a marca com mais peças é ${marcas[0]}.`,
-    ]) : `As marcas com mais peças são ${juntar(marcas)}${anosFrase}.`);
+      `As marcas com mais ${oQue} são ${juntar(marcas)}, e há peças para ${base}${anosFrase}.`,
+      `Há ${oQue} para ${base}${anosFrase}; a marca com mais peças é ${marcas[0]}.`,
+    ]) : `As marcas com mais ${oQue} são ${juntar(marcas)}${anosFrase}.`);
   }
   const qtd = ehPeca ? `${N} ${tema} ${O(N)}` : `${N} peças originais de ${tema}`;
   const meta = caber([
@@ -232,19 +236,20 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
     ]) : `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} no pátio.`,
   ];
   if (nomes.length) {
+    // (com o nome da marca: cada parágrafo é de UMA página, com qualquer estoque)
     paragrafos.push(escolha(`${k}:2`, [
-      `Os modelos com mais peças são ${juntar(nomes)}.`,
-      `Entre os carros, ${juntar(nomes)} são os que mais aparecem.`,
-      `Os carros com mais anúncios são ${juntar(nomes)}.`,
+      `Os modelos ${m.n} com mais peças são ${juntar(nomes)}.`,
+      `Entre os carros ${m.n}, ${juntar(nomes)} são os que mais aparecem.`,
+      `Os carros ${m.n} com mais anúncios são ${juntar(nomes)}.`,
     ]));
   }
   if (fams.length) {
     // "A maioria" só com 5+ peças (auditoria 4, 7.2: a Lifan tinha 1 peça e "A maioria é de faróis")
-    paragrafos.push(N === 1 ? `A peça é ${juntarDe(fams)}${a ? `, para carros de ${anoTxt(a)}` : ''}.`
-      : N < 5 ? `São peças ${juntarDe(fams)}${anosFrase}.`
+    paragrafos.push(N === 1 ? `A peça ${m.n} é ${juntarDe(fams)}${a ? `, para carros de ${anoTxt(a)}` : ''}.`
+      : N < 5 ? `As peças ${m.n} são ${juntarDe(fams)}${anosFrase}.`
       : escolha(`${k}:3`, [
-        `A maioria é ${juntarDe(fams)}${anosFrase}.`,
-        `O que mais tem é peça ${juntarDe(fams.map(sistema))}${anosFrase}.`,
+        `A maioria das peças ${m.n} é ${juntarDe(fams)}${anosFrase}.`,
+        `Em ${m.n}, o que mais tem é peça ${juntarDe(fams.map(sistema))}${anosFrase}.`,
       ]));
   }
   const meta = caber([
