@@ -13,7 +13,7 @@
 // - lotes de 48 (2 entram sozinhos ao rolar, depois o botão); dentro do lote, os cartões entram aos poucos,
 //   num pedaço pequeno por vez quando o navegador folga (a rolagem e o toque passam na frente).
 import {
-  memo, startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode,
+  memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode,
 } from 'react';
 import { Busca, FAIXAS, SIZES_CARTAO, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item, type Lado, type Posicao } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
@@ -24,7 +24,9 @@ import {
   CLASSE_CARTAO, VITRINE_CLARA, icone,
 } from './etiqueta';
 import { whatsUrl } from '../../lib/whats';
-import { guardarBusca } from '../../lib/buscasRecentes';
+import { guardarBusca, lerRecentes, limparRecentes } from '../../lib/buscasRecentes';
+// as buscas recentes do campo usam o MESMO desenho das sugestões do cabeçalho (.sb-lista, .sb-recente)
+import '../ui/sugestoes.css';
 
 /** Logo da marca (calculado no build por logoInfo em catalogo.astro). */
 export type Logo = { src: string; w: number; h: number };
@@ -297,12 +299,33 @@ const EsqFiltros = ({ soUrl }: { soUrl?: boolean }) => (
   <div className={`cat-filtros cat-filtros-carregando${soUrl ? ' so-url' : ''}`} aria-hidden="true">{Array.from({ length: 9 }, (_, i) => <i key={i} />)}</div>
 );
 
-/** Campo de busca com estado próprio: digitar só redesenha o campo; o texto entra no filtro com um pequeno atraso. */
+const Relogio = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l3 2" />
+  </svg>
+);
+const SetaIr = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+);
+
+/** Campo de busca com estado próprio: digitar só redesenha o campo; o texto entra no filtro com um pequeno atraso.
+ *  Com o campo vazio e em foco, as buscas recentes da pessoa (lib/buscasRecentes.ts, as mesmas das sugestões do
+ *  cabeçalho, com "Limpar"): no celular o cabeçalho não tem campo, e era só aqui que elas podiam aparecer (revisão 12,
+ *  P3.2). Setas, Enter e Esc; tocar numa recente busca por ela (sem sair da página). */
 function CampoBusca({ valor, aoMudar, aoEnviar, aoFocar }: {
   valor: string; aoMudar: (q: string) => void; aoEnviar: (q: string) => void; aoFocar: () => void;
 }) {
   const [texto, setTexto] = useState(valor);
+  const [foco, setFoco] = useState(false);
+  const [recentes, setRecentes] = useState<string[]>([]);
+  const [ativo, setAtivo] = useState(-1);
   const enviado = useRef(valor);
+  const raiz = useRef<HTMLDivElement>(null);
+  const campo = useRef<HTMLInputElement>(null);
+  const caixa = useRef<HTMLDivElement>(null);
+  const uid = useId();
+  const listaId = `${uid}-rec`;
+  const aberto = foco && !texto.trim() && recentes.length > 0;
   // o filtro mudou por fora (limpar, endereço): o campo acompanha
   useEffect(() => { if (valor !== enviado.current) { enviado.current = valor; setTexto(valor); } }, [valor]);
   useEffect(() => {
@@ -310,19 +333,86 @@ function CampoBusca({ valor, aoMudar, aoEnviar, aoFocar }: {
     const t = setTimeout(() => { enviado.current = texto; aoMudar(texto); }, 160);
     return () => clearTimeout(t);
   }, [texto]);
-  const limpar = () => { setTexto(''); enviado.current = ''; aoMudar(''); };
+  useEffect(() => { if (!aberto) setAtivo(-1); }, [aberto]);
+  // celular com o teclado aberto: a lista termina acima do teclado (rola por dentro se não couber)
+  useLayoutEffect(() => {
+    const el = caixa.current;
+    if (!aberto || !el) return;
+    const vv = window.visualViewport;
+    const ajustar = () => {
+      const r = raiz.current?.getBoundingClientRect();
+      if (!r) return;
+      const fundo = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      el.style.maxHeight = `${Math.max(160, Math.min(420, Math.floor(fundo - r.bottom - 16)))}px`;
+    };
+    ajustar();
+    vv?.addEventListener('resize', ajustar);
+    vv?.addEventListener('scroll', ajustar);
+    return () => { vv?.removeEventListener('resize', ajustar); vv?.removeEventListener('scroll', ajustar); };
+  }, [aberto]);
+  useEffect(() => {
+    if (ativo >= 0) document.getElementById(`${uid}-op-${ativo}`)?.scrollIntoView({ block: 'nearest' });
+  }, [ativo, uid]);
+  const limpar = () => { setTexto(''); enviado.current = ''; aoMudar(''); campo.current?.focus(); };
+  const escolher = (q: string) => {
+    setTexto(q);
+    enviado.current = q;
+    aoEnviar(q);
+    setFoco(false);
+    campo.current?.blur();
+  };
+  const limparRecentesAqui = () => { limparRecentes(); setRecentes([]); campo.current?.focus(); };
+  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (!aberto) {
+      // seta para baixo com o campo vazio: abre as recentes de novo (depois do Esc)
+      if (e.key === 'ArrowDown' && !texto.trim() && recentes.length) { e.preventDefault(); setFoco(true); setAtivo(0); }
+      return;
+    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAtivo((a) => (a + 1) % recentes.length); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setAtivo((a) => (a <= 0 ? recentes.length - 1 : a - 1)); }
+    else if (e.key === 'Enter' && ativo >= 0) { e.preventDefault(); escolher(recentes[ativo]); }
+    else if (e.key === 'Escape') { e.preventDefault(); setFoco(false); }
+  };
   return (
-    <form className="busca cat-busca" role="search" action="/catalogo.html"
-          onSubmit={(e) => { e.preventDefault(); enviado.current = texto; aoEnviar(texto); (document.activeElement as HTMLElement)?.blur(); }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-      <input id="busca" name="q" type="search" value={texto} onChange={(e) => setTexto(e.target.value)} onFocus={aoFocar} placeholder="Peça, carro ou código"
-             aria-label="Buscar no catálogo" autoComplete="off" enterKeyHint="search" />
-      {texto && <button type="button" className="cat-limpar-texto" aria-label="Apagar busca" onClick={limpar}><Xis /></button>}
-      <button className="botao botao-laranja botao-buscar cat-buscar" type="submit">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.6-3.6" /></svg>
-        <span>Buscar</span>
-      </button>
-    </form>
+    <div className="cat-busca-cx" ref={raiz}
+         onBlur={(e) => { if (!raiz.current?.contains(e.relatedTarget as Node | null)) setFoco(false); }}>
+      <form className="busca cat-busca" role="search" action="/catalogo.html"
+            onSubmit={(e) => { e.preventDefault(); enviado.current = texto; aoEnviar(texto); setFoco(false); (document.activeElement as HTMLElement)?.blur(); }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input ref={campo} id="busca" name="q" type="search" value={texto} placeholder="Peça, carro ou código"
+               role="combobox" aria-expanded={aberto} aria-controls={aberto ? listaId : undefined} aria-autocomplete="list"
+               aria-activedescendant={aberto && ativo >= 0 ? `${uid}-op-${ativo}` : undefined}
+               onChange={(e) => { setTexto(e.target.value); setFoco(true); }}
+               onFocus={() => { setFoco(true); setRecentes(lerRecentes()); aoFocar(); }}
+               onKeyDown={onKey}
+               aria-label="Buscar no catálogo" autoComplete="off" enterKeyHint="search" />
+        {texto && <button type="button" className="cat-limpar-texto" aria-label="Apagar busca" onClick={limpar}><Xis /></button>}
+        <button className="botao botao-laranja botao-buscar cat-buscar" type="submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.6-3.6" /></svg>
+          <span>Buscar</span>
+        </button>
+      </form>
+      <p className="sr-only" role="status">{aberto ? `${recentes.length === 1 ? '1 busca recente' : `${recentes.length} buscas recentes`}, use as setas.` : ''}</p>
+      {aberto && (
+        <div className="sb-lista cat-recentes" ref={caixa}>
+          <div className="sb-rec-topo">
+            <span id={`${uid}-rec-t`}>Buscas recentes</span>
+            <button type="button" className="sb-rec-limpar" aria-label="Limpar as buscas recentes"
+                    onMouseDown={(e) => e.preventDefault()} onClick={limparRecentesAqui}>Limpar</button>
+          </div>
+          <ul id={listaId} role="listbox" aria-labelledby={`${uid}-rec-t`}>
+            {recentes.map((q, k) => (
+              <li key={q} id={`${uid}-op-${k}`} role="option" aria-selected={ativo === k} className={`sb-op sb-recente${ativo === k ? ' on' : ''}`}
+                  onMouseEnter={() => setAtivo(k)} onMouseDown={(e) => e.preventDefault()} onClick={() => escolher(q)}>
+                <span className="sb-rec-ic"><Relogio /></span>
+                <span className="sb-rec-txt">{q}</span>
+                <span className="sb-ir"><SetaIr /></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
