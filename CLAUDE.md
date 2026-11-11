@@ -551,6 +551,23 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      regressiva nem "últimas unidades". Mudou a regra do selo dos cartões: mudar aqui junto (`raioXVivo.test.ts`
      confere com o estoque fixo e com o do dia, sem exigir peça, zona ou quantidade).
 
+19. **Rodada 17 (11/11/2026): as pendências da 16 e a revisão 16** — o que ficou valendo, além do que está nos itens 12, 15 e
+   na busca: **cabeçalho** (P2-2): o campo de busca do PC encolhe com fator 100000 (`.cab .cab-busca`, `Cabecalho.astro`);
+   com 100 o chip do carro levava meio pixel do aperto e o nome ganhava reticências com o campo ainda largo (medir de 8 em
+   8 px de 1024 a 1366, sem e com lista: `_r17fix/scripts/chip-cabecalho.cjs`). **"Onde fica"** (P3-3): o nome que diz
+   "farol" numa peça da zona do motor (o esguicho do farol) fica sem o bloco (`OUTRO_LUGAR.motor`). **Bati o carro**
+   (P3-5): no ponto do centro, a linha cuja peça à mostra diz um lado só ganha " (lado direito)" no nome (`ladoNaLinha`).
+   **`#raio-x-t`** (P3-4): o foco na 1ª parte do carro é posto de novo depois da carga (o navegador tira o foco ao ir
+   até a âncora). **Girar na página do carro** (~7 mil nós, CPU 4×, Chrome de verdade, mouse de verdade pelo CDP): do 2º
+   giro em diante o quadro do giro custa 15–18 ms e nenhuma tarefa passa de 50 ms; o 1º giro (baixa o código e a arte,
+   monta a vista de trás e põe a da frente na caixa dela) deu 64 ms em 1 de 3 medidas no PC. Medir com `page.click` do
+   Playwright engana: a conferência dele roda na página (`elementsFromPoint`, 15–30 ms com o freio). O que foi medido e
+   NÃO adiantou: `contain: strict` no palco, a vista escondida com `visibility` em vez de `display`, camada própria
+   permanente. O que adianta e ficou de fora por risco: `content-visibility: auto` nos grupos de peças abaixo (objetos de
+   layout 11.291 → 1.696, quadro 8–11 ms), que mexe na volta à página no meio de um ano e nos pulos da barra de fichas
+   (o WebKit não ancora a rolagem); e pôr a caixa `.rxg-lado` da vista da frente já no HTML (o 1º giro deixa de refazer
+   o layout da vista inteira).
+
 ## Testes e o estoque do dia (regra de 11/11/2026: o robô parou a loja por causa de teste)
 O robô roda `python testes/test_dados.py` e `npm --prefix site test` com o ESTOQUE DO DIA antes de publicar: teste vermelho
 = loja parada. Por isso nenhum teste pode depender do que está à venda hoje. Três fontes (`site/testes/estoques.ts`):
