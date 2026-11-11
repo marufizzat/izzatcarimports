@@ -366,9 +366,12 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   .cab .cab-busca { display: none; }
   @media (min-width: 1100px) {
     .cab .cab-nav { flex: none; }
-    /* o campo encolhe primeiro (fator 100) até o mínimo, que cabe o texto de exemplo inteiro ("Peça ou código": curto de
-       propósito, para sobrar lugar ao carro); daí em diante, só o chip cede (reticências no modelo; o ano fica) */
-    .cab .cab-busca { display: block; flex: 1 100 340px; min-width: 200px; max-width: 440px; margin-left: auto; }
+    /* o campo encolhe primeiro até o mínimo, que cabe o texto de exemplo inteiro ("Peça ou código": curto de propósito,
+       para sobrar lugar ao carro); daí em diante, só o chip cede (reticências no modelo; o ano fica). O fator é 100000
+       e não 100: com 100 o grupo do chip ainda levava ~1% do aperto (meio pixel), o bastante para o nome do carro
+       ganhar reticências com o campo ainda largo ("G… 2012" de 1104 a 1160 px; com a lista, "Classe C" até 1366:
+       revisão 16, P2-2). Com 100000 a parte dele fica abaixo do menor passo do layout: só cede quando o campo parou. */
+    .cab .cab-busca { display: block; flex: 1 100000 340px; min-width: 200px; max-width: 440px; margin-left: auto; }
     .cab .cab-busca ~ .cab-acoes { margin-left: 0; flex: 0 1 auto; }
     .cab .cab-busca ~ .cab-acoes > .cab-lupa { display: none; }
     .cab .cab-busca .sb-busca:not(.sb-grande) { height: 56px; border-radius: 14px; padding: 0 4px 0 14px; gap: 6px; box-shadow: inset 0 0 0 1.5px var(--line-2); }
