@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { PONTOS_QUENTES, ARTE_FRENTE, ARTE_FRENTE_320, ARTE_FRENTE_900, ZONA_PILOTO } from './raioXFrente';
 import { ZONAS, linkLinha, filtrosLinha, zonasDaPeca } from './raioX';
-import { Busca, type Indice, type Lado, type Posicao } from './busca';
+import { Busca, type Lado, type Posicao } from './busca';
+import { estoques, carroMaisCheio, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
 
-const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8')) as Indice;
-const b = new Busca(ix);
-const XC60 = { marca: 'Volvo', modelo: 'XC60', ano: 2019 };
+// Estoque nos testes (testes/estoques.ts): nome de bloco/tipo confere no vocabulário da loja; as regras rodam no estoque
+// fixo e no do dia (com o carro que o estoque tiver).
 
 const pontos = (p: string) => p.trim().split(/\s+/).map((xy) => xy.split(',').map(Number) as [number, number]);
 function dentro([x, y]: [number, number], poli: [number, number][]): boolean {
@@ -68,10 +68,10 @@ describe('a frente por dentro: os pontos quentes na arte', () => {
   });
 });
 
-describe('a frente por dentro: pontos quentes ↔ links do catálogo', () => {
-  it('todo ponto com tipo existe no estoque (bloco e tipo); sem tipo = pátio, com o nome da mensagem', () => {
-    const blocos = new Set(ix.familias);
-    const tipos = new Set(ix.tipos);
+describe('a frente por dentro: os nomes dos pontos quentes', () => {
+  it('todo ponto com tipo usa nomes do vocabulário da loja (bloco e tipo); sem tipo = pátio, com o nome da mensagem', () => {
+    const blocos = BLOCOS_DA_LOJA;
+    const tipos = TIPOS_DA_LOJA;
     for (const p of PONTOS_QUENTES) {
       expect(p.procuro, p.k).toMatch(/^(o|a) /);
       if (!p.tipo) continue;
@@ -79,8 +79,15 @@ describe('a frente por dentro: pontos quentes ↔ links do catálogo', () => {
       expect(p.sub && tipos.has(p.sub), `${p.k}: ${p.sub}`).toBe(true);
     }
   });
+});
+
+describe.each(estoques())('a frente por dentro: pontos quentes ↔ links do catálogo ($nome)', ({ ix, fixo }) => {
+  const b = new Busca(ix);
+  const cheio = carroMaisCheio(ix);
+  // os carros do exemplo: no estoque fixo, o XC60 2019 e o E-Pace; no do dia, o carro com mais peças
+  const carros = fixo || !cheio ? [{}, { marca: 'Volvo', modelo: 'XC60', ano: 2019 }, { marca: 'Jaguar', modelo: 'E-Pace' }] : [{}, cheio];
   it('o link leva o tipo, o sub, o lado e a posição do ponto, e o carro; o número é o da busca com os filtros DO LINK', () => {
-    for (const carro of [{}, XC60, { marca: 'Jaguar', modelo: 'E-Pace' }]) {
+    for (const carro of carros) {
       for (const p of PONTOS_QUENTES) {
         if (!p.tipo || !p.sub) continue;
         const l = { tipo: p.tipo, sub: p.sub, lado: p.lado, pos: p.pos };

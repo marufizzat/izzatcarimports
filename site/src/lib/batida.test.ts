@@ -1,14 +1,13 @@
+// O kit da batida. Regra dos testes com estoque (testes/estoques.ts): nome de bloco/tipo confere no VOCABULÁRIO da loja;
+// o que precisa de peça para existir roda só no ESTOQUE FIXO; as regras (lado, posição, nada em dobro, link = catálogo)
+// rodam no fixo e no estoque do dia, com o carro que o estoque tiver.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { PONTOS, itensDaLinha, kitDoPonto, kitsDeTodos, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha } from './batida';
 import { ARTE } from './raioX';
-import { Busca, capaItem, type Indice } from './busca';
+import { Busca, capaItem } from './busca';
+import { estoques, carroMaisCheio, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
 
-const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8')) as Indice;
-const b = new Busca(ix);
-const procurar = (f: Parameters<Busca['procurar']>[0]) => b.procurar(f);
 const foto = (it: Parameters<typeof capaItem>[0]) => capaItem(it, 'A');
-const XC60 = { marca: 'Volvo', modelo: 'XC60', ano: 2019 };
 
 const pontos = (p: string) => p.trim().split(/\s+/).map((xy) => xy.split(',').map(Number) as [number, number]);
 function dentro([x, y]: [number, number], poli: [number, number][]): boolean {
@@ -63,14 +62,12 @@ describe('os 8 pontos da batida na arte', () => {
   });
 });
 
-describe('o kit da batida no estoque real', () => {
-  it('toda linha com tipo/sub existe no estoque (linha sem tipo = pátio)', () => {
-    const tipos = new Set(ix.familias);
-    const subs = new Set(ix.tipos);
+describe('o kit da batida: as linhas', () => {
+  it('toda linha com tipo/sub usa nomes do vocabulário da loja (linha sem tipo = pátio)', () => {
     const erros: string[] = [];
     for (const p of PONTOS) for (const l of p.linhas) {
       if (!l.tipo) { expect(l.extra, `${l.nome}: pátio nunca é extra`).toBeFalsy(); continue; }
-      if (!tipos.has(l.tipo) || !l.sub || !subs.has(l.sub)) erros.push(`${p.k}: ${l.nome} (${l.tipo} / ${l.sub})`);
+      if (!BLOCOS_DA_LOJA.has(l.tipo) || !l.sub || !TIPOS_DA_LOJA.has(l.sub)) erros.push(`${p.k}: ${l.nome} (${l.tipo} / ${l.sub})`);
     }
     expect(erros).toEqual([]);
   });
@@ -78,6 +75,14 @@ describe('o kit da batida no estoque real', () => {
   it('nomes de linha únicos em cada ponto', () => {
     for (const p of PONTOS) expect(new Set(p.linhas.map((l) => l.nome)).size, p.k).toBe(p.linhas.length);
   });
+});
+
+describe.each(estoques())('o kit da batida no $nome', ({ ix, fixo }) => {
+  const b = new Busca(ix);
+  const procurar = (f: Parameters<Busca['procurar']>[0]) => b.procurar(f);
+  // o carro do exemplo: no estoque fixo, o XC60 2019 (tem peça em quase todo ponto); no do dia, o carro com mais peças
+  const cheio = carroMaisCheio(ix);
+  const CARRO = fixo || !cheio ? { marca: 'Volvo', modelo: 'XC60', ano: 2019 } : cheio;
 
   it('o lado do ponto: nenhuma peça do lado oposto entra (esquerdo nunca o direito, e o contrário)', () => {
     const erros: string[] = [];
@@ -116,7 +121,7 @@ describe('o kit da batida no estoque real', () => {
     const p = PONTOS.find((x) => x.k === 'frente-esquerda')!;
     const farol = p.linhas.find((l) => l.nome === 'Farol esquerdo')!;
     const itens = itensDaLinha(p, farol, procurar);
-    expect(itens.length).toBeGreaterThan(0);
+    if (fixo) expect(itens.length).toBeGreaterThan(0);   // o estoque do dia pode estar sem farol esquerdo
     expect(itens.every((it) => it.l === 'E')).toBe(true);
     expect(p.linhas.some((l) => l.nome === 'Farol direito' || l.nome === 'Para-lama direito')).toBe(false);
   });
@@ -135,7 +140,7 @@ describe('o kit da batida no estoque real', () => {
 
   it('linha extra sem peça sai da lista; a principal sem peça fica (pátio)', () => {
     const p = PONTOS.find((x) => x.k === 'frente-esquerda')!;
-    const k = kitDoPonto(p, procurar, foto, XC60);
+    const k = kitDoPonto(p, procurar, foto, CARRO);
     for (const l of k.linhas) if (l.extra) expect(l.n, l.nome).toBeGreaterThan(0);
     expect(k.linhas.find((l) => l.nome === 'Capô')?.rep).toBeNull();
     expect(k.linhas.find((l) => l.nome === 'Farol esquerdo')).toBeTruthy();
@@ -149,8 +154,8 @@ describe('o kit da batida no estoque real', () => {
     }
   });
 
-  it('o XC60 2019: as contas de cada ponto saem sem erro e a soma por ponto bate com as linhas', () => {
-    const kits = kitsDeTodos(procurar, foto, XC60);
+  it('com o carro: as contas de cada ponto saem sem erro e a soma por ponto bate com as linhas', () => {
+    const kits = kitsDeTodos(procurar, foto, CARRO);
     expect(kits).toHaveLength(8);
     for (const k of kits) {
       expect(k.n).toBe(k.linhas.reduce((s, l) => s + l.n, 0));
@@ -164,28 +169,32 @@ describe('o kit da batida no estoque real', () => {
   it('o link da linha é o do catálogo (tipo + sub + lado/posição + o carro) e a busca dele contém as peças da linha', () => {
     for (const p of PONTOS) for (const l of p.linhas) {
       if (!l.tipo) continue;
-      const u = new URL(linkDaLinha(l, XC60), 'https://x');
+      const u = new URL(linkDaLinha(l, CARRO), 'https://x');
       expect(u.pathname).toBe('/catalogo.html');
       expect(u.searchParams.get('tipo')).toBe(l.tipo);
       expect(u.searchParams.get('sub')).toBe(l.sub);
       expect(u.searchParams.get('lado')).toBe(l.lado ? (l.lado === 'E' ? 'esquerdo' : 'direito') : null);
       expect(u.searchParams.get('pos')).toBe(l.pos ? (l.pos === 'D' ? 'dianteiro' : 'traseiro') : null);
-      const doCatalogo = new Set(procurar(filtrosDaLinha(l, XC60)).map((it) => it.id));
-      for (const it of itensDaLinha(p, l, procurar, XC60)) expect(doCatalogo.has(it.id)).toBe(true);
+      const doCatalogo = new Set(procurar(filtrosDaLinha(l, CARRO)).map((it) => it.id));
+      for (const it of itensDaLinha(p, l, procurar, CARRO)) expect(doCatalogo.has(it.id)).toBe(true);
     }
   });
 
   it('o pedido: só o que está marcado; peça sem estoque vai como pátio, não como item', () => {
     const p = PONTOS.find((x) => x.k === 'frente-esquerda')!;
-    const k = kitDoPonto(p, procurar, foto, XC60);
+    const k = kitDoPonto(p, procurar, foto, CARRO);
     const todas = new Set(k.linhas.map((_, i) => i));
     const { itens, patio } = pedidoDe(k.linhas, todas);
     expect(itens.length + patio.length).toBe(k.linhas.length);
     expect(itens.length).toBe(k.linhas.filter((l) => l.rep).length);
     expect(patio).toContain('Capô');
     expect(pedidoDe(k.linhas, new Set())).toEqual({ itens: [], patio: [] });
-    const so = pedidoDe(k.linhas, new Set([k.linhas.findIndex((l) => l.rep)]));
-    expect(so.itens).toHaveLength(1);
-    expect(so.patio).toEqual([]);
+    const comPeca = k.linhas.findIndex((l) => l.rep);
+    if (fixo) expect(comPeca).toBeGreaterThanOrEqual(0);
+    if (comPeca >= 0) {
+      const so = pedidoDe(k.linhas, new Set([comPeca]));
+      expect(so.itens).toHaveLength(1);
+      expect(so.patio).toEqual([]);
+    }
   });
 });

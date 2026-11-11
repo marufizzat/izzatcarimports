@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { palavraViva, contarBlocos, escolherAtalhos, linkAtalho, lugaresEstreitos, PECAS_PALCO, ATALHOS_MAX, type IndiceCarro } from './abertura';
-import { Busca, type Indice } from './busca';
+import { estoques, BLOCOS_DA_LOJA } from '../../testes/estoques';
+import { Busca } from './busca';
 import { serveNoModelo } from './meuCarro';
 
-const buscaArq = 'public/dados/busca.json';
-const resumoArq = 'src/data/resumo.json';
 const pecasArq = 'src/data/abertura-pecas.json';
 
 describe('palavraViva: a palavra do título e a largura da 2ª linha', () => {
@@ -70,11 +69,9 @@ describe('atalhos do carro', () => {
   });
 });
 
-describe.skipIf(!existsSync(resumoArq))('as peças do palco existem no site', () => {
-  const r = JSON.parse(readFileSync(resumoArq, 'utf-8')) as { familias: { n: string; k: string }[] };
-  it('cada bloco do palco é um bloco do estoque (nome exato)', () => {
-    const nomes = new Set(r.familias.map((f) => f.n));
-    expect(PECAS_PALCO.filter((p) => !nomes.has(p.bloco)).map((p) => p.bloco)).toEqual([]);
+describe('as peças do palco existem no site', () => {
+  it('cada bloco do palco é um bloco da loja (nome exato, pelo vocabulário: o estoque do dia pode estar sem um bloco)', () => {
+    expect(PECAS_PALCO.filter((p) => !BLOCOS_DA_LOJA.has(p.bloco)).map((p) => p.bloco)).toEqual([]);
     expect(new Set(PECAS_PALCO.map((p) => p.bloco)).size).toBe(PECAS_PALCO.length);
   });
   it.skipIf(!existsSync(pecasArq))('cada peça tem a camada recortada com as medidas (o palco reserva o lugar)', () => {
@@ -86,8 +83,9 @@ describe.skipIf(!existsSync(resumoArq))('as peças do palco existem no site', ()
   });
 });
 
-describe.skipIf(!existsSync(buscaArq))('contarBlocos com o estoque de agora', () => {
-  const ix = JSON.parse(readFileSync(buscaArq, 'utf-8')) as Indice;
+// as regras (o número do atalho = o do catálogo) no estoque fixo e no do dia; as quantidades ("a maioria dos carros tem
+// 3 atalhos", "mais de 200 contas conferidas"), só no fixo
+describe.each(estoques())('contarBlocos no $nome', ({ ix, fixo }) => {
   const toda = new Busca(ix);
   // o /dados/carro/<k>.json (pages/dados/carro/[k].json.ts): as colunas só das peças do carro
   const doCarro = (b: string, m: string): IndiceCarro => {
@@ -118,11 +116,11 @@ describe.skipIf(!existsSync(buscaArq))('contarBlocos com o estoque de agora', ()
       }
     }
     expect(ruins.slice(0, 12)).toEqual([]);
-    expect(conferidos).toBeGreaterThan(200);
+    if (fixo) expect(conferidos).toBeGreaterThan(200);
   });
-  it('a maioria dos carros tem pelo menos 3 atalhos', () => {
-    const n = carros.map(([b, m]) => escolherAtalhos(contarBlocos(doCarro(b, m), m, null).por).length);
-    const com3 = n.filter((x) => x >= 3).length;
-    expect(com3 / n.length).toBeGreaterThan(0.6);
+  it('nenhum carro passa de ATALHOS_MAX atalhos, sem bloco repetido; no estoque fixo, a maioria tem pelo menos 3', () => {
+    const escolhas = carros.map(([b, m]) => escolherAtalhos(contarBlocos(doCarro(b, m), m, null).por));
+    for (const e of escolhas) { expect(e.length).toBeLessThanOrEqual(ATALHOS_MAX); expect(new Set(e.map((a) => a.bloco)).size).toBe(e.length); for (const a of e) expect(a.n).toBeGreaterThan(0); }
+    if (fixo) expect(escolhas.filter((e) => e.length >= 3).length / escolhas.length).toBeGreaterThan(0.6);
   });
 });

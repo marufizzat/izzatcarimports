@@ -1,5 +1,7 @@
-// As vistas "por dentro" do Raio-x (todas: a frente, o piloto, e as 8 zonas que vieram depois), com o estoque real:
+// As vistas "por dentro" do Raio-x (todas: a frente, o piloto, e as 8 zonas que vieram depois):
 // a forma de cada ponto quente dentro da arte, o link EXATO do catálogo e o número igual ao que o catálogo mostra.
+// Estoque nos testes (testes/estoques.ts): nome de bloco/tipo confere no VOCABULÁRIO da loja; "tem de ter peça" só no
+// ESTOQUE FIXO; as regras (número = catálogo, lado, posição, a parte do carro) no fixo e no estoque do dia.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { PONTOS_DA_ZONA } from './porDentro/todas';
@@ -7,11 +9,9 @@ import { pontosLateral } from './porDentro/lateral';
 import { contarPontos, filtrosDoQuente } from './porDentro/base';
 import { VISTAS, ARTE_VISTA, ARQUIVO_DENTRO, arteDaVista } from './raioXVistas';
 import { ZONAS, ARTE, linkLinha, filtrosLinha, zonasDaPeca } from './raioX';
-import { Busca, type Indice, type Lado, type Posicao } from './busca';
+import { Busca, type Lado, type Posicao } from './busca';
+import { estoques, carroMaisCheio, indiceFixo, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
 
-const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8')) as Indice;
-const b = new Busca(ix);
-const XC60 = { marca: 'Volvo', modelo: 'XC60', ano: 2019 };
 const VISTAS_K = Object.keys(VISTAS);
 
 const pontos = (p: string) => p.trim().split(/\s+/).map((xy) => xy.split(',').map(Number) as [number, number]);
@@ -106,11 +106,11 @@ describe.each(VISTAS_K)('vista por dentro de "%s": os pontos quentes na arte', (
 // zonas guarda em "Embaixo") e no teto, o airbag de cortina (o estoque não o separa: o tipo inteiro é do interior).
 const DE_OUTRA_ZONA: Record<string, Record<string, string>> = { rodas: { semieixo: 'embaixo' }, teto: { airbags: 'interior' } };
 
-describe.each(VISTAS_K)('vista por dentro de "%s": pontos quentes ↔ links do catálogo', (zona) => {
+describe.each(VISTAS_K)('vista por dentro de "%s": os nomes dos pontos quentes', (zona) => {
   const PONTOS = PONTOS_DA_ZONA[zona];
-  it('todo ponto com tipo existe no estoque (bloco e tipo); sem tipo = pátio, com o nome da mensagem', () => {
-    const blocos = new Set(ix.familias);
-    const tipos = new Set(ix.tipos);
+  it('todo ponto com tipo usa nomes do vocabulário da loja (bloco e tipo); sem tipo = pátio, com o nome da mensagem', () => {
+    const blocos = BLOCOS_DA_LOJA;
+    const tipos = TIPOS_DA_LOJA;
     for (const p of PONTOS) {
       expect(p.procuro, p.k).toMatch(/^(o|a) /);
       if (!p.tipo) { expect(p.sub ?? p.lado ?? p.pos, p.k).toBeUndefined(); continue; }
@@ -118,8 +118,17 @@ describe.each(VISTAS_K)('vista por dentro de "%s": pontos quentes ↔ links do c
       expect(p.sub && tipos.has(p.sub), `${p.k}: ${p.sub}`).toBe(true);
     }
   });
+});
+
+const CASOS = estoques().flatMap((e) => VISTAS_K.map((zona) => ({ ...e, zona })));
+describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do catálogo ($nome)', ({ zona, ix, fixo }) => {
+  const PONTOS = PONTOS_DA_ZONA[zona];
+  const b = new Busca(ix);
+  const cheio = carroMaisCheio(ix);
+  // os carros do exemplo: no estoque fixo, o XC60 2019 e o E-Pace; no do dia, o carro com mais peças
+  const carros = fixo || !cheio ? [{}, { marca: 'Volvo', modelo: 'XC60', ano: 2019 }, { marca: 'Jaguar', modelo: 'E-Pace' }] : [{}, cheio];
   it('o link leva o tipo, o sub, o lado e a posição do ponto, e o carro; o número é o da busca com os filtros DO LINK', () => {
-    for (const carro of [{}, XC60, { marca: 'Jaguar', modelo: 'E-Pace' }]) {
+    for (const carro of carros) {
       const contas = contarPontos((f) => b.procurar(f), carro, PONTOS);
       for (const p of PONTOS) {
         if (!p.tipo || !p.sub) { expect(contas[p.k], p.k).toBe(0); continue; }
@@ -160,10 +169,19 @@ describe('vistas por dentro: o arquivo das contas do estoque inteiro', () => {
     expect(ARQUIVO_DENTRO).toBe('/dados/raio-x-dentro.json');
     expect(existsSync('src/pages/dados/raio-x-dentro.json.ts')).toBe(true);
   });
-  it('com o estoque de hoje, toda vista tem pelo menos 6 pontos com peça', () => {
+  it('no estoque fixo, toda vista tem pelo menos 6 pontos com peça (as tabelas apontam para tipos que a loja vende)', () => {
+    // só no estoque fixo: no do dia um tipo pode zerar (a última peça vendeu) e a vista mostra o ponto cinza, sem erro
+    const b = new Busca(indiceFixo());
     for (const k of VISTAS_K) {
       const n = contarPontos((f) => b.procurar(f), {}, PONTOS_DA_ZONA[k]);
       expect(Object.values(n).filter((x) => x > 0).length, k).toBeGreaterThanOrEqual(6);
+    }
+  });
+  it.each(estoques())('no $nome, a conta de todo ponto é um número (0 = cinza, pedido de pátio) e nunca passa do estoque', ({ ix }) => {
+    const b = new Busca(ix);
+    for (const k of VISTAS_K) {
+      const n = contarPontos((f) => b.procurar(f), {}, PONTOS_DA_ZONA[k]);
+      for (const p of PONTOS_DA_ZONA[k]) { expect(Number.isInteger(n[p.k]), `${k} ${p.k}`).toBe(true); expect(n[p.k]).toBeGreaterThanOrEqual(0); expect(n[p.k]).toBeLessThanOrEqual(ix.id.length); }
     }
   });
 });

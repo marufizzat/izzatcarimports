@@ -264,6 +264,13 @@ describe('"Vai junto": só o que entra no MESMO serviço, do mesmo carro (rodada
       }
     }
     console.log(`"Vai junto": ${com} de ${pecas.length} peças com o bloco (${cartoes} cartões)`);
-    expect(com).toBeGreaterThan(pecas.length / 10);   // a regra não pode sumir com o bloco do site
+  });
+
+  // "a regra não pode sumir com o bloco do site": conferido num estoque FIXO (as 515 peças do XC60 de 11/11/2026,
+  // testes/fixtures/pecas-xc60.json), não no do dia (a proporção muda com o que vendeu e o robô não pode parar por isso)
+  it('estoque fixo (XC60): o bloco aparece em mais de 1 de cada 10 peças, com 1 a 3 cartões', () => {
+    const pecas: Peca[] = JSON.parse(readFileSync('testes/fixtures/pecas-xc60.json', 'utf-8'));
+    const com = pecas.filter((p) => { const n = vaiJunto(p, pecas).pecas.length; expect(n).toBeLessThanOrEqual(MAX_JUNTO); return n > 0; }).length;
+    expect(com).toBeGreaterThan(pecas.length / 10);
   });
 });
