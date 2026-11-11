@@ -107,6 +107,14 @@ def test_peca_azul_de_verdade_continua_azul():
     assert (np.asarray(p) == np.asarray(q)).all()
 
 
+def test_cor_forte_que_nao_e_luz_fica_identica():
+    """Peça verde (B−R > 0 mas não é o azul da luz): a decisão vira "manter" e a peça sai IDÊNTICA."""
+    p = Image.new("RGBA", (120, 120), (10, 80, 50, 255))
+    q, rc = ce.aplicar_cor(p, lambda m, g: ("conservadora", "sem outras fotos da peça para conferir", True, None))
+    assert rc["modo"] == "manter" and not rc["conferir"], rc
+    assert q is p or (np.asarray(q) == np.asarray(p)).all()
+
+
 def test_decisao_em_camadas():
     azul = {"br": 45.0}
     preto = {"t": "Alavanca Freio Mao Ford", "n": "Alavanca freio de mão", "ficha": [["Cor", "Preto"]]}

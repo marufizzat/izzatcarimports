@@ -784,12 +784,14 @@ def aplicar_cor(peca, cor, original=None, alfa=None, r=COR):
         rc["prova"] = {"q1": prova.get("q1"), "n": prova.get("n")}
     if modo in ("neutra", "conservadora"):
         det = {}
-        peca = corrigir_azul(peca, modo, r, det)
+        corrigida = corrigir_azul(peca, modo, r, det)
         rc.update(br_depois=det.get("br_depois"), forca=det.get("forca"), mudou=det.get("mudou"))
         caiu = (med["br"] or 0) - (det.get("br_depois") if det.get("br_depois") is not None else med["br"] or 0)
         if caiu < 2 and not motivo.startswith("ajuste"):   # nada no tom da luz (verde, azul saturado de verdade):
-            rc.update(modo="manter", conferir=False,       # não é o azul da luz, fica como está
-                      motivo=f"cor forte, não é o azul da luz (B−R {med['br']:.0f})")
+            rc.update(modo="manter", conferir=False, br_depois=med["br"], forca=0.0, mudou=0.0,   # fica como está
+                      motivo=f"cor forte, não é o azul da luz (B−R {med['br'] or 0:.0f})")
+        else:
+            peca = corrigida
     rc["t"] = round(time.time() - t0, 3)
     return peca, rc
 
