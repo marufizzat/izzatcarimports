@@ -17,6 +17,15 @@
 # O que se aprendeu: a arte-âncora de carroceria parecida pode "vazar" (a 1ª Saveiro saiu com a carroceria da Strada): na 2ª
 # tentativa a âncora foi a arte do irmão de mesma frente (Voyage). O gerador devolve a parede ~8 níveis mais rosada que a
 # família: o instalar.py corrige. Carro que sai maior que a família (Parati, City, Oroch): reenquadre leve no instalar.py.
+#
+# Lote 2 (11/11, os 64 que faltavam): carros2.py (especificações), refs_commons2.py + folha_refs2.py (fotos reais, 5 por
+# modelo), qa2.py (prancha pequena), rejeitar.sh (guarda a miniatura da 1ª e gera a 2ª e última), lote-final.sh, folha2.py.
+# Regras que valeram: âncora 2 sempre da MESMA carroceria; irmão de mesma frente = papel MESMA_FRENTE (SpaceFox/CrossFox com o
+# Fox, Classic com o Corsa); mesmo carro de outra marca = MESMA_CARROCERIA (Freemont com o Journey); sem âncora segura = só o
+# piloto + 2 fotos reais (Montana, Camaro, Fiorino). Grade que leva o símbolo no meio: pedir "sem disco, sem barra diagonal,
+# sem placa" (o CLA saiu com um disco preto e o V40 com a barra diagonal da marca: as duas refeitas). O instalar.py encolhe
+# sozinho o carro que sai mais largo que 80,5% do quadro. Não esperar um lote com `pgrep -f "scripts/lote.sh"` dentro de um
+# comando que tem esse texto: o pgrep acha o próprio shell (três esperas travaram umas nas outras): esperar pelo "FIM" do log.
 
 # Especificação de cada arte do lote r16: geração do estoque, traços, cor de fábrica, âncoras de estilo e foto real de referência.
 COR = '/Users/izzat/.cache/izzatcar-carros-cor/cor/'           # artes aprovadas (1536x1024, coloridas) = âncoras de estilo
@@ -111,6 +120,46 @@ def prompt(k, extra=''):
           'mais claro à esquerda e um pouco mais escuro à direita; piso refletivo suave com o reflexo do carro; sombra de contato; filete de luz laranja (#FF6A00) no piso, atrás do carro, na mesma altura das referências. '
           'Mesma câmera, mesma altura de câmera, mesma distância e mesmo tamanho do carro no quadro das referências (o carro ocupa cerca de 76% da largura, um pouco à direita do centro, inteiro, sem nada cortado, '
           'com as rodas apoiadas na mesma linha do piso das referências) e mesma luz suave vinda de cima à esquerda. '
+          f'Traços distintivos obrigatórios do modelo: {tracos}. '
+          'SEM emblemas, SEM logos, SEM letras, SEM placa: grade, capô e tampa lisos, e o lugar da placa liso, sem placa nem suporte. Centros das rodas completamente lisos, sem marca; pneus sem inscrições legíveis; '
+          'nenhum emblema no volante nem na carroceria. Um único carro. Sem texto, sem marca-d\'água, sem pessoas, sem objetos. Limpo e premium.')
+    if extra: p += ' CORREÇÃO OBRIGATÓRIA em relação à tentativa anterior: ' + extra
+    return p, refs
+
+
+# ---------------------------------------------------------------- lote 2
+from carros2 import CARROS2, FOTOS2
+REF2 = '/Users/izzat/Projects/izzatcar-wt/_r16carros/refs2/'
+GER = '/Users/izzat/Projects/izzatcar-wt/_r16carros/gerados/'
+FOTO_T2 = {'peugeot-308': [REF2 + 'peugeot-308_c3.jpg'], 'volkswagen-bora': [REF2 + 'volkswagen-bora_2.jpg'],
+           'citroen-c3-aircross': [REF + 'w_citroen-c3-aircross_2.jpg', REF + 'w_citroen-c3-aircross_0.jpg']}   # refação de arte do lote 1: outra foto real (caminho inteiro)
+_prompt1 = prompt
+def _ancora(a):
+    return None if not a else (GER + 'carro-' + a[2:] + '.png' if a.startswith('G:') else COR + a + '.png')
+def prompt(k, extra=''):
+    if k not in CARROS2:
+        p, refs = _prompt1(k, extra)
+        if extra and k in FOTO_T2: refs = refs[:2] + FOTO_T2[k]
+        return p, refs
+    nome, ger, tracos, cor, anc, nota, papel = CARROS2[k]
+    anc, foto = _ancora(anc), FOTOS2.get(k)
+    fotos = [] if not foto else ([foto] if isinstance(foto, str) else list(foto))
+    refs = [PILOTO] + ([anc] if anc else []) + [REF2 + x for x in fotos]
+    nf = len(refs) - len(fotos) + 1   # a 1ª foto real
+    p = ('Nova geração independente; não editar nenhuma imagem anterior. Use case: ads-marketing. Arte de catálogo horizontal 1536×1024. '
+         'Imagem 1: arte-piloto aprovada, referência EXATA de estúdio, câmera, enquadramento e luz. ')
+    if anc:
+        p += papel or ('Imagem 2: arte aprovada da mesma família com o mesmo tipo de carroceria; usar só como referência de estúdio, enquadramento e proporção no quadro; '
+                       'NÃO copiar o carro dela: faróis, grade, para-choque, capô, laterais, vidros e rodas são os do modelo pedido' + (' (os da foto real). ' if foto else '. '))
+    if foto:
+        p += ((f'Imagem {nf}: foto real do modelo pedido' if len(fotos) == 1 else f'Imagens {nf} e {nf + 1}: fotos reais do modelo pedido') + '; usar SOMENTE para o desenho do carro (silhueta, faróis, grade, para-choque, proporções, rodas); '
+              'ignorar o ângulo, o fundo, a cor, a sujeira, os emblemas, a placa e qualquer texto da foto' + (f' ({nota})' if nota else '') + '. ')
+    refs_txt = 'das imagens 1 e 2' if anc else 'da imagem 1'
+    p += (f'Fotografia publicitária ultra realista de um {nome} ({ger}) na cor {cor}, de fábrica, impecável, em vista 3/4 dianteira com a frente voltada para a ESQUERDA do quadro '
+          f'(mesmo lado e mesmo ângulo {refs_txt}), rodas dianteiras levemente viradas, no MESMO estúdio {refs_txt}: fundo infinito liso em tom neutro quente rosado claro, '
+          'mais claro à esquerda e um pouco mais escuro à direita; piso refletivo suave com o reflexo do carro; sombra de contato; filete de luz laranja (#FF6A00) no piso, atrás do carro, na mesma altura das referências. '
+          'Mesma câmera, mesma altura de câmera, mesma distância e mesmo tamanho do carro no quadro das referências (o carro ocupa cerca de 76% da largura, um pouco à direita do centro, inteiro, sem nada cortado, '
+          'com boa margem de parede dos dois lados e as rodas apoiadas na mesma linha do piso das referências) e mesma luz suave vinda de cima à esquerda. '
           f'Traços distintivos obrigatórios do modelo: {tracos}. '
           'SEM emblemas, SEM logos, SEM letras, SEM placa: grade, capô e tampa lisos, e o lugar da placa liso, sem placa nem suporte. Centros das rodas completamente lisos, sem marca; pneus sem inscrições legíveis; '
           'nenhum emblema no volante nem na carroceria. Um único carro. Sem texto, sem marca-d\'água, sem pessoas, sem objetos. Limpo e premium.')
