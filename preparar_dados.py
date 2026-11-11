@@ -4,6 +4,7 @@ IZZAT CAR — prepara os dados do site novo (pasta site/, Astro).
 Le products.json (o mesmo que atualizar_catalogo.py grava) e escreve:
   site/src/data/pecas.json     -> uma entrada por peca, usada pra gerar /peca/*.html
   site/src/data/resumo.json    -> marcas, modelos, familias, carros, vitrines da home
+  site/src/data/unidos.json    -> carros unidos: "marca|apelido" -> principal (Meu carro salvo e nome do carro na tela)
   site/public/dados/busca.json -> indice compacto que o navegador baixa pra busca
 
 Nada aqui e publicado como esta: products.json (com a localizacao da peca no
@@ -3737,6 +3738,12 @@ def main():
         json.dumps(resumo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     (SAIDA_PUBLICA / "busca.json").write_text(
         json.dumps(busca, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    # carros unidos, TODOS (tambem o apelido com menos de 8 pecas, que nao tem endereco antigo: "330i"): "marca|apelido" ->
+    # principal. O site usa para (1) trocar o Meu carro salvo com o apelido pelo principal e (2) nao escrever o apelido ao
+    # lado do proprio principal ("Classe C, C180 e C200" -> "Classe C"). Arquivo pequeno a parte: vai no JS do navegador.
+    (SAIDA_DADOS / "unidos.json").write_text(
+        json.dumps({f"{mc_}|{c_}": P_ for (mc_, c_, P_) in sorted(_UNIAO)}, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8")
 
     sem_marca = sum(1 for x in pecas if not x["b"])
     sem_modelo = sum(1 for x in pecas if not x["m"])
