@@ -21,15 +21,12 @@
 // Kit curto na frente é o estoque de verdade, não falta de linha.
 // Sem node:fs e sem valores de lib/busca.ts: roda no build (pages/dados/batida.json.ts), no teste e no navegador.
 import type { Filtros, Item, Lado, Posicao } from './busca';
-import { codigoDaFoto, linkLinha } from './raioX';
+import { codigoDaFoto, linkLinha, nomeEh, type Eh } from './raioX';
 import { anosTexto } from './whats';
 import { nomeModelos } from './meuCarro';
 import { codigoPeca } from '../components/catalogo/etiqueta';
 
-/** Qual nome É a peça da linha: `cab` = as palavras que podem ABRIR o nome ("Kit"/"Par" na frente não contam; o plural
- *  vale), `tem` = o nome diz pelo menos uma destas, `sem` = não diz nenhuma destas. Palavras separadas por espaço, sem
- *  acento; a composta vale inteira ("porta" não é "porta-malas"). Várias formas = basta uma. */
-export type Eh = { cab: string; tem?: string; sem?: string };
+export type { Eh };
 export type Linha = {
   /** o nome na lista, do jeito que a oficina fala ("Farol esquerdo", "Alma do para-choque") */
   nome: string;
@@ -242,30 +239,10 @@ export type CarroBatida = Partial<Pick<Filtros, 'marca' | 'modelo' | 'ano'>>;
 export const filtrosDaLinha = (l: Linha, carro: CarroBatida = {}): Filtros =>
   ({ ...carro, tipo: l.tipo, sub: l.sub, lado: l.lado, pos: l.pos, ordem: 'asc' });
 
-// As palavras do nome como a regra da linha as lê: sem acento, minúsculas, a composta inteira e sem o hífen
-// ("Para-choque" e "Parachoque" = "parachoque"; "porta-malas" nunca é "porta").
-const junto = (w: string) => w.replace(/-/g, '');
-const palavrasDoNome = (nome: string) => nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[^a-z0-9-]+/).map(junto).filter(Boolean);
-const QUANTAS = new Set(['kit', 'par', 'jogo', 'conjunto']);
-// a palavra do nome é a da regra, no singular ou no plural ("maçanetas", "motores", "coxins", "faróis", "botões")
-const mesma = (t: string, w: string) => t === w || t === `${w}s` || t === `${w}es`
-  || (w.endsWith('m') && t === `${w.slice(0, -1)}ns`) || (w.endsWith('l') && t === `${w.slice(0, -1)}is`) || (w.endsWith('ao') && t === `${w.slice(0, -2)}oes`);
-const lista = (s?: string) => (s ? s.split(' ').map(junto) : []);
-
-/** O nome É a peça que a linha promete? A mesma leitura do "tipo" da busca (lib/busca.ts, `unNaCabeca`): a 1ª palavra
- *  do nome é a da peça ("Maçaneta externa dianteira esquerda" é maçaneta; "Suporte maçaneta" é suporte), com o que a
- *  linha exige do resto do nome ("Forro porta…" sim, "Forro porta-malas" não). Linha sem regra (pátio): nunca. */
-export function ehDaLinha(l: Linha, nome: string): boolean {
-  if (!l.eh) return false;
-  const ws = palavrasDoNome(nome);
-  let i = 0;
-  while (i < ws.length - 1 && QUANTAS.has(ws[i])) i++;
-  const cab = ws[i];
-  if (!cab) return false;
-  const diz = (w: string) => ws.some((t) => mesma(t, w));
-  return (Array.isArray(l.eh) ? l.eh : [l.eh]).some((e) =>
-    lista(e.cab).some((c) => mesma(cab, c)) && (!e.tem || lista(e.tem).some(diz)) && !lista(e.sem).some(diz));
-}
+/** O nome É a peça que a linha promete? A regra do nome é a de lib/raioX.ts (`nomeEh`: a 1ª palavra do nome é a da peça,
+ *  como o "tipo" da busca; "Suporte maçaneta" é suporte, "Forro porta-malas" não é forro de porta). Linha sem regra
+ *  (pátio): nunca. */
+export const ehDaLinha = (l: Linha, nome: string): boolean => nomeEh(l.eh, nome);
 
 /** As peças de UMA linha do ponto, pela busca do catálogo (`procurar` = Busca.procurar): primeiro as que SÃO a peça da
  *  linha (`ehDaLinha`), depois as outras do tipo; dentro de cada grupo, da mais barata para a mais cara (a 1ª é a que a
