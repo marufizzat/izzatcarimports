@@ -1,18 +1,23 @@
 // /lista.html: monta a Lista de orçamento (o esqueleto está em pages/lista.astro). Dois modos:
 //  - 'minha': as peças guardadas neste aparelho (lib/lista.ts). Tirar (com "Desfazer" no lugar), limpar (com
-//    "Desfazer"), os preços e a disponibilidade conferidos no /dados/busca.json (o preço novo é gravado; a peça que saiu
-//    do site fica "Já vendida", fora do total e do pedido).
+//    "Desfazer"), os preços e a disponibilidade conferidos no /dados/ativas.json (id, preço e capa: ~34 KB comprimido; o
+//    preço novo é gravado; a peça que saiu do site fica "Já vendida", fora do total e do pedido). O índice inteiro
+//    (/dados/busca.json, ~640 KB) só quando falta um dado que o leve não tem (nome, endereço, a foto do ML de peça sem
+//    capa de estúdio) ou, uma vez, na lista de antes da rodada 13 (nome e carro em dia: lib/lista.ts, CHAVE_CONFERIDA).
 //  - 'link': /lista.html?i=MLB1,MLB2 (a lista que alguém mandou): só para ver e pedir; "Guardar na minha lista" junta as
-//    peças às de quem abriu (sem apagar nada) e o endereço volta a ser /lista.html.
-// "Já vendida" só depois que o busca.json chegou e a peça não está nele; se ele não chegar, os valores guardados ficam,
-// com um aviso discreto (nunca uma peça marcada vendida por falta de rede).
-import { Busca, capaItem, type Indice, type Item } from '../../lib/busca';
+//    peças às de quem abriu (sem apagar nada) e o endereço volta a ser /lista.html. Precisa do índice inteiro (nome, carro,
+//    anos e código); sem ele (rede), fica o esqueleto com o aviso e "Tentar de novo".
+// "Já vendida" só depois que o estoque chegou e a peça não está nele; se ele não chegar (ou vier vazio), os valores
+// guardados ficam, com um aviso discreto (nunca uma peça marcada vendida por falta de rede). A capa só é pedida depois de
+// saber se a peça ainda existe (a da vendida não existe mais: nada de 404 no console).
+import type { Item } from '../../lib/busca';
 import {
   lerLista, salvarLista, remover, restaurar, juntar, atualizar, itemDe, idsDoLink, linkDaLista, pecasTxt, total, totalWhats, desconto,
-  EVENTO_LISTA, PAGINA_LISTA, MAX_LISTA, type ItemLista,
+  EVENTO_LISTA, PAGINA_LISTA, MAX_LISTA, listaConferida, marcarConferida, type ItemLista,
 } from '../../lib/lista';
 import { mensagemLista, linkWhats, precoWhats, anosTexto } from '../../lib/whats';
 import { lerMeuCarro, nomeCarro, nomeModelos, linkCatalogo, EVENTO as EVENTO_CARRO, ABRIR } from '../../lib/meuCarro';
+import { carregarAtivas, type Ativas } from '../../lib/vistos';
 import { codigoPeca, brl } from '../catalogo/etiqueta';
 import { icone } from '../../lib/icones';
 
@@ -21,11 +26,25 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const svg = (nome: string) => `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone(nome)}"></use></svg>`;
 
 /** A peça como o busca.json diz agora (nome, carro, anos, código, preço e a capa leve). */
-export function itemDoIndice(it: Item): ItemLista {
+export function itemDoIndice(it: Item, capa: string): ItemLista {
   return itemDe({
     id: it.id, slug: it.h, nome: it.n, carro: nomeModelos({ b: it.b, m: it.m, ms: it.ms }), anos: anosTexto(it.y), cod: codigoPeca(it.o),
-    preco: it.p, capa: capaItem(it, 'E'),
+    preco: it.p, capa,
   })!;
+}
+/** O índice inteiro (só quando precisa: a lista de um link ou um dado que o leve não tem): a busca vem sob demanda. */
+async function indiceInteiro(): Promise<Map<string, ItemLista>> {
+  const [{ Busca, capaItem }, r] = await Promise.all([import('../../lib/busca'), fetch('/dados/busca.json')]);
+  if (!r.ok) throw new Error(String(r.status));
+  const b = new Busca(await r.json());
+  if (!b.itens.length) throw new Error('índice vazio');
+  return new Map(b.itens.map((it) => [it.id, itemDoIndice(it, capaItem(it, 'E'))]));
+}
+/** A capa pelo estoque leve (a mesma regra do capaItem: a leve de 400 px, a maquiada, a automática); sem capa de estúdio,
+ *  a foto do ML guardada (o leve não tem a chave da foto: '' = precisa do índice inteiro). */
+function capaLeve(x: ItemLista, a: { e: string; r: boolean }): string {
+  if (a.e !== '0') return a.r ? `/estudio-400/${x.id}.webp` : `/estudio${a.e === '2' ? '-pro' : ''}/${x.id}.webp`;
+  return /^https:\/\//.test(x.capa) ? x.capa : '';
 }
 
 export function iniciarLista() {
@@ -53,7 +72,9 @@ export function iniciarLista() {
   if (!idsLink.length && /[?&]i=/.test(location.search)) history.replaceState(null, '', PAGINA_LISTA);
   let modo: 'minha' | 'link' = idsLink.length ? 'link' : 'minha';
   let estado: 'carregando' | 'ok' | 'erro' = 'carregando';
-  let frescos: Map<string, Item> | null = null;
+  /** o índice inteiro (no link; na sua lista, só quando precisa) e o estoque leve (na sua lista) */
+  let frescos: Map<string, ItemLista> | null = null;
+  let ativas: Ativas | null = null;
   /** a última peça tirada (o "Desfazer" fica no lugar dela) */
   let tirada: { item: ItemLista; i: number } | null = null;
   /** a lista inteira antes do "Limpar" ou de tirar a última (o "Desfazer" da lista vazia) */
@@ -61,11 +82,12 @@ export function iniciarLista() {
   /** preço de quando a pessoa guardou, se mudou (mostra "Preço atualizado") */
   const precoAntes = new Map<string, number>();
 
-  const existe = (id: string) => estado !== 'ok' || !!frescos?.has(id);
+  const noEstoque = (id: string) => (modo === 'minha' && ativas ? ativas.has(id) : !!frescos?.has(id));
+  const existe = (id: string) => estado !== 'ok' || noEstoque(id);
   /** As peças à vista: a lista guardada, ou as do link (com os dados do busca.json; sem eles, só o número do anúncio). */
   function itens(): ItemLista[] {
     if (modo === 'minha') return lerLista();
-    return idsLink.map((id) => (frescos?.get(id) ? itemDoIndice(frescos.get(id)!) : { id, slug: '', nome: '', carro: '', anos: '', cod: '', preco: 0, capa: '' }));
+    return idsLink.map((id) => frescos?.get(id) ?? { id, slug: '', nome: '', carro: '', anos: '', cod: '', preco: 0, capa: '' });
   }
   /** As que entram no pedido e no total: as que existem no site (no link, só depois do busca.json). */
   const disponiveis = (l: ItemLista[]) => l.filter((x) => (modo === 'link' ? estado === 'ok' && frescos!.has(x.id) : existe(x.id)));
@@ -78,8 +100,9 @@ export function iniciarLista() {
   function linha(x: ItemLista, ler: boolean): string {
     const vendida = !existe(x.id) || (modo === 'link' && estado === 'ok' && !frescos!.has(x.id));
     const href = x.slug && !vendida ? `/peca/${encodeURI(x.slug)}.html` : '';
-    // a vendida fica sem foto (a capa dela já saiu do site)
-    const img = x.capa && !vendida ? `<img src="${esc(x.capa)}" alt="" width="88" height="88" loading="lazy" decoding="async">` : '';
+    // a vendida fica sem foto (a capa dela já saiu do site); enquanto o estoque não chega, nenhuma foto é pedida (a da
+    // vendida dava 404 no console a cada visita): o quadro claro fica no lugar, do mesmo tamanho
+    const img = x.capa && !vendida && estado !== 'carregando' ? `<img src="${esc(x.capa)}" alt="" width="88" height="88" decoding="async">` : '';
     // a peça do link que saiu do site antes de alguém abrir: sem nome (o índice não tem mais), nunca "Anúncio MLB…" como
     // nome; o número do anúncio fica na linha de baixo (a oficina pode perguntar por ele)
     const nome = x.nome || 'Peça que saiu do site';
@@ -204,22 +227,36 @@ export function iniciarLista() {
     barraVisivel();
   }
 
-  // ---- busca.json: preço e disponibilidade de agora ----
+  // ---- o estoque: preço e disponibilidade de agora ----
   async function carregar() {
     estado = 'carregando';
     try {
-      const r = await fetch('/dados/busca.json');
-      if (!r.ok) throw new Error(String(r.status));
-      const b = new Busca((await r.json()) as Indice);
-      frescos = new Map(b.itens.map((it) => [it.id, it]));
-      estado = 'ok';
-      if (modo === 'minha') {
-        // as guardadas ficam com os dados de agora (preço, nome, capa...); a que saiu do site fica como estava
-        let l = lerLista(), mudou = false;
+      if (modo === 'link') {
+        frescos = await indiceInteiro();
+        estado = 'ok';
+      } else {
+        const at = await carregarAtivas();
+        // estoque vazio ou quebrado = sem rede (nunca "tudo vendido")
+        if (!at || !at.size) throw new Error('sem estoque');
+        ativas = at;
+        let l = lerLista();
+        // falta um dado que o leve não tem: o nome, o endereço, ou a foto do ML da peça que perdeu a capa de estúdio
+        const falta = (x: ItemLista) => at.has(x.id) && (!x.slug || !x.nome || x.nome === 'Peça' || (at.get(x.id)!.e === '0' && x.capa.startsWith('/estudio')));
+        if (l.length && (l.some(falta) || !listaConferida())) {
+          try {
+            frescos = await indiceInteiro();
+            marcarConferida();
+          } catch { frescos = null; /* fica com o leve (preço e disponibilidade já estão certos) */ }
+        }
+        estado = 'ok';
+        // as guardadas ficam com os dados de agora (preço e capa; com o índice inteiro, também nome e carro); a que saiu
+        // do site fica como estava
+        let mudou = false;
         for (const x of l) {
-          const it = frescos.get(x.id);
-          if (!it) continue;
-          const novo = itemDoIndice(it);
+          const a = at.get(x.id);
+          if (!a) continue;
+          const doIndice = frescos?.get(x.id);
+          const novo: ItemLista = doIndice ? { ...doIndice, preco: a.p } : { ...x, preco: a.p, capa: capaLeve(x, a) || x.capa };
           if (JSON.stringify(novo) === JSON.stringify(x)) continue;
           if (novo.preco !== x.preco && x.preco) precoAntes.set(x.id, x.preco);
           l = atualizar(l, x.id, novo);
@@ -285,7 +322,10 @@ export function iniciarLista() {
     } else if (t.hasAttribute('data-lst-guardar')) {
       if (estado !== 'ok') return;
       const doLink = itens().filter((x) => estado === 'ok' && frescos!.has(x.id));
-      const r = juntar(lerLista(), doLink);
+      const antesDeGuardar = lerLista();
+      const r = juntar(antesDeGuardar, doLink);
+      // as do link vieram do índice inteiro (dados de agora); a lista que estava vazia fica conferida
+      if (!antesDeGuardar.length) marcarConferida();
       salvarLista(r.lista, 'guardar');
       modo = 'minha';
       idsLink = [];
