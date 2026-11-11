@@ -49,8 +49,9 @@ export const PONTOS: PontoQuente[] = [
     k: 'flexivel', nome: 'Tubo flexível do escapamento', procuro: 'o tubo flexível do escapamento', ancora: [561, 228], tipo: 'Escapamento', sub: 'Tubos Flexíveis',
     poligonos: ['621,221 616,207 607,197 601,198 593,207 567,203 520,209 495,221 486,212 477,211 473,216 473,241 484,261 489,266 495,267 500,264 501,256 510,252 528,257 577,250 594,242 612,251 618,247'],
   },
+  // o tipo "Escapamentos" do estoque junta o tubo, o silencioso e os defletores: o nome do ponto é o do tipo
   {
-    k: 'escapamento', nome: 'Escapamento (tubo e silencioso)', procuro: 'o escapamento (tubo e silencioso)', ancora: [1160, 180], tipo: 'Escapamento', sub: 'Escapamentos',
+    k: 'escapamento', nome: 'Escapamento', procuro: 'o escapamento (tubo e silencioso)', ancora: [1160, 180], tipo: 'Escapamento', sub: 'Escapamentos',
     poligonos: ['1400,165 1319,147 1282,115 1167,135 1148,103 1127,112 1153,111 1155,134 1101,147 1084,179 949,174 931,140 911,149 935,149 937,171 891,185 846,225 800,229 733,201 649,195 639,222 654,250 669,235 734,232 767,247 783,277 804,268 783,269 782,257 860,251 918,206 1032,196 1148,229 1299,198 1322,174 1383,188'],
   },
   {
