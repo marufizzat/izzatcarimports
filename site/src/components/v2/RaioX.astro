@@ -659,9 +659,26 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     }
     let girando = false;
     let falaGiro: HTMLElement | null = null;
+    let giroEmCurso: Promise<boolean> | null = null;
     /** Gira o carro para a outra vista (ou para `para`). `dir`: o sentido do giro (1 = para a esquerda). Devolve se
      *  a arte mostra a vista pedida no fim (sem conexão para baixar a outra vista: fica como está). */
-    async function girar(para?: LadoArte, dir: 1 | -1 = 1): Promise<boolean> {
+    function girar(para?: LadoArte, dir: 1 | -1 = 1): Promise<boolean> {
+      const jaGirava = girando;
+      const p = girarJa(para, dir);
+      // o giro que começou agora fica guardado: quem depende da vista (a vista por dentro) espera por ele
+      if (!jaGirava && girando) { giroEmCurso = p; void p.finally(() => { if (giroEmCurso === p) giroEmCurso = null; }); }
+      return p;
+    }
+    /** A arte na vista em que a zona `k` aparece de verdade, ANTES de abrir a vista por dentro dela: espera o giro que
+     *  já começou (a parte do outro lado gira o carro sozinha ao ser escolhida) e, se a zona ainda está do outro lado,
+     *  gira. Assim o "Voltar ao carro" devolve sempre a mesma vista: a traseira e a lateral direita na de trás, as
+     *  outras na da frente. Antes, o giro e a vista por dentro corriam juntos e quem chegava primeiro decidia
+     *  (#raio-x=por-dentro:traseira voltava ora de frente, ora de trás). Sem conexão para a outra vista: abre assim mesmo. */
+    async function naVistaDa(k: string) {
+      if (giroEmCurso) await giroEmCurso;
+      if (vista === 'achar' && DO_OUTRO_LADO[lado].includes(k)) await girar();
+    }
+    async function girarJa(para?: LadoArte, dir: 1 | -1 = 1): Promise<boolean> {
       const novo = para ?? outroLado(lado);
       if (novo === lado) return true;
       if (girando || vista === 'dentro') return false;
@@ -727,7 +744,9 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
 
     async function abrirPorDentro(k: string, botao: HTMLElement | null) {
       try {
-        const m = await modPorDentro();
+        // o código da vista desce enquanto o carro chega à vista da zona (o giro acaba ANTES de a vista abrir)
+        botao?.setAttribute('aria-busy', 'true');
+        const [m] = await Promise.all([modPorDentro(), naVistaDa(k)]).finally(() => botao?.removeAttribute('aria-busy'));
         porDentro ??= m.ligarPorDentro({
           raiz, palco, painel, conteudo, dica, fichas: filas, home, carro: carroDaVez, carroMsg: carroTxt, doCarro: doCarroDe,
           sizes: raiz.dataset.sizes ?? '100vw',
