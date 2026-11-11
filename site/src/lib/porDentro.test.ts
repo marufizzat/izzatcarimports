@@ -215,10 +215,11 @@ describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do c
         // diz uma palavra que a regra do ponto proíbe.
         const idsDoLink = new Set(doLink.map((it) => it.id));
         for (const it of ligadas) if (!idsDoLink.has(it.id)) erros.push(`${quem} ${p.k}: "${it.n}" não está no link`);
-        const LUGAR = ['porta', 'portamalas', 'bagagito', 'tampa', 'capo', 'painel', 'console', 'teto', 'coluna', 'banco', 'parachoque', 'paralama', 'portaluvas', 'cambio', 'volante', 'assoalho'];
+        // (as famílias de lugar: a tampa TRASEIRA, o porta-malas e o bagagito são o mesmo lugar; o console e o câmbio também)
+        const LUGAR = [['porta'], ['portamalas', 'bagagito', 'tampa+traseira'], ['capo'], ['painel'], ['console', 'cambio'], ['teto'], ['coluna'], ['banco'], ['parachoque'], ['paralama'], ['portaluvas'], ['volante'], ['assoalho']];
         const regras = p.eh === TIPO_INTEIRO || !p.eh ? [] : Array.isArray(p.eh) ? p.eh : [p.eh];
         const doTitulo = palavras(`${p.nome} ${p.sub} ${regras.map((e) => `${e.cab} ${e.tem ?? ''}`).join(' ')}`);
-        const tem = (ws: string[], w: string) => formas(w).some((f) => ws.includes(f));
+        const tem = (ws: string[], familia: string[]) => familia.some((w) => (w === 'tampa+traseira' ? ws.includes('tampa') && ['traseira', 'traseiro', 'traseiras', 'traseiros'].some((t) => ws.includes(t)) : formas(w).some((f) => ws.includes(f))));
         const outraMae = (nome: string) => {
           const ws = palavras(nome);
           const chave = regras.some((e) => diz(ws, `${e.cab} ${e.tem ?? ''}`.trim()) && !(e.sem && diz(ws, e.sem)));
@@ -329,6 +330,10 @@ describe('vistas por dentro: a peça do link é a do desenho', () => {
     ['motor', 'caixa-filtro', 'Ressonador filtro ar', true],
     ['embaixo', 'bomba-combustivel', 'Módulo bomba combustível', true],
     ['interior', 'console', 'Moldura console central', true],
+    ['interior', 'console', 'Moldura alavanca câmbio', true],
+    ['interior', 'volante', 'Tampa acionador buzina', true],
+    ['traseira', 'acabamento-tampa', 'Capa dobra porta-malas esquerda', true],
+    ['interior', 'console', 'Moldura painel central', false],
   ];
   it.each(ligadasCasos)('peça ligada: %s / %s × "%s" = %s', (zona, k, nome, esperado) => {
     expect(ehLigada(ponto(zona, k), { n: nome })).toBe(esperado);

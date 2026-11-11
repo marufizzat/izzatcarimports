@@ -46,11 +46,16 @@ export const filtrosDoQuente = (p: PontoQuente, carro: CarroDoQuente = {}): Filt
 export const ehDoPonto = (p: PontoQuente, it: { n?: string; pos?: string }): boolean =>
   (p.eh === TIPO_INTEIRO || nomeEh(p.eh, it.n ?? '')) && !(p.fora && it.pos === p.fora);
 
-/** Os LUGARES do carro (a peça-mãe ou a parte) que o nome de uma peça pode dizer. Serve para UMA pergunta: "este nome
- *  aponta para outra peça-mãe que não a do título?" (o forro do PORTA-MALAS na linha do forro de porta, o puxador do
- *  porta-malas na da alça de teto, o acabamento do PAINEL na da capa do retrovisor). É vocabulário de partes do carro,
- *  não lista de peças: lugar novo no estoque entra aqui. */
-const LUGARES = 'porta porta-malas bagagito tampa capo painel console teto coluna banco para-choque para-lama porta-luvas cambio volante assoalho';
+/** Os LUGARES do carro (a peça-mãe ou a parte) que o nome de uma peça pode dizer, em FAMÍLIAS: as palavras da mesma
+ *  família dizem o mesmo lugar (a tampa traseira, o porta-malas e o bagagito; o console e o câmbio, cuja alavanca fica
+ *  nele). Serve para UMA pergunta: "este nome aponta para outra peça-mãe que não a do título?" (o forro do
+ *  PORTA-MALAS na linha do forro de porta, o puxador do porta-malas na da alça de teto, o acabamento do PAINEL na da
+ *  capa do retrovisor). É vocabulário de partes do carro, não lista de peças: lugar novo no estoque entra aqui. */
+const LUGARES: readonly string[] = ['porta', 'porta-malas bagagito tampa-traseira', 'capo', 'painel', 'console cambio', 'teto', 'coluna', 'banco', 'para-choque', 'para-lama',
+  'porta-luvas', 'volante', 'assoalho'];
+/** O nome diz este lugar? "tampa" sozinha é a tampa de qualquer coisa (a "Tampa grade churrasqueira", a "Tampa
+ *  acionador buzina"): só é o lugar quando o nome diz a tampa TRASEIRA. */
+const dizLugar = (nome: string, familia: string) => familia.split(' ').some((w) => (w === 'tampa-traseira' ? nomeDiz(nome, 'tampa') && nomeDiz(nome, 'traseira traseiro') : nomeDiz(nome, w)));
 
 /** A peça do link é LIGADA à peça do título do ponto? (revisão 17, N-P3-1: uma regra, não uma lista de exceções.)
  *  O tipo do estoque junta coisas de mais de um lugar ("Forros": porta e porta-malas; "Alças e Puxadores": teto e
@@ -60,14 +65,14 @@ const LUGARES = 'porta porta-malas bagagito tampa capo painel console teto colun
  *      regra proíbe (`sem`: o forro do PORTA-MALAS, o friso soleira da TAMPA); ou
  *  (2) não aponta para outra peça-mãe: o nome não diz nenhum LUGAR do carro que o título do ponto (o nome dele, a
  *      regra e o tipo do catálogo) não diga (o "Absorvedor impacto" da alma, o "Sensor TAMPA traseira" da fechadura da
- *      tampa ficam; o "Puxador interno PORTA-MALAS" sai da alça de teto).
+ *      tampa, a "Moldura alavanca CÂMBIO" do console ficam; o "Puxador interno PORTA-MALAS" sai da alça de teto).
  *  A que não passa só deixa de aparecer NESTE ponto: continua no site, no catálogo e na zona do Raio-x. */
 export function ehLigada(p: PontoQuente, it: { n?: string }): boolean {
   const nome = it.n ?? '';
   const regras = p.eh === TIPO_INTEIRO || !p.eh ? [] : Array.isArray(p.eh) ? p.eh : [p.eh];
   if (regras.some((e) => nomeDiz(nome, `${e.cab} ${e.tem ?? ''}`) && !(e.sem && nomeDiz(nome, e.sem)))) return true;
   const doTitulo = `${p.nome} ${p.sub ?? ''} ${regras.map((e) => `${e.cab} ${e.tem ?? ''}`).join(' ')}`;
-  return !LUGARES.split(' ').some((l) => nomeDiz(nome, l) && !nomeDiz(doTitulo, l));
+  return !LUGARES.some((f) => dizLugar(nome, f) && !dizLugar(doTitulo, f));
 }
 
 /** A conta de um ponto: `n` = o número que a vista mostra (0 = "a gente procura"); `ligadas` = as peças do link quando
