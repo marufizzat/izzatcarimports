@@ -10,6 +10,9 @@ import BannerV2 from '../components/v2/BannerV2.astro';
 import VitrineDestaques from '../components/v2/VitrineDestaques.astro';
 import OficinasV2 from '../components/v2/OficinasV2.astro';
 import Coverflow from '../components/v2/Coverflow.astro';
+import VoceViu from '../components/v2/VoceViu.astro';
+import ChegouCarro from '../components/v2/ChegouCarro.astro';
+import Continuar from '../components/v2/Continuar.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
 import Icone from '../components/Icone.astro';
@@ -45,12 +48,17 @@ const ld = {
   <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio-celular.webp" media="(max-width: 767px)" fetchpriority="high" />
 
   <AberturaV2 arte="/arte/v2/abertura-estudio.webp" arteCelular="/arte/v2/abertura-estudio-celular.webp">
+    <Continuar slot="topo" />
     <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Ex.: rádio XC60" />
   </AberturaV2>
 
   <section class="selos-faixa" aria-label="Garantias da Izzat Car">
     <div class="moldura"><SelosV2 /></div>
   </section>
+
+  {/* da pessoa (só no navegador dela; sem histórico, nada aparece e nada se mexe) */}
+  <ChegouCarro />
+  <VoceViu />
 
   <section class="secao vitrine-secao" aria-labelledby="t-destaques">
     <div class="moldura">

@@ -1,12 +1,17 @@
 // Visualizador de fotos em tela cheia da página da peça, SEM React (antes eram ~210 KB de React só para ele).
 // Inspirado no "Thumbnail image viewer" do 21st.dev (autor: ibrandify): faixa de miniaturas com setas do teclado e
 // foco visível, com zoom e gestos (deslizar, pinça, toque duplo, roda do mouse).
+// Toque (rodada 13): a conta do zoom fica em ui/zoomToque.ts — a pinça amplia em volta do meio dos dedos (e os dois
+// dedos juntos arrastam), o toque duplo amplia 2,5× no ponto tocado, a foto ampliada anda só até a borda dela, e o que
+// passa do limite (arrasto, pinça abaixo de 1× ou acima de 4×) resiste e volta suave ao soltar. Deslizar troca a foto
+// só sem zoom. O mouse (roda, duplo clique, arrasto) continua como era.
 // O HTML é montado na 1ª abertura e reaproveitado. Durante o gesto, o desenho vai direto no estilo (um por quadro),
 // sem recriar nada: fluido mesmo em celular fraco. Quem abre: PecaTopo.astro (abrirGaleria).
 // Fundo escuro e a foto do anúncio INTEIRA, sem o corte do palco da página (o enquadramento de lib/quadroFoto.ts vale
 // só para as miniaturas, que são cópias das da página).
 
-type Vista = { s: number; x: number; y: number };
+import { caixaFoto, soltoComElastico, pinca, assentar, toqueDuplo, type Caixa, type Ponto, type Vista } from './zoomToque';
+
 type Gesto = {
   modo: 'arrastar' | 'pinca';
   x: number; y: number;       // ponto inicial do dedo/mouse
@@ -15,6 +20,9 @@ type Gesto = {
   d0: number;                 // distância inicial entre dedos
   mov: number;                // quanto mexeu (para separar toque de arrasto)
   t: number;                  // hora do início
+  troca: boolean;             // deslizar sem zoom troca a foto (não depois de uma pinça)
+  m0?: Ponto;                 // pinça: o meio dos dedos no começo (relativo ao centro do palco)
+  v0?: Vista;                 // pinça: a vista no começo
 };
 export type Abrir = {
   /** fotos grandes (as do trilho da página, na mesma ordem) */
@@ -59,8 +67,10 @@ const CSS = `
 .gt-foto{width:100%;height:100%;min-width:0;object-fit:contain;padding:5%;-webkit-user-drag:none;pointer-events:none;transform-origin:center center;
   transition:transform .26s cubic-bezier(.2,.8,.2,1)}
 .gt-dica{display:none;position:absolute;left:50%;top:12px;z-index:2;transform:translateX(-50%);padding:6px 12px;border-radius:999px;
-  background:rgb(255 255 255 / .92);color:#1d1d1f;font-size:12.5px;font-weight:600;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px -6px rgb(0 0 0 / .3)}
+  background:rgb(255 255 255 / .92);color:#1d1d1f;font-size:12.5px;font-weight:600;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px -6px rgb(0 0 0 / .3);
+  transition:opacity .3s ease}
 @media (hover:none){.gt-dica{display:block}}
+.gt.ampliou .gt-dica{opacity:0}
 .gt-seta{position:absolute;top:50%;z-index:2;width:48px;height:48px;margin-top:-24px;border:0;border-radius:50%;display:none;place-items:center;padding:0;
   background:rgb(255 255 255 / .92);color:#1d1d1f;box-shadow:0 6px 18px -6px rgb(0 0 0 / .25),inset 0 0 0 1px #e2e2e7;cursor:pointer}
 .gt-seta:disabled{opacity:.35;cursor:default}
@@ -100,6 +110,8 @@ const ptrs = new Map<number, { x: number; y: number }>();
 let gesto: Gesto | null = null;
 let toque: { t: number; x: number; y: number } | null = null;
 let tipoUlt = 'mouse';
+// o último meio dos dedos (relativo ao centro do palco): ao soltar, o zoom volta para 1–4× em volta dele
+let ultimoFoco: Ponto = { x: 0, y: 0 };
 
 // um desenho por quadro: trilho, foto ampliada, contador, setas e miniatura ativa
 function pintar() {
@@ -190,16 +202,31 @@ function onWheel(e: WheelEvent) {
 }
 
 // ---- gestos: deslizar entre fotos, arrastar com zoom, pinça e toque duplo ----
+// A medida do palco e a foto desenhada nele (px), para a conta do toque (ui/zoomToque.ts).
+function medida(): { r: DOMRect; c: Caixa } {
+  const r = el!.palco.getBoundingClientRect();
+  const f = el!.fotos[i];
+  return { r, c: caixaFoto(f.naturalWidth, f.naturalHeight, r.width, r.height) };
+}
+const doCentro = (r: DOMRect, x: number, y: number): Ponto => ({ x: x - (r.left + r.width / 2), y: y - (r.top + r.height / 2) });
+const ampliou = () => raiz?.classList.add('ampliou');
+
 function pDown(e: PointerEvent) {
-  el!.palco.setPointerCapture(e.pointerId);
+  // captura: o gesto continua mesmo se o dedo sair do palco (falha com ponteiro sintético: segue sem ela)
+  try { el!.palco.setPointerCapture(e.pointerId); } catch { /* sem captura */ }
   tipoUlt = e.pointerType;
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (ptrs.size === 1) {
-    gesto = { modo: 'arrastar', x: e.clientX, y: e.clientY, vx: vista.x, vy: vista.y, s0: vista.s, d0: 0, mov: 0, t: performance.now() };
+    gesto = { modo: 'arrastar', x: e.clientX, y: e.clientY, vx: vista.x, vy: vista.y, s0: vista.s, d0: 0, mov: 0, t: performance.now(), troca: true };
     setMexendo(true);
   } else if (ptrs.size === 2) {
+    // o 2º dedo encostou: o deslizar de foto que tinha começado com o 1º é desfeito (a foto volta ao lugar)
+    if (arrasto) { arrasto = 0; agendar(); }
     const [a, b] = [...ptrs.values()];
-    gesto = { modo: 'pinca', x: 0, y: 0, vx: vista.x, vy: vista.y, s0: vista.s, d0: dist(a, b), mov: 99, t: 0 };
+    const { r } = medida();
+    const m0 = doCentro(r, (a.x + b.x) / 2, (a.y + b.y) / 2);
+    ultimoFoco = m0;
+    gesto = { modo: 'pinca', x: 0, y: 0, vx: vista.x, vy: vista.y, s0: vista.s, d0: dist(a, b), mov: 99, t: 0, troca: false, m0, v0: { ...vista } };
   }
 }
 function pMove(e: PointerEvent) {
@@ -211,13 +238,17 @@ function pMove(e: PointerEvent) {
     const dx = e.clientX - g.x;
     const dy = e.clientY - g.y;
     g.mov = Math.max(g.mov, Math.abs(dx) + Math.abs(dy));
-    if (g.s0 > 1) setVista(limita({ s: g.s0, x: g.vx + dx, y: g.vy + dy }));
-    else { arrasto = dx; agendar(); }
-  } else if (ptrs.size >= 2) {
+    if (g.s0 > 1 || !g.troca) {
+      const v = { s: g.s0, x: g.vx + dx, y: g.vy + dy };
+      if (e.pointerType === 'touch') { const { r, c } = medida(); setVista(soltoComElastico(v, c, r.width, r.height)); }
+      else if (g.s0 > 1) setVista(limita(v));
+    } else { arrasto = dx; agendar(); }
+  } else if (ptrs.size >= 2 && g.m0 && g.v0) {
     const [a, b] = [...ptrs.values()];
-    const s2 = clamp((g.s0 * dist(a, b)) / g.d0, MIN, MAX);
-    const k = s2 / g.s0;
-    setVista(limita({ s: s2, x: g.vx * k, y: g.vy * k }));
+    const { r, c } = medida();
+    ultimoFoco = doCentro(r, (a.x + b.x) / 2, (a.y + b.y) / 2);
+    setVista(pinca(g.v0, g.m0, ultimoFoco, g.d0, dist(a, b), c, r.width, r.height));
+    if (vista.s > 1.05) ampliou();
   }
 }
 function pFim(e: PointerEvent) {
@@ -225,25 +256,37 @@ function pFim(e: PointerEvent) {
   ptrs.delete(e.pointerId);
   const g = gesto;
   if (ptrs.size > 0) {
-    // pinça terminou com um dedo ainda na tela: ignora até soltar tudo
-    if (g?.modo === 'pinca') gesto = null;
+    // a pinça acabou com um dedo ainda na tela: ele continua arrastando a foto (sem trocar de foto)
+    if (g?.modo === 'pinca') {
+      const [p] = [...ptrs.values()];
+      gesto = { modo: 'arrastar', x: p.x, y: p.y, vx: vista.x, vy: vista.y, s0: vista.s, d0: 0, mov: 99, t: performance.now(), troca: false };
+    }
     return;
   }
   gesto = null;
   setMexendo(false);
-  if (vista.s < 1.02) setVista({ s: 1, x: 0, y: 0 });
+  if (e.pointerType === 'touch') {
+    // toque: o zoom volta para 1–4× e a foto para dentro da borda dela, suave (a transição do CSS)
+    const { r, c } = medida();
+    setVista(assentar(vista, ultimoFoco, c, r.width, r.height));
+  } else if (vista.s < 1.02) setVista({ s: 1, x: 0, y: 0 });
   if (g?.modo === 'arrastar') {
     const dx = arrasto;
     const rapido = performance.now() - g.t < 260;
     arrasto = 0;
-    if (g.s0 <= 1 && vista.s <= 1 && (Math.abs(dx) > 60 || (Math.abs(dx) > 24 && rapido))) irPara(dx < 0 ? i + 1 : i - 1);
+    if (g.troca && g.s0 <= 1 && vista.s <= 1 && (Math.abs(dx) > 60 || (Math.abs(dx) > 24 && rapido))) irPara(dx < 0 ? i + 1 : i - 1);
     else agendar();
-    // toque duplo no celular -> zoom
+    // toque duplo no celular -> 2,5× no ponto tocado (ou volta à foto inteira)
     if (tipoUlt === 'touch' && g.mov < 12) {
       const agora = performance.now();
       const ult = toque;
-      if (ult && agora - ult.t < 320 && dist(ult, { x: e.clientX, y: e.clientY }) < 40) { toque = null; duploZoom(e.clientX, e.clientY); }
-      else toque = { t: agora, x: e.clientX, y: e.clientY };
+      if (ult && agora - ult.t < 320 && dist(ult, { x: e.clientX, y: e.clientY }) < 40) {
+        toque = null;
+        const { r, c } = medida();
+        ultimoFoco = doCentro(r, e.clientX, e.clientY);
+        setVista(toqueDuplo(vista, ultimoFoco, c, r.width, r.height));
+        ampliou();
+      } else toque = { t: agora, x: e.clientX, y: e.clientY };
     }
   }
 }
@@ -270,7 +313,7 @@ function montar(fotos: string[], minis: (HTMLImageElement | null)[], titulo: str
   raiz.innerHTML =
     `<header class="gt-topo"><p id="gt-titulo" class="gt-titulo"></p><span class="gt-contador" aria-live="polite"></span>`
     + `<button type="button" class="gt-botao" aria-label="Fechar galeria">${svg('M6 6l12 12M18 6L6 18')}</button></header>`
-    + `<div class="gt-meio"><span class="gt-dica" aria-hidden="true">Aperte com dois dedos para ampliar</span>`
+    + `<div class="gt-meio"><span class="gt-dica" aria-hidden="true">Toque duas vezes ou use dois dedos para ampliar</span>`
     + `<div class="gt-palco"><div class="gt-trilho"></div></div>`
     + `<button type="button" class="gt-seta esq" aria-label="Foto anterior">${svg('m15 18-6-6 6-6')}</button>`
     + `<button type="button" class="gt-seta dir" aria-label="Próxima foto">${svg('m9 18 6-6-6-6')}</button></div>`
@@ -324,6 +367,8 @@ function montar(fotos: string[], minis: (HTMLImageElement | null)[], titulo: str
   el.palco.addEventListener('pointercancel', pFim);
   el.palco.addEventListener('dblclick', onDuplo);
   el.palco.addEventListener('wheel', onWheel, { passive: false });
+  // Safari do iPhone: o gesto de pinça próprio dele (zoom da página) fica de fora; o touch-action: none já pede isso
+  el.palco.addEventListener('gesturestart', (e) => e.preventDefault());
   document.body.append(raiz);
 }
 

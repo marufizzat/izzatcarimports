@@ -36,6 +36,13 @@ Classes (a galeria, o JSON-LD e o feed tiram "m" e põem "c" no fim):
 Muito texto sozinho NÃO é marketing: nas fotos do catálogo, mais de 15% de texto é quase sempre a etiqueta da peça
 (nome, carro e código do vendedor, ou a etiqueta de fábrica), que mostra o código ao comprador.
 
+Foto do código ("#" no fim da entrada, só em foto de classe p ou s): o atalho "Ver o código na foto" da página da peça
+(lib/quadroFoto.ts: fotoDoCodigo) leva a galeria para ela. É a foto em que o OCR leu o código que a página mostra
+(codigo_da_peca, o mesmo de codigoDaPeca no site), inteiro e começando num pedaço do texto (codigo_no_texto), com 4%+ de
+texto na foto (TEXTO_CODIGO: abaixo disso o código aparece miúdo na galeria); com várias, a de mais texto (a etiqueta de
+perto). Foto em 2+ anúncios só se o código de todos estiver nela. Recalculada no fim de toda rodada do Mac (o texto do
+Vision, onde o limite foi conferido), só nas fotos com os sinais no cache; no robô (rapidocr) as marcas ficam como estão.
+
 Só mede/classifica o que falta (nunca baixa de novo o que já tem); grava aos poucos (pode parar e retomar).
 Baixa a foto média (-O, até 500 px) só na memória, e os 64 primeiros bytes da grande (-F) para o tamanho.
 Os sinais brutos de cada foto (texto, luz, carro, hash, e os da montagem: b borda, k e i carro nas janelas, n objetos)
@@ -633,7 +640,7 @@ def numeros(e):
 
 
 def classe_da(e):
-    return next((v for v in e if isinstance(v, str) and len(v) == 1), None)
+    return next((v for v in e if isinstance(v, str) and len(v) == 1 and v != CODIGO_NA_FOTO), None)
 
 
 def hash_da(e):
@@ -653,7 +660,9 @@ def com_classe(e, classe, h, inc=None):
         inc = incerta_da(e)
     n = numeros(e)
     inc = inc or (classe == "c" and len(n) >= 6)
-    return n + [classe] + ([h] if h else []) + ([INCERTA] if inc and len(n) >= 6 else [])
+    # a marca da foto do código continua enquanto a foto for de peça (marketing ou montagem perdem a marca)
+    cod = [CODIGO_NA_FOTO] if tem_codigo(e) and classe in CLASSES_CODIGO else []
+    return n + [classe] + ([h] if h else []) + ([INCERTA] if inc and len(n) >= 6 else []) + cod
 
 
 def incerta_pelo_cache(e, s):
@@ -683,6 +692,109 @@ def modelos(dados, pecas):
         if len(set().union(*(anuncios.get(k, set()) for k in g))) >= MODELO_ANUNCIOS:
             saida.update(g)
     return saida
+
+
+# ---------- a foto do código ----------
+CODIGO_NA_FOTO = "#"   # no fim da entrada: a foto mostra o código gravado que a página mostra
+CLASSES_CODIGO = ("p", "s")
+TEXTO_CODIGO = 0.04    # área de texto mínima na foto (folha de 10/11: de 0,03 a 0,04 metade com o código ilegível na
+                       # galeria; de 0,04 para cima, todas legíveis)
+MAX_PEDACOS = 6        # o código pode vir em até 6 pedaços no texto ("0 130 823 01E", "GM 90 491 728")
+
+
+def tem_codigo(e):
+    return CODIGO_NA_FOTO in e
+
+
+def com_codigo(e, sim):
+    """A entrada com (sim) ou sem a marca da foto do código (sempre no fim)."""
+    sem = [v for v in e if v != CODIGO_NA_FOTO]
+    return sem + [CODIGO_NA_FOTO] if sim else sem
+
+
+def codigo_valido(c):
+    """O mesmo de codigoValido (site/src/lib/dados.ts): 5+ com letra e número, ou 6+ dígitos (lista de anos e
+    enchimento "101010101" não contam)."""
+    s = (c or "").strip()
+    if re.fullmatch(r"[\d.-]+", s):
+        if re.fullmatch(r"((19|20)\d{2}[-.]?)+", s) or re.fullmatch(r"(\d{1,3})\1+\d?", re.sub(r"[.-]", "", s)):
+            return False
+        return len(re.findall(r"\d", s)) >= 6
+    return len(s) >= 5 and bool(re.search(r"[a-z]", s, re.I)) and bool(re.search(r"\d", s))
+
+
+def codigo_da_peca(oem):
+    """O código que a página da peça mostra (codigoDaPeca): o 1º do campo, em maiúsculas, se for válido; senão ''."""
+    c = (re.split(r"[\s,;/|]+", (oem or "").strip()) or [""])[0]
+    return c.upper() if codigo_valido(c) else ""
+
+
+def codigo_no_texto(cod, texto):
+    """O OCR leu o código na foto? Numa linha do texto lido, o código (sem espaço, traço e ponto) é a junção de pedaços
+    seguidos começando no INÍCIO de um pedaço e terminando no fim de um (ou com até 2 letras de revisão coladas:
+    "623101991R" vale para 623101991). Nunca no meio de um número ("04C-199 207300" não é 04C199207) nem colando
+    palavras de linhas diferentes. Código com menos de 6 letras e números: nunca (acharia por acaso)."""
+    alvo = re.sub(r"[^A-Z0-9]", "", _normal(cod))
+    if len(alvo) < 6:
+        return False
+    for linha in _normal(texto).split("|"):
+        ts = [t for t in re.split(r"[^A-Z0-9]+", linha) if t]
+        for i in range(len(ts)):
+            junto = ""
+            for t in ts[i:i + MAX_PEDACOS]:
+                junto += t
+                if len(junto) >= len(alvo):
+                    resto = junto[len(alvo):]
+                    if junto.startswith(alvo) and (not resto or len(resto) <= 2 and resto.isalpha()):
+                        return True
+                    break
+                if not alvo.startswith(junto):
+                    break
+    return False
+
+
+def galeria_de(fotos, dados):
+    """As fotos na ordem da galeria (fotosGaleria do site): sem marketing e com a montagem no fim."""
+    cl = lambda k: classe_da(dados.get(k) or [])    # noqa: E731
+    boas = [k for k in fotos if k and cl(k) != "m"]
+    if not boas:
+        return [k for k in fotos if k]
+    return [k for k in boas if cl(k) != "c"] + [k for k in boas if cl(k) == "c"]
+
+
+def marcar_codigos(dados, cache, pecas):
+    """Marca a foto do código de cada peça (a de mais texto entre as que mostram o código da página) e tira a marca das
+    outras. Só mexe nas fotos com o texto lido no cache ("x"): sem ele (no robô, as fotos medidas em outra rodada) a
+    entrada fica como está. Devolve quantas fotos ficaram marcadas entre as conferidas."""
+    usos = {}
+    for p in pecas:
+        for k in p.get("fotos") or []:
+            usos.setdefault(k, []).append(p)
+
+    def mostra(k, cod):
+        s, e = cache.get(k), dados.get(k)
+        return bool(cod and s and e and "x" in s and classe_da(e) in CLASSES_CODIGO
+                    and s.get("t", 0) >= TEXTO_CODIGO and codigo_no_texto(cod, s["x"]))
+
+    marcar = set()
+    for p in pecas:
+        cod = codigo_da_peca(p.get("oem"))
+        if not cod:
+            continue
+        cands = [(cache[k]["t"], -i, k) for i, k in enumerate(galeria_de(p.get("fotos") or [], dados))
+                 if mostra(k, cod) and all(mostra(k, codigo_da_peca(o.get("oem")))
+                                           for o in usos.get(k, []) if o is not p and codigo_da_peca(o.get("oem")))]
+        if cands:
+            marcar.add(max(cands)[2])
+    n = 0
+    for k, e in list(dados.items()):
+        if "x" not in cache.get(k, {}):
+            continue
+        quer = k in marcar
+        if quer != tem_codigo(e):
+            dados[k] = com_codigo(e, quer)
+        n += quer
+    return n
 
 
 # ---------- JSON ----------
@@ -925,12 +1037,17 @@ def main(argv):
     rep = modelos(dados, pecas)                  # a mesma foto em vários anúncios: modelo do vendedor (marketing)
     for k in rep:
         dados[k] = com_classe(dados[k], "m", hash_da(dados[k]))
+    # "Ver o código na foto": só com o texto do Vision (o limite de texto foi conferido nele, folha de 10/11). No robô
+    # (rapidocr) as marcas ficam como estão: a foto nova ganha o atalho na próxima rodada do Mac (falso positivo é pior
+    # que não mostrar). MEDIR_CODIGO=1 força.
+    n_cod = marcar_codigos(dados, cache, pecas) if motor == "vision" or os.getenv("MEDIR_CODIGO") == "1" else 0
     contagem = {}
     for e in dados.values():
         c = classe_da(e) or "-"
         contagem[c] = contagem.get(c, 0) + 1
     print("classes: " + ", ".join(f"{c} {n}" for c, n in sorted(contagem.items())) + f" (modelo repetido: {len(rep)})"
-          + f" | caixa incerta: {sum(1 for e in dados.values() if incerta_da(e))}", flush=True)
+          + f" | caixa incerta: {sum(1 for e in dados.values() if incerta_da(e))}"
+          + f" | foto do código: {sum(1 for e in dados.values() if tem_codigo(e))} ({n_cod} conferidas agora)", flush=True)
     gravar(dados, ARQ)
     if cache and (fila or sem_classe or "--faixas" in argv or "--montagem" in argv or "--detector" in argv):
         gravar(cache, SINAIS)

@@ -5,7 +5,7 @@
 // src/data/fotos-ml-caixas.json.
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { quadro, atributosQuadro, fotosGaleria, classeFoto, MARGEM, INTEIRA, RESPIRO, NITIDO, INCERTA } from '../src/lib/quadroFoto';
+import { quadro, atributosQuadro, fotosGaleria, classeFoto, temCodigo, fotoDoCodigo, CODIGO_NA_FOTO, MARGEM, INTEIRA, RESPIRO, NITIDO, INCERTA } from '../src/lib/quadroFoto';
 
 /** lê o style gerado de volta (como o CSS faz: --h cai no --w, --x/--y no 0) */
 function ler(style: string) {
@@ -146,6 +146,27 @@ describe('quadro das fotos do ML na galeria', () => {
     expect(classeFoto('d', t)).toBeNull();
   });
 
+  it('foto do código ("#" no fim): a classe e o quadro não mudam; o atalho vai para a 1ª da galeria com a marca', () => {
+    const h = '0123456789abcdef';
+    const t = {
+      capa: [1200, 900, 100, 100, 1100, 800, 'p', h],
+      etq: [1200, 900, 100, 100, 1100, 800, 'p', h, INCERTA, CODIGO_NA_FOTO],
+      perto: [1200, 900, 's', h, CODIGO_NA_FOTO],
+      banner: [1, 1, 'm', h],
+    };
+    expect(classeFoto('etq', t)).toBe('p');
+    expect(classeFoto('perto', t)).toBe('s');
+    expect(quadro(t.etq)).toEqual(quadro([1200, 900, 100, 100, 1100, 800, 'p', h, INCERTA]));
+    expect(temCodigo('etq', t)).toBe(true);
+    expect(temCodigo('capa', t)).toBe(false);
+    expect(temCodigo('nenhuma', t)).toBe(false);
+    expect(fotoDoCodigo(['capa', 'perto', 'etq'], t)).toBe(1);
+    expect(fotoDoCodigo(['capa', 'banner'], t)).toBe(-1);
+    expect(fotoDoCodigo([], t)).toBe(-1);
+    // a ordem é a da galeria (o marketing sai antes de contar a posição)
+    expect(fotoDoCodigo(fotosGaleria(['banner', 'capa', 'etq'], t), t)).toBe(1);
+  });
+
   it('style curto: sem zeros nem valores repetidos', () => {
     expect(atributosQuadro(quadro([1200, 1200, 200, 200, 1000, 1000])).style).toBe('--w:1');
     const s = atributosQuadro(quadro([900, 1200, 100, 300, 800, 1000])).style!;
@@ -178,7 +199,9 @@ describe('quadro das fotos do ML na galeria', () => {
       const outras = e.filter((v) => typeof v === 'string' && v.length !== 1 && v.length !== 16 && v !== INCERTA);
       // incerta só com caixa e foto não quadrada; a montagem com o carro (c) leva a marca também quadrada (aparece inteira)
       const inc = e.includes(INCERTA) && (m.length !== 6 || (m[0] === m[1] && c !== 'c'));
-      if (!(m.length === 2 || m.length === 6) || (c !== null && !'psmc'.includes(c)) || outras.length || inc || problema(e))
+      // a marca do código só em foto de peça (p ou s) e sempre no fim, depois da classe
+      const cod = e.includes(CODIGO_NA_FOTO) && (!(c === 'p' || c === 's') || e[e.length - 1] !== CODIGO_NA_FOTO);
+      if (!(m.length === 2 || m.length === 6) || (c !== null && !'psmc'.includes(c)) || outras.length || inc || cod || problema(e))
         ruins.push(`${k} ${JSON.stringify(e)} ${problema(e)}`);
     }
     expect(ruins.slice(0, 5)).toEqual([]);

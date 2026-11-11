@@ -7,7 +7,7 @@
 // Gatilhos so com dado de verdade: estoque = p.q (ML), reputacao = resumo().reputacao, CDV/nota/garantia do site.
 import type { Peca } from '../lib/dados';
 import { foto, brl, capaEstudio, codigoDaPeca, SITE } from '../lib/dados';
-import { quadroFoto, fotosGaleria } from '../lib/quadroFoto';
+import { quadroFoto, fotosGaleria, fotoDoCodigo } from '../lib/quadroFoto';
 import { linkWhats, cabecaPeca, caudaPeca, linhaMeuCarro, conviteCarro, precoWhats, DESCONTO_WHATS } from '../lib/whats';
 import Icone from './Icone.astro';
 import SeloReputacao from './SeloReputacao.astro';
@@ -47,6 +47,10 @@ const fotos: { g: string; m: string; e?: boolean; q?: { cls?: string; style?: st
   ...(est ? [{ g: est, m: est, e: true }] : []),
   ...(doAnuncio.length ? doAnuncio : ['']).map((f) => ({ g: foto(f, 'F'), m: foto(f, 'A'), q: quadroFoto(f) })),
 ];
+// "Ver o código na foto": a foto do anúncio em que o OCR leu este código (a etiqueta; medir_fotos_ml.py marca com "#").
+// A posição na galeria da página (a capa de estúdio vem antes). Sem foto do código: o atalho não aparece.
+const iCod = cod ? fotoDoCodigo(doAnuncio) : -1;
+const fotoCod = iCod < 0 ? -1 : iCod + (est ? 1 : 0);
 // 1ª tela do celular (CSS no fim): a altura que a foto pode ter depende de quantas linhas vêm abaixo dela. Contado no
 // build pelo tamanho do texto (sem script, sem pulo na tela): nome curto = 1 linha (a foto ganha); nome longo = letra
 // menor (cabe em 2); carro de 2+ modelos com nome comprido = anos na 2ª linha; preço de 5 dígitos + "Peça única" quebra
@@ -178,6 +182,8 @@ const perguntas = [
           <a class="compra-ajuda" href="#como-achar-codigo">Onde fica o código na sua peça?</a>
         </div>
         <button type="button" class="botao botao-linha" data-copiar={cod}><Icone nome="copiar" />Copiar</button>
+        {/* a miniatura (a mesma da galeria) entra pelo script; o lugar dela já está guardado */}
+        {fotoCod >= 0 && <button type="button" class="cod-foto" data-foto-cod={fotoCod}><span class="cod-foto-mini"></span>Ver o código na foto</button>}
       </div>
     )}
 
@@ -195,9 +201,12 @@ const perguntas = [
   import { ligarCampoCep, cepCompleto, formatarCep, salvarCep } from '../lib/cep';
   import { linkWhats, mensagemFrete, blocoDaCabeca, urlDaCauda, linhaMeuCarro, carroSalvoTxt, abrirWhats } from '../lib/whats';
   import { ligarListaPeca, ligarVaiJunto } from './peca/listaPeca';
+  import { ligarVistos } from './peca/vistosPeca';
 
   // "Adicionar à lista de orçamento" (o 3º botão da compra) e o "+ lista" dos cartões do "Vai junto" (peca/VaiJunto.astro)
   ligarListaPeca();
+  // "Vistos recentemente": grava esta peça e, com outras já vistas, o "Você também viu" no fim (peca/vistosPeca.ts)
+  ligarVistos();
   const vaiJunto = document.querySelector<HTMLElement>('[data-vj-raiz]');
   if (vaiJunto) ligarVaiJunto(vaiJunto);
 
@@ -298,6 +307,7 @@ const perguntas = [
     const titulo = g.dataset.titulo || '';
     const indice = () => Math.max(0, Math.min(total - 1, Math.round(trilho.scrollLeft / (trilho.clientWidth || 1))));
     let atual = 0;
+    let seloDaFoto = (_i: number) => {};
     const calmo = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     // miniaturas: uma parada só no Tab (a da foto à vista); as setas andam entre elas
@@ -319,6 +329,7 @@ const perguntas = [
       if (i === atual) return;
       atual = i;
       lupaFim();
+      seloDaFoto(i);
       if (cont) cont.textContent = `${i + 1} / ${total}`;
       pontos.forEach((d, j) => d.classList.toggle('on', i === j));
       minis.forEach((b, j) => { b.setAttribute('aria-current', String(i === j)); b.tabIndex = i === j ? 0 : -1; });
@@ -370,6 +381,40 @@ const perguntas = [
     else window.addEventListener('load', preBuscar, { once: true });
 
     minis.forEach((b, j) => b.addEventListener('click', () => ir(j)));
+
+    // "Ver o código na foto" (caixa do código): a galeria vai para a foto da etiqueta. Se a foto grande não está inteira
+    // à vista (celular: ela fica lá em cima), a página sobe até ela e a foto troca sem deslizar; no PC (galeria presa ao
+    // lado) só a foto desliza. Ao chegar, o código aparece por uns segundos no canto da foto, para comparar.
+    let selo: HTMLElement | null = null, seloFoto = -1, seloEspera = 0, alvoCod = -1, codTxt = '';
+    const mostrarSelo = (i: number) => {
+      if (!selo) {
+        selo = document.createElement('span');
+        selo.className = 'galeria-cod';
+        selo.setAttribute('aria-hidden', 'true');
+        palco.append(selo);
+      }
+      selo.innerHTML = '';
+      selo.append('Código ', Object.assign(document.createElement('b'), { className: 'oem', textContent: codTxt }));
+      seloFoto = i;
+      requestAnimationFrame(() => selo?.classList.add('on'));
+      clearTimeout(seloEspera);
+      seloEspera = window.setTimeout(() => selo?.classList.remove('on'), 5000);
+    };
+    seloDaFoto = (i: number) => {
+      if (i === alvoCod) { alvoCod = -1; mostrarSelo(i); }
+      else if (selo && i !== seloFoto) selo.classList.remove('on');
+    };
+    g.addEventListener('ir-foto', (e) => {
+      const { k, cod: c } = (e as CustomEvent<{ k: number; cod: string }>).detail;
+      codTxt = c;
+      const topo = document.querySelector('header.cab')?.getBoundingClientRect().height ?? 0;
+      const r = palco.getBoundingClientRect();
+      const fora = r.top < topo || r.bottom > window.innerHeight;
+      if (fora) window.scrollTo({ top: Math.max(0, window.scrollY + r.top - topo - 12), behavior: calmo.matches ? 'instant' : 'smooth' });
+      trilho.focus({ preventScroll: true });
+      if (indice() === k) { alvoCod = -1; mostrarSelo(k); }
+      else { alvoCod = k; ir(k, !fora); }
+    });
     faixa?.addEventListener('keydown', (e) => {
       const j = minis.indexOf(document.activeElement as HTMLButtonElement);
       if (j < 0) return;
@@ -477,6 +522,24 @@ const perguntas = [
     aviso.textContent = '';
     requestAnimationFrame(() => { aviso!.textContent = txt; });
   };
+  // "Ver o código na foto": a miniatura da própria galeria (o mesmo quadro) e o pedido para a galeria ir até a foto
+  document.querySelectorAll<HTMLButtonElement>('[data-foto-cod]').forEach((b) => {
+    const k = Number(b.dataset.fotoCod);
+    const galeria = document.querySelector<HTMLElement>('[data-galeria]');
+    const cod = b.closest('.compra-cod')?.querySelector('.oem')?.textContent?.trim() || '';
+    const mini = galeria?.querySelector<HTMLImageElement>(`[data-ir="${k}"] img`) ?? galeria?.querySelectorAll<HTMLImageElement>('[data-trilho] img')[k];
+    if (mini) {
+      const c = mini.cloneNode(false) as HTMLImageElement;
+      c.alt = '';
+      c.loading = 'lazy';
+      b.querySelector('.cod-foto-mini')?.append(c);
+    }
+    b.addEventListener('click', () => {
+      galeria?.dispatchEvent(new CustomEvent('ir-foto', { detail: { k, cod } }));
+      avisar(`Foto ${k + 1}: a etiqueta com o código ${cod}`);
+    });
+  });
+
   document.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((b) => {
     const rot = b.querySelector('span') ?? b.lastChild!;
     const antes = rot.textContent;
@@ -533,12 +596,12 @@ const perguntas = [
      borda e sem nunca cortar o lado curto da foto (lib/quadroFoto.ts). A marca é o
      --w no style (a cópia ampliada da lupa também leva style, então [style] sozinho não serve). Vai sem width/height no HTML:
      o tamanho vem daqui e, fora do fluxo (absolute), ela não empurra nada */
-  :is(.galeria-trilho, .galeria-miniaturas, .gt-faixa) img[style*="--w"] {
+  :is(.galeria-trilho, .galeria-miniaturas, .gt-faixa, .cod-foto-mini) img[style*="--w"] {
     position: absolute; padding: 0; max-width: none; max-height: none; object-fit: fill;
     left: calc(var(--x, 0) * -100%); top: calc(var(--y, 0) * -100%); width: calc(var(--w) * 100%); height: calc(var(--h, var(--w)) * 100%); }
   /* o quadro passa da foto (peça comprida, encostada na borda, foto pequena, caixa incerta ou sem peça achada): a foto
      fica no meio e as bordas dela se desfazem no fundo do estúdio (nada de foto colada), também nas miniaturas */
-  :is(.galeria-trilho, .galeria-lupa, .galeria-miniaturas, .gt-faixa) img.i { --fx: clamp(0%, (1 - var(--w)) * 100%, 5%); --fy: clamp(0%, (1 - var(--h, var(--w))) * 100%, 5%);
+  :is(.galeria-trilho, .galeria-lupa, .galeria-miniaturas, .gt-faixa, .cod-foto-mini) img.i { --fx: clamp(0%, (1 - var(--w)) * 100%, 5%); --fy: clamp(0%, (1 - var(--h, var(--w))) * 100%, 5%);
                           --mx: linear-gradient(90deg, #0000, #000 var(--fx), #000 calc(100% - var(--fx)), #0000);
                           --my: linear-gradient(#0000, #000 var(--fy), #000 calc(100% - var(--fy)), #0000);
                           -webkit-mask-image: var(--mx), var(--my); -webkit-mask-composite: source-in;
@@ -596,7 +659,7 @@ const perguntas = [
     .galeria-miniaturas { display: none; }
     .galeria-pontos { display: flex; }
   }
-  @media (prefers-reduced-motion: reduce) { .galeria-pontos i, .galeria-miniaturas button, .galeria-dica, .galeria-guia, .galeria-lupa { transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { .galeria-pontos i, .galeria-miniaturas button, .galeria-dica, .galeria-guia, .galeria-lupa, .galeria-cod { transition: none !important; } }
 
   .compra { min-width: 0; display: grid; gap: 16px; align-content: start; }
   .compra-cabeca { display: grid; gap: 8px; margin: 0; font: inherit; letter-spacing: normal; }
@@ -706,6 +769,29 @@ const perguntas = [
      inline-block e sem largura fixa: no celular de 320 px ele quebra em vez de alargar a coluna */
   .compra-ajuda { display: inline-block; padding-block: 12px; margin: -8px 0 -12px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
   .compra-ajuda:hover { color: var(--ink); }
+  /* "Ver o código na foto": uma linha a mais na caixa do código, com a miniatura da foto da etiqueta */
+  .compra-cod:has(.cod-foto) { flex-wrap: wrap; row-gap: 10px; padding-bottom: 6px; }
+  /* base 0: o texto do código encolhe ao lado do "Copiar" (como sem a linha nova) em vez de empurrar o botão para baixo */
+  .compra-cod:has(.cod-foto) > div { flex: 1 1 0; }
+  .compra-cod .cod-foto { flex: 1 0 100%; display: flex; align-items: center; gap: 12px; min-height: 52px; margin: 0 -6px 0 -10px;
+                          padding: 6px 34px 6px 6px; position: relative; border: 0; border-top: 1px solid var(--line); border-radius: 0 0 10px 10px;
+                          background: none; color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 650; text-align: left; cursor: pointer;
+                          transition: background-color .18s ease; }
+  .compra-cod .cod-foto:hover { background: var(--surface-2); }
+  .compra-cod .cod-foto:focus-visible { outline: 3px solid var(--accent-text); outline-offset: -3px; border-radius: 10px; }
+  .compra-cod .cod-foto::after { content: ""; position: absolute; right: 14px; top: 50%; width: 8px; height: 8px; margin-top: -4px;
+                                 border: solid var(--ink-2); border-width: 2px 2px 0 0; transform: rotate(45deg); }
+  .compra-cod .cod-foto-mini { position: relative; flex: none; width: 40px; height: 40px; border-radius: 9px; overflow: hidden; background: linear-gradient(#f4f3f0, #e7e5e1);
+                               box-shadow: inset 0 0 0 1px var(--line); }
+  .cod-foto-mini img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+  .cod-foto-mini img:not(.estudio) { object-fit: scale-down; mix-blend-mode: multiply; }
+  .cod-foto-mini img.estudio { padding: 0; object-fit: cover; }
+  /* o código no canto da foto, por uns segundos, quando a galeria chega pela caixa do código */
+  .galeria-cod { position: absolute; left: 14px; top: 14px; z-index: 1; display: inline-flex; align-items: baseline; gap: 6px; padding: 7px 12px;
+                 border-radius: 999px; background: rgb(29 29 31 / .84); color: #fff; font-size: 12.5px; font-weight: 600; pointer-events: none;
+                 opacity: 0; transform: translateY(-4px); transition: opacity .25s ease, transform .25s ease; }
+  .galeria-cod.on { opacity: 1; transform: none; }
+  .galeria-cod b { font-size: 14px; font-weight: 650; letter-spacing: .02em; }
 
   .compra-perguntas { margin-top: 6px; }
   .compra-perguntas-titulo { margin: 0 0 6px; font-stretch: 84%; font-weight: 800; font-size: 22px; line-height: 1.1; }
