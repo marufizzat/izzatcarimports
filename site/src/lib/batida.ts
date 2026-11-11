@@ -21,7 +21,7 @@
 // Kit curto na frente é o estoque de verdade, não falta de linha.
 // Sem node:fs e sem valores de lib/busca.ts: roda no build (pages/dados/batida.json.ts), no teste e no navegador.
 import type { Filtros, Item, Lado, Posicao } from './busca';
-import { codigoDaFoto, linkLinha, nomeEh, type Eh } from './raioX';
+import { codigoDaFoto, linkLinha, nomeEh, EH_PAINEL_FRONTAL, type Eh } from './raioX';
 import { anosTexto } from './whats';
 import { nomeModelos } from './meuCarro';
 import { codigoPeca } from '../components/catalogo/etiqueta';
@@ -97,9 +97,9 @@ const frente = (L?: Lado): Linha[] => [
   { nome: 'Guia do para-choque', tipo: LATARIA, sub: 'Guias e Suportes do Para-choque', lado: L, ...X, eh: { cab: 'guia suporte', tem: 'para-choque' } },
   { nome: 'Alma do para-choque', tipo: LATARIA, sub: 'Almas do Para-choque', eh: { cab: 'alma', tem: 'para-choque' } },
   { nome: 'Travessa de reforço', tipo: LATARIA, sub: 'Vigas de Reforço', pos: 'D', ...X, eh: { cab: 'travessa barra viga reforco' } },
-  // o painel frontal é a peça inteira (sem lado): o suporte de um lado, o coxim e a plaquinha são peça ligada
-  { nome: 'Painel frontal', tipo: ARREF, sub: 'Suportes do Radiador', eh: [{ cab: 'painel', tem: 'frontal dianteiro radiador' },
-    { cab: 'suporte travessa', tem: 'radiador travessa', sem: 'esquerdo direito esquerda direita coxim braco placa inferior superior lateral' }] },
+  // o painel frontal é a peça inteira (sem lado): o nome diz "painel" ou "travessa" (EH_PAINEL_FRONTAL, lib/raioX.ts);
+  // o suporte pequeno, o coxim e a plaquinha são peça ligada
+  { nome: 'Painel frontal', tipo: ARREF, sub: 'Suportes do Radiador', eh: EH_PAINEL_FRONTAL },
   { nome: 'Radiador', tipo: ARREF, sub: 'Radiadores', eh: { cab: 'radiador' } },
   { nome: 'Condensador do ar-condicionado', tipo: 'Ar-condicionado', sub: 'Condensadores', eh: { cab: 'condensador radiador', tem: 'condensador' } },
   { nome: 'Intercooler', tipo: 'Filtro de Ar e Turbo', sub: 'Intercoolers', ...X, eh: { cab: 'intercooler' } },
@@ -257,13 +257,25 @@ export const ehDaLinha = (l: Linha, nome: string): boolean => nomeEh(l.eh, nome)
  *  lista mostra; o "Outra opção" passa pelas outras). A linha pede o lado e a posição dela (o catálogo filtra); a guarda
  *  do ponto tira a peça que DIZ o lado ou a posição oposta. Linha de pátio (sem tipo) = nenhuma peça. */
 export function itensDaLinha(p: Ponto, l: Linha, procurar: (f: Filtros) => Item[], carro: CarroBatida = {}): Item[] {
-  if (!l.tipo) return [];
+  return listaDaLinha(p, l, procurar, carro).itens;
+}
+
+/** A lista de UMA linha (a de `itensDaLinha`) e se o link do catálogo dela mostra EXATAMENTE essa lista.
+ *  O endereço do catálogo só sabe pedir tipo + sub + o lado/posição da LINHA; a guarda do ponto ("tira a que DIZ o lado
+ *  ou a posição oposta") não cabe nele: na "Alma do para-choque" da batida da frente o link abria 7 peças e 3 diziam
+ *  "traseiro" (rodada 16). `noCatalogo` = a guarda não tirou nada, o link e a lista são a mesma coisa. Quando é falso, a
+ *  linha NÃO manda ao catálogo: as peças dela aparecem no próprio painel ("Outra opção", como já era com o carro
+ *  salvo). Uma regra só de lado e posição para a contagem e para a lista, com ou sem carro. */
+export function listaDaLinha(p: Ponto, l: Linha, procurar: (f: Filtros) => Item[], carro: CarroBatida = {}): { itens: Item[]; noCatalogo: boolean } {
+  if (!l.tipo) return { itens: [], noCatalogo: true };
   const grupo = new Map<Item, number>();
   const g = (it: Item) => { let v = grupo.get(it); if (v === undefined) { v = ehDaLinha(l, it.n) ? 0 : 1; grupo.set(it, v); } return v; };
-  return procurar(filtrosDaLinha(l, carro))
+  const doLink = procurar(filtrosDaLinha(l, carro));
+  const itens = doLink
     .filter((it) => !(p.lado && it.l && it.l !== p.lado))
     .filter((it) => !(p.pos && it.pos === (p.pos === 'D' ? 'T' : 'D')))
     .sort((a, b) => g(a) - g(b) || a.p - b.p || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return { itens, noCatalogo: itens.length === doLink.length };
 }
 
 /** Um ponto com as peças de cada linha (no navegador, com o carro: a lista e o "Outra opção"). As linhas EXTRA sem peça
@@ -273,6 +285,17 @@ export function opcoesDoPonto(p: Ponto, procurar: (f: Filtros) => Item[], carro:
     const itens = itensDaLinha(p, linha, procurar, carro);
     return { linha, itens, certa: itens.length > 0 && ehDaLinha(linha, itens[0].n) };
   }).filter((x) => x.itens.length > 0 || !x.linha.extra);
+}
+
+/** Ponto do CENTRO (frente, traseira: sem lado) com a peça à mostra de UM lado só: o que o nome da linha ganha, para
+ *  quem bateu no meio não receber só o guia direito sem aviso (revisão 16, P3-5): " (lado direito)". Lido do nome da
+ *  peça, como a tela o mostra. Sem nada a dizer (''): o ponto que já tem lado, a linha que já é de um lado ("Lanterna
+ *  traseira esquerda": o nome dela já diz) e a peça cujo nome diz os dois lados ou nenhum. */
+export function ladoNaLinha(p: Ponto, l: Linha, nomeDaPeca: string): string {
+  if (p.lado || l.lado) return '';
+  const n = nomeDaPeca.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const e = /\b(esquerd[oa]s?|motorista)\b/.test(n), d = /\b(direit[oa]s?|passageiro)\b/.test(n);
+  return e === d ? '' : ` (lado ${e ? 'esquerdo' : 'direito'})`;
 }
 
 /** O que o nome da linha ganha quando a peça à mostra não é a do título (fica à vista, com o nome de verdade embaixo). */
@@ -335,6 +358,41 @@ export function kitDoPonto(p: Ponto, procurar: (f: Filtros) => Item[], fotoDe: (
 /** Os 8 pontos de uma vez (o JSON do build). */
 export function kitsDeTodos(procurar: (f: Filtros) => Item[], fotoDe: (it: Item) => string, carro: CarroBatida = {}): KitPonto[] {
   return PONTOS.map((p) => kitDoPonto(p, procurar, fotoDe, carro));
+}
+
+/** O arquivo do estoque inteiro (sem carro salvo: pages/dados/batida.json.ts → /dados/batida.json). Curto: as peças UMA
+ *  vez só (a mesma aparece em 2 ou 3 pontos) e, por ponto, uma entrada por linha, na ordem de PONTOS[k].linhas:
+ *  [quantas, qual peça] (linha sem peça: [0, -1]); um 3º número 0 quando a peça à mostra NÃO é a do título (só há peça
+ *  ligada); e, quando o link do catálogo mostraria peça que a guarda do ponto tira (`listaDaLinha().noCatalogo` falso),
+ *  um 4º item com as OUTRAS peças da linha, na ordem: a lista aparece no painel e o link do catálogo não é oferecido. */
+export type EntradaBatida = [number, number] | [number, number, 0 | 1] | [number, number, 0 | 1, number[]];
+export type BatidaJson = { v: number; pecas: Rep[]; pontos: Record<string, EntradaBatida[]> };
+
+export function batidaJson(procurar: (f: Filtros) => Item[], fotoDe: (it: Item) => string): BatidaJson {
+  const pecas: Rep[] = [];
+  const lugar = new Map<string, number>();
+  const idx = (it: Item) => { let i = lugar.get(it.id); if (i === undefined) { i = pecas.push(repDe(it, fotoDe)) - 1; lugar.set(it.id, i); } return i; };
+  const pontos: BatidaJson['pontos'] = {};
+  for (const p of PONTOS) {
+    pontos[p.k] = p.linhas.map((l): EntradaBatida => {
+      const { itens, noCatalogo } = listaDaLinha(p, l, procurar);
+      if (!itens.length) return [0, -1];
+      const certa = ehDaLinha(l, itens[0].n) ? 1 : 0;
+      const i0 = idx(itens[0]);
+      if (!noCatalogo && itens.length > 1) return [itens.length, i0, certa, itens.slice(1).map(idx)];
+      return certa ? [itens.length, i0] : [itens.length, i0, 0];
+    });
+  }
+  return { v: 3, pecas, pontos };
+}
+
+/** Uma linha do arquivo como o painel precisa: quantas peças, as que o painel tem para mostrar (a 1ª; todas, quando o
+ *  link do catálogo não serve) e se a 1ª é a do título. Com 2+ peças e só uma em `ops`, a linha oferece o link do
+ *  catálogo, que nesse caso mostra exatamente as `n` (é o que `batidaJson` garante e o teste confere). */
+export function linhaDoJson(j: BatidaJson, k: string, i: number): { n: number; ops: Rep[]; certa: boolean } {
+  const e = j.pontos[k]?.[i];
+  if (!e?.[0]) return { n: 0, ops: [], certa: false };
+  return { n: e[0], ops: [e[1], ...(e[3] ?? [])].map((x) => j.pecas[x]), certa: e[2] !== 0 };
 }
 
 /** O pedido: das linhas MARCADAS, as que têm peça viram itens (a peça que a linha mostra); as sem peça (pátio) viram a

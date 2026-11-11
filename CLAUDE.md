@@ -311,7 +311,11 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      que são a peça, depois as outras do tipo, a mais barata na frente em cada grupo; a linha principal que só tem peça
      LIGADA vira o título no pátio + a ligada em "Também costuma ir junto" com "(peça ligada)" no nome, sem marcar:
      `linhasDoPainel`, `marcadasDeInicio`; o teste confere em TODO carro e ponto, nos dois estoques. Linha nova = dizer
-     o `eh` dela) (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
+     o `eh` dela. **"Painel frontal"** (revisão 16, P1-1): o nome tem de DIZER a peça inteira, "painel" ou
+     "travessa" (`EH_PAINEL_FRONTAL` em `lib/raioX.ts`, a mesma regra na vista por dentro da frente); "Suporte radiador"
+     sozinho é peça ligada (no Kardian era um suporte pequeno com coxim, marcado e somado como painel); o "Suporte
+     travessa radiador" do S60 vale (pela foto, a barra comprida de um lado ao outro). O teste cobra em toda linha: nome
+     que abre com "Suporte" só é a peça do título numa linha de suporte/guia ou dizendo a peça inteira) (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
      "Outra opção" (passa pelas outras peças da mesma linha; nunca a palavra "trocar") e o total ao vivo (`somaPrecos`, em centavos). Regras do kit:
      peça que vem em par é pedida com o LADO do ponto; a que não tem lado entra sem ele e a guarda do ponto tira só a que
      DIZ o lado/posição oposta (o estoque quase nunca escreve "dianteiro" em grade, alma e guia); linha **principal** sem
@@ -327,7 +331,12 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      (`poucoAnunciado`), com a frase "Nem toda peça está anunciada. Marque o que você precisa e a gente procura no
      pátio." (`FRASE_PATIO`; nunca prometer que tem). **Sem carro**: o estoque inteiro pelo
      `/dados/batida.json` (curto: cada peça uma vez), NADA marcado (são peças de carros diferentes), 6 linhas à vista e o
-     convite "Dizer o meu carro". Pé preso ao pé da tela: "Pedir o conserto no WhatsApp" (`mensagemConserto`,
+     convite "Dizer o meu carro". **A lista da linha é uma regra só** (rodada 17:
+     `listaDaLinha` em `lib/batida.ts`): o endereço do catálogo não sabe tirar "a que diz a posição oposta" (a "Alma do
+     para-choque" da frente abria 7 peças, 3 de traseira); quando o link não mostra EXATAMENTE a lista da linha
+     (`noCatalogo` falso, 34 de 150 linhas em 11/11), o `batida.json` traz todas as peças dela e o painel passa por elas
+     no "Outra opção", como com o carro salvo; o "Ver as N no catálogo" só aparece quando o catálogo mostra as mesmas N
+     (`batidaJson` escreve, `linhaDoJson` lê; o teste confere pelo TÍTULO de cada peça listada, em todo carro e ponto). Pé preso ao pé da tela: "Pedir o conserto no WhatsApp" (`mensagemConserto`,
      `data-botao="raiox-conserto"` → `contato_whatsapp`; a ordem da mensagem é a da tela) e "Guardar na lista"
      (`adicionarNaLista`). Nunca dizer que o kit está completo: "Peça usada: quando vende, acabou. A gente confere na peça
      antes de você comprar." O desmanche vende muito mais peça pequena que lataria (8 faróis e 5 para-choques no estoque
@@ -352,11 +361,22 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      (`pontosLateral(lado)`: o lado vai nos links; o desenho é o do lado esquerdo, e a nota do painel diz).
      Cada peça é um link com a FORMA dela (`PontoQuente`, `lib/porDentro/base.ts`: contornos tirados da arte), com o
      nome e quantas há; o número é o do catálogo com os filtros do link (`contarPontos`; sem carro:
-     `/dados/raio-x-dentro.json`, um arquivo para todas as vistas). O ponto cujo tipo junta a peça e os acessórios
-     dela leva a regra do nome (`eh`, a mesma da lista do conserto: `nomeEh` em `lib/raioX.ts`) e/ou a guarda de
-     posição (`fora`): sem NENHUMA peça que seja a do desenho no link, conta 0 e vira pedido de pátio (revisão 15,
-     P2-2: o "Escapamento" abria um atuador e dois defletores; os "Airbags" do XC60, sensores; a "Alma" da frente do
-     E-Pace, a traseira). Com a peça, o número segue o do link (o catálogo não sabe tirar "a que diz traseiro"). Sem peça, ou tipo que o estoque não tem (capô,
+     `/dados/raio-x-dentro.json`, um arquivo para todas as vistas). **TODO ponto com tipo diz qual nome é a peça do
+     título** (`eh`, a mesma regra da lista do conserto: `nomeEh` em `lib/raioX.ts`; revisão 16, P2-1: antes só 13 dos
+     120 diziam e os outros contavam acessório como a peça: "Motor do teto solar · 1" era uma mangueira de drenagem,
+     "Fechadura da tampa · 4" não tinha fechadura, a "Caixa do filtro de ar" do Onix era um ressonador), mais a guarda
+     de posição (`fora`) onde a vista é de uma ponta: sem NENHUMA peça que seja a do título no link, conta 0 e vira
+     pedido de pátio. `TIPO_INTEIRO` só para o ponto que é o próprio tipo ("Painel (acabamentos)"). Ponto novo = dizer o
+     `eh` dele (o teste cobra; onde a batida tem a mesma linha, a mesma regra).
+     **O 3º estado: "a gente procura" + "N ligadas"** (ajuste da rodada 17): o ponto SEM a peça do título mas com peça
+     ligada no link (a tampa e a moldura da grade, o absorvedor da alma, as molduras do console) continua cinza e
+     dizendo "a gente procura", e mostra, embaixo, "N ligadas"; tocar abre no PRÓPRIO painel o pedido de pátio da peça
+     do título (o mesmo WhatsApp, `data-botao="raio-x"`) e "Peças ligadas que a gente tem" (nome de verdade, preço do
+     site riscado e o do WhatsApp, link da peça). Nunca um link de catálogo e nunca conta no "N de M peças com
+     anúncio". `contarComLigadas` (`lib/porDentro/base.ts`): ligadas = o link, menos a peça que DIZ a posição da
+     outra ponta (`fora`); sem carro, as peças vêm no `l` do `/dados/raio-x-dentro.json` (`dentroJson`, 6 pontos).
+     Esc volta das ligadas à lista (`porDentro.esc()`). Em 11/11: 366 dos 370 pontos que tinham virado só pátio
+     mostram ligadas (504 peças; a maior lista, 8). Com a peça, o número segue o do link (o catálogo não sabe tirar "a que diz traseiro"). Sem peça, ou tipo que o estoque não tem (capô,
      tampa traseira, vidro e quadro do teto solar, forro do teto, longarinas, bancos, disco de freio, protetor de
      cárter): cinza e o link é o WhatsApp "a gente procura no pátio" (`linkProcuraPeca` em `lib/aviso.ts`,
      `data-botao="raio-x"`). Zona sem peça do carro também mostra o botão (a vista vira a lista de pedidos de pátio).
@@ -371,6 +391,11 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      parte certa do carro); o da frente continua em `raioXFrente.test.ts`.
    - **Endereços que já abrem**: `#raio-x=<zona>`, `#raio-x=batida`, `#raio-x=batida:<ponto>`,
      `#raio-x=por-dentro:<zona>` (sem a zona: a frente) (na home e na página do carro; só o `#`, nenhum endereço novo).
+     **A vista por dentro abre com o carro JÁ na vista da zona** (rodada 17): `abrirPorDentro` espera o giro em curso
+     (`giroEmCurso`) e, se a zona ainda está do outro lado, gira antes de abrir (`naVistaDa`, `RaioX.astro`). O "Voltar
+     ao carro" devolve sempre a mesma vista: traseira e lateral direita na de trás, as outras na da frente (antes, o
+     giro e a vista por dentro corriam juntos e quem chegava primeiro decidia). Prova: 20 voltas por zona com atraso
+     sorteado em cada script e arte (`_r17fix/scripts/volta-por-dentro.cjs`).
 
 16. **Abertura viva: "o estúdio vira o seu carro" (rodada 15, nov/2026)** — `v2/AberturaV2.astro` (marcação e CSS),
    `v2/aberturaPalco.ts` (comportamento, chega depois da 1ª pintura) e `lib/abertura.ts` (contas puras, testadas com o
@@ -535,6 +560,23 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      regressiva nem "últimas unidades". Mudou a regra do selo dos cartões: mudar aqui junto (`raioXVivo.test.ts`
      confere com o estoque fixo e com o do dia, sem exigir peça, zona ou quantidade).
 
+19. **Rodada 17 (11/11/2026): as pendências da 16 e a revisão 16** — o que ficou valendo, além do que está nos itens 12, 15 e
+   na busca: **cabeçalho** (P2-2): o campo de busca do PC encolhe com fator 100000 (`.cab .cab-busca`, `Cabecalho.astro`);
+   com 100 o chip do carro levava meio pixel do aperto e o nome ganhava reticências com o campo ainda largo (medir de 8 em
+   8 px de 1024 a 1366, sem e com lista: `_r17fix/scripts/chip-cabecalho.cjs`). **"Onde fica"** (P3-3): o nome que diz
+   "farol" numa peça da zona do motor (o esguicho do farol) fica sem o bloco (`OUTRO_LUGAR.motor`). **Bati o carro**
+   (P3-5): no ponto do centro, a linha cuja peça à mostra diz um lado só ganha " (lado direito)" no nome (`ladoNaLinha`).
+   **`#raio-x-t`** (P3-4): o foco na 1ª parte do carro é posto de novo depois da carga (o navegador tira o foco ao ir
+   até a âncora). **Girar na página do carro** (~7 mil nós, CPU 4×, Chrome de verdade, mouse de verdade pelo CDP): do 2º
+   giro em diante o quadro do giro custa 15–18 ms e nenhuma tarefa passa de 50 ms; o 1º giro (baixa o código e a arte,
+   monta a vista de trás e põe a da frente na caixa dela) deu 64 ms em 1 de 3 medidas no PC. Medir com `page.click` do
+   Playwright engana: a conferência dele roda na página (`elementsFromPoint`, 15–30 ms com o freio). O que foi medido e
+   NÃO adiantou: `contain: strict` no palco, a vista escondida com `visibility` em vez de `display`, camada própria
+   permanente. O que adianta e ficou de fora por risco: `content-visibility: auto` nos grupos de peças abaixo (objetos de
+   layout 11.291 → 1.696, quadro 8–11 ms), que mexe na volta à página no meio de um ano e nos pulos da barra de fichas
+   (o WebKit não ancora a rolagem); e pôr a caixa `.rxg-lado` da vista da frente já no HTML (o 1º giro deixa de refazer
+   o layout da vista inteira).
+
 ## Testes e o estoque do dia (regra de 11/11/2026: o robô parou a loja por causa de teste)
 O robô roda `python testes/test_dados.py` e `npm --prefix site test` com o ESTOQUE DO DIA antes de publicar: teste vermelho
 = loja parada. Por isso nenhum teste pode depender do que está à venda hoje. Três fontes (`site/testes/estoques.ts`):
@@ -625,7 +667,7 @@ não vai. É proibido pular, excluir ou afrouxar teste no robô.
 - Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`: até 2 núcleos, até 4 GB no Chrome ou economia de
   dados; o Safari informa sempre 4 ou 8 núcleos, então iPhone não entra): sem vidro desfocado, sem 3D no coverflow,
   sem movimento no palco da abertura e sem animação de altura nas perguntas.
-- **Busca em camadas (rodada 14, depois da revisão que barrou a 1ª versão do "tipo manda")**: o MiniSearch acha como sempre (todas as palavras) e `Busca.calcular()` ordena o que ele achou, sem esconder nada: (0/1) as que SÃO o que foi digitado, a 1ª palavra do nome é a da busca ("Farol direito", "Módulo ABS", "Motor vidro"); (2) as que citam no nome ("Suporte farol", "Alavanca freio mão"); (3) as que só o anúncio cita. `busca.nExatas` = quantas do começo são a peça (o catálogo escreve "12 peças para “farol” e mais 66 ligadas" e o bloco "Outras peças ligadas a “farol”"); `busca.citam` = nenhuma peça do estoque tem esse nome, a palavra é o lugar ou o assunto ("teto", "porta-malas", "capô", "ar condicionado", "suspensão xc60": "N peças ligadas a …", nunca "para"). `aproximado` (aviso "Nada exato" + pátio) quando: a peça existe no estoque mas não para o carro digitado ou não com as outras palavras ("alternador gol" só com o "Suporte alternador" do Gol: o do Gol primeiro, depois o alternador dos outros carros; "caixa de direção"); ou nada tem todas as palavras, e aí vêm as PARECIDAS DO TIPO, o carro digitado primeiro ("forro de teto": forros; "lanterna led gol": as lanternas do Gol; "farol compass": as luzes do Compass e depois os faróis), nunca zero com o tipo no estoque e nunca outro tipo. O "tipo" é a 1ª unidade digitada que é nome de peça (`casador()`: `cabecas`, `unNaCabeca`, `todas`); as palavras dos nomes ficam em índices montados uma vez (`montarVocab`, fora do busca.json e fora das peças). Regras que a revisão cobrou e têm teste: composta com espaço vale junta quando a junção é palavra de nome do estoque ("porta luvas", "para choque", "semi eixo"; antes de tirar as vazias) e duas palavras do estoque digitadas juntas se separam ("arcondicionado"); "d'água"/"dagua"/"d agua" = água (`limpar`); gatilho e destino do sinônimo são UMA unidade ("espelho retrovisor"); carro e marca valem só como palavra inteira ("gol" não é "Golf"), "vw"/"gm"/"volks" valem pela marca e o apelido de carro unido pelo principal ("new fiesta" = Fiesta, na busca e no filtro `modelo=`); 2 letras no fim só valem como começo quando não são palavra de nome ("sensor de ré" não é Renault; "modulo ab" segue achando ABS); erro de digitação é corrigido ANTES das camadas (`corrigir`: 1 letra, 2 invertidas ou o mesmo som: "retrovizor", "alternadro", "fexadura", "sinalera"); o carro salvo sobe dentro de cada parte da lista sem esconder as outras (`procurar(f, meuCarro)`, `sugestoes(q, n, meuCarro)`); "MLB…" acha o anúncio e "cod 123" o código. **O juiz**: `lib/busca.diferencial.test.ts` roda 541 consultas (as 291 do revisor, as da revisão e 190 do jeito que o cliente digita) com gabarito escrito à mão, no candidato e no motor do ar (commit fixo de `origin/master`, lido pelo git para `node_modules/.cache/busca-no-ar`; no robô o clone é raso e a comparação é pulada): o candidato não pode falhar o gabarito nem perder para o do ar em nenhuma (541/541, 192 vitórias, 0 derrotas; o do ar cumpre 354). `BUSCA_RELATORIO=arquivo` grava a tabela consulta a consulta; `BUSCA_CANDIDATO=/caminho/busca.mjs` julga outro motor. Mexeu na busca ou em `sinonimos.ts`: rodar o juiz.
+- **Busca em camadas (rodada 14, depois da revisão que barrou a 1ª versão do "tipo manda")**: o MiniSearch acha como sempre (todas as palavras) e `Busca.calcular()` ordena o que ele achou, sem esconder nada: (0/1) as que SÃO o que foi digitado, a 1ª palavra do nome é a da busca ("Farol direito", "Módulo ABS", "Motor vidro"); (2) as que citam no nome ("Suporte farol", "Alavanca freio mão"); (3) as que só o anúncio cita. `busca.nExatas` = quantas do começo são a peça (o catálogo escreve "12 peças para “farol” e mais 66 ligadas" e o bloco "Outras peças ligadas a “farol”"); `busca.citam` = nenhuma peça do estoque tem esse nome, a palavra é o lugar ou o assunto ("teto", "porta-malas", "capô", "ar condicionado", "suspensão xc60": "N peças ligadas a …", nunca "para"). `aproximado` (aviso "Nada exato" + pátio) quando: a peça existe no estoque mas não para o carro digitado ou não com as outras palavras ("alternador gol" só com o "Suporte alternador" do Gol: o do Gol primeiro, depois o alternador dos outros carros; "caixa de direção"); ou nada tem todas as palavras, e aí vêm as PARECIDAS DO TIPO, o carro digitado primeiro ("forro de teto": forros; "lanterna led gol": as lanternas do Gol; "farol compass": as luzes do Compass e depois os faróis), nunca zero com o tipo no estoque e nunca outro tipo. O "tipo" é a 1ª unidade digitada que é nome de peça (`casador()`: `cabecas`, `unNaCabeca`, `todas`); as palavras dos nomes ficam em índices montados uma vez (`montarVocab`, fora do busca.json e fora das peças). Regras que a revisão cobrou e têm teste: composta com espaço vale junta quando a junção é palavra de nome do estoque ("porta luvas", "para choque", "semi eixo"; antes de tirar as vazias) e duas palavras do estoque digitadas juntas se separam ("arcondicionado"); "d'água"/"dagua"/"d agua" = água (`limpar`); gatilho e destino do sinônimo são UMA unidade ("espelho retrovisor"); carro e marca valem só como palavra inteira ("gol" não é "Golf"), "vw"/"gm"/"volks" valem pela marca e o apelido de carro unido pelo principal ("new fiesta" = Fiesta, na busca e no filtro `modelo=`); 2 letras no fim só valem como começo quando não são palavra de nome ("sensor de ré" não é Renault; "modulo ab" segue achando ABS); erro de digitação é corrigido ANTES das camadas (`corrigir`: 1 letra, 2 invertidas ou o mesmo som: "retrovizor", "alternadro", "fexadura", "sinalera"); o carro salvo sobe dentro de cada parte da lista sem esconder as outras (`procurar(f, meuCarro)`, `sugestoes(q, n, meuCarro)`); "MLB…" acha o anúncio e "cod 123" o código. **O juiz**: `lib/busca.diferencial.test.ts` roda 541 consultas (as 291 do revisor, as da revisão e 190 do jeito que o cliente digita) com gabarito escrito à mão, no candidato e no motor do ar (commit fixo de `origin/master`, lido pelo git para `node_modules/.cache/busca-no-ar`; no robô o clone é raso e a comparação é pulada): o candidato não pode falhar o gabarito nem perder para o do ar em nenhuma (541/541, 192 vitórias, 0 derrotas; o do ar cumpre 354). `BUSCA_RELATORIO=arquivo` grava a tabela consulta a consulta; `BUSCA_CANDIDATO=/caminho/busca.mjs` julga outro motor. Mexeu na busca ou em `sinonimos.ts`: rodar o juiz. O teste de tempo do juiz (mediana por consulta < 3 ms) mede a MELHOR de 3 a 9 passadas: o relógio de parede só erra para cima, e com uma passada só a máquina carregada deu vermelho (3,66 e 4,66 ms) com o código igual; o limite não mudou.
 - **Teste que o robô roda não pode depender do estoque do dia (rodada 14b, 11/11/2026)**: o robô roda `npm --prefix site test` e `python testes/test_dados.py` ANTES de publicar, a cada 30 min, com o estoque do momento; teste vermelho = nada é publicado e o catálogo no ar congela. A rodada 14 foi recusada assim: vendeu a única lanterna do XC60 e dois testes tinham o estoque de 09/11 no gabarito. Daí em diante: (1) o que cita peça, carro que "tem" algo ou contagem roda no **estoque congelado** `site/testes/fixtures/estoque-busca.json` (o busca.json de 09/11, sem as colunas de foto; não regenerar): o juiz, os casos escritos à mão de `lib/busca.regressao.test.ts`, a conferência da tabela de sinônimos; (2) no **estoque do dia** só regra que sai do próprio estoque testado (`lib/busca.regressao.ts`: 926 consultas geradas; a peça existe = a 1ª é ela; não existe = zero ou lista com aviso e a 1ª da família; o que só o título do anúncio liga nunca antes do que o nome/tipo/bloco ligam); (3) `lib/busca.vendas.test.ts` tira peças do congelado (as 18 vendidas em 11/11, um tipo inteiro de um carro, um tipo do estoque inteiro, um carro) e exige as mesmas regras. **A prova antes de mandar ao robô**: na pasta `site/`, `PYTHON=<python com as dependências> node scripts/estoque-perturbado.mjs` (30 estoques sorteados: tira 2–20% dos anúncios e, a cada 3, um tipo inteiro de um carro; gera os dados como o robô e roda a suíte inteira; `--hoje` usa o `/dados/ativas.json` do site no ar; `--arquivo outro-products.json` testa outro estoque). Tudo verde ou não vai.
 - **O que a busca garante com qualquer estoque (rodada 14b)**: palavra que o estoque conhece (nome, tipo, bloco, carro, marca, gatilho do jeito de falar) nunca é lida como erro de digitação de outra (`casam().certa`, `mesmaForma`: "lanterna" não é "antena" nem "interna", "módulo" não é "modelo"; a aproximação do MiniSearch só vale para palavra desconhecida). Sem peça que SEJA o que foi digitado, nada conta como achado (`aproximado` ou `citam`, `nExatas` 0) e a ordem é: o que o nome cita, o que o tipo "s"/bloco "c" cita, a peça dos outros carros, e por último o que só o texto do anúncio liga (nível 4 em `calcular`). O carro digitado sozinho não faz "parecida" ("churrasqueira gol" sem churrasqueira no estoque = zero + pátio, nunca a lista das peças do Gol). O nome que começa pelo digitado, na ordem, é chave de ordem (não só peso).
 - Busca: UMA regra para o catálogo e as sugestões (`lib/busca.ts`): ano solto vira filtro; todas as palavras, depois com

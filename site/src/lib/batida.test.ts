@@ -2,7 +2,7 @@
 // o que precisa de peça para existir roda só no ESTOQUE FIXO; as regras (lado, posição, nada em dobro, link = catálogo)
 // rodam no fixo e no estoque do dia, com o carro que o estoque tiver.
 import { describe, it, expect } from 'vitest';
-import { PONTOS, LIGADA, FRASE_PATIO, ehDaLinha, itensDaLinha, kitDoPonto, kitsDeTodos, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha, type Linha } from './batida';
+import { PONTOS, LIGADA, FRASE_PATIO, ehDaLinha, itensDaLinha, listaDaLinha, batidaJson, linhaDoJson, ladoNaLinha, kitDoPonto, kitsDeTodos, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha, type Linha } from './batida';
 import { mensagemConserto, somaPrecos } from './whats';
 import { ARTE } from './raioX';
 import { Busca, capaItem } from './busca';
@@ -113,7 +113,8 @@ describe('a peça da linha: o nome começa pela peça que a linha promete', () =
     ['Condensador do ar-condicionado', 'Radiador condensador ar', true],
     ['Condensador do ar-condicionado', 'Caixa ar condicionado', false],
     ['Painel frontal', 'Painel frontal', true],
-    ['Painel frontal', 'Suporte radiador', true],
+    // revisão 16, P1-1: "Suporte radiador" não diz se é a peça inteira (no Kardian é um suporte pequeno com coxim)
+    ['Painel frontal', 'Suporte radiador', false],
     ['Painel frontal', 'Suporte travessa radiador', true],
     ['Painel frontal', 'Placa suporte esquerdo radiador', false],
     ['Painel frontal', 'Par suportes coxins radiador', false],
@@ -178,6 +179,30 @@ describe('a peça da linha: o nome começa pela peça que a linha promete', () =
   });
 });
 
+describe('ponto do centro com peça de um lado só: o nome da linha diz o lado', () => {
+  const ponto = (k: string) => PONTOS.find((p) => p.k === k)!;
+  const linha = (k: string, nome: string) => ponto(k).linhas.find((l) => l.nome === nome)!;
+  it.each([
+    ['traseira', 'Guia do para-choque traseiro', 'Guia suporte para-choque traseiro direito', ' (lado direito)'],
+    ['traseira', 'Guia do para-choque traseiro', 'Guia para-choque traseira esquerda', ' (lado esquerdo)'],
+    ['frente', 'Grade', 'Grade churrasqueira direito', ' (lado direito)'],
+    ['frente', 'Alma do para-choque', 'Alma para-choque', ''],
+    ['frente', 'Suporte do farol', 'Par suportes farol esquerdo direito', ''],
+    // a linha que já é de um lado (o nome dela já diz) não repete
+    ['traseira', 'Lanterna traseira esquerda', 'Lanterna esquerda tampa traseira', ''],
+    ['frente', 'Farol direito', 'Farol direito', ''],
+    // o ponto que já tem lado também não
+    ['traseira-direita', 'Guia do para-choque traseiro', 'Guia suporte para-choque traseiro direito', ''],
+    ['frente-esquerda', 'Grade', 'Grade churrasqueira esquerda', ''],
+  ])('%s / %s × "%s" = "%s"', (k, nome, peca, esperado) => {
+    expect(linha(k, nome), `${k} ${nome}`).toBeDefined();
+    expect(ladoNaLinha(ponto(k), linha(k, nome), peca)).toBe(esperado);
+  });
+  it('a linha de um lado só (no ponto do centro) já diz o lado no nome dela', () => {
+    for (const p of PONTOS) for (const l of p.linhas) if (!p.lado && l.lado) expect(l.nome, `${p.k} ${l.nome}`).toMatch(l.lado === 'E' ? /esquerd[oa]$/ : /direit[oa]$/);
+  });
+});
+
 describe.each(estoques())('o kit da batida no $nome', ({ ix, fixo }) => {
   const b = new Busca(ix);
   const procurar = (f: Parameters<Busca['procurar']>[0]) => b.procurar(f);
@@ -206,6 +231,82 @@ describe.each(estoques())('o kit da batida no $nome', ({ ix, fixo }) => {
       }
     }
     expect(erros.slice(0, 10)).toEqual([]);
+  });
+
+  // ---- o que a linha LISTA, pelo TÍTULO da peça (rodada 17) ----
+  // Sem carro salvo, a "Alma do para-choque" da batida da frente dizia "Tem 4" e mandava ao catálogo, que abria 7 e 3
+  // delas eram "traseiro": o endereço do catálogo não sabe tirar "a que diz a posição oposta". A regra agora é uma só
+  // (`listaDaLinha`): quando o link não mostra exatamente a lista da linha, as peças aparecem no próprio painel.
+  // Invariante, sem peça, carro nem quantidade escritos: em todo carro × ponto × linha, nenhuma peça LISTADA diz no
+  // título a posição ou o lado opostos aos do ponto (o título que diz as duas serve nas duas).
+  const plano = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const TRAS = /\btraseir/, FRENTE = /\bdianteir/, ESQ = /\besquerd/, DIR = /\bdireit/;
+  const contra = (p: (typeof PONTOS)[number], nome: string): string => {
+    const n = plano(nome);
+    if (p.pos === 'D' && TRAS.test(n) && !FRENTE.test(n)) return 'diz traseiro num ponto da frente';
+    if (p.pos === 'T' && FRENTE.test(n) && !TRAS.test(n)) return 'diz dianteiro num ponto de trás';
+    if (p.lado === 'E' && DIR.test(n) && !ESQ.test(n)) return 'diz direito num ponto esquerdo';
+    if (p.lado === 'D' && ESQ.test(n) && !DIR.test(n)) return 'diz esquerdo num ponto direito';
+    return '';
+  };
+
+  it('sem carro (o arquivo do estoque inteiro): a contagem e a lista de cada linha seguem a regra do ponto, no painel e no link do catálogo', () => {
+    const j = batidaJson(procurar, foto);
+    const erros: string[] = [];
+    for (const p of PONTOS) {
+      expect(j.pontos[p.k].length).toBe(p.linhas.length);
+      p.linhas.forEach((l, i) => {
+        const regra = itensDaLinha(p, l, procurar);
+        const { n, ops } = linhaDoJson(j, p.k, i);
+        // a contagem é a da regra
+        if (n !== regra.length) erros.push(`${p.k} ${l.nome}: diz ${n}, a regra dá ${regra.length}`);
+        // a peça à mostra é a 1ª da regra
+        if (regra.length && ops[0]?.id !== regra[0].id) erros.push(`${p.k} ${l.nome}: mostra ${ops[0]?.id}, a regra começa por ${regra[0].id}`);
+        // o que a linha lista: as peças do painel ("Outra opção") ou, com uma só no painel e 2+ na conta, as do link
+        const noLink = n > 1 && ops.length === 1;
+        const listadas = noLink ? procurar(filtrosDaLinha(l)).map((it) => ({ id: it.id, n: it.n })) : ops.map((r) => ({ id: r.id, n: r.n }));
+        if (listadas.length !== n || listadas.some((x) => !regra.some((it) => it.id === x.id))) erros.push(`${p.k} ${l.nome}: lista ${listadas.length} (${noLink ? 'link do catálogo' : 'painel'}), a regra dá ${regra.length}`);
+        for (const x of listadas) { const m = contra(p, x.n); if (m) erros.push(`${p.k} ${l.nome}: "${x.n}" ${m}`); }
+      });
+    }
+    expect(erros.slice(0, 10)).toEqual([]);
+  });
+
+  it('em todo carro e em todo ponto: nenhuma peça listada diz no título a posição ou o lado opostos aos do ponto', () => {
+    const erros: string[] = [];
+    for (const c of carrosDoIndice(ix)) {
+      const bc = new Busca(indiceDoCarro(ix, c.marca, c.modelo));
+      const memo = new Map<string, ReturnType<Busca['procurar']>>();
+      const proc = (f: Parameters<Busca['procurar']>[0]) => { const k = JSON.stringify(f); let r = memo.get(k); if (!r) { r = bc.procurar(f); memo.set(k, r); } return r; };
+      for (const p of PONTOS) for (const l of p.linhas) {
+        if (!l.tipo) continue; // linha de pátio: não lista peça
+        const { itens, noCatalogo } = listaDaLinha(p, l, proc, c);
+        // `noCatalogo` diz a verdade: o link mostra exatamente a lista
+        if (noCatalogo !== (proc(filtrosDaLinha(l, c)).length === itens.length)) erros.push(`${c.marca} ${c.modelo} ${p.k} ${l.nome}: noCatalogo errado`);
+        for (const it of itens) { const m = contra(p, it.n); if (m) erros.push(`${c.marca} ${c.modelo} ${p.k} ${l.nome}: "${it.n}" ${m}`); }
+      }
+    }
+    expect(erros.slice(0, 10)).toEqual([]);
+  });
+
+  it('o nome que abre com "Suporte" só é a peça do título numa linha de suporte ou guia, ou quando diz a peça inteira', () => {
+    // Revisão 16, P1-1: no Kardian, "Suporte radiador" (um suporte pequeno com coxim) nascia marcado e somado como
+    // "Painel frontal". Regra, sem peça nem carro escritos: em toda linha, a peça que conta como a do título e cujo
+    // nome ABRE com "suporte" só vale se o título da linha é um suporte ou uma guia, ou se o nome diz a peça inteira
+    // (a palavra que abre o título da linha, ou "travessa", a barra de um lado ao outro). Vale para o estoque inteiro
+    // (toda peça de todo carro passa por aqui: com o carro, a lista é um recorte desta).
+    const abreComSuporte = (nome: string) => /^((kit|par|jogo|conjunto) )*suportes?\b/.test(plano(nome));
+    const erros: string[] = [];
+    for (const p of PONTOS) for (const l of p.linhas) {
+      if (!l.tipo) continue;
+      const titulo = plano(l.nome);
+      if (/\b(suporte|guia)\b/.test(titulo)) continue;
+      const pecaInteira = new RegExp(`\\b(${titulo.split(/[^a-z0-9-]+/)[0]}|travessa)`);
+      for (const it of procurar(filtrosDaLinha(l))) {
+        if (ehDaLinha(l, it.n) && abreComSuporte(it.n) && !pecaInteira.test(plano(it.n))) erros.push(`${p.k} ${l.nome}: "${it.n}" conta como a peça do título`);
+      }
+    }
+    expect([...new Set(erros)].slice(0, 10)).toEqual([]);
   });
 
   it('a mesma peça nunca aparece em duas linhas do mesmo ponto (o total não conta nada em dobro)', () => {
