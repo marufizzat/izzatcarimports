@@ -9952,10 +9952,11 @@
   "foto": "824631-MLB111453969188_052026"
  },
  "MLB6864238486": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Bandeja suspensão traseira direita",
   "carro": "Volvo S60",
-  "foto": "921385-MLB112506816595_052026"
+  "foto": "921385-MLB112506816595_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6864237476": {
   "status": "pulada",
@@ -9972,7 +9973,7 @@
   "foto": "600712-MLB112506816859_052026"
  },
  "MLB6864024796": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Lanterna traseira direita bicolor",
   "carro": "Chevrolet Astra",
   "foto": "942265-MLB112507195041_052026"
@@ -10027,16 +10028,18 @@
   "foto": "810589-MLB111453896294_052026"
  },
  "MLB4723054005": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Mangueira alta pressão combustível",
   "carro": "Volkswagen Passat",
-  "foto": "845849-MLB111412718652_052026"
+  "foto": "845849-MLB111412718652_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4723046155": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Módulo bloqueio chave",
   "carro": "Hyundai Genesis",
-  "foto": "692660-MLB112459590539_052026"
+  "foto": "692660-MLB112459590539_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4723046139": {
   "status": "pulada",
@@ -10102,10 +10105,11 @@
   "foto": "660759-MLB111453693490_052026"
  },
  "MLB4722988569": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Caixa fusível BSI",
   "carro": "Fiat Palio",
-  "foto": "934639-MLB112506865103_052026"
+  "foto": "934639-MLB112506865103_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4722979841": {
   "status": "pulada",
@@ -10115,10 +10119,11 @@
   "foto": "619177-MLB111453959298_052026"
  },
  "MLB4722952661": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Lanterna traseira direita tampa",
   "carro": "BMW X6",
-  "foto": "717241-MLB111411063338_052026"
+  "foto": "717241-MLB111411063338_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4722941731": {
   "status": "pulada",
@@ -10134,10 +10139,11 @@
   "foto": "676483-MLB111453698790_052026"
  },
  "MLB4722798531": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Lanterna traseira esquerda",
   "carro": "Fiat Grand Siena",
-  "foto": "797044-MLB111408741048_052026"
+  "foto": "797044-MLB111408741048_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4722785007": {
   "status": "pulada",
@@ -10161,16 +10167,18 @@
   "foto": "999041-MLB111453785872_052026"
  },
  "MLB4722770583": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte alternador AC",
   "carro": "Mercedes-Benz C200",
-  "foto": "862606-MLB112506866525_052026"
+  "foto": "862606-MLB112506866525_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4722758393": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Montante manga eixo dianteira direita",
   "carro": "Volvo XC60",
-  "foto": "968621-MLB112506660361_052026"
+  "foto": "968621-MLB112506660361_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4722746371": {
   "status": "pulada",
@@ -10180,7 +10188,7 @@
   "foto": "641263-MLB112506748685_052026"
  },
  "MLB4722745159": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Ventilador ar condicionado",
   "carro": "Renault Sandero",
   "foto": "883221-MLB112506866559_052026"
@@ -10193,7 +10201,7 @@
   "foto": "641561-MLB112506808085_052026"
  },
  "MLB4722732695": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Montante manga eixo traseiro esquerdo",
   "carro": "Volvo XC60",
   "foto": "963127-MLB111453910770_052026"
@@ -10213,7 +10221,7 @@
   "foto": "633801-MLB111453968990_052026"
  },
  "MLB4722719181": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Bomba água",
   "carro": "Ford New Fiesta",
   "foto": "674924-MLB112506727143_052026"
@@ -10254,10 +10262,11 @@
   "foto": "723187-MLB112506757691_052026"
  },
  "MLB4722617249": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Coxim motor direito",
   "carro": "Fiat Argo",
-  "foto": "671875-MLB111454229472_052026"
+  "foto": "671875-MLB111454229472_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4722855185": {
   "status": "pulada",
@@ -10281,7 +10290,7 @@
   "foto": "994842-MLB112455691051_052026"
  },
  "MLB4722857853": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Pedal acelerador",
   "carro": "Chevrolet Cruze",
   "foto": "635027-MLB112455725867_052026"
@@ -10301,16 +10310,18 @@
   "foto": "701721-MLB111567247816_062026"
  },
  "MLB6880300400": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote cabo bateria alta tensão",
   "carro": "Volvo S60",
-  "foto": "743166-MLB112571087223_062026"
+  "foto": "743166-MLB112571087223_062026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6880175626": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Duto ressonador entrada ar",
   "carro": "Volvo S60",
-  "foto": "684770-MLB111510073586_062026"
+  "foto": "684770-MLB111510073586_062026",
+  "motivo": "ChatGPT mudou proporção/perspectiva/etiqueta"
  },
  "MLB6879492374": {
   "status": "pulada",
@@ -10320,10 +10331,11 @@
   "foto": "735922-MLB112566755165_062026"
  },
  "MLB4728640737": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Lanterna traseira esquerda",
   "carro": "Jaguar E-Pace",
-  "foto": "830191-MLB111519591134_062026"
+  "foto": "830191-MLB111519591134_062026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4728629649": {
   "status": "pulada",
@@ -10333,16 +10345,18 @@
   "foto": "787799-MLB111567947410_062026"
  },
  "MLB4728590011": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Coxim limitador torque superior direito",
   "carro": "Volvo XC60",
-  "foto": "849414-MLB112579853917_062026"
+  "foto": "849414-MLB112579853917_062026",
+  "motivo": "ChatGPT mudou proporção/perspectiva/etiqueta"
  },
  "MLB4728589465": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura",
   "carro": "",
-  "foto": "773537-MLB111518923878_062026"
+  "foto": "773537-MLB111518923878_062026",
+  "motivo": "ChatGPT mudou proporção/perspectiva/etiqueta"
  },
  "MLB4728578073": {
   "status": "pulada",
@@ -10373,10 +10387,11 @@
   "foto": "668368-MLB111513655568_062026"
  },
  "MLB4728312905": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte filtro óleo",
   "carro": "Audi A4",
-  "foto": "660313-MLB112573506439_062026"
+  "foto": "660313-MLB112573506439_062026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4728197103": {
   "status": "pulada",
@@ -10414,7 +10429,7 @@
   "foto": "776492-MLB112569873439_062026"
  },
  "MLB4728056021": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Módulo BSI",
   "carro": "Renault Sandero",
   "foto": "786155-MLB112569723495_062026"
@@ -10434,7 +10449,7 @@
   "foto": "992836-MLB112644301097_062026"
  },
  "MLB6889485262": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Lanterna traseira esquerda",
   "carro": "Volkswagen Golf",
   "foto": "918962-MLB111572051360_062026"
@@ -10461,10 +10476,11 @@
   "foto": "868576-MLB111567855388_062026"
  },
  "MLB6888373156": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Calço coxim esquerdo motor",
   "carro": "Fiat Argo",
-  "foto": "763782-MLB112633797541_062026"
+  "foto": "763782-MLB112633797541_062026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6888372218": {
   "status": "pulada",
@@ -10474,7 +10490,7 @@
   "foto": "674504-MLB111567856468_062026"
  },
  "MLB6888340814": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Suporte coxim motor direito",
   "carro": "Audi A3",
   "foto": "623111-MLB112635209205_062026"
@@ -10487,16 +10503,18 @@
   "foto": "697446-MLB111567042964_062026"
  },
  "MLB6888334202": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte alternador",
   "carro": "Chevrolet Vectra",
-  "foto": "610672-MLB112635209053_062026"
+  "foto": "610672-MLB112635209053_062026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6888325468": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Calço coxim esquerdo motor",
   "carro": "Volkswagen Golf",
-  "foto": "854805-MLB112635208765_062026"
+  "foto": "854805-MLB112635208765_062026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6888321832": {
   "status": "pulada",
@@ -10506,22 +10524,25 @@
   "foto": "925050-MLB111567242926_062026"
  },
  "MLB6888061952": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte alternador",
   "carro": "Ford Ranger",
-  "foto": "941552-MLB116592148939_082026"
+  "foto": "941552-MLB116592148939_082026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6888035524": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Capa correia dentada",
   "carro": "Renault Duster",
-  "foto": "649015-MLB111567683554_062026"
+  "foto": "649015-MLB111567683554_062026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6888026094": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte coxim direito motor",
   "carro": "Volvo S60",
-  "foto": "689781-MLB112635069379_062026"
+  "foto": "689781-MLB112635069379_062026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6888020632": {
   "status": "pulada",
