@@ -62,14 +62,20 @@ describe('relacionadas: do mesmo carro', () => {
   });
 });
 
+// Os testes que passam por todas as peças devolvem a vez ao Node de tempos em tempos: num laço de 10 a 30 s sem pausa o
+// vitest não consegue falar com o processo do teste ("Timeout calling onTaskUpdate") e a suíte sai vermelha com todos os
+// testes verdes (aconteceu com a máquina cheia, 11/11).
+const respirar = () => new Promise<void>((ok) => setTimeout(ok));
+
 describe('relacionadas: estoque real', () => {
   const arq = 'src/data/pecas.json';
-  it.skipIf(!existsSync(arq))('nenhuma página mistura outra geração no grupo "mesma geração" (regra, vale para qualquer estoque)', () => {
+  it.skipIf(!existsSync(arq))('nenhuma página mistura outra geração no grupo "mesma geração" (regra, vale para qualquer estoque)', async () => {
     const pecas: Peca[] = JSON.parse(readFileSync(arq, 'utf-8'));
     const porCarro = new Map<string, Peca[]>();
     for (const x of pecas) if (x.b && x.m) porCarro.set(`${x.b}|${x.m}`, [...(porCarro.get(`${x.b}|${x.m}`) ?? []), x]);
-    let completadas = 0;
+    let completadas = 0, vistas = 0;
     for (const x of pecas) {
+      if (++vistas % 250 === 0) await respirar();
       if (!x.b || !x.m || !x.y) continue;
       const r = doMesmoCarro(x, porCarro.get(`${x.b}|${x.m}`)!);
       for (const o of r.mesma) expect(mesmaGeracao(x.y, o.y), `${x.id} -> ${o.id}`).toBe(true);
@@ -227,7 +233,7 @@ describe('"Vai junto": só o que entra no MESMO serviço, do mesmo carro (rodada
   });
 
   const arq = 'src/data/pecas.json';
-  it.skipIf(!existsSync(arq))('estoque real: mesmo carro e geração, lado e posição iguais quando as duas dizem, nunca o mesmo código nem o mesmo nome, no máximo 3', () => {
+  it.skipIf(!existsSync(arq))('estoque real: mesmo carro e geração, lado e posição iguais quando as duas dizem, nunca o mesmo código nem o mesmo nome, no máximo 3', async () => {
     const pecas: Peca[] = JSON.parse(readFileSync(arq, 'utf-8'));
     const porModelo = new Map<string, Peca[]>();
     for (const x of pecas) for (const m of x.ms && x.ms.length ? x.ms : x.m ? [x.m] : []) {
@@ -236,8 +242,9 @@ describe('"Vai junto": só o que entra no MESMO serviço, do mesmo carro (rodada
     const tipos = new Set(pecas.map((x) => x.s));
     const semTipo = Object.entries(PAPEIS).filter(([, g]) => !g.t.some((t) => tipos.has(t))).map(([k]) => k);
     if (semTipo.length) console.warn(`AVISO: papéis do "Vai junto" sem nenhum tipo no estoque: ${semTipo.join(', ')}`);
-    let com = 0, cartoes = 0;
+    let com = 0, cartoes = 0, vistas = 0;
     for (const p of pecas) {
+      if (++vistas % 250 === 0) await respirar();
       const r = vaiJunto(p, porModelo.get(`${p.b}|${p.m}`) ?? []);
       expect(r.pecas.length).toBeLessThanOrEqual(MAX_JUNTO);
       if (!r.pecas.length) continue;
@@ -268,9 +275,15 @@ describe('"Vai junto": só o que entra no MESMO serviço, do mesmo carro (rodada
 
   // "a regra não pode sumir com o bloco do site": conferido num estoque FIXO (as 515 peças do XC60 de 11/11/2026,
   // testes/fixtures/pecas-xc60.json), não no do dia (a proporção muda com o que vendeu e o robô não pode parar por isso)
-  it('estoque fixo (XC60): o bloco aparece em mais de 1 de cada 10 peças, com 1 a 3 cartões', () => {
+  it('estoque fixo (XC60): o bloco aparece em mais de 1 de cada 10 peças, com 1 a 3 cartões', async () => {
     const pecas: Peca[] = JSON.parse(readFileSync('testes/fixtures/pecas-xc60.json', 'utf-8'));
-    const com = pecas.filter((p) => { const n = vaiJunto(p, pecas).pecas.length; expect(n).toBeLessThanOrEqual(MAX_JUNTO); return n > 0; }).length;
+    let com = 0, vistas = 0;
+    for (const p of pecas) {
+      if (++vistas % 100 === 0) await respirar();
+      const n = vaiJunto(p, pecas).pecas.length;
+      expect(n).toBeLessThanOrEqual(MAX_JUNTO);
+      if (n > 0) com++;
+    }
     expect(com).toBeGreaterThan(pecas.length / 10);
   }, 120_000);   // passa por todas as peças do estoque: o robô e a máquina cheia levam bem mais que os 30 s do padrão
 });
