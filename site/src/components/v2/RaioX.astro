@@ -378,21 +378,26 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         acender();
         mostrar(k, !!como.focar);
       } else if (como.focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
-      // a ficha escolhida à vista na fila (só o scroll da fila, nunca a página)
-      const f = fichas.find((b) => b.dataset.ficha === k);
-      const fila = f?.parentElement;
-      if (f && fila && fila.scrollWidth > fila.clientWidth) {
-        const fr = f.getBoundingClientRect();
-        const lr = fila.getBoundingClientRect();
-        // na hora (a rolagem suave da fila era cancelada pela da página até o painel, no Safari)
-        fila.scrollLeft += fr.left - lr.left - (lr.width - fr.width) / 2;
-      }
-      // celular: o painel vem embaixo da arte; se ele começa fora da tela, rola só o bastante para o título e 2 tipos
-      if (como.rolar || como.focar) {
-        const r = painel.getBoundingClientRect();
-        const falta = r.top + Math.min(r.height, 240) - innerHeight;
-        if (falta > 0) scrollBy({ top: falta + 16, behavior: calmo() ? 'auto' : 'smooth' });
-      }
+      // medir (a ficha na fila, o painel na tela) só DEPOIS da pintura: ler a posição logo depois de montar o painel
+      // obrigava o navegador a calcular a página no meio do toque (~20 ms com CPU 6×)
+      requestAnimationFrame(() => setTimeout(() => {
+        if (ativa !== k) return;
+        // a ficha escolhida à vista na fila (só o scroll da fila, nunca a página; na hora: a rolagem suave da fila era
+        // cancelada pela da página até o painel, no Safari)
+        const f = fichas.find((b) => b.dataset.ficha === k);
+        const fila = f?.parentElement;
+        if (f && fila && fila.scrollWidth > fila.clientWidth) {
+          const fr = f.getBoundingClientRect();
+          const lr = fila.getBoundingClientRect();
+          fila.scrollLeft += fr.left - lr.left - (lr.width - fr.width) / 2;
+        }
+        // celular: o painel vem embaixo da arte; se ele começa fora da tela, rola só o bastante para o título e 2 tipos
+        if (como.rolar || como.focar) {
+          const r = painel.getBoundingClientRect();
+          const falta = r.top + Math.min(r.height, 240) - innerHeight;
+          if (falta > 0) scrollBy({ top: falta + 16, behavior: calmo() ? 'auto' : 'smooth' });
+        }
+      }));
     }
 
     // Esc: limpa a escolha (volta o "como funciona") e devolve o foco à zona
