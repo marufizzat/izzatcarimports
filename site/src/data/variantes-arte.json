@@ -117,7 +117,7 @@
   "cat-som-e-multimidia.webp": {"h":"05e891858227","w":1200,"v":[600]},
   "cat-suspensao-e-direcao.webp": {"h":"cc2296bc9d56","w":1200,"v":[600]},
   "cat-vidro-eletrico.webp": {"h":"1bb92f22e3a7","w":1200,"v":[600]},
-  "raio-x.webp": {"h":"baa9543672ba","w":1536,"v":[900]},
+  "raio-x.webp": {"h":"baa9543672ba","w":1536,"v":[320,900]},
   "topo-cat-acabamentos-e-forros.webp": {"h":"6d14a7980f15","w":1254,"v":[640]},
   "topo-cat-airbag-e-seguranca.webp": {"h":"831ec295a9e9","w":1254,"v":[640]},
   "topo-cat-ar-condicionado.webp": {"h":"95e63c110c71","w":1254,"v":[640]},

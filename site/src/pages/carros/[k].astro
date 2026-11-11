@@ -69,7 +69,7 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
         </a>
       )}
     </Fragment>
-    {N >= RAIO_X_A_PARTIR_DE && <div class="carro-raiox"><RaioX carro={{ b: c.b, m: c.m }} compacto /></div>}
+    {N >= RAIO_X_A_PARTIR_DE && <div class="carro-raiox"><RaioX carro={{ b: c.b, m: c.m }} compacto recolhido /></div>}
   </TopoArte>
   <div class="moldura">
     <section class="carro-pecas" id="pecas" aria-labelledby="h-pecas">

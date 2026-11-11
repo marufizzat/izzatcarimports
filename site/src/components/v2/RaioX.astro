@@ -20,13 +20,17 @@
 // ficam de fora. Sem ilha React; a busca do catálogo só desce com carro salvo (1º toque) ou no "Ver as peças".
 import { ZONAS, ARTE } from '../../lib/raioX';
 import { dadosRaioX } from '../../lib/raioXDados';
-import { srcArte } from '../../lib/variantes';
+import { srcArte, srcsetArte } from '../../lib/variantes';
 import { CHAVE } from '../../lib/meuCarro';
 import Icone from '../Icone.astro';
 
-// compacto (página do carro): o título menor, no tamanho dos atalhos da página, e sem a linha de apoio
-interface Props { carro?: { b: string; m: string }; id?: string; titulo?: string; compacto?: boolean }
-const { carro, id = 'raio-x', compacto = false } = Astro.props;
+// compacto (página do carro): o título menor, no tamanho dos atalhos da página, e sem a linha de apoio.
+// recolhido (página do carro, abaixo de 1024 px): no lugar da arte, um cartão baixo com a miniatura que abre o Raio-x.
+// A arte inteira na 1ª tela do celular virava o LCP da página (2,5 s em 4G lento, contra 0,74 s) e empurrava a grade.
+interface Props { carro?: { b: string; m: string }; id?: string; titulo?: string; compacto?: boolean; recolhido?: boolean }
+const { carro, id = 'raio-x', compacto = false, recolhido = false } = Astro.props;
+// a miniatura do cartão recolhido: a variante de 320 px (feita por scripts/variantes-imagens.mjs) quando está em dia
+const mini = srcsetArte(ARTE.src)?.includes('-320.webp') ? ARTE.src.replace(/\.webp$/, '-320.webp') : ARTE.src;
 const dados = dadosRaioX(carro);
 const nZ = (k: string) => dados.z.find((d) => d.k === k)?.n ?? 0;
 const fmt = (n: number) => n.toLocaleString('pt-BR');
@@ -48,7 +52,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   + `t.textContent='Onde fica a peça no seu '+c.b+' '+c.m+y+'?';l.textContent='Toque na parte do carro e veja as peças do seu '+c.m+' que a gente tem dela.';`
   + `if(b)b.textContent='Trocar o carro'}catch(e){}})()`;
 ---
-<div class:list={['rx', { 'rx-compacto': compacto }]} data-rx data-modo={carro ? 'carro' : 'home'} data-b={carro?.b} data-m={carro?.m}>
+<div class:list={['rx', { 'rx-compacto': compacto, 'rx-recolhido': recolhido }]} data-rx data-modo={carro ? 'carro' : 'home'} data-b={carro?.b} data-m={carro?.m}>
   <div class="rx-cabeca">
     <h2 class:list={[compacto ? 'rx-titulo-p' : 'titulo-secao']} id={`${id}-t`} data-rx-titulo>{titulo}</h2>
     {!compacto && <p class="lead" data-rx-lead>{lead}</p>}
@@ -60,25 +64,26 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     {!carro && <script is:inline set:html={antes} />}
   </div>
 
-  <div class="rx-corpo">
+  {recolhido && (
+    <button type="button" class="rx-abrir" aria-expanded="false" aria-controls={`${id}-corpo`} data-rx-abrir>
+      <img src={mini} alt="" width="320" height="213" loading="lazy" decoding="async" />
+      <span class="rx-abrir-txt"><b>Aponte no carro</b><span>Frente, motor, portas, teto, rodas… e as peças do {carro?.m} em cada parte.</span></span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+    </button>
+  )}
+  <div class="rx-corpo" id={`${id}-corpo`}>
     <div class="rx-arte">
       <div class="rx-palco" data-rx-palco>
         <img src={ARTE.src} {...srcArte(ARTE.src, sizes)} alt="" width={ARTE.w} height={ARTE.h} loading="lazy" decoding="async" />
+        {/* o véu escuro (o retângulo todo menos a parte acesa) e o véu laranja da parte: duas camadas só de desenho, com o
+            desfoque do CSS (feito pela placa de vídeo; o filtro do SVG era redesenhado pela CPU a cada troca) */}
+        <svg class="rx-camada rx-escuros" viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} aria-hidden="true">
+          {ZONAS.map((z) => <path data-furo={z.k} fill-rule="evenodd" d={`M-120,-120H${ARTE.w + 120}V${ARTE.h + 120}H-120Z ${z.realce.map((p) => `M${p.trim().split(/\s+/).join('L')}Z`).join(' ')}`} />)}
+        </svg>
+        <svg class="rx-camada rx-realces" viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} aria-hidden="true">
+          {ZONAS.map((z) => <g data-realce={z.k} class:list={[{ vazia: !nZ(z.k) }]}>{z.realce.map((p) => <polygon points={p} />)}</g>)}
+        </svg>
         <svg class="rx-mapa" viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} role="group" aria-labelledby={`${id}-t`}>
-          <defs>
-            <filter id={`${id}-esf`} x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="10" /></filter>
-            {/* o furo do véu escuro: o resto da arte escurece, a parte acesa não */}
-            <mask id={`${id}-furo`} maskUnits="userSpaceOnUse" x="0" y="0" width={ARTE.w} height={ARTE.h}>
-              <rect width={ARTE.w} height={ARTE.h} fill="#fff" />
-              <g class="rx-furos" filter={`url(#${id}-esf)`}>
-                {ZONAS.map((z) => <g data-furo={z.k}>{z.realce.map((p) => <polygon points={p} />)}</g>)}
-              </g>
-            </mask>
-          </defs>
-          <rect class="rx-sombra" width={ARTE.w} height={ARTE.h} mask={`url(#${id}-furo)`} aria-hidden="true" />
-          <g class="rx-realces" filter={`url(#${id}-esf)`} aria-hidden="true">
-            {ZONAS.map((z) => <g data-realce={z.k} class:list={[{ vazia: !nZ(z.k) }]}>{z.realce.map((p) => <polygon points={p} />)}</g>)}
-          </g>
           <g class="rx-guias" aria-hidden="true">
             {ZONAS.map((z) => <line data-guia={z.k} x1={z.ancora[0]} y1={z.ancora[1]} x2={z.etiqueta[0]} y2={z.etiqueta[1]} />)}
           </g>
@@ -141,6 +146,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   // a foto do cartão no trilho do painel: 168 px no celular, 176 no PC
   const SIZES_GALERIA = '(max-width: 1023px) 168px, 176px';
   type Procurar = (f: Filtros) => Item[];
+  // devolve a vez ao navegador (scheduler.yield quando existe; senão um setTimeout)
+  const pausa = () => (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler?.yield?.() ?? new Promise<void>((ok) => setTimeout(ok, 0));
 
   for (const raiz of document.querySelectorAll<HTMLElement>('[data-rx]')) ligar(raiz);
 
@@ -206,12 +213,20 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         let p: Procurar | null = null;
         if (r.ok) {
           const [{ Busca, capaItem }, ix] = await Promise.all([import('../../lib/busca'), r.json() as Promise<Indice>]);
+          await pausa();
           const b = new Busca(ix);
-          p = (x) => b.procurar(x);
-          let contas = contarZonas(p, c.y ? { ...f, ano: c.y } : f);
+          const q: Procurar = (x) => b.procurar(x);
+          p = q;
+          // uma parte do carro por vez, devolvendo a vez ao navegador entre elas (nenhuma tarefa longa no 1º toque)
+          const contarAos = async (g: CarroFiltro) => {
+            const out: ReturnType<typeof contarZonas> = [];
+            for (const z of ZONAS) { await pausa(); out.push(...contarZonas(q, g, [z])); }
+            return out;
+          };
+          let contas = await contarAos(c.y ? { ...f, ano: c.y } : f);
           if (c.y && contas.every((z) => z.n === 0)) {
             msg = `Agora não há peça do ${c.m} ${c.y} no site: as contagens são do ${c.m} de todos os anos.`;
-            contas = contarZonas(p, f);
+            contas = await contarAos(f);
           } else if (c.y) f = { ...f, ano: c.y };
           if (contas.some((z) => z.n > 0)) {
             novos = contas.map((z) => ({ k: z.k, n: z.n, l: z.linhas.map((l, i) => ({ tipo: l.tipo, sub: l.sub, lado: l.lado, pos: l.pos, n: l.n, foto: i < NA_FRENTE ? capaItem(l.it, 'A') : '' })) }));
@@ -366,7 +381,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       if (f && fila && fila.scrollWidth > fila.clientWidth) {
         const fr = f.getBoundingClientRect();
         const lr = fila.getBoundingClientRect();
-        fila.scrollTo({ left: fila.scrollLeft + fr.left - lr.left - (lr.width - fr.width) / 2, behavior: calmo() ? 'auto' : 'smooth' });
+        // na hora (a rolagem suave da fila era cancelada pela da página até o painel, no Safari)
+        fila.scrollLeft += fr.left - lr.left - (lr.width - fr.width) / 2;
       }
       // celular: o painel vem embaixo da arte; se ele começa fora da tela, rola só o bastante para o título e 2 tipos
       if (como.rolar || como.focar) {
@@ -379,6 +395,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     // Esc: limpa a escolha (volta o "como funciona") e devolve o foco à zona
     function limpar() {
       const k = ativa;
+      // o foco estava no painel (que vai ser esvaziado) ou numa zona: volta para a zona que estava escolhida
+      const dentro = raiz.contains(document.activeElement);
       ativa = null;
       passando = null;
       acender();
@@ -386,7 +404,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       conteudo.innerHTML = '';
       dica.hidden = false;
       painel.classList.remove('aberto');
-      if (k && raiz.contains(document.activeElement)) raiz.querySelector<SVGAElement>(`a[data-z="${k}"]`)?.focus({ preventScroll: true });
+      if (k && dentro) raiz.querySelector<SVGAElement>(`a[data-z="${k}"]`)?.focus({ preventScroll: true });
     }
 
     // ---- ouvintes ----
@@ -409,6 +427,14 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     raiz.addEventListener('pointerenter', cedo, { once: true });
     raiz.addEventListener('touchstart', cedo, { once: true, passive: true });
     raiz.addEventListener('focusin', cedo, { once: true });
+
+    // página do carro no celular: o cartão recolhido abre o Raio-x (e o foco vai para a 1ª parte do carro)
+    const abrir = raiz.querySelector<HTMLButtonElement>('[data-rx-abrir]');
+    abrir?.addEventListener('click', () => {
+      raiz.classList.add('rx-aberto');
+      abrir.setAttribute('aria-expanded', 'true');
+      zonasA[0]?.focus({ preventScroll: true });
+    });
 
     if (!home) return;
     raiz.querySelector('[data-rx-trocar]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent(ABRIR)));
@@ -452,6 +478,21 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-convite:hover { text-decoration-color: var(--accent); }
 
   .rx-corpo { display: grid; gap: 16px; align-items: start; }
+  /* recolhido (página do carro, celular e tablet): o cartão baixo no lugar da arte, até tocar nele */
+  .rx-abrir { display: none; grid-template-columns: 112px minmax(0, 1fr) 20px; align-items: center; gap: 14px; width: 100%; padding: 10px 14px 10px 10px;
+    border: 0; border-radius: 20px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); color: var(--ink);
+    font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .rx-abrir img { width: 112px; height: 75px; border-radius: 12px; object-fit: cover; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); display: block; }
+  .rx-abrir-txt { display: grid; gap: 3px; min-width: 0; }
+  .rx-abrir-txt b { font-stretch: 86%; font-weight: 800; font-size: 18px; line-height: 1.15; }
+  .rx-abrir-txt span { font-size: 14px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
+  .rx-abrir svg { width: 20px; height: 20px; fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .rx-abrir:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3), var(--shadow-1); }
+  .rx-abrir:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+  @media (max-width: 1023px) {
+    .rx-recolhido:not(.rx-aberto) .rx-abrir { display: grid; }
+    .rx-recolhido:not(.rx-aberto) .rx-corpo { display: none; }
+  }
   @media (min-width: 1024px) { .rx-corpo { grid-template-columns: minmax(0, 1.42fr) minmax(340px, 1fr); gap: 28px; align-items: stretch; } }
 
   /* ---- a arte e as zonas ---- */
@@ -465,12 +506,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   /* foco do teclado: o contorno da área inteira da zona, tracejado */
   .rx-mapa a:focus-visible .rx-alvo { stroke: var(--foco); stroke-width: 2.5; stroke-dasharray: 9 7; vector-effect: non-scaling-stroke; }
 
-  /* o véu: a parte acesa ganha um laranja translúcido de bordas esfumadas; o resto escurece de leve */
-  .rx-sombra { fill: rgb(22 22 26 / .3); opacity: 0; transition: opacity .16s ease; pointer-events: none; }
-  .rx.rx-aceso .rx-sombra { opacity: 1; }
-  .rx-furos g { fill: #000; opacity: 0; transition: opacity .16s ease; }
-  .rx-furos g.aceso { opacity: 1; }
-  .rx-realces { pointer-events: none; }
+  /* o véu: a parte acesa ganha um laranja translúcido de bordas esfumadas e o resto da arte escurece de leve. Duas
+     camadas com o desfoque do CSS (a placa de vídeo faz; trocar de parte só redesenha os polígonos, sem filtro na CPU) */
+  .rx-camada { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; overflow: visible;
+    filter: blur(clamp(3px, 1.2cqw, 9px)); will-change: filter; }
+  .rx-escuros path { fill: rgb(22 22 26 / .3); opacity: 0; transition: opacity .16s ease; }
+  .rx-escuros path.aceso { opacity: 1; }
   .rx-realces g { fill: #ff6a00; opacity: 0; transition: opacity .16s ease; }
   .rx-realces g.aceso { opacity: .42; }
   .rx-realces g.vazia { fill: #9a9aa0; }
@@ -610,9 +651,9 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
 
   @media (prefers-reduced-motion: reduce) {
     .rx-ponto::after, .rx-conteudo :global(.rx-esq .rx-l-foto) { animation: none; }
-    .rx-sombra, .rx-furos g, .rx-realces g, .rx-guias line, .rx-etiqueta, .rx-ponto { transition: none; }
+    .rx-escuros path, .rx-realces g, .rx-guias line, .rx-etiqueta, .rx-ponto { transition: none; }
   }
-  /* aparelho fraco: sem pulso e sem desfoque (o véu fica de borda reta, mais barato) */
+  /* aparelho fraco: sem pulso e sem desfoque (o véu fica de borda reta) */
   :global(html.leve) .rx-ponto::after { animation: none; }
-  :global(html.leve) .rx-realces, :global(html.leve) .rx-furos { filter: none; }
+  :global(html.leve) .rx-camada { filter: none; will-change: auto; }
 </style>
