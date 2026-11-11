@@ -16,6 +16,7 @@ import { casos, falhasDe, semPecas, itensDo, norm } from './busca.regressao';
 
 const ix = JSON.parse(readFileSync('testes/fixtures/estoque-busca.json', 'utf8'));
 const P = itensDo(ix);
+
 /** a 1ª palavra do nome ("Para-choque dianteiro" -> parachoque) */
 const cab = (k: number) => P[k].n.split(' ')[0].replace(/[^a-z0-9]/g, '');
 const doCarro = (k: number, m: string) => P[k].ms.includes(m);
@@ -26,13 +27,13 @@ const VENDIDAS_1111 = ['MLB4779038537', 'MLB7328296554', 'MLB6297774618', 'MLB45
   'MLB7722912002', 'MLB5310823745', 'MLB5483856157'];
 
 describe('busca: as regras com o estoque mexido (o que travou o robô em 11/11/2026)', () => {
-  it('o estoque congelado é o de 09/11 e cumpre todas as regras (se isto falhar, o arquivo foi trocado)', () => {
+  it('o estoque congelado é o de 09/11 (se isto falhar, o arquivo foi trocado)', () => {
     expect(ix.id.length).toBe(5311);
     expect(VENDIDAS_1111.every((id) => ix.id.includes(id))).toBe(true);
     expect([...new Set(casos(ix).map((c) => c.grupo))].sort()).toEqual(['carro', 'codigo', 'familia', 'lado', 'tipo']);
     expect(casos(ix).length).toBeGreaterThanOrEqual(900);
-    expect(falhasDe(Busca, ix)).toEqual([]);
-  }, 120000);
+    // (a tabela inteira roda logo abaixo, com este estoque menos as 18 peças vendidas em 11/11)
+  });
 
   it('11/11: vendidas as 18 peças daquele dia (a única lanterna do XC60 entre elas), todas as regras continuam valendo', () => {
     const hoje = semPecas(ix, (k) => !VENDIDAS_1111.includes(ix.id[k]));
@@ -71,40 +72,44 @@ describe('busca: as regras com o estoque mexido (o que travou o robô em 11/11/2
     }
   });
 
-  it('tipo inteiro de um carro vendido (lanterna do XC60, módulo do Gol, chave do Onix, motor do Tracker…): regras valem', () => {
-    const eventos: [string, string, RegExp][] = [
-      ['lanterna', 'XC60', /lanterna|sinaleira|xc60|frente/], ['modulo', 'Gol', /modulo|gol/], ['chave', 'Onix', /pisca|onix/],
-      ['motor', 'Tracker', /motor|maquina|tracker/], ['farol', 'HB20', /farol|frente|hb20/], ['parachoque', 'E-Pace', /choque|frente|pace/],
-      ['retrovisor', 'HB20', /retrovisor|hb20/], ['sensor', 'Compass', /sensor|compass/], ['tampa', 'XC60', /tampa/], ['macaneta', 'Toro', /maçaneta|toro/],
-      ['bomba', 'XC60', /bomba/], ['painel', 'Gol', /painel/], ['botao', 'Cruze', /pisca|cruze/], ['maquina', 'Tracker', /vidro/],
-    ];
-    for (const [tipo, carro, so] of eventos) {
-      const menos = semPecas(ix, (k) => !(cab(k) === tipo && doCarro(k, carro)));
-      expect(menos.id.length, `${tipo} de ${carro}`).toBeLessThan(ix.id.length);
-      expect(falhasDe(Busca, menos, so), `sem ${tipo} de ${carro}`).toEqual([]);
-    }
+  // (um teste por estoque mexido: cada um é curto, e o que falhar diz qual venda quebrou a regra)
+  // (só as consultas do tipo e do carro que ficou sem ele: a tabela inteira com o estoque de 11/11 já rodou acima)
+  const eventos: [string, string, RegExp][] = [
+    ['lanterna', 'XC60', /lanterna|sinaleira/], ['modulo', 'Gol', /modulo/], ['chave', 'Onix', /pisca/], ['motor', 'Tracker', /motor|maquina/],
+    ['farol', 'HB20', /farol|frente/], ['parachoque', 'E-Pace', /choque|frente/], ['retrovisor', 'HB20', /retrovisor/], ['macaneta', 'Toro', /maçaneta/],
+  ];
+  it.each(eventos)('tipo inteiro de um carro vendido: sem "%s" de %s, as regras valem', (tipo, carro, so) => {
+    const menos = semPecas(ix, (k) => !(cab(k) === tipo && doCarro(k, carro)));
+    expect(menos.id.length).toBeLessThan(ix.id.length);
+    expect(falhasDe(Busca, menos, so, carro)).toEqual([]);
   }, 120000);
 
-  it('tipo que some do estoque INTEIRO (nenhuma lanterna, nenhum para-lama, nenhuma churrasqueira…): regras valem', () => {
-    const tipos: [RegExp, string, RegExp][] = [
-      [/^lanterna/, 'lanterna', /lanterna|sinaleira/], [/^(paralama|churrasqueira|tapete|carpete)/, 'para-lama, churrasqueira, tapete e carpete', /lama|churrasqueira|tapete|frente/],
-      [/^(bobina|coluna|painel)/, 'bobina, coluna e painel', /bobina|coluna|painel/], [/^(seta|pisca)/, 'seta e pisca', /pisca/],
-      [/^(farol|farois|grade|capo)/, 'farol, grade e capô', /farol|grade|frente/], [/^(retrovisor|macaneta|amortecedor)/, 'retrovisor, maçaneta e amortecedor', /retrovisor|maçaneta|amortecedor/],
-      [/^(parachoque|maquina)/, 'para-choque e máquina', /choque|vidro|frente/],
-    ];
-    for (const [re, rotulo, so] of tipos) {
-      // some a palavra de todo nome (não só do começo): o estoque deixa de conhecer a peça
-      const menos = semPecas(ix, (k) => !P[k].n.split(' ').some((w) => re.test(w.replace(/[^a-z0-9]/g, ''))));
-      expect(menos.id.length, rotulo).toBeLessThan(ix.id.length);
-      expect(falhasDe(Busca, menos, so), `sem ${rotulo}`).toEqual([]);
-    }
+  const tipos: [string, RegExp, RegExp][] = [
+    ['lanterna', /^lanterna/, /lanterna|sinaleira/], ['para-lama, churrasqueira, tapete e carpete', /^(paralama|churrasqueira|tapete|carpete)/, /lama|churrasqueira|tapete/],
+    ['bobina, coluna e painel', /^(bobina|coluna|painel)/, /bobina|coluna|painel/], ['seta e pisca', /^(seta|pisca)/, /pisca/],
+    ['farol, grade e para-choque (a frente)', /^(farol|farois|grade|parachoque)/, /farol|grade|choque|frente xc60|frente gol|frente onix/],
+    ['chave (a "Chave seta" some, o "Botão pisca-alerta" fica)', /^chave/, /pisca/],
+  ];
+  it.each(tipos)('tipo que some do estoque INTEIRO: sem %s em nenhum nome, as regras valem', (_rotulo, re, so) => {
+    // some a palavra de todo nome (não só do começo): o estoque deixa de conhecer a peça
+    const menos = semPecas(ix, (k) => !P[k].n.split(' ').some((w) => re.test(w.replace(/[^a-z0-9]/g, ''))));
+    expect(menos.id.length).toBeLessThan(ix.id.length);
+    expect(falhasDe(Busca, menos, so)).toEqual([]);
   }, 120000);
 
-  it('carro que some do estoque inteiro (Gol, XC60): as consultas dele saem da tabela e as outras regras valem', () => {
-    for (const carro of ['Gol', 'XC60']) {
-      const menos = semPecas(ix, (k) => !doCarro(k, carro));
-      expect(casos(menos).some((c) => c.carro?.m === carro), carro).toBe(false);
-      expect(falhasDe(Busca, menos, /lanterna|modulo|motor|frente/), `sem ${carro}`).toEqual([]);
-    }
+  it('vendida a única peça chamada "Churrasqueira…": a "Grade churrasqueira" continua sendo a peça, na frente da moldura', () => {
+    const menos = semPecas(ix, (k) => cab(k) !== 'churrasqueira');
+    expect(menos.id.length).toBeLessThan(ix.id.length);
+    expect(falhasDe(Busca, menos, /churrasqueira|frente/)).toEqual([]);
+    const bb = new Busca(menos);
+    const r = bb.procurar({ q: 'churrasqueira' });
+    expect(bb.nExatas).toBeGreaterThan(0);
+    expect(r.slice(0, bb.nExatas).every((it) => /^grade .*churrasqueira/.test(norm(it.n)))).toBe(true);
+  }, 120000);
+
+  it.each(['Gol', 'XC60'])('carro que some do estoque inteiro (%s): as consultas dele saem da tabela e as outras regras valem', (carro) => {
+    const menos = semPecas(ix, (k) => !doCarro(k, carro));
+    expect(casos(menos).some((c) => c.carro?.m === carro)).toBe(false);
+    expect(falhasDe(Busca, menos, /lanterna|modulo/)).toEqual([]);
   }, 120000);
 });

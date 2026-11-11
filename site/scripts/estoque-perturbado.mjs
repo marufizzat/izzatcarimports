@@ -106,7 +106,7 @@ async function testar(semPython = false) {
   const rel = join(CACHE, 'vitest.json');
   rmSync(rel, { force: true });
   // o mesmo comando do `npm test` (package.json), com o relatório em JSON
-  const v = await rodar('npx', ['vitest', 'run', '--testTimeout=30000', '--hookTimeout=30000', '--reporter=json', `--outputFile=${rel}`, ...(SO ? [SO] : [])], { cwd: SITE });
+  const v = await rodar('npx', ['vitest', 'run', '--testTimeout=30000', '--hookTimeout=30000', '--reporter=json', `--outputFile.json=${rel}`, '--reporter=default', ...(SO ? [SO] : [])], { cwd: SITE });
   let testes = 0, arquivos = 0;
   if (existsSync(rel)) {
     const j = ler(rel);
@@ -118,7 +118,11 @@ async function testar(semPython = false) {
       }
     }
   } else falhas.push(`vitest não rodou: ${v.saida.slice(-600)}`);
-  if (!v.ok && !falhas.length) falhas.push(`vitest saiu com erro: ${v.saida.slice(-600)}`);
+  // saiu com erro sem teste vermelho (erro fora de teste, tempo esgotado do processo): a saída inteira fica guardada
+  if (!v.ok && !falhas.length) {
+    writeFileSync(join(CACHE, 'vitest-saida.txt'), v.saida);
+    falhas.push(`vitest saiu com erro sem teste vermelho (saída em ${join(CACHE, 'vitest-saida.txt')}): ${v.saida.replace(/\s+/g, ' ').slice(-400)}`);
+  }
   return { falhas, testes, arquivos };
 }
 
