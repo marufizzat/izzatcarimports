@@ -32,12 +32,14 @@ const depoisDoLoad = (f: () => void, folga = 0) => {
 };
 
 // ---- 1) service worker ----
-async function servico() {
-  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
-  const sw = navigator.serviceWorker;
-  try {
-    // ?sw=0 no endereço desliga só neste aparelho (suporte: "abre este link")
-    let desligar = /[?&]sw=0(?:&|$)/.test(location.search);
+const temSw = () => 'serviceWorker' in navigator && import.meta.env.PROD;
+const pedeSw0 = () => /[?&]sw=0(?:&|$)/.test(location.search);
+// o botão de pânico: conferido UMA vez por página (sem cache); "1" (ou ?sw=0 no endereço, só neste aparelho) desregistra
+// e apaga os caches. Página já controlada pelo SW confere logo no load (sem esperar os 5 s do registro).
+let conferido: Promise<boolean> | null = null;
+function conferirDesligar(): Promise<boolean> {
+  return (conferido ??= (async () => {
+    let desligar = pedeSw0();
     if (!desligar) {
       try {
         const r = await fetch(ARQUIVO_DESLIGAR, { cache: 'no-store' });
@@ -45,11 +47,20 @@ async function servico() {
       } catch { /* sem rede: segue como está */ }
     }
     if (desligar) {
-      await Promise.all((await sw.getRegistrations()).map((r) => r.unregister()));
-      if ('caches' in window) for (const k of await caches.keys()) if (k.startsWith('izzat-')) await caches.delete(k);
+      try {
+        await Promise.all((await navigator.serviceWorker.getRegistrations()).map((r) => r.unregister()));
+        if ('caches' in window) for (const k of await caches.keys()) if (k.startsWith('izzat-')) await caches.delete(k);
+      } catch { /* segue */ }
       raiz.dataset.swDesligado = '1';
-      return;
     }
+    return desligar;
+  })());
+}
+async function servico() {
+  if (!temSw()) return;
+  const sw = navigator.serviceWorker;
+  try {
+    if (await conferirDesligar()) return;
     const controlada = !!sw.controller;
     await sw.register('/sw.js', { scope: '/', updateViaCache: 'none' });
     // a cópia desta página para abrir sem conexão: quem veio pelo SW já foi guardada por ele
@@ -157,6 +168,8 @@ function iniciar() {
   // o service worker só depois de a página assentar (load + 5 s + o navegador folgando): a instalação baixa o casco e
   // disputava a CPU com o 1º toque na 1ª visita (medido: TBT e INP do 1º toque subiam com o registro logo no load)
   depoisDoLoad(servico, 5000);
+  // já tem SW (ou o ?sw=0): o pânico é conferido logo no load, mesmo que a pessoa troque de página antes dos 5 s
+  if (temSw() && (navigator.serviceWorker.controller || pedeSw0())) depoisDoLoad(() => { conferirDesligar(); });
   depoisDoLoad(() => { pronto = true; talvezConvidar(); }, 3500);
 }
 

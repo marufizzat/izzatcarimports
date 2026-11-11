@@ -188,8 +188,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      do site) pede só DEPOIS do `load` (um `<script>` no `<head>` do `Base.astro` era mais um pedido disputando a 1ª tela:
      a LCP da home na 1ª visita piorava ~60 ms). O cabeçalho guarda a janela de instalar do Chrome que chega antes
      (`window.__izzatInstalar`). O registro só 5 s depois do load, com o navegador folgando (a instalação caía em cima do
-     1º toque da 1ª visita). Página preparada pelo prerender não faz nada até ser aberta. Antes de registrar, confere o
-     botão de pânico. O `/offline.html` não tem cabeçalho nem registro (só aparece sem rede).
+     1º toque da 1ª visita). Página preparada pelo prerender não faz nada até ser aberta. O botão de pânico é conferido
+     antes do registro e, na página que JÁ tem o SW (ou com `?sw=0`), logo no load (sem os 5 s). O `/offline.html` não tem
+     cabeçalho nem registro (só aparece sem rede).
    - **Service worker** (`public/sw.js`; a versão e o casco entram no build por `integracoes/service-worker.mjs`, a ÚLTIMA
      integração do `astro.config.mjs`):
 
@@ -234,8 +235,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      http com o domínio de verdade, `--unsafely-treat-insecure-origin-as-secure` no Chrome for Testing (o headless-shell
      ignora).
    - **Como DESLIGAR (botão de pânico)**: escrever `1` em `site/public/sw-desligar.txt` e publicar (push no master; o
-     robô publica). Toda página confere esse arquivo na carga (sem cache) e, com "1", desregistra o SW e apaga os caches
-     `izzat-*`; o próprio SW confere na ativação e a cada 6 h (hora gravada no cache `izzat-ctl-v1`). Para religar:
+     robô publica). Toda página com o SW confere esse arquivo no load (sem cache; a que ainda não tem, antes de registrar)
+     e, com "1", desregistra o SW e apaga os caches `izzat-*`; o próprio SW confere na ativação e a cada 6 h (hora
+     gravada no cache `izzat-ctl-v1`, lida a cada navegação). Para religar:
      voltar para `0` e publicar. Num aparelho só: abrir qualquer página com `?sw=0` no endereço. **Nunca** apagar o
      `sw.js` nem o registro do `Base.astro` para "desligar": o SW instalado continua no aparelho; o `/sw.js` tem de ficar
      sempre no MESMO endereço (é por ele que o navegador acha a versão nova). Último recurso: um `sw.js` que só se
