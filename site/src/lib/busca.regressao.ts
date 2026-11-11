@@ -18,7 +18,7 @@ export type Caso = {
   lado?: 'E' | 'D';
   codigo?: string;
 };
-export type Item = { n: string; s: string; c: string; b: string; ms: string[]; l: string; o: string };
+export type Item = { n: string; s: string; c: string; b: string; ms: string[]; l: string; o: string; t: string };
 export type Resultado = {
   q: string; grupo: string; existe: boolean; ok: boolean; motivo: string;
   top1: string; n: number; aprox: boolean;
@@ -32,13 +32,15 @@ export const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').to
 export function itensDo(ix: any): Item[] {
   return ix.id.map((_: string, k: number) => ({
     n: norm(ix.n[k]), s: norm(ix.tipos[ix.s[k]] ?? ''), c: norm(ix.familias[ix.c[k]] ?? ''),
-    b: norm(ix.marcas[ix.b[k]] ?? ''), ms: ix.ms?.[k] ?? [ix.m[k]], l: ix.l?.[k] ?? '0', o: ix.o[k] ?? '',
+    b: norm(ix.marcas[ix.b[k]] ?? ''), ms: ix.ms?.[k] ?? [ix.m[k]], l: ix.l?.[k] ?? '0', o: ix.o[k] ?? '', t: norm(ix.t[k] ?? ''),
   }));
 }
 
-// O tipo da peça pelo nome (o gabarito): a 1ª palavra do nome (o tipo), e a 2ª só quando a 1ª é um cabeçalho que
-// descreve a peça ("Guia para-choque", "Grade churrasqueira"). Para o jeito de falar (pisca = seta), a 2ª vale sempre.
-const GEN = new Set(['guia', 'suporte', 'moldura', 'acabamento', 'grade', 'tampa', 'maquina', 'motor']);
+// O tipo da peça pelo nome (o gabarito): a 1ª palavra do nome. A revisão da rodada 14 (P2-2) derrubou a regra antiga em
+// que a 2ª palavra valia sob um cabeçalho genérico: o "Suporte alternador" NÃO é o alternador e o "Acabamento retrovisor
+// esquerdo" não é o retrovisor esquerdo (quem procura a peça principal precisa ler que ela não está). Fica só a "Grade
+// churrasqueira", que é a churrasqueira. Para o jeito de falar (pisca = seta), a 2ª vale sob botão/chave/interruptor.
+const GEN = new Set(['grade']);
 const palavrasDo = (n: string) => n.split(' ').map((x) => x.replace(/[^a-z0-9]/g, '')).filter(Boolean);
 const CONTROLE = new Set(['botao', 'chave', 'interruptor', 'alavanca']);
 const cab = (re: RegExp, sinonimo = false) => (n: string) => {
@@ -62,8 +64,8 @@ const TIPOS: { t: string; tk: RegExp; re: (n: string) => boolean; lado?: boolean
   { t: 'motor', tk: /^motor/, re: cab(/^motor/), typed: ['motor'] },
   { t: 'modulo', tk: /^modulo/, re: cab(/^modulo/), typed: ['modulo'] },
   { t: 'pisca', tk: /^(seta|pisca)/, re: cab(/^(seta|pisca)/, true), typed: ['pisca'] },
-  // "frente" = a forma do sinônimo na 1ª ou 2ª palavra de qualquer peça (o "fora" tira a moldura do painel e a chave de farol)
-  { t: 'frente', tk: /^(grade|churrasqueira|farol|capo|parachoque|paralama|frontal)/, re: (n) => { const w = palavrasDo(n); const frente = w.slice(0, 2).some((x) => /^(grade|churrasqueira|farol|capo|frontal)/.test(x)) || (w.slice(0, 2).some((x) => /^(parachoque|paralama)/.test(x)) && w.some((x) => /^dianteir/.test(x))); return frente && !w.some((x) => /^(painel|console|falante|tweeter|difusor|tras|porta|chave|botao|interruptor)/.test(x)); }, typed: ['frente'] },
+  // "frente" = a forma do sinônimo no nome de qualquer peça (o "fora" tira a moldura do painel e a chave de farol)
+  { t: 'frente', tk: /^(grade|churrasqueira|farol|capo|parachoque|paralama|frontal)/, re: (n) => { const w = palavrasDo(n); const frente = w.some((x) => /^(grade|churrasqueira|farol|capo|frontal)/.test(x)) || (w.some((x) => /^(parachoque|paralama)/.test(x)) && w.some((x) => /^dianteir/.test(x))); return frente && !w.some((x) => /^(painel|console|falante|tweeter|difusor|tras|porta|chave|botao|interruptor)/.test(x)); }, typed: ['frente'] },
   { t: 'tapete', tk: /^(tapete|carpete)/, re: cab(/^(tapete|carpete)/), typed: ['tapete'] },
   { t: 'bomba', tk: /^bomba/, re: cab(/^bomba/), typed: ['bomba'] },
   { t: 'painel', tk: /^painel/, re: cab(/^painel/), typed: ['painel'] },
@@ -119,11 +121,17 @@ export function casos(ix: any): Caso[] {
   return out;
 }
 
+/** O anúncio cita o carro por extenso ("Coluna Direção Jeep Renegade Fiat Toro" para "toro"): a peça serve nele. */
+function citaCarro(it: Item, m: string): boolean {
+  const ws = it.t.split(/[^a-z0-9]+/).filter(Boolean); const alvo = norm(m).replace(/[^a-z0-9]/g, '');
+  return ws.some((_, i) => [1, 2, 3].some((n) => ws.slice(i, i + n).join('') === alvo));
+}
+
 /** O que a peça é para o gabarito (tipo, carro e lado do caso). */
 function casa(it: Item, c: Caso): boolean {
   if (c.codigo) return it.o.split(' ').includes(c.codigo);
   if (c.tipo && !(c.grupo === 'familia' ? (c.tipo as (it: Item) => boolean)(it) : (c.tipo as (n: string) => boolean)(it.n))) return false;
-  if (c.carro && !(it.b === norm(c.carro.b) && it.ms.some((m) => norm(m) === norm(c.carro!.m)))) return false;
+  if (c.carro && !(it.b === norm(c.carro.b) && it.ms.some((m) => norm(m) === norm(c.carro!.m))) && !citaCarro(it, c.carro.m)) return false;
   if (c.lado && it.l !== c.lado) return false;
   return true;
 }

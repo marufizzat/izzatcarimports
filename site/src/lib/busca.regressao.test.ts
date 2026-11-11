@@ -29,13 +29,16 @@ describe('busca: os casos do cliente oculto (rodada 14)', () => {
   it('"sinaleira direita tracker": o Tracker não tem lanterna direita, e a esquerda não aparece como se fosse a certa', () => {
     const bb = b();
     expect(bb.procurar({ q: 'sinaleira direita tracker' })).toEqual([]);
-    expect(bb.faltou).toEqual({ lado: 'D', pos: undefined });
+    // (fem: a peça é feminina, "lanterna": a tela escreve "Nenhuma lanterna direita")
+    expect(bb.faltou).toEqual({ lado: 'D', pos: undefined, fem: true });
     expect(bb.outrosLados.map((it) => it.l)).toEqual(['E']);
   });
 
-  it('"sinaleira do Tracker": uma só (a esquerda), e o resultado não é "exato" de nada além dela', () => {
-    const r = nomes('sinaleira do Tracker');
-    expect(r).toEqual(['Lanterna traseira esquerda']);
+  it('"sinaleira do Tracker": uma só exata (a esquerda)', () => {
+    const bb = b();
+    const r = bb.procurar({ q: 'sinaleira do Tracker' });
+    expect(r.slice(0, bb.nExatas).map((it) => it.n)).toEqual(['Lanterna traseira esquerda']);
+    expect(bb.aproximado).toBe(false);
   });
 
   it('"paralama do Gol": nenhuma luz de teto, quebra-sol nem pedal; só paralamas (outros carros, como parecidas)', () => {
@@ -53,14 +56,20 @@ describe('busca: os casos do cliente oculto (rodada 14)', () => {
     expect(nomes('para-choque e-pace')[0]).toBe('Para-choque dianteiro completo');
   });
 
-  it('"farol onix 2015": a chave de seta do farol de milha não conta como farol', () => {
-    expect(nomes('farol onix 2015').some((n) => /chave seta/i.test(n))).toBe(false);
+  it('"farol onix 2015": a chave de seta do farol de milha não conta como farol (aparece só como parecida, com aviso)', () => {
+    const bb = b();
+    const r = bb.procurar({ q: 'farol onix 2015' });
+    const comoFarol = bb.aproximado ? [] : r.slice(0, bb.nExatas);
+    expect(comoFarol.some((it) => /chave seta/i.test(it.n))).toBe(false);
   });
 
-  it('"pisca": a chave de seta (o jeito de falar) aparece, e a chicote de injetor não', () => {
-    const r = nomes('pisca');
-    expect(r.some((n) => /seta/i.test(n))).toBe(true);
-    expect(r.some((n) => /chicote/i.test(n))).toBe(false);
+  it('"pisca": a chave de seta (o jeito de falar) abre a lista, e o chicote de injetor não é a peça', () => {
+    const bb = b();
+    const r = bb.procurar({ q: 'pisca' });
+    expect(r[0].n).toMatch(/^chave seta/i);
+    expect(bb.nExatas).toBeGreaterThan(20);
+    // o "Chicote pisca bico injetor" cita a palavra: fica depois, em "Outras peças ligadas a…", nunca entre as exatas
+    expect(r.slice(0, bb.nExatas).some((it) => /chicote/i.test(it.n))).toBe(false);
   });
 
   it('"suspensão xc60": a família inteira do XC60 (sistema de busca, não "parecida")', () => {
@@ -68,6 +77,9 @@ describe('busca: os casos do cliente oculto (rodada 14)', () => {
     const r = bb.procurar({ q: 'suspensão xc60' });
     expect(r.length).toBeGreaterThan(8);
     expect(bb.aproximado).toBe(false);
+    // nenhuma peça se chama "suspensão": a tela diz "peças ligadas a", e não "peças para"
+    expect(bb.citam).toBe(true);
+    expect(r.every((it) => it.b === 'Volvo')).toBe(true);
   });
 
   it('código com espaço e traço acha a peça em 1º', () => {
