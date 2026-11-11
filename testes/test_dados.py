@@ -1453,6 +1453,18 @@ def test_excluidos_do_site_sao_poucos_e_com_motivo():
 
 
 
+def test_apelido_de_carro_unido_fora_das_listas():
+    """O apelido (C180) tem o nome salvo em "de" e nao aparece nas listas de modelo da marca (o principal aparece)."""
+    resumo = json.loads((ROOT / "site" / "src" / "data" / "resumo.json").read_text(encoding="utf-8"))
+    for a in resumo.get("aliases", []):
+        assert a.get("de"), a
+    marcas = {m["n"]: {x["n"] for x in m["m"]} for m in resumo["marcas"]}
+    for a in resumo.get("aliases", []):
+        assert a["de"] not in marcas.get(a["b"], set()), a
+    busca = json.loads((ROOT / "site" / "public" / "dados" / "busca.json").read_text(encoding="utf-8"))
+    assert set(busca.get("apelidos", [])) == {f"{a['b']}|{a['de']}" for a in resumo.get("aliases", [])}
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

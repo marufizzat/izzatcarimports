@@ -3631,7 +3631,8 @@ def main():
 
     marcas = []
     for mc, lst in sorted(por_marca.items(), key=lambda kv: -len(kv[1])):
-        mods = Counter(mod for x in lst for mod in modelos_de(x))
+        # o apelido (C180, New Fiesta) nao aparece nas listas de modelo (marca, filtro, garagem): a peca conta no principal
+        mods = Counter(mod for x in lst for mod in modelos_de(x) if (mc, mod) not in {(a_, b_) for (a_, b_, _p) in _UNIAO})
         marcas.append({
             "n": mc, "k": chave_url(mc), "c": len(lst),
             "m": [{"n": n, "k": chave_url(n), "c": c}
@@ -3677,7 +3678,7 @@ def main():
         "antigas": [{"k": k, "n": n, "para": para} for k, (n, para) in FAMILIAS_ANTIGAS.items()],
         "carros": carros,
         # enderecos antigos de carro unido (mesmo carro, outra pagina): /carros/<k>.html com canonical para <para>
-        "aliases": [{"k": chave_url(f"{mc_} {c_}"), "b": mc_, "m": P_, "para": chave_url(f"{mc_} {P_}")}
+        "aliases": [{"k": chave_url(f"{mc_} {c_}"), "b": mc_, "de": c_, "m": P_, "para": chave_url(f"{mc_} {P_}")}
                     for (mc_, c_, P_), n_ in sorted(_UNIAO.items()) if n_ >= MIN_CARRO],
         "chegou": chegou,
         "preco": {"min": precos[0], "max": precos[-1]},
@@ -3699,6 +3700,7 @@ def main():
         "marcas": [m["n"] for m in marcas],
         "familias": [f["n"] for f in familias],
         "tipos": tipos,
+        "apelidos": [f"{a['b']}|{a['de']}" for a in resumo.get("aliases", [])],   # o filtro nao lista; a busca ainda acha
         "id": [x["id"] for x in pecas],
         "t": [x["t"] for x in pecas],
         "n": [x["n"] for x in pecas],
