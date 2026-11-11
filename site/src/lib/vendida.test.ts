@@ -252,3 +252,87 @@ describe('endereço antigo: o MLB, o arquivo do estoque e o que a 404 faz', () =
     expect(decidirEndereco('/peca/x-MLB12.html', '', '', null)).toEqual({ acao: 'geral' });
   });
 });
+
+// Revisão 14, item 25 e P3: "mlb" minúsculo e a barra no fim valem como os outros endereços.
+import { caminhoLimpo, conferirAntes as conferir, RE_MLB_PECA } from './vendida';
+describe('caminhoLimpo: o endereço como a 404 o confere', () => {
+  it('barra no fim, MLB minúsculo e texto em maiúsculas viram o endereço normal', () => {
+    expect(caminhoLimpo('/peca/farol-direito-gm-cruze-MLB4687584199.html/')).toBe('/peca/farol-direito-gm-cruze-MLB4687584199.html');
+    expect(caminhoLimpo('/peca/farol-direito-gm-cruze-mlb4687584199.html')).toBe('/peca/farol-direito-gm-cruze-MLB4687584199.html');
+    expect(caminhoLimpo('/PECA/Farol-Direito-MLB4687584199.HTML')).toBe('/peca/farol-direito-MLB4687584199.html');
+    expect(caminhoLimpo('/peca/farol-MLB4687584199')).toBe('/peca/farol-MLB4687584199');
+  });
+  it('a vendida com "mlb" minúsculo ou com a barra passa a ser lida como vendida', () => {
+    for (const p of ['/peca/bomba-alta-volvo-xc60-mlb4687584199.html', '/peca/bomba-alta-volvo-xc60-MLB4687584199.html/']) {
+      expect(decidirEndereco(caminhoLimpo(p), '', '', null)).toEqual({ acao: 'vendida' });
+    }
+  });
+  it('o que não é peça só perde a barra', () => {
+    expect(caminhoLimpo('/qualquer/coisa/')).toBe('/qualquer/coisa');
+    expect(caminhoLimpo('/')).toBe('/');
+  });
+});
+
+describe('conferirAntes: o script do <head> da 404 (copiado por toString)', () => {
+  type Doc = { classes: Set<string> };
+  function rodar(caminho: string, estoque: Record<string, string> | 'falha', gemeas: Record<string, string> = {}) {
+    const doc: Doc = { classes: new Set() };
+    const fila: [number, () => void][] = [];
+    const amb = {
+      document: { documentElement: { classList: { add: (...c: string[]) => c.forEach((x) => doc.classes.add(x)), remove: (...c: string[]) => c.forEach((x) => doc.classes.delete(x)) } } },
+      location: { pathname: caminho, search: '?utm=1', hash: '#foto', replace: (u: string) => { foi = u; } },
+      window: {} as { __nf?: { id: string; alvo: string; tarde: () => boolean; estoque: Promise<string | null | undefined> } },
+      setTimeout: (f: () => void, ms: number) => { fila.push([ms, f]); return fila.length; },
+      clearTimeout: (n: number) => { if (n) fila[n - 1] = [0, () => {}]; },
+      fetch: (u: string) => { pedido = u; return estoque === 'falha' ? Promise.reject(new Error('rede')) : Promise.resolve({ ok: true, json: () => Promise.resolve(estoque) }); },
+    };
+    let foi = '';
+    let pedido = '';
+    const f = new Function(...Object.keys(amb), `return (${conferir.toString()})(${JSON.stringify(RE_MLB_PECA.source)}, 64, ${JSON.stringify(gemeas)}, 400, 2500)`);
+    f(...Object.values(amb));
+    return { doc, amb, passar: (ms: number) => fila.filter(([t]) => t === ms).forEach(([, g]) => g()), foi: () => foi, pedido: () => pedido };
+  }
+  it('endereço que não é de peça: não esconde nada nem pede nada', () => {
+    const r = rodar('/pagina-que-nao-existe.html', {});
+    expect([...r.doc.classes]).toEqual([]);
+    expect(r.amb.window.__nf).toBeUndefined();
+    expect(r.pedido()).toBe('');
+  });
+  it('peça à venda com outro endereço: pede o arquivo do MLB no <head> e vai para o endereço de hoje (com a busca e a âncora)', async () => {
+    const r = rodar('/peca/slug-velho-mlb7406476550.html/', { MLB7406476550: 'slug-de-hoje-MLB7406476550' });
+    expect(r.doc.classes.has('nf-conferindo')).toBe(true);
+    expect(r.pedido()).toBe(`/dados/peca/${7406476550 % 64}.json`);
+    await new Promise((ok) => setTimeout(ok, 0));
+    expect(r.foi()).toBe('/peca/slug-de-hoje-MLB7406476550.html?utm=1#foto');
+  });
+  it('400 ms sem resposta: "Abrindo a peça…"; 2,5 s: a página aparece conferindo e nada mais navega sozinho', async () => {
+    const r = rodar('/peca/slug-velho-MLB7406476550.html', { MLB7406476550: 'slug-de-hoje-MLB7406476550' });
+    r.passar(400);
+    expect(r.doc.classes.has('nf-abrindo')).toBe(true);
+    r.passar(2500);
+    expect([...r.doc.classes]).toEqual(['nf-lenta']);
+    expect(r.amb.window.__nf!.tarde()).toBe(true);
+    // a resposta chega depois do teto: o endereço de hoje vai para o script da página (botão "Abrir a peça"), sem navegar
+    expect(await r.amb.window.__nf!.estoque).toBe('slug-de-hoje-MLB7406476550');
+    expect(r.foi()).toBe('');
+  });
+  it('fim(): quando a página mostra o resultado, os relógios param (a "vendida" não volta para "Conferindo…" aos 2,5 s)', async () => {
+    const r = rodar('/peca/x-MLB7406476550.html', {});
+    expect(await r.amb.window.__nf!.estoque).toBeNull();
+    (r.amb.window.__nf as unknown as { fim: () => void }).fim();
+    r.doc.classes.clear();
+    r.passar(400); r.passar(2500);
+    expect([...r.doc.classes]).toEqual([]);
+    expect(r.amb.window.__nf!.tarde()).toBe(false);
+  });
+  it('fora do estoque: null (a página decide "vendida"); a conferência falhou: undefined (a 404 de sempre)', async () => {
+    expect(await rodar('/peca/x-MLB7406476550.html', {}).amb.window.__nf!.estoque).toBeNull();
+    expect(await rodar('/peca/x-MLB7406476550.html', 'falha').amb.window.__nf!.estoque).toBeUndefined();
+  });
+  it('anúncio tirado do site com um igual à venda: confere e abre o igual', async () => {
+    const r = rodar('/peca/slug-MLB6818584120.html', { MLB6540744984: 'slug-da-gemea-MLB6540744984' }, { MLB6818584120: 'MLB6540744984' });
+    expect(r.pedido()).toBe(`/dados/peca/${6540744984 % 64}.json`);
+    await new Promise((ok) => setTimeout(ok, 0));
+    expect(r.foi()).toBe('/peca/slug-da-gemea-MLB6540744984.html?utm=1#foto');
+  });
+});

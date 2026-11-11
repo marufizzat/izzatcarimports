@@ -1,6 +1,6 @@
 // Regras do cartão da peça, as MESMAS no build (CartaoPeca.astro) e no navegador (Catalogo.tsx).
 // Sem node:fs: este arquivo roda nos dois lados.
-import { atributosModelos, nomeModelos } from '../../lib/meuCarro';
+import { atributosModelos, nomeModelos, gruposModelos } from '../../lib/meuCarro';
 import { mensagemPeca, anosTexto, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
 
 /** INTERRUPTOR DA VITRINE (um só, vale para o site inteiro):
@@ -41,9 +41,10 @@ export function precoCheioDoTexto(s: string | null | undefined): string {
   return /R\$\s*([\d.]+,\d{2})/.exec(s || '')?.[1] ?? '';
 }
 
-/** Carro e anos da peça: { carro: "Volvo XC60", anos: "2018–2024" }. Peça de 2+ carros (ms): "Volvo S60 / XC60". */
+/** Carro e anos da peça: { carro: "Volvo XC60", anos: "2018–2024" }. Peça de 2+ carros (ms): "Volvo S60 / XC60".
+ *  O carro unido aparece uma vez, pelo principal ("Mercedes-Benz Classe C", nunca "Classe C / C180 / C200"). */
 export function linhaCarro(b?: string | null, m?: string | null, y?: [number, number] | null, ms?: string[] | null) {
-  const carro = [b, ms && ms.length > 1 ? ms.join(' / ') : m].filter(Boolean).join(' ');
+  const carro = [b, ms && ms.length > 1 ? gruposModelos({ b, m, ms }).map((g) => g.m).join(' / ') : m].filter(Boolean).join(' ');
   const anos = y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}–${y[1]}`) : '';
   return { carro, anos };
 }

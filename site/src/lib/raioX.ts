@@ -242,6 +242,37 @@ export function linkLinha(l: Pick<Linha, 'tipo' | 'sub' | 'lado' | 'pos'>, carro
   return `/catalogo.html?${u.toString()}`;
 }
 
+/** "Ver todas no catálogo" do painel: o catálogo na zona inteira (?zona=<k>), com o MESMO carro das contagens do painel
+ *  (o filtro em uso). Sem carro (visitante sem carro salvo; ou o carro salvo não tem peça / a rede falhou e as contagens
+ *  são do estoque inteiro): só a zona, `/catalogo.html?zona=frente`. Nunca o carro salvo "por fora" do filtro: o painel
+ *  dizia "Teto · 97 peças" e o clique abria 0 (revisão 14, P1-1 e item 32). */
+export function linkZona(k: string, carro: CarroFiltro = {}): string {
+  const u = new URLSearchParams();
+  if (carro.marca) u.set('marca', carro.marca);
+  if (carro.marca && carro.modelo) u.set('modelo', carro.modelo);
+  if (carro.marca && carro.modelo && carro.ano) u.set('ano', String(carro.ano));
+  u.set('zona', k);
+  return `/catalogo.html?${u.toString()}`;
+}
+
+/** "Ver todas as peças do XC60" (zona sem peça): o catálogo do carro das contagens; sem carro, o catálogo inteiro. */
+export function linkDoFiltro(carro: CarroFiltro = {}): string {
+  const u = new URLSearchParams();
+  if (carro.marca) u.set('marca', carro.marca);
+  if (carro.marca && carro.modelo) u.set('modelo', carro.modelo);
+  if (carro.marca && carro.modelo && carro.ano) u.set('ano', String(carro.ano));
+  const q = u.toString();
+  return q ? `/catalogo.html?${q}` : '/catalogo.html';
+}
+
+/** O que o leitor de tela ouve quando o painel troca sem o foco ir para ele (toque, clique): "Frente: 119 peças do seu
+ *  XC60 2019, 19 tipos de peça." / "Teto: nenhuma peça do seu XC60 2019 agora." (`doCarro` = '' no estoque inteiro). */
+export function falaDaZona(nome: string, n: number, tipos: number, doCarro = ''): string {
+  const dc = doCarro ? ` ${doCarro}` : '';
+  if (!n) return `${nome}: nenhuma peça${dc} agora.`;
+  return `${nome}: ${qtdPecas(n)}${dc}${tipos > 1 ? `, ${tipos} tipos de peça` : ''}.`;
+}
+
 /** "Retrovisores Externos" na lateral esquerda: o lado já está na zona, o nome fica o do catálogo (é o da ficha que a
  *  pessoa vai ver lá). Na frente/traseira com posição, idem. */
 export const nomeLinha = (l: Pick<Linha, 'sub'>) => l.sub;

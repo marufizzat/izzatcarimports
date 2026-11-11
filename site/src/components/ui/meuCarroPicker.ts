@@ -134,7 +134,7 @@ function htmlCampos(e: Estado): string {
  *  e troca pelo carro salvo antes de pintar: o aviso já nasce no lugar (a grade de marcas não desce depois). */
 export const AVISO_CARRO = '__CARRO__';
 export function htmlAvisoSemPeca(carro: string): string {
-  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">chame no WhatsApp</a>.</p>`;
+  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolha outro carro ou <a data-botao="meu-carro-sem-peca" href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">chame no WhatsApp</a>.</p>`;
 }
 
 function htmlMarcas(g: Garagem, e: Estado): string {
@@ -155,7 +155,7 @@ function htmlModelos(e: Estado): string {
   const m = e.marca!;
   const todas = `/catalogo.html?${new URLSearchParams({ marca: m.n }).toString()}`;
   // links curtos (a marca já está no campo): os dois cabem numa linha, e a grade de modelos tem a altura da de marcas
-  const procura = `<a class="mc-link" href="${whats(`Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}" aria-label="Não achou? A gente procura o modelo no pátio, pelo WhatsApp">Não achou? A gente procura</a>`;
+  const procura = `<a class="mc-link" data-botao="meu-carro-procura" href="${whats(`Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}" aria-label="Não achou? A gente procura o modelo no pátio, pelo WhatsApp">Não achou? A gente procura</a>`;
   if (!m.modelos.length)
     // marca sem modelo lido nos anúncios (ex.: Mini): vai direto para as peças dela
     return `
@@ -285,7 +285,7 @@ function htmlErro(): string {
   return `<div class="mc-corpo" data-etapa="erro"><div class="mc-aviso"><p>Não deu para carregar os carros agora.</p>
     <p class="mc-aviso-acoes"><button type="button" class="botao botao-linha" data-acao="recarregar" data-chave="recarregar" data-foco>Tentar de novo</button>
       <a class="mc-link" href="/catalogo.html">Ver o catálogo</a>
-      <a class="mc-link" href="${whats('Procuro uma peça.')}">Chamar no WhatsApp</a></p></div></div>`;
+      <a class="mc-link" data-botao="meu-carro-erro" href="${whats('Procuro uma peça.')}">Chamar no WhatsApp</a></p></div></div>`;
 }
 
 /** Marcação inicial (campos + grade de marcas), igual à que o script desenha: a abertura já nasce com ela. */

@@ -28,7 +28,7 @@ export function cartaoHtml(it: Item, sizes?: string | number): string {
     + (cod ? `<span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">${esc(cod)}</span></span>` : '')
     + `<span class="sr-only">${pc.sr}</span><span class="etiqueta-valor num" aria-hidden="true"><s>R$ ${pc.de}</s><span class="etiqueta-preco"><small>R$</small>${pc.reais}<small>${pc.cent}</small></span><span class="etiqueta-wa">${SELO_WHATS}</span></span>`
     + `<span class="etiqueta-confia"><span>90 dias de garantia</span>${it.q === 1 ? '<b>Peça única</b>' : ''}</span>`
-    + `</div></a><a class="etiqueta-acao" href="${esc(linkWhats(msgWhats(it, urlPeca(it.h))))}" target="_blank" rel="noopener" aria-label="${esc(`Pedir no WhatsApp: ${it.n}`)}">`
+    + `</div></a><a class="etiqueta-acao" data-botao="pedir-cartao" href="${esc(linkWhats(msgWhats(it, urlPeca(it.h))))}" target="_blank" rel="noopener" aria-label="${esc(`Pedir no WhatsApp: ${it.n}`)}">`
     + `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('whats')}"></use></svg>Pedir no WhatsApp</a></div>`;
 }
 

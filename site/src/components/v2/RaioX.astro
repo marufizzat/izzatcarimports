@@ -15,9 +15,12 @@
 //   1ª pintura) e, no 1º toque na seção, /dados/carro/<k>.json (o do "Chegou para o seu carro") vira as contagens DELE
 //   (no ano salvo; ano sem peça: o modelo em todos os anos, com aviso). Trocar o carro atualiza tudo sem recarregar.
 // - página do carro (`carro`): as contagens daquele carro já saem no build.
-// Teclado: Tab percorre as zonas na ordem do carro (ZONAS), Enter abre o painel e leva o foco para ele, Esc limpa.
-// Leitor de tela: cada zona é um link "Frente: 118 peças"; a arte, as etiquetas e as fichas (um alvo maior para o dedo)
-// ficam de fora. Sem ilha React; a busca do catálogo só desce com carro salvo (1º toque) ou no "Ver as peças".
+// Teclado: Tab percorre as zonas na ordem do carro (ZONAS) e só ACENDE a parte (como o mouse em cima: o painel não troca
+// sozinho); Enter ou Espaço abre o painel e leva o foco para ele, Esc limpa.
+// Leitor de tela: cada zona é um link "Frente: 118 peças"; quando o painel troca sem o foco ir para ele (toque, clique),
+// a região role=status diz a parte e a contagem. A arte, as etiquetas e as fichas (um alvo maior para o dedo) ficam de fora.
+// Sem carro (a maioria dos visitantes): tudo é do estoque inteiro, e o "Ver todas no catálogo" é /catalogo.html?zona=<k>.
+// Sem ilha React; a busca do catálogo só desce com carro salvo (1º toque) ou no "Ver as peças".
 import { ZONAS, ARTE } from '../../lib/raioX';
 import { dadosRaioX } from '../../lib/raioXDados';
 import { srcArte, srcsetArte } from '../../lib/variantes';
@@ -124,6 +127,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         </ol>
       </div>
       <div class="rx-conteudo" data-rx-conteudo hidden></div>
+      <p class="sr-only" role="status" data-rx-voz></p>
     </div>
   </div>
   <script type="application/json" data-rx-dados set:html={JSON.stringify(dados)} />
@@ -131,10 +135,10 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
 </div>
 
 <script>
-  import { lerMeuCarro, nomeCarro, linkCatalogo, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
+  import { lerMeuCarro, nomeCarro, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
   import { ARQUIVO_CARRO } from '../../lib/chegouCarro';
   import {
-    ZONAS, NA_FRENTE, NA_GALERIA, ARQUIVO_GALERIA, linkLinha, qtdPecas, contarZonas, pecasDaZona, lerRaioX,
+    ZONAS, NA_FRENTE, NA_GALERIA, ARQUIVO_GALERIA, linkLinha, linkZona, linkDoFiltro, falaDaZona, qtdPecas, contarZonas, pecasDaZona, lerRaioX,
     type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel,
   } from '../../lib/raioX';
   import { linkAvisoParte, linkProcuraParte } from '../../lib/aviso';
@@ -158,6 +162,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     const painel = raiz.querySelector<HTMLElement>('[data-rx-painel]')!;
     const conteudo = raiz.querySelector<HTMLElement>('[data-rx-conteudo]')!;
     const dica = raiz.querySelector<HTMLElement>('[data-rx-dica]')!;
+    const voz = raiz.querySelector<HTMLElement>('[data-rx-voz]');
     const zonasA = [...raiz.querySelectorAll<SVGAElement>('a[data-z]')];
     const fichas = [...raiz.querySelectorAll<HTMLButtonElement>('[data-ficha]')];
     const todos = (sel: string) => [...raiz.querySelectorAll<HTMLElement>(sel)];
@@ -270,13 +275,20 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         html = cabeca('', `Contando as peças do seu ${carro!.m}…`)
           + `<ul class="rx-linhas rx-esq" aria-hidden="true">${'<li><span class="rx-linha"><span class="rx-l-foto"></span><span class="rx-l-nome">&nbsp;</span></span></li>'.repeat(4)}</ul>`;
       } else if (!c.n) {
-        const quem = carro ? `${carro.b} ${carro.m}` : `${raiz.dataset.b} ${raiz.dataset.m}`;
+        // o carro do aviso: o salvo (home) ou o da página; sem carro nenhum (visitante sem carro salvo), o pedido do
+        // WhatsApp vai com a lacuna do carro, e o link de baixo é o catálogo inteiro
+        const quem = carro ? `${carro.b} ${carro.m}` : home ? '' : `${raiz.dataset.b} ${raiz.dataset.m}`;
+        const whats = raiz.querySelector('template[data-rx-whats]')?.innerHTML ?? '';
         html = cabeca(' · nenhuma peça agora', dc)
           + (aviso ? `<p class="rx-p-aviso">${esc(aviso)}</p>` : '')
-          + `<p class="rx-p-vazio">Agora não há peça ${esc(z.de)} ${esc(dc)} no site. Peça o aviso no WhatsApp: a mensagem já vai pronta com o carro e a parte.</p>`
-          + `<div class="rx-p-acoes"><a class="botao botao-linha rx-avise" data-botao="avise-carro" rel="noopener" href="${esc(linkAvisoParte(quem, filtro.ano ?? null, z.de))}">`
-          + `${raiz.querySelector('template[data-rx-whats]')?.innerHTML ?? ''}Me avise quando chegar</a>`
-          + `<a class="rx-p-outros" href="${esc(linkCatalogo({ b: filtro.marca || raiz.dataset.b || carro!.b, m: filtro.modelo || raiz.dataset.m || carro!.m, y: filtro.ano }))}">Ver todas as peças ${esc(dc)}</a></div>`;
+          + (quem
+            ? `<p class="rx-p-vazio">Agora não há peça ${esc(z.de)} ${esc(dc)} no site. Peça o aviso no WhatsApp: a mensagem já vai pronta com o carro e a parte.</p>`
+              + `<div class="rx-p-acoes"><a class="botao botao-linha rx-avise" data-botao="avise-carro" rel="noopener" href="${esc(linkAvisoParte(quem, filtro.ano ?? null, z.de))}">`
+              + `${whats}Me avise quando chegar</a>`
+            : `<p class="rx-p-vazio">Agora não há peça ${esc(z.de)} no site. Chame no WhatsApp e diga o seu carro: a gente procura no pátio.</p>`
+              + `<div class="rx-p-acoes"><a class="botao botao-linha rx-avise" data-botao="raio-x" rel="noopener" href="${esc(linkProcuraParte('', z.de, true))}">`
+              + `${whats}Chamar no WhatsApp</a>`)
+          + `<a class="rx-p-outros" href="${esc(linkDoFiltro(filtro))}">${filtro.modelo ? `Ver todas as peças ${esc(dc)}` : 'Ver o catálogo inteiro'}</a></div>`;
       } else {
         const ricas = c.l.slice(0, NA_FRENTE);
         const resto = c.l.slice(NA_FRENTE);
@@ -289,7 +301,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         }
         html += `<div class="rx-p-pe"><button type="button" class="botao botao-laranja rx-ver" aria-controls="${painel.id}-pecas">Ver as peças ${esc(z.de)}</button>`
           + `<div class="rx-galeria" id="${painel.id}-pecas" hidden></div>`
-          + `<a class="rx-p-outros" href="${esc(`${linkCatalogo({ b: filtro.marca || raiz.dataset.b || carro!.b, m: filtro.modelo || raiz.dataset.m || carro!.m, y: filtro.ano })}&zona=${z.k}`)}">Ver todas no catálogo</a></div>`;
+          // o MESMO carro das contagens (o filtro em uso); sem carro, só a zona: /catalogo.html?zona=<k> (lib/raioX.ts)
+          + `<a class="rx-p-outros" href="${esc(linkZona(z.k, filtro))}">Ver todas no catálogo</a></div>`;
       }
       if (!esperando()) {
         const carroMsg = home ? (carro ? nomeCarro({ ...carro, y: filtro.ano ?? carro.y }) : '') : `${raiz.dataset.b} ${raiz.dataset.m}`;
@@ -308,6 +321,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       });
       conteudo.querySelector<HTMLButtonElement>('.rx-ver')?.addEventListener('click', (e) => void verPecas(k, e.currentTarget as HTMLButtonElement));
       if (focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
+      // o painel trocou sem o foco ir para ele (toque, clique, as contas do carro que chegaram): o leitor de tela ouve a
+      // parte e a contagem (com o foco no título, ele já lê o título: aqui fica calado para não dizer duas vezes)
+      if (voz) {
+        voz.textContent = focar ? '' : esperando() ? `${z.nome}: contando as peças do seu ${carro!.m}…`
+          : falaDaZona(z.nome, c.n, c.l.length, dc === 'no estoque' ? '' : dc);
+      }
     }
 
     // ---- "Ver as peças da frente": as mais novas da zona num trilho de cartões, ali mesmo ----
@@ -402,7 +421,6 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     }
 
     // Esc: limpa a escolha (volta o "como funciona") e devolve o foco à zona
-    let semAbrir = false;
     function limpar() {
       const k = ativa;
       // o foco estava no painel (que vai ser esvaziado) ou numa zona: volta para a zona que estava escolhida
@@ -412,13 +430,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       acender();
       conteudo.hidden = true;
       conteudo.innerHTML = '';
+      if (voz) voz.textContent = '';
       dica.hidden = false;
       painel.classList.remove('aberto');
       if (k && dentro) {
-        // o foco volta à zona sem abrir de novo (o foco pelo teclado abre a zona: aqui não)
-        semAbrir = true;
+        // o foco volta à zona que estava escolhida (o foco só acende a parte: não abre de novo)
         raiz.querySelector<SVGAElement>(`a[data-z="${k}"]`)?.focus({ preventScroll: true });
-        semAbrir = false;
       }
     }
 
@@ -430,8 +447,16 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         // Enter (clique sem ponteiro: detail 0) leva o foco ao painel; o toque só abre
         selecionar(k, { focar: (e as MouseEvent).detail === 0, rolar: true });
       });
-      // Tab: a zona focada já abre (o foco continua nela; Enter leva ao painel)
-      a.addEventListener('focus', () => { if (!semAbrir && a.matches(':focus-visible')) selecionar(k); });
+      // Tab: a zona focada só ACENDE (como o mouse em cima); o painel não troca sozinho. Enter (o clique acima) ou Espaço
+      // abre e leva o foco ao painel. Antes o Tab abria cada zona: 9 trocas de painel para atravessar o carro, e o
+      // Shift+Tab a partir do painel trocava o que a pessoa estava lendo (revisão 14, item 30).
+      a.addEventListener('focus', () => { if (a.matches(':focus-visible')) { passando = k; acender(); } });
+      a.addEventListener('blur', () => { if (passando === k) { passando = null; acender(); } });
+      a.addEventListener('keydown', (e) => {
+        if (e.key !== ' ' && e.key !== 'Spacebar') return;
+        e.preventDefault();
+        selecionar(k, { focar: true, rolar: true });
+      });
       a.addEventListener('pointerenter', (e) => { if (passa(e)) { passando = k; acender(); } });
       a.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && passando === k) { passando = null; acender(); } });
     }

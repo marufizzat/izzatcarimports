@@ -1,14 +1,18 @@
-// "+ Lista" no cartão (rodada 14, cliente oculto atrito 10): um botão irmão da foto, em cima à direita, que põe a peça na
-// lista de orçamento sem abrir a peça. Os cartões estáticos (CartaoPeca.astro: home, categoria, carro, marca) são
+// O botão da lista no cartão (rodada 14, cliente oculto atrito 10): um botão irmão da foto, em cima à esquerda (o desenho
+// e o lugar em styles/global.css: .etiqueta-lista), que põe a peça na lista de orçamento sem abrir a peça. Os cartões estáticos (CartaoPeca.astro: home, categoria, carro, marca) são
 // ligados por UM ouvinte delegado no document; o botão é criado pelo script (nada de HTML a mais por cartão). O cartão
 // do catálogo (React) usa as mesmas funções (itemDeDados, classe e textos) e passa o estado pelo evento 'lista'.
 import { adicionarNaLista, lerLista, tem, EVENTO_LISTA, PAGINA_LISTA, idValido, type ItemLista } from '../../lib/lista';
 import { nomeModelos, lerModelos } from '../../lib/meuCarro';
 import { anosTexto } from '../../lib/whats';
 import { precoCheioDoTexto } from '../catalogo/etiqueta';
+import { avisarListaCheia } from './avisoLista';
 
 export const CLASSE_LISTA = 'etiqueta-lista';
-export const TXT_ADD = '+ Lista';
+/** O texto do botão: SEM o "+" (o sinal é o desenho do botão; os dois juntos davam "+ + Lista": revisão 14, P1-7). */
+export const TXT_ADD = 'Lista';
+/** O aviso da lista cheia para o leitor de tela (o catálogo manda o mesmo texto: é por ele que o aviso à vista sai). */
+export const AVISO_CHEIA = 'A lista está cheia. Tire uma peça para pôr outra.';
 export const TXT_NA = 'Na lista';
 
 /** O item da lista a partir do que o cartão mostra (os mesmos dados da mensagem "Pedir no WhatsApp" do cartão). */
@@ -26,9 +30,11 @@ export function rotulo(na: boolean, nome: string) {
     : { txt: TXT_ADD, label: `Adicionar à Lista de orçamento: ${nome}` };
 }
 
-/** Aviso para quem usa leitor de tela (a região fica fora da tela). */
+/** Aviso para quem usa leitor de tela (a região fica fora da tela). A lista cheia sai também À VISTA (ui/avisoLista.ts):
+ *  o toque que não faz nada precisa dizer por quê a quem enxerga. */
 let aviso: HTMLElement | null = null;
 export function avisar(msg: string) {
+  if (msg === AVISO_CHEIA) avisarListaCheia();
   if (!aviso) {
     aviso = document.createElement('p');
     aviso.id = 'lista-aviso';
@@ -41,7 +47,7 @@ export function avisar(msg: string) {
 }
 
 const avisoDe = (r: 'ok' | 'ja' | 'cheia', n: number) =>
-  r === 'cheia' ? 'A lista está cheia. Tire uma peça para pôr outra.'
+  r === 'cheia' ? AVISO_CHEIA
     : r === 'ja' ? 'Essa peça já está na sua lista.'
       : `Peça na sua lista (${n}).`;
 

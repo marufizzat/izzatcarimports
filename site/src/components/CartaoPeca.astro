@@ -93,6 +93,7 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
       }));
       a.target = '_blank';
       a.rel = 'noopener';
+      a.dataset.botao = 'pedir-cartao';
       a.setAttribute('aria-label', `Pedir no WhatsApp: ${nome}`);
       a.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('whats')}"></use></svg>Pedir no WhatsApp`;
       cx.append(a);

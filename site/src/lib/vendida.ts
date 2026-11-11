@@ -384,6 +384,53 @@ export function mlbDoEndereco(caminho: string): string | null {
   return m ? m[1].toUpperCase() : null;
 }
 
+/** O endereço como a 404 o confere: sem a barra no fim ("….html/"), o texto em minúsculas e o MLB em maiúsculas
+ *  ("…-mlb7406476550.html" = "…-MLB7406476550.html"). Antes a peça VENDIDA com "mlb" minúsculo ou com barra no fim caía na
+ *  404 comum, e a ativa não (regras diferentes: revisão 14, P3). Endereço que não é de peça volta só sem a barra. */
+export function caminhoLimpo(caminho: string): string {
+  const p = caminho.replace(/\/+$/, '') || '/';
+  const m = /^(\/peca\/.*?)(mlb)(\d{6,14})((?:\.html)?)$/i.exec(p);
+  return m ? `${m[1].toLowerCase()}MLB${m[3]}${m[4].toLowerCase()}` : p;
+}
+
+/** Antes do 1º desenho da 404 (inline no <head>, por toString(): sem nada de fora; pages/404.astro). Endereço de peça
+ *  (`re` = RE_MLB_PECA): esconde SÓ o <main> (o cabeçalho fica), pede já o arquivo do estoque do MLB (o `fetch` não
+ *  espera o script da página nem o lib/vendida.ts) e, se a peça segue à venda com outro endereço, vai para ele daqui
+ *  mesmo. Passados `espera` ms sem resposta: html.nf-abrindo ("Abrindo a peça…", calmo). Passados `teto` ms:
+ *  html.nf-lenta (a página aparece dizendo que ainda confere, com saídas; nunca "Página não encontrada" antes de saber)
+ *  e, daí em diante, nada navega sozinho. `gemeas` = anúncio tirado do site -> o igual que ficou (excluir_do_site.json).
+ *  Deixa em window.__nf: { id, alvo, tarde(), estoque, fim() } (estoque: Promise do endereço de hoje; null = fora do
+ *  estoque; undefined = a conferência falhou; fim(): o script da página chama quando mostra o resultado, e os dois
+ *  relógios param: sem isso a página já resolvida ("vendida", a 404 de sempre) voltava para "Conferindo…" aos 2,5 s). */
+export function conferirAntes(re: string, shards: number, gemeas: Record<string, string>, espera: number, teto: number): void {
+  var h = document.documentElement;
+  var p = location.pathname.replace(/\/+$/, '');
+  var m = new RegExp(re, 'i').exec(p);
+  if (!m) return;
+  var id = m[1].toUpperCase();
+  var alvo = gemeas[id] || id;
+  var tarde = false;
+  h.classList.add('nf-conferindo');
+  var t1 = setTimeout(function () { h.classList.add('nf-abrindo'); }, espera);
+  var t2 = setTimeout(function () { tarde = true; h.classList.remove('nf-conferindo', 'nf-abrindo'); h.classList.add('nf-lenta'); }, teto);
+  var estoque = fetch('/dados/peca/' + (Number(alvo.slice(3)) % shards) + '.json')
+    .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then(function (j) {
+      var s = (j && j[alvo]) || null;
+      var d = s ? '/peca/' + s + '.html' : '';
+      if (!d || d === p || tarde) return s;
+      // à venda, noutro endereço, e a pessoa ainda não viu nada: vai direto (a página segue escondida até trocar)
+      clearTimeout(t1);
+      clearTimeout(t2);
+      location.replace(d + location.search + location.hash);
+      return new Promise(function () {});
+    }, function () { return undefined; });
+  (window as unknown as { __nf?: unknown }).__nf = {
+    id: id, alvo: alvo, tarde: function () { return tarde; }, estoque: estoque,
+    fim: function () { clearTimeout(t1); clearTimeout(t2); },
+  };
+}
+
 /** Quantos arquivos de estoque (/dados/peca/<k>.json): o MLB cai em um só, pelo resto da divisão do número. */
 export const SHARDS = 64;
 export function shardDe(mlb: string): number {
