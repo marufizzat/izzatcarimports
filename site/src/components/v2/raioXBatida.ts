@@ -230,7 +230,7 @@ export function ligarBatida(ctx: Ctx) {
     return `<li class="rxb-linha" data-i="${i}"${oculta ? ' hidden' : ''}>`
       + `<span class="rxb-check"><input type="checkbox" id="${cid}" data-marca="${i}" aria-describedby="${cid}-p ${cid}-v"${e.marcadas.has(i) ? ' checked' : ''}><span class="rxb-caixa" aria-hidden="true"></span></span>`
       + `<a class="rxb-foto" href="${href}" tabindex="-1" aria-hidden="true">${img}</a>`
-      + `<div class="rxb-txt"><label class="rxb-nome" for="${cid}">${esc(l.linha.nome + ladoNaLinha(ponto(k), r.n))}<span class="rxb-tem num">Tem ${l.n}</span></label>`
+      + `<div class="rxb-txt"><label class="rxb-nome" for="${cid}">${esc(l.linha.nome + ladoNaLinha(ponto(k), l.linha, r.n))}<span class="rxb-tem num">Tem ${l.n}</span></label>`
       + `<a class="rxb-peca" id="${cid}-p" href="${href}">${esc(r.n)}</a>${de ? `<span class="rxb-de">${esc(de)}</span>` : ''}</div>`
       + `<div class="rxb-preco num" id="${cid}-v"><s><span class="sr-only">no site </span>R$ ${brl(r.p)}</s><b>R$ ${brl(precoWhats(r.p))}</b><small>no WhatsApp</small></div>`
       + `${outras ? `<div class="rxb-acao">${outras}</div>` : ''}</li>`;

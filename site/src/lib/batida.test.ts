@@ -181,17 +181,25 @@ describe('a peça da linha: o nome começa pela peça que a linha promete', () =
 
 describe('ponto do centro com peça de um lado só: o nome da linha diz o lado', () => {
   const ponto = (k: string) => PONTOS.find((p) => p.k === k)!;
+  const linha = (k: string, nome: string) => ponto(k).linhas.find((l) => l.nome === nome)!;
   it.each([
-    ['traseira', 'Guia suporte para-choque traseiro direito', ' (lado direito)'],
-    ['traseira', 'Guia para-choque traseira esquerda', ' (lado esquerdo)'],
-    ['frente', 'Grade churrasqueira direito', ' (lado direito)'],
-    ['frente', 'Alma para-choque', ''],
-    ['frente', 'Par suportes farol esquerdo direito', ''],
-    // o ponto que já tem lado não repete (a linha dele já é a do lado)
-    ['traseira-direita', 'Guia suporte para-choque traseiro direito', ''],
-    ['frente-esquerda', 'Farol esquerdo', ''],
-  ])('%s × "%s" = "%s"', (k, nome, esperado) => {
-    expect(ladoNaLinha(ponto(k), nome)).toBe(esperado);
+    ['traseira', 'Guia do para-choque traseiro', 'Guia suporte para-choque traseiro direito', ' (lado direito)'],
+    ['traseira', 'Guia do para-choque traseiro', 'Guia para-choque traseira esquerda', ' (lado esquerdo)'],
+    ['frente', 'Grade', 'Grade churrasqueira direito', ' (lado direito)'],
+    ['frente', 'Alma do para-choque', 'Alma para-choque', ''],
+    ['frente', 'Suporte do farol', 'Par suportes farol esquerdo direito', ''],
+    // a linha que já é de um lado (o nome dela já diz) não repete
+    ['traseira', 'Lanterna traseira esquerda', 'Lanterna esquerda tampa traseira', ''],
+    ['frente', 'Farol direito', 'Farol direito', ''],
+    // o ponto que já tem lado também não
+    ['traseira-direita', 'Guia do para-choque traseiro', 'Guia suporte para-choque traseiro direito', ''],
+    ['frente-esquerda', 'Grade', 'Grade churrasqueira esquerda', ''],
+  ])('%s / %s × "%s" = "%s"', (k, nome, peca, esperado) => {
+    expect(linha(k, nome), `${k} ${nome}`).toBeDefined();
+    expect(ladoNaLinha(ponto(k), linha(k, nome), peca)).toBe(esperado);
+  });
+  it('a linha de um lado só (no ponto do centro) já diz o lado no nome dela', () => {
+    for (const p of PONTOS) for (const l of p.linhas) if (!p.lado && l.lado) expect(l.nome, `${p.k} ${l.nome}`).toMatch(l.lado === 'E' ? /esquerd[oa]$/ : /direit[oa]$/);
   });
 });
 
