@@ -31,6 +31,8 @@ export type Indice = {
   dif?: Record<string, string>;
   // lado e posição pelo nome (preparar_dados.py, lado_posicao): uma letra por peça, '0' quando o nome não diz
   l?: string; pos?: string;
+  // peça única (estoque 1 no anúncio): '1' ou '0' por peça. O cartão diz "Peça única" só com o dado (preparar_dados.py)
+  q?: string;
 };
 /** Lado da peça: E esquerdo (motorista), D direito (passageiro). */
 export type Lado = 'E' | 'D';
@@ -46,6 +48,8 @@ export type Item = {
   dif?: string;
   /** lado e posição que o nome diz (só quando diz; a posição, senão, a do tipo; A = as duas) */
   l?: Lado; pos?: Posicao | 'A';
+  /** 1 = peça única (uma só em estoque no anúncio): o cartão diz "Peça única"; ausente = sem o dado ou mais de uma */
+  q?: 1;
   /** o TIPO da peça na busca (memo, sem coluna no índice): as duas primeiras palavras do nome, sem acento e sem hífen
    *  ("Para-choque" = "parachoque"). É o que diz se a peça é do tipo que a pessoa digitou. */
   tp?: string[];
@@ -293,6 +297,7 @@ export class Busca {
       // os campos raros só quando existem: a 1ª tela do catálogo vai serializada no HTML ("ms":[0] em 24 cartões pesava)
       const ms = ix.ms?.[k], ys = ix.ys?.[k], dif = ix.dif?.[k], l = ix.l?.[k], pos = ix.pos?.[k];
       if (ix.r?.[k] === '1') it.r = 1;
+      if (ix.q?.[k] === '1') it.q = 1;
       if (l === 'E' || l === 'D') it.l = l;
       if (pos === 'D' || pos === 'T' || pos === 'A') it.pos = pos;
       if (ms) it.ms = ms;

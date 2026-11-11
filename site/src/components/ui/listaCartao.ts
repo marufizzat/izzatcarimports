@@ -5,6 +5,7 @@
 import { adicionarNaLista, lerLista, tem, EVENTO_LISTA, PAGINA_LISTA, idValido, type ItemLista } from '../../lib/lista';
 import { nomeModelos, lerModelos } from '../../lib/meuCarro';
 import { anosTexto } from '../../lib/whats';
+import { precoCheioDoTexto } from '../catalogo/etiqueta';
 
 export const CLASSE_LISTA = 'etiqueta-lista';
 export const TXT_ADD = '+ Lista';
@@ -52,7 +53,8 @@ export function itemDoCartao(cx: HTMLElement): ItemLista | null {
   const slug = (a.getAttribute('href') || '').replace(/^\/peca\//, '').replace(/\.html$/, '');
   const d = a.dataset;
   const nome = cx.querySelector('.etiqueta-nome')?.textContent?.trim() || '';
-  const preco = Number((cx.querySelector('.etiqueta-dados > .sr-only')?.textContent || '').replace(/^R\$\s*/, '').replace(/\./g, '').replace(',', '.'));
+  // a lista guarda o preço CHEIO (o do site); o do WhatsApp é sempre calculado dele (lib/whats.ts)
+  const preco = Number(precoCheioDoTexto(cx.querySelector('.etiqueta-dados > .sr-only')?.textContent).replace(/\./g, '').replace(',', '.'));
   const carro = nomeModelos({ b: d.b || '', m: d.m || '', ...lerModelos(d.ms, d.ys) });
   const anos = d.a0 ? anosTexto([Number(d.a0), Number(d.a1)]) : '';
   const cod = cx.querySelector('.etiqueta-cod .oem')?.textContent?.trim() || '';

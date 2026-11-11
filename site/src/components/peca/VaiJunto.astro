@@ -9,6 +9,7 @@ import type { Peca } from '../../lib/dados';
 import { brl, capa, capaPequena } from '../../lib/dados';
 import { codigoPeca } from '../catalogo/etiqueta';
 import { nomeModelos } from '../../lib/meuCarro';
+import { precoWhats } from '../../lib/whats';
 interface Props { pecas: Peca[]; carro: string; anos: string; com: string; }
 const { pecas, carro, anos, com } = Astro.props;
 const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}–${y[1]}`) : '');
@@ -22,12 +23,13 @@ const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0
       </div>
       <ul class="vj-lista" data-vj-raiz>
         {/* HTML curto (cada byte vai em 4 mil páginas): o texto num <span> (nome em <b>, os anos num <small> e o código
-            noutro, numa linha só dele e sempre inteiro: é o dado que decide para quem conserta, revisão 12, P2.3) e o preço */}
+            noutro, numa linha só dele e sempre inteiro: é o dado que decide para quem conserta, revisão 12, P2.3) e o preço:
+            o do anúncio riscado (<s>, é dele que o "+ Lista" parte) e o do WhatsApp em destaque, com "no WhatsApp" colado */}
         {pecas.map((x) => {
           const cod = codigoPeca(x.o);
           const anosX = anosCartao(x.y);
           return (
-            <li data-carro={nomeModelos(x)}><a href={`/peca/${x.slug}.html`}><img src={capaPequena(capa(x, 'V'))} alt="" width="72" height="72" loading="lazy" /><span><b>{x.n}</b>{anosX && <small>{anosX}</small>}{cod && <small>Cód. <code>{cod}</code></small>}</span><span class="num">R$ {brl(x.p)}</span></a></li>
+            <li data-carro={nomeModelos(x)}><a href={`/peca/${x.slug}.html`}><img src={capaPequena(capa(x, 'V'))} alt="" width="72" height="72" loading="lazy" /><span><b>{x.n}</b>{anosX && <small>{anosX}</small>}{cod && <small>Cód. <code>{cod}</code></small>}</span><span class="num"><span class="sr-only">de </span><s>R$ {brl(x.p)}</s><span class="sr-only"> por </span><strong>R$ {brl(precoWhats(x.p))}</strong><i>no WhatsApp</i></span></a></li>
           );
         })}
       </ul>
@@ -62,8 +64,11 @@ const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0
   .vj li small { margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--ink-3); overflow-wrap: anywhere; }
   .vj li code { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .02em; color: var(--ink-2); }
   /* o pé: o preço à esquerda e o lugar do "+ Lista" à direita (o botão fica por cima, preso no canto) */
-  .vj li .num { grid-area: preco; display: flex; align-items: center; min-height: 44px; margin-top: 6px; padding-right: 116px;
-    font-stretch: 86%; font-weight: 820; font-size: 18px; line-height: 1.1; color: var(--ink); white-space: nowrap; }
+  .vj li .num { grid-area: preco; display: flex; flex-wrap: wrap; align-content: center; align-items: baseline; gap: 1px 6px; min-height: 44px; margin-top: 6px; padding-right: 116px;
+    line-height: 1.1; color: var(--ink); white-space: nowrap; }
+  .vj li .num s { flex: 1 0 100%; font-size: 12.5px; font-weight: 560; color: var(--ink-3); text-decoration-thickness: 1px; }
+  .vj li .num strong { font-stretch: 86%; font-weight: 820; font-size: 18px; }
+  .vj li .num i { font-style: normal; font-size: 12px; font-weight: 720; font-stretch: 92%; color: var(--serve-ink); }
   @media (hover: hover) {
     .vj li:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
     .vj li:hover b { text-decoration: underline; text-underline-offset: 3px; }
@@ -83,7 +88,7 @@ const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0
   /* cartão largo: uma fila só (capa, nome/anos/código, preço à direita e o "+ Lista" no fim, no meio da altura) */
   @container (min-width: 420px) {
     .vj li > a { grid-template-columns: 72px minmax(0, 1fr) auto; grid-template-areas: "foto txt preco"; align-items: center; align-content: center; padding: 10px 126px 10px 10px; }
-    .vj li .num { min-height: 0; margin: 0; padding: 0 0 0 16px; }
+    .vj li .num { min-height: 0; margin: 0; padding: 0 0 0 16px; max-width: 150px; justify-content: flex-end; text-align: right; }
     .vj :is(.vj-add, .vj-na) { bottom: auto; top: calc(50% - 22px); }
   }
   /* 2 colunas: o último cartão sozinho numa linha ocupa a linha inteira (nada de buraco) */

@@ -212,7 +212,12 @@
 .tp-esq .etiqueta-dados > * { color: transparent; border-radius: 6px; background: var(--bg-2); width: 64%; }
 .tp-esq .etiqueta-nome { width: 90%; }
 .tp-esq .etiqueta-cod { width: 52%; }
+.tp-esq .etiqueta-valor { width: 100%; background: none; }
+.tp-esq .etiqueta-valor > * { color: transparent; border-radius: 6px; background: var(--bg-2); }
+.tp-esq .etiqueta-valor s { width: 38%; text-decoration: none; }
 .tp-esq .etiqueta-preco { width: 44%; }
+.tp-esq .etiqueta-wa { width: 62%; box-shadow: none; }
+.tp-esq .etiqueta-wa::before, .tp-esq .etiqueta-confia > span::before { content: none; }
 .tp-esq .etiqueta-confia { width: 78%; border-color: transparent; }
 @media (prefers-reduced-motion: no-preference) {
   .tp-esq .etiqueta-foto, .tp-esq .etiqueta-dados > * { animation: tp-pulso 1.4s ease-in-out infinite alternate; }
@@ -248,8 +253,9 @@
   .etiqueta-carro:has(> .etiqueta-dif) .etiqueta-anos { flex: 0 1 auto; min-width: 0; }
   .etiqueta-carro > .etiqueta-dif { flex: none; }
   .etiqueta-dados { padding: 11px 12px 12px; }
-  .etiqueta-preco { padding-top: 8px; font-size: 26px; }
-  .etiqueta-confia { margin-top: 9px; padding-top: 9px; }
+  .etiqueta-valor { padding-top: 8px; }
+  .etiqueta-preco { font-size: 26px; }
+  .etiqueta-confia { margin-top: 9px; padding-top: 8px; }
 }
 .etiqueta-nome {
   margin-top: 1px; font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere;
@@ -258,22 +264,62 @@
 @container etiqueta (max-width: 214px) { .etiqueta-nome { -webkit-line-clamp: 3; } }
 .etiqueta-cod { font-size: 12px; line-height: 1.4; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .etiqueta-cod .oem { font-size: 11.5px; letter-spacing: .03em; color: var(--ink-2); }
+/* O PREÇO DO CARTÃO (decisão do dono, 11/11): o do WhatsApp (10% de desconto, lib/whats.ts) é o grande; o do anúncio vem
+   riscado em cima e o selo verde "−10% no WhatsApp" fica COLADO ao preço grande: diz de onde vem o desconto (ninguém
+   pode achar que é o preço do Mercado Livre). Sempre um embaixo do outro (riscado, preço, selo): a mesma altura em todo
+   cartão, do preço de 2 ao de 5 dígitos (os preços de uma fileira ficam alinhados), e R$ 30.468,92 cabe no cartão de
+   138 px do celular de 320. */
+.etiqueta-valor { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: auto; padding-top: 10px; }
+.etiqueta-valor s {
+  font-size: 12.5px; font-weight: 560; font-stretch: 94%; line-height: 1.1; color: var(--ink-3); white-space: nowrap;
+  text-decoration-thickness: 1px; text-decoration-color: color-mix(in oklab, var(--ink-3), transparent 20%);
+}
 .etiqueta-preco {
-  display: flex; align-items: flex-start; margin-top: auto; padding-top: 10px;
-  font-stretch: 84%; font-weight: 820; font-size: 27px; line-height: .9; letter-spacing: -.012em; color: var(--ink);
+  display: flex; align-items: flex-start;
+  font-stretch: 84%; font-weight: 820; font-size: 27px; line-height: .9; letter-spacing: -.012em; color: var(--ink); white-space: nowrap;
 }
 .etiqueta-preco small { font-size: 13px; font-weight: 700; line-height: 1; letter-spacing: 0; }
 .etiqueta-preco small:first-child { margin: 3px 3px 0 0; color: var(--ink-2); }
 .etiqueta-preco small:last-child { margin: 1px 0 0 1px; }
+/* o selo: o verde do "Serve no seu carro" (um verde só no cartão), com o desenho do WhatsApp */
+.etiqueta-wa {
+  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px 0 6px; border-radius: 99px;
+  background: var(--serve-bg); color: var(--serve-ink); box-shadow: inset 0 0 0 1px var(--serve-borda);
+  font-size: 12px; font-weight: 720; font-stretch: 92%; line-height: 1; letter-spacing: 0; white-space: nowrap;
+}
+.etiqueta-wa::before {
+  content: ""; flex: none; width: 14px; height: 14px; background: #1a9e4f;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01Zm-7.01 15.24c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.23-8.23 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43s.17-.25.25-.41c.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18s-.22-.16-.47-.28Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01Zm-7.01 15.24c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.23-8.23 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43s.17-.25.25-.41c.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18s-.22-.16-.47-.28Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/* gatilhos de verdade, depois do fio: a garantia (o escudo, grafite) e, com 1 em estoque no anúncio, "Peça única" (o
+   ponto laranja: a única cor além do verde). Cartão largo: os dois numa linha; estreito: um embaixo do outro. */
 .etiqueta-confia {
-  display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
   font-size: 12px; font-weight: 560; line-height: 1.25; color: var(--ink-2);
 }
-.etiqueta-confia svg { width: 15px; height: 15px; flex: none; color: var(--accent-text); }
-.etiqueta-confia > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@container etiqueta (max-width: 214px) { .etiqueta-confia-longo { display: none; } }
-/* cartão bem estreito (320–360 px): a garantia em letra mais estreita (a família tem largura variável), inteira */
-@container etiqueta (max-width: 160px) { .etiqueta-confia { gap: 5px; font-stretch: 82%; letter-spacing: -.005em; } .etiqueta-confia svg { width: 14px; height: 14px; } }
+.etiqueta-confia > span, .etiqueta-confia > b { display: inline-flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+.etiqueta-confia > span::before {
+  content: ""; flex: none; width: 15px; height: 15px; background: var(--ink-3);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1zM9 12l2 2 4-4'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1zM9 12l2 2 4-4'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.etiqueta-confia > b { font-weight: 700; color: var(--accent-text); }
+.etiqueta-confia > b::before { content: ""; flex: none; width: 7px; height: 7px; margin: 0 4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgb(255 106 0 / .18); }
+/* cartão bem estreito (320–360 px): letra mais estreita (a família tem largura variável), tudo inteiro */
+@container etiqueta (max-width: 160px) {
+  .etiqueta-confia { column-gap: 8px; font-stretch: 82%; letter-spacing: -.005em; }
+  .etiqueta-confia > span::before { width: 14px; height: 14px; }
+  .etiqueta-confia > span, .etiqueta-confia > b { gap: 5px; }
+  .etiqueta-wa { gap: 4px; padding: 0 7px 0 5px; font-size: 11.5px; font-stretch: 80%; }
+  .etiqueta-wa::before { width: 13px; height: 13px; }
+  .etiqueta-valor s { font-stretch: 86%; }
+}
+/* o cartão mais estreito do site (a vitrine da home no celular de 320: 125 px): o preço de 5 dígitos e o selo cabem inteiros */
+@container etiqueta (max-width: 132px) {
+  .etiqueta-dados { padding-inline: 10px; }
+  .etiqueta-preco { font-size: 23px; }
+  .etiqueta-wa { gap: 3px; padding: 0 5px 0 4px; font-size: 11px; font-stretch: 72%; letter-spacing: -.01em; }
+  .etiqueta-wa::before { width: 12px; height: 12px; }
+}
 /* "Serve no seu XC60" (equipe Meu carro): o script troca o texto, então o visto é desenhado no ::before.
    Fica SOBRE a foto, no canto de baixo: o carro salvo é lido depois da pintura e o selo não pode empurrar o
    cartão (nem a grade inteira) quando aparece. */
