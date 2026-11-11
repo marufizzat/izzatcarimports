@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import escopoCurto from './integracoes/escopo-curto.mjs';
 import cssJunto from './integracoes/css-junto.mjs';
 import capasCartao from './integracoes/capas-cartao.mjs';
+import serviceWorker from './integracoes/service-worker.mjs';
 
 // URLs iguais as do site antigo: /index.html, /catalogo.html, /peca/<slug>.html
 // Peso: são 5 mil páginas de peça e o GitHub Pages aceita até 1 GB. Por isso o CSS e os scripts pequenos saem
@@ -19,7 +20,8 @@ export default defineConfig({
   compressHTML: true,
   // css-junto depois do escopo-curto: cada página fica com 2 folhas de estilo (a global e uma com o resto)
   // capas-cartao: as reduzidas de 400/640 px das capas de estúdio, no começo do build (scripts/capas-cartao.mjs)
-  integrations: [react(), capasCartao(), escopoCurto(), cssJunto()],
+  // service-worker POR ÚLTIMO: lê o offline.html já com o CSS junto e põe a versão e o casco no dist/sw.js
+  integrations: [react(), capasCartao(), escopoCurto(), cssJunto(), serviceWorker()],
   vite: {
     plugins: [tailwindcss()],
     // script de componente nunca vai dentro do HTML (arquivo à parte, com cache); o resto segue o padrão do Vite

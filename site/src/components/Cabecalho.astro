@@ -270,6 +270,12 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   document.querySelectorAll('[data-abrir-menu]').forEach((b) => b.addEventListener('click', () => d?.showModal()));
   document.querySelectorAll('[data-fechar-menu]').forEach((b) => b.addEventListener('click', () => d?.close()));
   d?.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+
+  // o app instalável (components/app/app.ts: service worker, convite para instalar, botão de pânico) só desce DEPOIS do
+  // load, num pedaço à parte: nada disputa a 1ª tela. A janela de instalar do Chrome chega cedo: fica guardada aqui.
+  addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); (window as Window & { __izzatInstalar?: Event }).__izzatInstalar = e; });
+  const app = () => { import('./app/app').catch(() => { /* sem rede: o site segue igual */ }); };
+  if (document.readyState === 'complete') app(); else addEventListener('load', app, { once: true });
 </script>
 
 <style is:global>

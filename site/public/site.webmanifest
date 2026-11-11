@@ -1,23 +1,31 @@
 {
+  "id": "/",
   "name": "Izzat Car Imports",
   "short_name": "Izzat Car",
-  "start_url": "/",
-  "display": "browser",
-  "background_color": "#0f0f11",
+  "description": "Peças originais de carros com baixa legal no Detran-RS. Nota fiscal e 90 dias de garantia em toda peça. Envio para todo o Brasil.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/?app=1",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
   "theme_color": "#f5f5f7",
+  "categories": ["shopping", "business"],
+  "prefer_related_applications": false,
   "icons": [
-    { "src": "/icone-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    { "src": "/icone-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    { "src": "/icone-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icone-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Catálogo", "short_name": "Catálogo", "description": "Buscar peça por nome, carro ou código", "url": "/catalogo.html",
+      "icons": [{ "src": "/app/atalho-catalogo.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "Meu carro", "short_name": "Meu carro", "description": "As peças do seu carro", "url": "/carros.html",
+      "icons": [{ "src": "/app/atalho-carro.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "Lista de orçamento", "short_name": "Lista", "description": "As peças que você juntou para pedir no WhatsApp", "url": "/lista.html",
+      "icons": [{ "src": "/app/atalho-lista.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "WhatsApp", "short_name": "WhatsApp", "description": "Falar com a loja no WhatsApp", "url": "/contato.html",
+      "icons": [{ "src": "/app/atalho-whats.png", "sizes": "96x96", "type": "image/png" }] }
   ]
 }
