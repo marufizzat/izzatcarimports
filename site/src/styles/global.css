@@ -459,3 +459,13 @@ html:active-view-transition .galeria-palco { view-transition-name: foto-peca; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
 /* a foto que voa fica por cima de tudo, também do cabeçalho */
 ::view-transition-group(foto-peca) { animation-duration: .25s; z-index: 2; }
+
+/* === o app instalado (nov/2026, components/app/app.ts) ===
+   Aberto como app (display-mode: standalone; no iPhone, a tela de início): o cabeçalho e o conteúdo respeitam a área
+   segura (entalhe e cantos do celular deitado; com a barra de status "default" do iPhone o topo já é 0). Só CSS, desde a
+   1ª pintura: nada pula. No navegador, nada muda. */
+@media (display-mode: standalone) {
+  .cab { padding-top: env(safe-area-inset-top, 0px); }
+  .moldura { width: min(100% - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px), 1240px); }
+  @media (min-width: 768px) { .moldura { width: min(100% - 64px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px), 1240px); } }
+}

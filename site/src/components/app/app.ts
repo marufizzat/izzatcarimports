@@ -3,6 +3,8 @@
 //     (public/sw.js). A página que não passou por ele (1ª visita, preparada pelo prerender) pede a própria cópia;
 //  2) a faixa "sem conexão" (a cópia guardada já vem com ela, posta pelo SW; aqui só o "a conexão voltou");
 //  3) o convite para instalar (raro, lib/app.ts; o desenho em ./convite.ts só desce quando vai aparecer);
+//  4) no app instalado: link de fora (WhatsApp, Mercado Livre) abre fora do app, e a página volta atualizada quando o
+//     app fica 30 min ou mais em segundo plano.
 // Página preparada pelo prerender: nada roda até a pessoa abrir.
 import { CHAVE_APP, ARQUIVO_DESLIGAR, CHAVE_LISTA, CHAVE_VISTOS, estadoDe, novaVisita, podeConvidar, iosQueInstala, pedeDesligar, type EstadoApp } from '../../lib/app';
 
@@ -10,6 +12,7 @@ type PedidoInstalar = Event & { prompt: () => Promise<void>; userChoice: Promise
 
 const raiz = document.documentElement;
 const SESSAO = 'izzatcar.app.sessao';
+const MEIA_HORA = 30 * 60 * 1000;
 const standalone = () => matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 const semConexaoPagina = () => !!document.querySelector('[data-pagina-offline]');
 
@@ -125,6 +128,22 @@ function iniciar() {
     salvarEstado({ ...lerEstado(), i: 1 });
     document.querySelector('.app-convite')?.remove();
   });
+
+  if (standalone()) {
+    raiz.classList.add('app');
+    // link para fora do site (WhatsApp, Mercado Livre, Instagram): abre fora do app, nunca preso dentro dele
+    document.addEventListener('click', (e) => {
+      const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!a || a.target || a.origin === location.origin || !/^https?:$/.test(a.protocol)) return;
+      a.target = '_blank'; a.rel = 'noopener';
+    }, true);
+    // o app que ficou 30 min ou mais em segundo plano volta com a página de agora (preço e estoque mudam a cada 30 min)
+    let saiu = 0;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) saiu = Date.now();
+      else if (saiu && Date.now() - saiu >= MEIA_HORA && navigator.onLine) location.reload();
+    });
+  }
 
   if (!navigator.onLine) faixaSemConexao();
   addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted && !navigator.onLine) faixaSemConexao(); });
