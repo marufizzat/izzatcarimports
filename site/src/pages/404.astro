@@ -36,9 +36,6 @@ const topo = `(function(){var h=document.documentElement;if(!new RegExp(${JSON.s
   <Fragment slot="head">
     <script is:inline set:html={topo} />
     <style is:inline set:html=".nf-conferindo body{visibility:hidden}" />
-    {/* sem a troca entre páginas nesta 404: o endereço antigo de peça que segue à venda vai para o certo com location.replace,
-        e uma troca interrompida dava "Transition was skipped" no console */}
-    <meta name="view-transition" content="none" />
     <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
   </Fragment>
 
