@@ -24,7 +24,7 @@ const vitrine = r.carros.filter((c) => existsSync(join(process.cwd(), 'public', 
 <Pagina titulo="Peças por carro | Izzat Car Imports"
         descricao={caber([8, 6, 5, 4, 3].map((k) => `Escolha o seu carro e confira as peças originais que saíram dele: ${r.carros.slice(0, k).map((c) => `${c.b} ${c.m}`).join(', ')} e mais ${n - k} modelos.`))}>
   <TopoArte trilha={[['Início', '/'], ['Carros', '/carros.html']]} titulo="Peças por carro"
-    lead={`Cada um dos ${n} carros aqui passou pelo nosso pátio. Escolha o seu e confira as peças originais que saíram dele.`}>
+    lead={`Os ${n} modelos que já passaram pelo pátio. Escolha o seu e confira as peças originais que saíram dele.`}>
     <div slot="lado" class="carros-vitrine" aria-hidden="true">
       {vitrine.map((c, i) => (
         <img class={`cv cv-${i + 1}`} src={`/arte/v2/carro-${c.k}.webp`}
@@ -57,7 +57,7 @@ const vitrine = r.carros.filter((c) => existsSync(join(process.cwd(), 'public', 
         <p>Nem toda peça está anunciada. Mande o modelo e o ano: a gente procura no pátio e responde pelo WhatsApp.</p>
         <div class="nenhum-acoes">
           <a class="botao botao-laranja" href={whatsUrl('Procuro peça para o meu carro: ____')} rel="noopener" data-nenhum-whats><Icone nome="whats" />Chamar no WhatsApp</a>
-          <a class="botao botao-linha" href="/procuro-peca.html">Pedir para procurar</a>
+          <a class="botao botao-linha" href="/procuro-peca.html">Preencher o formulário</a>
         </div>
       </div>
     </section>

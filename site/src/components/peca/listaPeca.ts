@@ -91,10 +91,10 @@ export function ligarListaPeca() {
   botao.addEventListener('click', () => {
     const r = adicionarNaLista(item, 'peca');
     if (r === 'cheia') {
-      avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Peça essas no WhatsApp e comece outra.`);
+      avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Mande estas no WhatsApp e comece outra.`);
       if (!cheia) {
         cheia = Object.assign(document.createElement('p'), { className: 'cl-cheia' });
-        cheia.innerHTML = `Sua lista já tem ${MAX_LISTA} peças, o máximo. <a href="${PAGINA_LISTA}">Peça essas no WhatsApp</a> e comece outra.`;
+        cheia.innerHTML = `Sua lista já tem ${MAX_LISTA} peças, o máximo. <a href="${PAGINA_LISTA}">Mande estas no WhatsApp</a> e comece outra.`;
         caixa.append(cheia);
       }
       return;
@@ -149,7 +149,7 @@ export function ligarVaiJunto(raiz: HTMLElement) {
     window.addEventListener(EVENTO_LISTA, pintar);
     b.addEventListener('click', () => {
       const r = adicionarNaLista(item, 'vai-junto');
-      if (r === 'cheia') { avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Peça essas no WhatsApp e comece outra.`); return; }
+      if (r === 'cheia') { avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Mande estas no WhatsApp e comece outra.`); return; }
       pintar();
       na.focus({ preventScroll: true });
       avisarLista(`${nome} está na sua lista de orçamento: ${pecasTxt(lerLista().length)}.`);

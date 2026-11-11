@@ -95,7 +95,7 @@ describe('textos: categoria, carro e marca (fixtures)', () => {
   it('marca sem modelo lido (Mini): nunca "para 0 modelos"', () => {
     const t = textosMarca({ n: 'Mini', c: 34, m: [] }, [peca({ b: 'Mini', m: '', c: 'Motor' })]);
     expect([...t.paragrafos, t.meta].join(' ')).not.toMatch(/(^|[^\d])0 modelos?/);
-    expect(t.paragrafos[0]).toBe('São 34 peças originais de Mini no estoque.');
+    expect(t.paragrafos[0]).toBe('São 34 peças originais de Mini no pátio.');
   });
   it('poucas peças: nada de "A maioria" (auditoria 4, 7.2: a Lifan tinha 1 peça)', () => {
     const uma = textosMarca({ n: 'Lifan', c: 1, m: [] }, [peca({ b: 'Lifan', m: '', c: 'Faróis e Lanternas', y: [2015, 2018] })]);

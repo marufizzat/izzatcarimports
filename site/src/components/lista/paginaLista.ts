@@ -140,7 +140,7 @@ export function iniciarLista() {
     // título e o aviso da lista de um link
     if (modo === 'link') {
       h1.textContent = 'Lista de orçamento';
-      lead.textContent = `Mandaram esta lista para você: ${pecasTxt(idsLink.length)}. Peça tudo no WhatsApp ou guarde na sua lista.`;
+      lead.textContent = `Mandaram esta lista para você: ${pecasTxt(idsLink.length)}. Faça o pedido no WhatsApp ou guarde na sua.`;
       const minha = lerLista().length;
       // o aviso do link já vem no HTML (pages/lista.astro), com o texto certo antes da 1ª pintura
       caixaLink.hidden = false;
@@ -153,8 +153,8 @@ export function iniciarLista() {
     } else {
       h1.textContent = 'Sua lista de orçamento';
       lead.textContent = l.length
-        ? `${pecasTxt(l.length)} na lista. Peça tudo de uma vez no WhatsApp, com 10% de desconto em cada peça.`
-        : 'Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com 10% de desconto em cada peça.';
+        ? `${pecasTxt(l.length)} na lista. Faça um pedido só no WhatsApp, com 10% de desconto em cada uma.`
+        : 'Junte as peças do serviço e faça um pedido só no WhatsApp, com 10% de desconto em cada uma.';
       caixaLink.hidden = true;
     }
 
@@ -327,7 +327,7 @@ export function iniciarLista() {
       idsLink = [];
       history.replaceState(null, '', PAGINA_LISTA);
       pintar();
-      avisar(`Pronto: ${pecasTxt(r.novas)} ${r.novas === 1 ? 'guardada' : 'guardadas'} na sua lista${r.fora ? `; ${r.fora} não couberam (o máximo é ${MAX_LISTA})` : ''}.`);
+      avisar(`Pronto: ${pecasTxt(r.novas)} ${r.novas === 1 ? 'guardada' : 'guardadas'} na sua lista${r.fora ? `; ${r.fora} ${r.fora === 1 ? 'não coube' : 'não couberam'} (o máximo é ${MAX_LISTA})` : ''}.`);
       h1.focus();
     } else if (t.hasAttribute('data-lst-trocar')) {
       window.dispatchEvent(new CustomEvent(ABRIR));

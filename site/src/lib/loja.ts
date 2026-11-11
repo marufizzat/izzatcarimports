@@ -5,7 +5,7 @@ import { SITE } from './dados';
 
 export const LOJA_ID = `${SITE}/#loja`;
 export const LOJA_ENDERECO = {
-  rua: 'Rua 504, nº 120 - Centro',
+  rua: 'Rua 504, nº 120 – Centro',
   cidade: 'Aceguá',
   uf: 'RS',
   cep: '96445-000',

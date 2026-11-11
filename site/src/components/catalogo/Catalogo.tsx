@@ -674,7 +674,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   }, [digitado, carroPedido]);
   // "Avise-me quando chegar": com carro no filtro, na busca ou salvo no Meu carro (só fatos, sem prazo)
   const avise = carroPedido
-    ? whatsUrl(`Procuro ${oQue === 'peça' ? 'peças' : oQue} para ${carroPedido}. Quero ser avisado quando chegar no pátio.`)
+    ? whatsUrl(`Procuro ${oQue === 'peça' ? 'peças' : oQue} para ${carroPedido}. Quero ser avisado quando chegar peça dele no pátio.`)
     : '';
   const botaoAvise = avise ? (
     <a className="botao botao-linha cat-avise" href={avise} target="_blank" rel="noopener"><Sino />Me avise quando chegar</a>
@@ -688,7 +688,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   const botaoPatio = (rotulo: ReactNode) => (
     <a className="botao botao-laranja" href={pedirNoPatio} target="_blank" rel="noopener" data-botao="procurar-patio"><Whats />{rotulo}</a>
   );
-  const linkFormulario = <p className="cat-patio-form">Prefere o formulário? <a href={urlFormulario}>Preencher o pedido</a></p>;
+  const linkFormulario = <p className="cat-patio-form">Prefere o formulário? <a href={urlFormulario}>Preencher o formulário</a></p>;
 
   const blocos = !!busca && aproximado && (f.ordem || 'rel') === 'rel' && nDoCarro > 0 && nDoCarro < resultado.length && !!carroDaBusca;
   const grade = lista.slice(0, pintados);
@@ -721,6 +721,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
                 : total === null ? <span className="cat-total-espera">Buscando peças…</span>
                 : aproximado ? <><b className="num">{n2(total)}</b> {total === 1 ? 'parecida' : 'parecidas'}<span className="cat-total-q"> com “{f.q}”</span></>
                 : codigoBusca ? <><b className="num">{n2(total)}</b> {pecas(total)} com o código <span className="cat-total-q oem">{codigoBusca.toUpperCase()}</span></>
+                : total === 0 && f.q ? <>Nenhuma peça<span className="cat-total-q"> para “{f.q}”</span></>
                 : <><b className="num">{n2(total)}</b> {pecas(total)}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
             </h2>
             <div data-selo-reputacao>{selo}</div>
@@ -756,7 +757,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
               <img src="/icones/conversa-96.webp" alt="" width={44} height={44} />
               <div>
                 <b>Não deu para carregar {busca ? 'mais peças' : 'a busca e os filtros'} agora.</b>
-                <span>Pode ser a conexão. Tente de novo ou fale com a gente: a gente procura a peça no pátio.</span>
+                <span>Pode ser a conexão. Tente de novo ou chame no WhatsApp: a gente procura a peça no pátio.</span>
               </div>
               <div className="cat-erro-botoes">
                 <button type="button" className="botao botao-laranja" onClick={carregar}>Tentar de novo</button>
