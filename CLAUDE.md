@@ -471,6 +471,21 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      sempre no MESMO endereço (é por ele que o navegador acha a versão nova). Último recurso: um `sw.js` que só se
      desregistra (`self.addEventListener('activate', () => self.registration.unregister())`).
 
+## Testes e o estoque do dia (regra de 11/11/2026: o robô parou a loja por causa de teste)
+O robô roda `python testes/test_dados.py` e `npm --prefix site test` com o ESTOQUE DO DIA antes de publicar: teste vermelho
+= loja parada. Por isso nenhum teste pode depender do que está à venda hoje. Três fontes (`site/testes/estoques.ts`):
+- **Vocabulário da loja** (`site/testes/fixtures/vocabulario.json`): os nomes de bloco e de tipo que o `preparar_dados.py`
+  sabe escrever (`BLOCOS`, `_TIPOS_DO_BLOCO`). "Este nome existe?" pergunta-se a ele, nunca ao índice do dia (o tipo some
+  quando a última peça vende). Mudou um nome: `python ferramentas/vocabulario_loja.py` e commitar o json (o
+  `test_vocabulario_da_loja_em_dia` do `test_dados.py` confere, sem olhar o estoque).
+- **Estoque fixo** (`fixtures/busca-fixa.json` = o índice de 11/11/2026; `fixtures/pecas-xc60.json`): tudo que precisa de
+  peça para existir ("toda zona tem peça", "a frente esquerda acha farol esquerdo", "pelo menos N", exemplos com o XC60).
+- **Estoque do dia** (`public/dados/busca.json`, `src/data/pecas.json`): só REGRAS que valem para qualquer estoque (o número
+  do painel = o do catálogo, nenhuma peça do lado errado, nada em dobro), com o carro que o estoque tiver
+  (`carroMaisCheio`). Nunca um anúncio, um carro, uma peça ou uma quantidade escritos no teste.
+Prova antes de juntar ramo com teste novo: estoques perturbados (2–20% dos anúncios fora ao acaso; em alguns, TODO um tipo
+de um carro), dados regenerados e a suíte inteira em cada um. É proibido pular, excluir ou afrouxar teste no robô.
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
