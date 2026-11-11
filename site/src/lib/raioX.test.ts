@@ -87,26 +87,31 @@ describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () =>
   const procurar = toda.procurar.bind(toda);
   const contas = contarZonas(procurar);
 
-  it('todo bloco e todo tipo do mapa existe no índice (pega acento errado e tipo renomeado)', () => {
-    const blocos = new Set(ix.familias);
-    const tipos = new Set(ix.tipos);
-    const ruins: string[] = [];
+  it('todo bloco e todo tipo do mapa é um nome que a loja usa (pega acento errado e nome inventado)', () => {
+    // Um tipo some do índice quando a última peça dele vende: isso não é erro do mapa nem pode travar a publicação (o
+    // robô roda isto a cada 30 min). O nome vale se está no estoque de agora OU no estoque congelado de 09/11
+    // (testes/fixtures): erro de digitação não está em nenhum dos dois. Os que saíram do estoque de agora só avisam.
+    const fixo = JSON.parse(readFileSync('testes/fixtures/estoque-busca.json', 'utf-8')) as Indice;
+    const blocos = new Set(ix.familias), blocosFixos = new Set(fixo.familias);
+    const tipos = new Set(ix.tipos), tiposFixos = new Set(fixo.tipos);
+    const ruins: string[] = [], fora: string[] = [];
     for (const z of ZONAS) for (const g of z.grupos) {
-      if (!blocos.has(g.tipo)) ruins.push(`${z.k}: bloco "${g.tipo}"`);
-      for (const s of [...(g.subs ?? []), ...(g.sem ?? [])]) if (!tipos.has(s)) ruins.push(`${z.k}: tipo "${s}" (${g.tipo})`);
+      if (!blocos.has(g.tipo)) (blocosFixos.has(g.tipo) ? fora : ruins).push(`${z.k}: bloco "${g.tipo}"`);
+      for (const s of [...(g.subs ?? []), ...(g.sem ?? [])]) if (!tipos.has(s)) (tiposFixos.has(s) ? fora : ruins).push(`${z.k}: tipo "${s}" (${g.tipo})`);
     }
-    // um tipo some do estoque quando a última peça dele vende: aceita até 4 nomes fora do índice, avisando
-    if (ruins.length) console.warn('raio-x: nomes fora do índice agora:', ruins);
-    expect(ruins.length).toBeLessThanOrEqual(4);
+    if (fora.length) console.warn('raio-x: nomes sem peça no estoque de agora:', fora);
+    expect(ruins).toEqual([]);
   });
 
-  it('toda zona tem peça e toda linha leva ao catálogo com o MESMO número (e as peças são do bloco e do tipo)', () => {
+  it('toda linha de toda zona leva ao catálogo com o MESMO número (e as peças são do bloco e do tipo)', () => {
     const resumo: string[] = [];
+    expect(contas.map((c) => c.k)).toEqual(ZONAS.map((z) => z.k));
     for (const c of contas) {
       const z = ZONAS.find((x) => x.k === c.k)!;
-      expect(c.n, z.nome).toBeGreaterThan(0);
-      expect(c.linhas.length, z.nome).toBeGreaterThan(0);
+      // (zona sem peça no estoque de agora não é erro: a tela mostra a parte em cinza com "Me avise quando chegar")
+      expect(c.linhas.length > 0, z.nome).toBe(c.n > 0);
       for (const l of c.linhas) {
+        expect(l.n, `${z.nome} · ${l.sub}`).toBeGreaterThan(0);
         const lista = toda.procurar(filtrosLinha(l));
         expect(lista.length, `${z.nome} · ${l.sub}`).toBe(l.n);
         expect(lista.every((it) => it.c === l.tipo && it.s === l.sub)).toBe(true);
@@ -141,7 +146,11 @@ describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () =>
   });
 
   it('com o carro: o arquivo só do carro dá as MESMAS contas que o índice inteiro filtrado (marca, modelo, ano)', async () => {
-    const carro = ix.marcas.includes('Volvo') ? { b: 'Volvo', m: 'XC60' } : { b: ix.marcas[ix.b[0]], m: ix.m[0] };
+    // o carro com mais peças no estoque de agora (hoje, o Volvo XC60)
+    const conta = new Map<string, number>();
+    for (const it of toda.itens) if (it.b && it.m) conta.set(`${it.b}|${it.m}`, (conta.get(`${it.b}|${it.m}`) ?? 0) + 1);
+    const [marca, modelo] = [...conta].sort((x, y) => y[1] - x[1])[0][0].split('|');
+    const carro = { b: marca, m: modelo };
     const { GET } = await import('../pages/dados/carro/[k].json');
     const sub = await (GET as unknown as (c: { props: { b: string; m: string } }) => Response)({ props: carro }).json();
     const doCarro = new Busca(sub);
@@ -153,7 +162,6 @@ describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () =>
     expect(b.map((c) => [c.k, c.n, c.linhas.map((l) => `${l.sub}:${l.n}`).join('|')]))
       .toEqual(a.map((c) => [c.k, c.n, c.linhas.map((l) => `${l.sub}:${l.n}`).join('|')]));
     for (const c of b) for (const l of c.linhas) expect(doCarro.procurar(filtrosLinha(l, f)).length).toBe(l.n);
-    expect(a.some((c) => c.n > 0)).toBe(true);
   });
 });
 

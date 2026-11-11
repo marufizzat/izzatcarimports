@@ -25,7 +25,11 @@ describe.skipIf(!existsSync(buscaArq))('chegouParaOCarro com o estoque de agora'
   const ix = JSON.parse(readFileSync(buscaArq, 'utf-8')) as Indice;
   const toda = new Busca(ix);
   const procurar = toda.procurar.bind(toda);
-  const carro = ix.marcas.includes('Volvo') ? { b: 'Volvo', m: 'XC60' } : { b: ix.marcas[ix.b[0]], m: ix.m[0] };
+  // o carro com mais peças no estoque de agora (hoje, o Volvo XC60): nenhum carro escrito aqui (o estoque muda)
+  const conta = new Map<string, number>();
+  for (const it of toda.itens) if (it.b && it.m) conta.set(`${it.b}|${it.m}`, (conta.get(`${it.b}|${it.m}`) ?? 0) + 1);
+  const [marca, modelo] = [...conta].sort((x, y) => y[1] - x[1])[0][0].split('|');
+  const carro = { b: marca, m: modelo };
 
   it('o "Ver todas as N" é o número do catálogo filtrado (marca, modelo, ano); os cartões, as mais novas', () => {
     const anos = toda.procurar({ marca: carro.b, modelo: carro.m }).map((it) => it.y?.[1]).filter((y): y is number => !!y);
@@ -46,7 +50,7 @@ describe.skipIf(!existsSync(buscaArq))('chegouParaOCarro com o estoque de agora'
     expect(r2.itens.map((it) => it.id)).toEqual(r1.itens.map((it) => it.id));
   });
   it('ano sem peça: sem-ano (com quantas o modelo tem); modelo sem peça: sem-modelo', () => {
-    const r = chegouParaOCarro(procurar, { ...carro, y: 1961 });
+    const r = chegouParaOCarro(procurar, { ...carro, y: 1901 });
     expect(r.estado).toBe('sem-ano');
     expect(r.doModelo).toBeGreaterThan(0);
     expect(chegouParaOCarro(procurar, { b: carro.b, m: 'Modelo Que Não Existe', y: null }).estado).toBe('sem-modelo');
