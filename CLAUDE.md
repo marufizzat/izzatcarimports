@@ -222,6 +222,43 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    `filter: blur` do CSS (o filtro do SVG custava 60–110 ms por toque com CPU 6×). Tipo novo no estoque: conferir a zona
    dele em `ZONAS` (o teste avisa nome de bloco/tipo que sumiu).
 
+13. **Raio-x, 2º nível (rodada 15, nov/2026)** — três coisas em cima do Raio-x; o código e o estilo de cada uma só descem
+   quando a pessoa usa (`import()` + CSS `?inline`: nada no CSS que trava a 1ª pintura, +0,4 KB no HTML da home).
+   - **"Bati o carro"** (o seletor de dois modos acima da arte; `v2/raioXBatida.ts` + `.css`): a arte troca as 9 zonas
+     pelos **8 pontos da batida** (`lib/batida.ts`: `PONTOS`, medidos na arte; o lado de lá fica na borda visível, com a
+     etiqueta dizendo o lado) e o painel vira a **lista do conserto**: as linhas na ordem da oficina, com a peça mais
+     barata de cada uma (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
+     "Outra opção" (passa pelas outras peças da mesma linha; nunca a palavra "trocar") e o total ao vivo (`somaPrecos`, em centavos). Regras do kit:
+     peça que vem em par é pedida com o LADO do ponto; a que não tem lado entra sem ele e a guarda do ponto tira só a que
+     DIZ o lado/posição oposta (o estoque quase nunca escreve "dianteiro" em grade, alma e guia); linha **principal** sem
+     peça fica como "a gente procura no pátio" (ficha de marcar: vai no pedido como item para procurar); linha **extra**
+     (dobradiça, emblema, defletor…) só aparece com peça, no grupo "Também costuma ir junto", e nunca vem marcada (o total
+     não infla sozinho). **Com carro** (o salvo na home; na página do carro, o da página, no ano do salvo se for o mesmo):
+     a conta sai do `/dados/carro/<k>.json` e as principais já vêm marcadas. **Sem carro**: o estoque inteiro pelo
+     `/dados/batida.json` (curto: cada peça uma vez), NADA marcado (são peças de carros diferentes), 6 linhas à vista e o
+     convite "Dizer o meu carro". Pé preso ao pé da tela: "Pedir o conserto no WhatsApp" (`mensagemConserto`,
+     `data-botao="raiox-conserto"` → `contato_whatsapp`; a ordem da mensagem é a da tela) e "Guardar na lista"
+     (`adicionarNaLista`). Nunca dizer que o kit está completo: "Peça usada: quando vende, acabou. A gente confere na peça
+     antes de você comprar." O desmanche vende muito mais peça pequena que lataria (8 faróis e 5 para-choques no estoque
+     inteiro): frente com poucas linhas é o estoque de verdade. Tipo novo no estoque: conferir as linhas (o teste avisa
+     tipo que sumiu). Testes: `lib/batida.test.ts` (estoque real, lado/posição, sem peça em dobro) e `lib/conserto.test.ts`.
+   - **"Onde fica"** (`components/peca/OndeFica.astro`, depois dos detalhes da peça): mini Raio-x com a zona DESTA peça
+     acesa, "Fica na frente do carro" (`Zona.fica`) e o link "Ver as outras peças da frente do XC60" →
+     `/carros/<k>.html#raio-x=<zona>` (carro sem Raio-x na página: `/#raio-x=<zona>`). A zona é a do painel
+     (`zonasDaPeca` em `lib/raioX.ts`, a mesma regra da busca; `zonaDaPecaId` em `lib/raioXDados.ts`); peça sem zona ou
+     em duas zonas (pos `A`) não mostra o bloco. HTML parado; estilo no arquivo com cache.
+   - **"A frente por dentro"** (PILOTO, só a zona Frente; `v2/raioXPorDentro.ts` + `.css`, tabela em `lib/raioXFrente.ts`):
+     o botão no painel da Frente troca a arte pela vista explodida (`public/arte/v2/raio-x-frente.webp`, variantes
+     320/900 pelo `variantes-imagens.mjs`) no MESMO palco, com View Transition onde existe. Cada peça é um link com a
+     FORMA dela (polígonos medidos na arte; o farol e o para-lama à direita de quem olha são os ESQUERDOS do carro), com
+     o nome e quantas há; o número é o do catálogo com os filtros do link (`contarQuentes`; sem carro:
+     `/dados/raio-x-frente.json`). Sem peça (ou o capô, que o estoque não tem como tipo): cinza e o link é o WhatsApp
+     "a gente procura no pátio" (`linkProcuraPeca` em `lib/aviso.ts`, `data-botao="raio-x"`). No toque, o 1º toque acende
+     e mostra o rótulo, o 2º vai. Esc e "Voltar ao carro" devolvem a arte e o foco. Outra zona: uma arte + uma tabela
+     como `PONTOS_QUENTES` (só depois de o dono aprovar o piloto).
+   - **Endereços que já abrem**: `#raio-x=<zona>`, `#raio-x=batida`, `#raio-x=batida:<ponto>`, `#raio-x=por-dentro`
+     (na home e na página do carro; só o `#`, nenhum endereço novo).
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
