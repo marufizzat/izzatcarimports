@@ -31,3 +31,15 @@ export function mensagemProcuraParte(carro: string, parte: string, meu = true): 
   return mensagem(meu ? `Procuro uma peça ${parte} do meu ${c}: ____` : `Procuro uma peça ${parte} para ${c} ano ____: ____`);
 }
 export const linkProcuraParte = (carro: string, parte: string, meu = true) => linkWhats(mensagemProcuraParte(carro, parte, meu));
+
+// ---- Raio-x, "a frente por dentro" (components/v2/raioXPorDentro.ts): UMA peça que o site não tem agora ----
+
+/** "Procuro o capô para Volvo XC60 2019. Não achei no site, tem no pátio?" (o mesmo jeito do bloco "Não achou?" do
+ *  catálogo, lib/patio.ts). `meu` = o carro salvo; false = o carro da página (o ano fica para a pessoa escrever); sem
+ *  carro: o modelo e o ano em branco. `peca` com o artigo ("o capô", "o farol esquerdo"). */
+export function mensagemProcuraPeca(peca: string, carro: string, meu = true): string {
+  const c = carro.trim();
+  const para = !c ? 'para o meu carro: ____ (modelo e ano)' : meu ? `para ${c}` : `para ${c} ano ____`;
+  return mensagem(`Procuro ${peca.trim()} ${para}. Não achei no site, tem no pátio?`);
+}
+export const linkProcuraPeca = (peca: string, carro: string, meu = true) => linkWhats(mensagemProcuraPeca(peca, carro, meu));
