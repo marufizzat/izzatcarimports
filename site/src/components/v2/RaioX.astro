@@ -885,7 +885,16 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     });
     // o endereço com #raio-x-t (o link "Aponte no carro" do catálogo vazio) abre o cartão sozinho
     const tituloId = raiz.querySelector<HTMLElement>('[data-rx-titulo]')?.id;
-    if (tituloId && location.hash === `#${tituloId}`) { abrirRecolhido(); zonasA[0]?.focus({ preventScroll: true }); }
+    if (tituloId && location.hash === `#${tituloId}`) {
+      abrirRecolhido();
+      // o foco vai para a 1ª parte do carro. No fim da carga o navegador vai até a âncora e, como o título não recebe
+      // foco, TIRA o foco de onde estava (ficava no body: revisão 16, P3-4): por isso de novo depois da carga, só se
+      // a pessoa ainda não pôs o foco em outro lugar
+      const focar = () => { if (location.hash === `#${tituloId}` && vista === 'achar' && (!document.activeElement || document.activeElement === document.body)) zonasA[0]?.focus({ preventScroll: true }); };
+      focar();
+      const depoisDaCarga = () => requestAnimationFrame(() => setTimeout(focar, 0));
+      if (document.readyState === 'complete') depoisDaCarga(); else addEventListener('load', depoisDaCarga, { once: true });
+    }
 
     // ---- o endereço que já abre uma parte: #raio-x=frente | #raio-x=batida[:ponto] | #raio-x=por-dentro[:zona] ----
     function doEndereco() {
