@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { PONTOS_QUENTES, ARTE_FRENTE, ARTE_FRENTE_320, ARTE_FRENTE_900, ZONA_PILOTO } from './raioXFrente';
 import { ZONAS, linkLinha, filtrosLinha, zonasDaPeca } from './raioX';
 import { Busca, type Indice, type Lado, type Posicao } from './busca';
+import { nomeVale } from './nomesDoEstoque';
 
 const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8')) as Indice;
 const b = new Busca(ix);
@@ -69,14 +70,16 @@ describe('a frente por dentro: os pontos quentes na arte', () => {
 });
 
 describe('a frente por dentro: pontos quentes ↔ links do catálogo', () => {
-  it('todo ponto com tipo existe no estoque (bloco e tipo); sem tipo = pátio, com o nome da mensagem', () => {
+  it('todo ponto com tipo usa nomes do estoque (bloco e tipo); sem tipo = pátio, com o nome da mensagem', () => {
     const blocos = new Set(ix.familias);
     const tipos = new Set(ix.tipos);
     for (const p of PONTOS_QUENTES) {
       expect(p.procuro, p.k).toMatch(/^(o|a) /);
       if (!p.tipo) continue;
-      expect(blocos.has(p.tipo), `${p.k}: ${p.tipo}`).toBe(true);
-      expect(p.sub && tipos.has(p.sub), `${p.k}: ${p.sub}`).toBe(true);
+      // o tipo some do índice quando a última peça dele vende: vale o nome que o preparar_dados.py conhece (o
+      // ponto fica cinza, "a gente procura no pátio")
+      expect(nomeVale(blocos, p.tipo), `${p.k}: ${p.tipo}`).toBe(true);
+      expect(!!p.sub && nomeVale(tipos, p.sub), `${p.k}: ${p.sub}`).toBe(true);
     }
   });
   it('o link leva o tipo, o sub, o lado e a posição do ponto, e o carro; o número é o da busca com os filtros DO LINK', () => {

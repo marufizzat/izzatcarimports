@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { PONTOS, itensDaLinha, kitDoPonto, kitsDeTodos, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha } from './batida';
 import { ARTE } from './raioX';
 import { Busca, capaItem, type Indice } from './busca';
+import { nomeVale } from './nomesDoEstoque';
 
 const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8')) as Indice;
 const b = new Busca(ix);
@@ -64,13 +65,16 @@ describe('os 8 pontos da batida na arte', () => {
 });
 
 describe('o kit da batida no estoque real', () => {
-  it('toda linha com tipo/sub existe no estoque (linha sem tipo = pátio)', () => {
+  it('toda linha com tipo/sub usa nomes do estoque (linha sem tipo = pátio); tipo sem peça hoje = linha sem peça', () => {
+    // o tipo some do índice quando a última peça dele vende (eletroventilador, intercooler...): o nome continua
+    // valendo se é um que o preparar_dados.py conhece, e a linha fica vazia (principal: pátio; extra: some)
     const tipos = new Set(ix.familias);
     const subs = new Set(ix.tipos);
     const erros: string[] = [];
     for (const p of PONTOS) for (const l of p.linhas) {
       if (!l.tipo) { expect(l.extra, `${l.nome}: pátio nunca é extra`).toBeFalsy(); continue; }
-      if (!tipos.has(l.tipo) || !l.sub || !subs.has(l.sub)) erros.push(`${p.k}: ${l.nome} (${l.tipo} / ${l.sub})`);
+      if (!nomeVale(tipos, l.tipo) || !l.sub || !nomeVale(subs, l.sub)) erros.push(`${p.k}: ${l.nome} (${l.tipo} / ${l.sub})`);
+      else if (!subs.has(l.sub)) expect(itensDaLinha(p, l, procurar).length, `${p.k}: ${l.nome}`).toBe(0);
     }
     expect(erros).toEqual([]);
   });

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, zonasDaPeca, linkLinha, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
 import { Busca, type Indice } from './busca';
+import { nomeVale, temFonteDosNomes } from './nomesDoEstoque';
 
 const buscaArq = 'public/dados/busca.json';
 
@@ -75,9 +76,16 @@ describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () =>
       if (!blocos.has(g.tipo)) ruins.push(`${z.k}: bloco "${g.tipo}"`);
       for (const s of [...(g.subs ?? []), ...(g.sem ?? [])]) if (!tipos.has(s)) ruins.push(`${z.k}: tipo "${s}" (${g.tipo})`);
     }
-    // um tipo some do estoque quando a última peça dele vende: aceita até 4 nomes fora do índice, avisando
+    // um tipo some do estoque quando a última peça dele vende: fora do índice, o nome tem de ser um que o
+    // preparar_dados.py conhece (quantos forem); nome que ninguém conhece = acento errado ou tipo renomeado
     if (ruins.length) console.warn('raio-x: nomes fora do índice agora:', ruins);
-    expect(ruins.length).toBeLessThanOrEqual(4);
+    if (!temFonteDosNomes()) { expect(ruins.length).toBeLessThanOrEqual(4); return; }
+    const desconhecidos: string[] = [];
+    for (const z of ZONAS) for (const g of z.grupos) {
+      if (!nomeVale(blocos, g.tipo)) desconhecidos.push(`${z.k}: bloco "${g.tipo}"`);
+      for (const s of [...(g.subs ?? []), ...(g.sem ?? [])]) if (!nomeVale(tipos, s)) desconhecidos.push(`${z.k}: tipo "${s}" (${g.tipo})`);
+    }
+    expect(desconhecidos).toEqual([]);
   });
 
   it('toda zona tem peça e toda linha leva ao catálogo com o MESMO número (e as peças são do bloco e do tipo)', () => {
