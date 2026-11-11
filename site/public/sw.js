@@ -123,20 +123,18 @@ function navegar(event, url) {
 }
 
 async function responder(event, chave, rede) {
-  let motivo = 'offline';
+  const motivo = 'offline';
   try {
-    // status HTTP (404, 500) passa direto: a cópia é só para a rede que falhou ou demorou
-    return await Promise.race([rede, esperar(PRAZO_HTML).then(() => { throw new Error('prazo'); })]);
-  } catch (e) {
-    if (e && e.message === 'prazo') motivo = 'lenta';
-  }
+    // status HTTP (404, 500) passa direto. A cópia é SÓ para a rede que FALHOU: rede lenta espera pela resposta de verdade.
+    // (Revisão 15, P1-1: a corrida contra 3 s entregava a cópia guardada com os botões de compra ligados, e a peça podia
+    //  já ter vendido ou mudado de preço. Regra da casa: nunca preço velho nem peça vendida à venda.)
+    return await rede;
+  } catch (e) { /* sem rede: segue para a cópia */ }
   const copia = await (await abrir(CACHE.paginas)).match(chave);
   if (copia) {
     if (event.resultingClientId) { copias.add(event.resultingClientId); if (copias.size > 40) copias.delete(copias.values().next().value); }
     return comFaixa(copia, motivo);
   }
-  // sem cópia e a rede só está lenta: espera por ela (a página sem conexão seria mentira)
-  if (motivo === 'lenta') { try { return await rede; } catch (e) { /* caiu de vez */ } }
   const off = await (await abrir(CACHE.casco)).match(OFFLINE);
   if (off && event.resultingClientId) copias.add(event.resultingClientId); // as fotos guardadas do "Você viu" saem do cache
   return off || Response.error();
