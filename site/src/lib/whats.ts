@@ -222,6 +222,60 @@ export function mensagemLista(itens: readonly ItemMsg[], meuCarro = '', limite =
   return msg;
 }
 
+/** "ORÇAMENTO DE CONSERTO" do Raio-x (modo "Bati o carro"): as peças marcadas de um ponto da batida, numeradas, com o
+ *  código, o anúncio e os dois preços (site e WhatsApp, com o desconto de precoWhats), o que o estoque não tem (pátio)
+ *  e os totais (somaPrecos). Mesma abertura e o mesmo jeito das outras mensagens:
+ *
+ *    Olá! Vim pelo site da Izzat Car.
+ *
+ *    *ORÇAMENTO DE CONSERTO — batida na frente esquerda*
+ *    Meu carro: Volvo XC60 2019
+ *
+ *    1. *Farol esquerdo* — Código: E131464301 — Anúncio: MLB6631863638
+ *       R$ 244,64 (no WhatsApp R$ 220,18)
+ *
+ *    Para procurar no pátio: Capô; Suporte do para-choque (alma)
+ *
+ *    Total no site: R$ 244,64
+ *    *Total no WhatsApp (10% de desconto): R$ 220,18*
+ *
+ *    Servem e ainda têm?
+ *
+ *  Sem carro salvo: o convite do modelo e do ano. Lista longa (mais de `limite` letras): cada peça numa linha só; se
+ *  ainda passar, só as primeiras com "… e mais N peças" (os totais de todas, sempre). Sem nenhuma peça marcada: só o
+ *  pátio, sem total. */
+export type ItemConserto = { nome: string; id: string; cod?: string; carro?: string; anos?: string; preco: number };
+export const LIMITE_MSG_CONSERTO = 1800;
+export function mensagemConserto(o: { ponto: string; meuCarro?: string; itens: readonly ItemConserto[]; patio?: readonly string[]; limite?: number }): string {
+  const { itens } = o;
+  const patio = o.patio ?? [];
+  const limite = o.limite ?? LIMITE_MSG_CONSERTO;
+  const n = itens.length;
+  const { site, whats } = somaPrecos(itens);
+  const precos = (x: ItemConserto) => `R$ ${paraBrl(x.preco)} (no WhatsApp R$ ${paraBrl(precoWhats(x.preco))})`;
+  const completo = (x: ItemConserto, i: number) => [
+    `${i + 1}. *${x.nome}*${x.cod ? ` — Código: ${x.cod}` : ''} — Anúncio: ${x.id}`,
+    `   ${precos(x)}`,
+  ].join('\n');
+  const curto = (x: ItemConserto, i: number) => `${i + 1}. *${x.nome}* — ${precos(x)}`;
+  const fim = [
+    n ? `Total no site: R$ ${paraBrl(site)}\n*Total no WhatsApp (${DESCONTO_WHATS}% de desconto): R$ ${paraBrl(whats)}*` : '',
+    patio.length ? `Para procurar no pátio: ${patio.join('; ')}` : '',
+    n ? 'Servem e ainda têm?' : '',
+  ].filter(Boolean).join('\n\n');
+  const cabeca = `*ORÇAMENTO DE CONSERTO — batida ${o.ponto}*\n${linhaMeuCarro(o.meuCarro || conviteCarro()).trimEnd()}`;
+  const montar = (corpo: string) => mensagem(`\n\n${cabeca}${corpo ? `\n\n${corpo}` : ''}\n\n${fim}`);
+  let msg = montar(itens.map(completo).join('\n\n'));
+  if (msg.length <= limite) return msg;
+  msg = montar(itens.map(curto).join('\n'));
+  if (msg.length <= limite) return msg;
+  for (let k = n - 1; k >= 0; k--) {
+    msg = montar(`${itens.slice(0, k).map(curto).join('\n')}${k ? '\n' : ''}… e mais ${n - k} ${n - k === 1 ? 'peça' : 'peças'} (todas no total)`);
+    if (msg.length <= limite) return msg;
+  }
+  return msg;
+}
+
 /** Anos para a mensagem: "2018 a 2024" (ou "2019"). */
 export function anosTexto(y?: [number, number] | null): string {
   return y ? (y[0] === y[1] ? String(y[0]) : `${y[0]} a ${y[1]}`) : '';

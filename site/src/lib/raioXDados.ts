@@ -4,8 +4,8 @@
 // foto só nas linhas que aparecem com foto (as primeiras de cada zona), num código curto (lib/raioX.ts: fotoDoCodigo).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Busca, capaItem, type Indice } from './busca';
-import { contarZonas, codigoDaFoto, NA_FRENTE, type CarroFiltro, type RaioXJson } from './raioX';
+import { Busca, capaItem, type Indice, type Item } from './busca';
+import { contarZonas, codigoDaFoto, zonasDaPeca, NA_FRENTE, type CarroFiltro, type RaioXJson, type Zona } from './raioX';
 
 let busca: Busca | null = null;
 const toda = () => (busca ??= new Busca(JSON.parse(readFileSync(join(process.cwd(), 'public', 'dados', 'busca.json'), 'utf-8')) as Indice));
@@ -27,4 +27,17 @@ export function dadosRaioX(carro?: { b: string; m: string }): RaioXJson {
     }),
   }));
   return { b: blocos, z };
+}
+
+// ---- "Onde fica" da página da peça (components/peca/OndeFica.astro) ----
+let porId: Map<string, Item> | null = null;
+/** A zona do Raio-x onde a peça fica, pelo MESMO índice e a mesma regra do painel (zonasDaPeca). null = a tabela não
+ *  alcança a peça (tipo sem lugar certo, peça de porta sem o lado no nome) ou ela serve em duas partes (frente e
+ *  traseira): aí a página não mostra o bloco (nunca um lugar meio certo). */
+export function zonaDaPecaId(id: string): Zona | null {
+  porId ??= new Map(toda().itens.map((it) => [it.id, it]));
+  const it = porId.get(id);
+  if (!it) return null;
+  const zs = zonasDaPeca({ c: it.c, s: it.s, l: it.l, pos: it.pos });
+  return zs.length === 1 ? zs[0] : null;
 }

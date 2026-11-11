@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, linkLinha, linkZona, linkDoFiltro, falaDaZona, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
+import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, zonasDaPeca, linkLinha, linkZona, linkDoFiltro, falaDaZona, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
 import { Busca, type Indice } from './busca';
 
 const buscaArq = 'public/dados/busca.json';
@@ -193,5 +193,56 @@ describe.skipIf(!existsSync(buscaArq))('"Ver as peças da frente": as peças da 
       const ids = (sub.zonas[z.k] as number[]).map((i) => itens[i].id);
       expect(ids, z.nome).toEqual(pecasDaZona(procurar, {}, z).slice(0, NA_GALERIA).map((it) => it.id));
     }
+  });
+});
+
+describe('a zona de cada peça (o "Onde fica" da página da peça)', () => {
+  const ix = JSON.parse(readFileSync(buscaArq, 'utf-8')) as Indice;
+  const b = new Busca(ix);
+  it('é a MESMA conta do painel: as peças de cada zona pela busca do catálogo = as peças cuja zona é ela (estoque inteiro)', () => {
+    const daPeca = new Map<string, string[]>();
+    for (const it of b.itens) daPeca.set(it.id, zonasDaPeca({ c: it.c, s: it.s, l: it.l, pos: it.pos }).map((z) => z.k));
+    for (const z of ZONAS) {
+      const pelaBusca = pecasDaZona((f) => b.procurar(f), {}, z).map((it) => it.id).sort();
+      const pelaPeca = b.itens.filter((it) => daPeca.get(it.id)!.includes(z.k)).map((it) => it.id).sort();
+      expect(pelaPeca, z.k).toEqual(pelaBusca);
+    }
+  });
+  it('quase todo o estoque tem zona (94%+), e só a peça que serve na frente e atrás tem duas', () => {
+    let com = 0;
+    const duas: string[] = [];
+    for (const it of b.itens) {
+      const zs = zonasDaPeca({ c: it.c, s: it.s, l: it.l, pos: it.pos });
+      if (zs.length) com++;
+      if (zs.length > 1) {
+        duas.push(`${it.n}: ${zs.map((z) => z.k).join('+')}`);
+        expect(it.pos, it.n).toBe('A');
+        expect(zs.map((z) => z.k)).toEqual(['frente', 'traseira']);
+      }
+    }
+    expect(com / b.itens.length).toBeGreaterThan(0.94);
+    expect(duas.length).toBeLessThan(10);
+  });
+  it('exemplos: farol na frente, lanterna na traseira, retrovisor esquerdo na lateral esquerda, sem lado = sem zona', () => {
+    const k = (p: Parameters<typeof zonasDaPeca>[0]) => zonasDaPeca(p).map((z) => z.k);
+    expect(k({ c: 'Faróis e Lanternas', s: 'Faróis', l: 'E' })).toEqual(['frente']);
+    expect(k({ c: 'Faróis e Lanternas', s: 'Lanternas Traseiras', l: 'D', pos: 'T' })).toEqual(['traseira']);
+    expect(k({ c: 'Retrovisores', s: 'Retrovisores Externos', l: 'E' })).toEqual(['lateral-esquerda']);
+    expect(k({ c: 'Retrovisores', s: 'Retrovisores Externos', l: 'D' })).toEqual(['lateral-direita']);
+    expect(k({ c: 'Retrovisores', s: 'Retrovisores Externos' })).toEqual([]);
+    expect(k({ c: 'Motor', s: 'Coxins do Motor' })).toEqual(['motor']);
+    expect(k({ c: 'Outros', s: 'Outros' })).toEqual([]);
+    for (const z of ZONAS) expect(z.fica.length).toBeGreaterThan(5);
+  });
+});
+
+describe('o "Onde fica" e a página do carro', () => {
+  it('o link só aponta para o Raio-x do carro quando a página dele tem o Raio-x (o MESMO limite nos dois arquivos)', () => {
+    const limite = (arq: string) => Number(/RAIO_X_A_PARTIR_DE = (\d+)/.exec(readFileSync(arq, 'utf-8'))?.[1]);
+    expect(limite('src/components/peca/OndeFica.astro')).toBeGreaterThan(0);
+    expect(limite('src/components/peca/OndeFica.astro')).toBe(limite('src/pages/carros/[k].astro'));
+  });
+  it('o endereço #raio-x=<zona> usa as chaves das zonas (só letras minúsculas e hífen)', () => {
+    for (const z of ZONAS) expect(z.k).toMatch(/^[a-z-]+$/);
   });
 });
