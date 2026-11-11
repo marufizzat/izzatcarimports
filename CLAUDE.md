@@ -393,7 +393,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      +2,3 KB, CSS +3,0 KB, JS +4,5 KB; imagens da 1ª tela: celular 72,5 → 28 KB, PC 109 → 122 KB (tela 1x) ou ~207 KB (2x).
    - **A arte do carro no palco**: o carro escolhido no seletor traz a chave (`a`/`as`); o salvo por outra página (ou antes
      de a arte existir) NÃO traz — a chave vem da garagem (`arteDe`, o mesmo `/dados/meu-carro.json` do seletor). Modelo
-     sem arte própria (88 dos 173, 11% das peças): desenho "sem carro" (`data-ab-semarte`: os atalhos maiores, em duas
+     sem arte própria (64 dos 173, 4% das peças, depois do lote de 11/11): desenho "sem carro" (`data-ab-semarte`: os atalhos maiores, em duas
      fileiras no meio do palco), nunca um buraco. A abertura segue o seletor também quando ele mostra um carro SEM o
      evento `meu-carro` (etapa `pronto` no `olharSeletor`: apelido migrado na leitura, outra aba). Antes de mexer:
      `node scripts/abertura-arte.cjs <url>` (confere `naturalWidth` da arte em todos os caminhos: nascer salvo com e sem a
@@ -514,6 +514,7 @@ não vai. É proibido pular, excluir ou afrouxar teste no robô.
 | Artes (v2: abertura, categorias, carros, selos, banners, passos, topos, história, 404) | `site/public/arte/v2/` — texto desenhado na arte; prompts em `site/SUPER-PLANEJAMENTO-v2.md` |
 | Artes dos blocos (`cat-<k>.webp` e o topo sem o nome) | `node scripts/instalar-cats.mjs [pasta dos PNG]` na pasta `site/` (PNG de 1536: cartão em 1200, topo em 1254, nunca aumenta; bloco sem arte: o nome num fundo de estúdio) |
 | Variantes menores das artes (srcset) | `node scripts/variantes-imagens.mjs` na pasta `site/` depois de pôr/trocar `carro-<k>.webp`, `cat-<k>.webp` ou `topo-cat-<k>.webp`: faz `-600`/`-900` (carro), `-600` (cat) e `-640` (topo) e o hash em `src/data/variantes-arte.json`; commitar junto. Sem rodar, a arte nova sai só no `src` (variante velha nunca aparece). `sizes` de cada lugar: `src/lib/variantes.ts` |
+| Arte nova de carro (`carro-<k>.webp`) | Um arquivo e um comando: `site/public/arte/v2/carro-<k>.webp` (1200×800, webp q84; `<k>` = a chave do carro, `chaveCarro()` em `lib/garagem.ts`, a mesma do `/carros/<k>.html`) + `node scripts/variantes-imagens.mjs`. Não há lista para registrar: o topo do carro, `/carros`, a marca, o cartão do seletor e a abertura acham a arte pelo arquivo (modelo com menos de 8 peças, sem página, também: a garagem usa a chave que a página teria). A arte tem de ser da família: 3/4 dianteira com a frente para a esquerda, carro de ~16% a ~94% da largura, rodas em ~83% da altura, filete laranja em ~70%, parede no tom `rgb(229 214 208)` (a abertura dissolve uma arte na outra e sobre o estúdio em CSS; parede mais rosada = emenda). Roteiros da rodada 16 (geração pelo Codex com 2 artes-âncora + foto real, medida do enquadramento, acerto do tom, instalação): `ferramentas/artes_carro/`. Provas: `npx vitest run src/lib/garagem.test.ts` e `node scripts/abertura-arte.cjs <url> "Marca|Modelo" ...` |
 | Logos das marcas | `site/public/marcas/` (simple-icons e car-logos-dataset; viewBox recortado) |
 
 ## Regras da marca (manual da vitrine)
