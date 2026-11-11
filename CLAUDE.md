@@ -187,12 +187,20 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Não deu para abrir as peças desta lista agora. Tentar de novo" (nunca "R$ 0,00" nem "Anúncio MLB…" como nome; sem preço
    conferido, a linha fica sem o bloco do preço; "Guardar" só depois que as peças abriram). GA4 `lista_adicionar`
    (`rastreio.js`).
-   **"Vai junto"** (`components/peca/VaiJunto.astro`, logo depois da compra): até 4 peças do MESMO carro e geração que
-   costumam ser trocadas com a vista, pela regra `GRUPOS`/`JUNTO` de `lib/relacionadas.ts` (`vaiJunto`: lado e
-   frente/trás pelo nome, nunca o outro lado nem a outra ponta, nunca a mesma peça repetida); sem peça que combine, o
-   bloco não aparece. Nos grupos de motor (`GRUPOS_MOTOR`) nunca entra nome com tampa traseira/porta-malas/rebatimento/
-   banco/porta (`FORA_DO_MOTOR`; "banco 1" do motor fica); a válvula do turbo tem o grupo dela (`turbo-valvula`) e o botão
-   da tampa vai com a tampa (`tampa-botao`). As peças dele saem do "Do mesmo carro" e do "Mais peças <marca>": sem outra
+   **"Vai junto"** (`components/peca/VaiJunto.astro`, logo depois da compra; regra refeita na rodada 15): 1 a 3 peças do
+   MESMO carro e geração que entram NO MESMO SERVIÇO que a vista. Em `lib/relacionadas.ts`, cada peça tem um PAPEL
+   (`PAPEIS`: o tipo `s` + o que o nome diz: "Suporte farol", "Mangueira radiador", "Moldura botão vidro") e cada papel
+   lista os papéis que a oficina troca ou precisa junto, do mais ligado ao menos (farol -> suporte, friso, guia do
+   para-choque, para-choque, grade; bomba d'água -> termostática, mangueira da bomba, tensor; máquina de vidro -> botão e
+   forro da MESMA porta; lanterna -> a lanterna da tampa do mesmo lado, soquete, guia do para-choque traseiro...). Papel
+   sem companheiro de serviço (botão do pisca-alerta, sensor solto, capa do motor, console) não tem bloco. `casa()`: lado e
+   posição iguais quando as duas dizem; só uma diz = vale se a outra for peça "de uma só" (`lat`/`fz`); na porta (`porta`)
+   a porta tem de ser a mesma ("motorista" = dianteira esquerda). Nunca a mesma peça de novo: mesmo código, mesmo nome, o
+   mesmo nome noutro canto (`esqueleto`) ou com palavras a mais (`contida`). Sem companheira certa, o bloco não aparece
+   (nov/2026: 1.543 de 5.311 páginas; a tabela de antes, por grupos largos, dava 4.173 com sugestão sem sentido). Tipo
+   novo no estoque: conferir se cabe num papel. Amostra para conferir uma a uma: `npx vite-node scripts/amostra-vai-junto.ts`
+   (na pasta `site/`, semente fixa, espalhada pelos blocos). As peças dele saem do "Do mesmo carro" e do "Mais peças
+   <marca>": sem outra
    peça do carro, o "Do mesmo carro" não aparece (nunca volta à lista inteira e repete). Cartão: o texto num `<span>`
    (nome, anos, e o "Cód." numa linha só dele, inteiro, quebra sem reticências), o preço e o "+ Lista" ESCRITO (nome
    acessível "Adicionar à Lista de orçamento: <peça>"); já na lista, o verde "Na lista" leva à lista. O `<li data-carro>`
