@@ -182,10 +182,16 @@ export function adicionarNaLista(item: ItemLista, origem?: string): 'ok' | 'ja' 
   salvarLista(adicionar(l, item), 'adicionar', item.id, origem);
   return 'ok';
 }
-/** A lista mudou noutra aba: esta aba fica igual (o evento 'storage' só chega nas outras abas). */
+/** A lista mudou noutra aba, ou noutra página enquanto esta esperava no bfcache: esta fica igual (o evento 'storage' só
+ *  chega nas outras abas; o 'pageshow' com persisted, na volta). */
 export function ouvirOutrasAbas() {
   window.addEventListener('storage', (e) => {
     if (e.key !== CHAVE_LISTA && e.key !== null) return;
     window.dispatchEvent(new CustomEvent(EVENTO_LISTA, { detail: { acao: 'outra-aba', n: lerLista().length } satisfies EventoLista }));
+  });
+  // voltar/avançar: a página sai do bfcache como estava, e a lista pode ter mudado na outra página (pôs a peça na página
+  // da peça e voltou: o cartão seguia "+ Lista" e o número do cabeçalho, vazio). O mesmo aviso de "mudou noutra aba".
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) window.dispatchEvent(new CustomEvent(EVENTO_LISTA, { detail: { acao: 'outra-aba', n: lerLista().length } satisfies EventoLista }));
   });
 }
