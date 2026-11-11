@@ -50,6 +50,9 @@ const REGRAS = JSON.stringify({ prerender: [{ where: { href_matches: ['/peca/*',
   {/* o app na tela de início do iPhone: o nome curto e a barra de status clara (o site é claro) */}
   <meta name="apple-mobile-web-app-title" content="Izzat Car" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  {/* o app instalável (components/app/app.ts, módulo com cache): service worker depois do load, convite raro para
+      instalar e o botão de pânico. Nada antes da 1ª pintura. */}
+  <script>import '../components/app/app';</script>
   {/* fotos do ML são <img> (sem CORS): o preconnect sem crossorigin é o que elas reaproveitam */}
   <link rel="preconnect" href="https://http2.mlstatic.com" />
   <meta property="og:type" content={ogTipo} />
