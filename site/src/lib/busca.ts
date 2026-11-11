@@ -13,7 +13,7 @@
 //      do XC60, pela coluna "l" do índice; sem nenhum, a busca volta a valer como texto, como antes).
 import MiniSearch, { type Query, type SearchResult } from 'minisearch';
 import { serveNoModelo, anosNoModelo, modelosDa } from './meuCarro';
-import { MAPA_SINONIMOS, MAIOR_GATILHO, VAZIAS, singulares } from './sinonimos';
+import { MAPA_SINONIMOS, MAPA_FORA, MAIOR_GATILHO, VAZIAS, singulares } from './sinonimos';
 
 export type Indice = {
   v: number; updated: string; marcas: string[]; familias: string[]; tipos: string[];
@@ -397,8 +397,17 @@ export class Busca {
         const k = uns.slice(i, i + n).map((u) => u.chave).join(' ');
         const alts = MAPA_SINONIMOS.get(k)!.filter((f) => f.join(' ') !== k);
         const orig: Query = n === 1 ? uns[i].q : { combineWith: 'AND', queries: uns.slice(i, i + n).map((u) => u.q) };
-        // as outras formas valem um pouco menos que a digitada (e a soma de 2 formas não passa a frente dela)
-        grupos.push(alts.length ? { combineWith: 'OR', queries: [orig, { combineWith: 'OR', queries: alts.map(frase), boostTerm: () => PESO_SINONIMO }] } : orig);
+        // as outras formas valem um pouco menos que a digitada (e a soma de 2 formas não passa a frente dela); com o
+        // "fora" da tabela, a peça cujo nome ou tipo diz aquela palavra não entra pelo sinônimo ("frente": a grade do
+        // alto-falante e a moldura do painel não)
+        // (a pessoa que digitou a palavra do "fora" quer aquela peça: "frente painel" continua achando a moldura do painel)
+        const fora = MAPA_FORA.get(k)?.filter((w) => !uns.some((u) => u.chave.length >= 3 && (u.chave.startsWith(w) || w.startsWith(u.chave))));
+        const comFora = MAPA_FORA.has(k);
+        const outras: Query = { combineWith: 'OR', queries: alts.map(frase), boostTerm: () => PESO_SINONIMO, ...(comFora ? { fields: ['n'] } : {}) };
+        const semFora: Query = fora?.length
+          ? { combineWith: 'AND_NOT', queries: [outras, { combineWith: 'OR', queries: fora.map((w) => w.replace(/-/g, '')), fields: ['n', 's'], prefix: true, fuzzy: false }] }
+          : outras;
+        grupos.push(alts.length ? { combineWith: 'OR', queries: [orig, semFora] } : orig);
         formas.set(uns[i].chave, [...new Set(alts.map((f) => f[0]))]);
         i += n;
         continue;

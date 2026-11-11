@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { MAPA_SINONIMOS, SINONIMOS, plural, singulares, VAZIAS } from './sinonimos';
+import { MAPA_SINONIMOS, MAPA_FORA, SINONIMOS, plural, singulares, VAZIAS } from './sinonimos';
 import { Busca, termos, normal } from './busca';
 
 describe('sinônimos: o jeito de falar do cliente', () => {
@@ -28,6 +28,14 @@ describe('sinônimos: o jeito de falar do cliente', () => {
     expect(MAPA_SINONIMOS.get('maquina vidro')!.map((f) => f.join(' '))).toContain('motor vidro');
     expect(MAPA_SINONIMOS.get('mola gas')!.map((f) => f.join(' '))).toContain('amortecedor tampa');
     for (const k of MAPA_SINONIMOS.keys()) for (const w of k.split(' ')) expect(VAZIAS.has(w), k).toBe(false);
+  });
+
+  it('o "fora" vale para o gatilho e o plural dele ("frente": painel, console…; "frentes" também)', () => {
+    expect(MAPA_FORA.get('frente')).toContain('painel');
+    expect(MAPA_FORA.get('frentes')).toContain('console');
+    expect(MAPA_FORA.get('frente completa')).toContain('falante');
+    expect(MAPA_FORA.has('sinaleira')).toBe(false);
+    expect(MAPA_SINONIMOS.get('frente')!.map((f) => f.join(' '))).toContain('churrasqueira');
   });
 
   it('cada linha da tabela aponta para um nome que EXISTE no estoque', (ctx) => {

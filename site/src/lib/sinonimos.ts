@@ -3,9 +3,12 @@
 // UMA tabela para o catálogo e as sugestões do cabeçalho (lib/busca.ts monta a busca com ela). Fica no navegador e não
 // no busca.json: a tabela inteira pesa ~2 KB no JS (com cache), e pôr os sinônimos em cada peça custaria em toda peça.
 //
-// Cada linha: [o que o cliente digita], [o que procurar TAMBÉM]. Só acrescenta: a palavra digitada continua valendo
-// ("pisca" acha o "Botão pisca-alerta" e, agora, a "Chave seta"). Frases sem as palavras vazias ("máquina de vidro" =
-// "maquina vidro"), sem acento e em minúsculas. O plural de cada gatilho entra sozinho ("sinaleiras", "faróis").
+// Cada linha: [o que o cliente digita], [o que procurar TAMBÉM] e, às vezes, [onde as outras formas NÃO valem]. Só
+// acrescenta: a palavra digitada continua valendo ("pisca" acha o "Botão pisca-alerta" e, agora, a "Chave seta"). Frases
+// sem as palavras vazias ("máquina de vidro" = "maquina vidro"), sem acento e em minúsculas. O plural de cada gatilho
+// entra sozinho ("sinaleiras", "faróis"). O 3º item tira as peças cujo nome ou tipo diz aquela palavra só do caminho do
+// sinônimo: "frente" puxa grade e "frontal", mas não a "Moldura frontal painel" nem a grade do alto-falante (revisão 12);
+// nessas linhas as outras formas valem só no NOME da peça (o tipo "Amortecedores da Tampa e do Capô" não é "capô").
 
 const normal = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -13,14 +16,18 @@ const normal = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 export const VAZIAS = new Set(['de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'com', 'e', 'o', 'a', 'os', 'as', 'um', 'uma',
   'peca', 'pecas', 'original', 'originais', 'usada', 'usadas', 'usado', 'usados']);
 
-export const SINONIMOS: [string[], string[]][] = [
+export const SINONIMOS: [string[], string[], string[]?][] = [
   // luzes
   [['sinaleira', 'sinaleiro'], ['lanterna']],
   [['pisca', 'pisca pisca', 'piscapisca', 'lanterna direcao', 'luz direcao', 'luz seta', 'lampada seta'], ['seta']],
   [['farolete', 'farol auxiliar', 'farol neblina', 'neblina', 'luz milha'], ['farol milha', 'milha']],
   [['alavanca seta', 'alavanca pisca', 'chave pisca', 'chave luz'], ['chave seta']],
   // carroceria (frente e traseira; "traseira", "dianteira", "esquerda", "direita" viram filtro em lib/busca.ts)
-  [['frente', 'frente completa'], ['grade', 'farol', 'capo', 'parachoque dianteiro', 'paralama dianteiro', 'frontal']],
+  // "churrasqueira" = a grade do para-choque (como se fala no Sul): a grade de verdade sobe; painel, console, alto-falante e
+  // difusor de ar são de dentro do carro (a grade do alto-falante e a "Moldura frontal painel" não são a frente) e o que é
+  // de trás não é a frente (o amortecedor da tampa traseira vinha pelo tipo "Amortecedores da Tampa e do Capô")
+  [['frente', 'frente completa'], ['grade', 'churrasqueira', 'farol', 'capo', 'parachoque dianteiro', 'paralama dianteiro', 'frontal'],
+    ['painel', 'console', 'falante', 'tweeter', 'difusor', 'tras', 'porta-malas', 'portamalas']],
   [['espelho', 'espelho retrovisor', 'retrovisor externo'], ['retrovisor']],
   [['masaneta', 'massaneta', 'trinco'], ['macaneta']],
   // vidro elétrico
@@ -88,6 +95,21 @@ export const MAPA_SINONIMOS: Map<string, string[][]> = (() => {
         for (const f of frases) if (!ja.some((x) => x.join(' ') === f.join(' '))) ja.push(f);
         m.set(k, ja);
       }
+    }
+  }
+  return m;
+})();
+
+/** gatilho (frase normalizada, com o plural) -> as palavras que, no nome ou no tipo da peça, tiram ela do caminho do
+ *  sinônimo (a palavra digitada continua achando: "frente painel" acha o painel). */
+export const MAPA_FORA: Map<string, string[]> = (() => {
+  const m = new Map<string, string[]>();
+  for (const [gatilhos, , fora] of SINONIMOS) {
+    if (!fora?.length) continue;
+    const ws = fora.map(normal);
+    for (const g of gatilhos) {
+      const p = normal(g).split(/\s+/).filter((w) => w && !VAZIAS.has(w));
+      for (const v of [p, [...p.slice(0, -1), plural(p[p.length - 1])], p.map(plural)]) m.set(v.join(' '), ws);
     }
   }
   return m;

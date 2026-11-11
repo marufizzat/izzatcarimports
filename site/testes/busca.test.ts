@@ -438,6 +438,23 @@ describe('sinônimos e plural', () => {
   });
 });
 
+describe('"frente": a frente do carro, nunca o painel nem o que é de trás (revisão 12, P3.8)', () => {
+  it('"frente xc60": a grade (churrasqueira) nas 5 primeiras; nada de painel, console, alto-falante ou tampa traseira', (ctx) => {
+    const grade = b.itens.find((x) => serveNoModelo(x, 'XC60') && /churrasqueira/.test(normal(x.n)));
+    if (!grade) return ctx.skip();
+    const r = b.procurar({ q: 'frente xc60' });
+    expect(r.slice(0, 5).some((x) => /grade|churrasqueira/.test(normal(x.n)))).toBe(true);
+    for (const x of r) expect(normal(`${x.n} ${x.s}`), x.n).not.toMatch(/painel|console|falante|difusor|tras/);
+  });
+  it('quem digita a palavra do "fora" acha a peça ("frente painel" acha a moldura do painel)', (ctx) => {
+    const moldura = b.itens.find((x) => serveNoModelo(x, 'XC60') && /^moldura frontal painel/.test(normal(x.n)));
+    if (!moldura) return ctx.skip();
+    expect(b.procurar({ q: 'frente painel xc60' }).some((x) => x.id === moldura.id)).toBe(true);
+    // e "frontal" digitado (filtro de posição) segue igual
+    expect(b.procurar({ q: 'frontal xc60' }).some((x) => x.id === moldura.id)).toBe(true);
+  });
+});
+
 // Lado e posição (colunas l e pos do busca.json, lidas do nome em preparar_dados.py): fichas e a busca entendem
 describe('lado e posição', () => {
   const comLado = b.itens.filter((x) => x.l).length;
