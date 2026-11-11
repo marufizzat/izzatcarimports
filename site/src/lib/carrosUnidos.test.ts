@@ -75,7 +75,8 @@ describe.skipIf(!temDados)('com os dados de agora: os apelidos e o principal dã
   const toda = new Busca(ix);
 
   it('o mapa do build (src/data/unidos.json) tem todo apelido do resumo, e é o que o site usa', () => {
-    expect(resumo.aliases.length).toBeGreaterThanOrEqual(8);
+    // sem contar apelidos: quantos têm endereço depende do estoque do dia (o apelido com menos de 8 peças não tem)
+    expect(Object.keys(UNIDOS).length).toBeGreaterThanOrEqual(resumo.aliases.length);
     for (const a of resumo.aliases) expect(UNIDOS[`${a.b}|${a.de}`], `${a.b} ${a.de}`).toBe(a.m);
     expect(Object.keys(UNIDOS)).toEqual(Object.keys(JSON.parse(readFileSync('src/data/unidos.json', 'utf-8'))));
   });

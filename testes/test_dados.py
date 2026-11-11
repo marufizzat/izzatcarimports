@@ -1407,25 +1407,32 @@ def test_ano_da_descricao():
 
 
 # ---- 10/11 (dono): mesmo carro em 1 pagina; lixo do anuncio; banco; excluir_do_site.json ----
-ENDERECOS_ANTIGOS = {"mercedes-benz-c180", "mercedes-benz-c200", "mercedes-benz-c320", "mercedes-benz-gla200",
-                     "bmw-320i", "bmw-530i", "ford-new-fiesta", "honda-new-civic"}
-
-
 def test_carro_unido_mantem_enderecos_e_peca():
     """Os enderecos antigos /carros/<k>.html continuam (aliases, com canonical) e nenhuma peca perde o carro que tinha:
-    quem salvou "C180" no Meu carro continua vendo as pecas, e o principal (Classe C) tem todas."""
+    quem salvou "C180" no Meu carro continua vendo as pecas, e o principal (Classe C) tem todas.
+    REGRA para qualquer estoque (o robo roda isto com o estoque do dia): o endereco do apelido existe enquanto o apelido tem
+    pecas para uma pagina (MIN_CARRO, como antes da uniao: com menos ele ja nao tinha pagina). Nenhum endereco fica escrito
+    aqui: em 11/11 uma lista fixa de 8 enderecos parava o robo no dia em que as pecas do New Civic vendessem."""
     resumo = json.loads((ROOT / "site" / "src" / "data" / "resumo.json").read_text(encoding="utf-8"))
     chaves = {c["k"] for c in resumo["carros"]}
     al = resumo.get("aliases", [])
-    assert ENDERECOS_ANTIGOS <= (chaves | {a["k"] for a in al}), ENDERECOS_ANTIGOS - (chaves | {a["k"] for a in al})
-    assert not ({a["k"] for a in al} & chaves), "apelido nao pode ser pagina de carro (sitemap e menus)"
+    antigos = {a["k"] for a in al}
+    assert not (antigos & chaves), "apelido nao pode ser pagina de carro (sitemap e menus)"
     for a in al:
         assert a["para"] in chaves, a
     by = _pecas()
+    # o minimo de pecas para um carro ter pagina (MIN_CARRO do main() do preparar_dados.py, lido do proprio codigo)
+    minimo = int(re.search(r"^\s*MIN_CARRO = (\d+)", Path(pd.__file__).read_text(encoding="utf-8"), flags=re.M).group(1))
     for (marca, apelido), principal in pd.UNIR_CARRO_PARES.items():
-        for x in by.values():
-            if x["b"] == marca and apelido in _carros(x):
-                assert principal in _carros(x), (x["t"], _carros(x))
+        com = [x for x in by.values() if x["b"] == marca and apelido in _carros(x)]
+        for x in com:
+            assert principal in _carros(x), (x["t"], _carros(x))
+        k = pd.chave_url(f"{marca} {apelido}")
+        assert k not in chaves, k
+        if len(com) >= minimo:
+            assert k in antigos, f"{k}: {len(com)} pecas com o apelido e o endereco antigo sumiu"
+        else:
+            assert k not in antigos, f"{k}: endereco de apelido com {len(com)} pecas (menos que uma pagina)"
 
 
 def test_lixo_do_anuncio_sai_do_nome():
