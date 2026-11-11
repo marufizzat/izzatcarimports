@@ -2,7 +2,7 @@
 // o que precisa de peça para existir roda só no ESTOQUE FIXO; as regras (lado, posição, nada em dobro, link = catálogo)
 // rodam no fixo e no estoque do dia, com o carro que o estoque tiver.
 import { describe, it, expect } from 'vitest';
-import { PONTOS, LIGADA, FRASE_PATIO, ehDaLinha, itensDaLinha, listaDaLinha, batidaJson, linhaDoJson, ladoNaLinha, kitDoPonto, kitsDeTodos, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha, type Linha } from './batida';
+import { PONTOS, LIGADA, FRASE_PATIO, ehDaLinha, itensDaLinha, listaDaLinha, batidaJson, linhaDoJson, ladoNaLinha, nomeNaTela, kitDoPonto, kitsDeTodos, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha, type Linha } from './batida';
 import { mensagemConserto, somaPrecos } from './whats';
 import { ARTE } from './raioX';
 import { Busca, capaItem } from './busca';
@@ -197,6 +197,13 @@ describe('ponto do centro com peça de um lado só: o nome da linha diz o lado',
   ])('%s / %s × "%s" = "%s"', (k, nome, peca, esperado) => {
     expect(linha(k, nome), `${k} ${nome}`).toBeDefined();
     expect(ladoNaLinha(ponto(k), linha(k, nome), peca)).toBe(esperado);
+  });
+  it('na tela, a peça ligada com lado leva UM parêntese só (revisão 17, N-P3-4)', () => {
+    const grade = linha('frente', 'Grade');
+    expect(nomeNaTela(ponto('frente'), grade, 'Grade churrasqueira direito')).toBe('Grade (lado direito)');
+    expect(nomeNaTela(ponto('frente'), { ...grade, nome: grade.nome + LIGADA, extra: true }, 'Moldura churrasqueira direita')).toBe('Grade (peça ligada, lado direito)');
+    expect(nomeNaTela(ponto('frente'), { ...grade, nome: grade.nome + LIGADA, extra: true }, 'Tampa grade churrasqueira')).toBe('Grade (peça ligada)');
+    expect(nomeNaTela(ponto('frente-esquerda'), grade, 'Grade churrasqueira esquerda')).toBe('Grade');
   });
   it('a linha de um lado só (no ponto do centro) já diz o lado no nome dela', () => {
     for (const p of PONTOS) for (const l of p.linhas) if (!p.lado && l.lado) expect(l.nome, `${p.k} ${l.nome}`).toMatch(l.lado === 'E' ? /esquerd[oa]$/ : /direit[oa]$/);

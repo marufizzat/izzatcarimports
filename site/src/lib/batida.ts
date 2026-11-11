@@ -298,6 +298,14 @@ export function ladoNaLinha(p: Ponto, l: Linha, nomeDaPeca: string): string {
   return e === d ? '' : ` (lado ${e ? 'esquerdo' : 'direito'})`;
 }
 
+/** O nome da linha como a TELA o mostra: com o lado (`ladoNaLinha`) e, na linha de peça ligada, num parêntese só:
+ *  "Grade (peça ligada, lado direito)", nunca "Grade (peça ligada) (lado direito)" (revisão 17, N-P3-4). */
+export function nomeNaTela(p: Ponto, l: Linha, nomeDaPeca: string): string {
+  const lado = ladoNaLinha(p, l, nomeDaPeca);
+  if (!lado) return l.nome;
+  return l.nome.endsWith(LIGADA) ? `${l.nome.slice(0, -1)}, ${lado.slice(2)}` : l.nome + lado;
+}
+
 /** O que o nome da linha ganha quando a peça à mostra não é a do título (fica à vista, com o nome de verdade embaixo). */
 export const LIGADA = ' (peça ligada)';
 
