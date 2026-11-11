@@ -78,7 +78,7 @@ describe('relacionadas: estoque real', () => {
     }
     // quantas paginas completam com outros anos depende do estoque: so avisa (nao trava a publicacao)
     if (completadas > pecas.length / 10) console.warn(`AVISO: ${completadas} paginas completam "Do mesmo carro" com outros anos`);
-  });
+  }, 120_000);   // passa por todas as peças do estoque: o robô e a máquina cheia levam bem mais que os 30 s do padrão
 });
 
 describe('"Vai junto": só o que entra no MESMO serviço, do mesmo carro (rodada 15)', () => {
@@ -264,7 +264,7 @@ describe('"Vai junto": só o que entra no MESMO serviço, do mesmo carro (rodada
       }
     }
     console.log(`"Vai junto": ${com} de ${pecas.length} peças com o bloco (${cartoes} cartões)`);
-  });
+  }, 120_000);   // passa por todas as peças do estoque: o robô e a máquina cheia levam bem mais que os 30 s do padrão
 
   // "a regra não pode sumir com o bloco do site": conferido num estoque FIXO (as 515 peças do XC60 de 11/11/2026,
   // testes/fixtures/pecas-xc60.json), não no do dia (a proporção muda com o que vendeu e o robô não pode parar por isso)
@@ -272,5 +272,5 @@ describe('"Vai junto": só o que entra no MESMO serviço, do mesmo carro (rodada
     const pecas: Peca[] = JSON.parse(readFileSync('testes/fixtures/pecas-xc60.json', 'utf-8'));
     const com = pecas.filter((p) => { const n = vaiJunto(p, pecas).pecas.length; expect(n).toBeLessThanOrEqual(MAX_JUNTO); return n > 0; }).length;
     expect(com).toBeGreaterThan(pecas.length / 10);
-  });
+  }, 120_000);   // passa por todas as peças do estoque: o robô e a máquina cheia levam bem mais que os 30 s do padrão
 });
