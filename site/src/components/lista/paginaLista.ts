@@ -142,12 +142,8 @@ export function iniciarLista() {
       h1.textContent = 'Lista de orçamento';
       lead.textContent = `Mandaram esta lista para você: ${pecasTxt(idsLink.length)}. Peça tudo no WhatsApp ou guarde na sua lista.`;
       const minha = lerLista().length;
+      // o aviso do link já vem no HTML (pages/lista.astro), com o texto certo antes da 1ª pintura
       caixaLink.hidden = false;
-      if (!caixaLink.dataset.feito) {
-        caixaLink.dataset.feito = '1';
-        caixaLink.innerHTML = `<p>Esta lista veio por um link.<small data-lst-link-sub></small></p>`
-          + `<button type="button" class="botao botao-linha" data-lst-guardar>${svg('lista-mais')}Guardar na minha lista</button>`;
-      }
       // "Guardar" só depois que as peças do link abriram (sem rede, guardar nada e perder o link, não)
       const guardar = caixaLink.querySelector<HTMLButtonElement>('[data-lst-guardar]')!;
       guardar.disabled = estado !== 'ok';
