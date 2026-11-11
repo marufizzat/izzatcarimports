@@ -2,12 +2,25 @@
 //  1) depois do load: o botão de pânico (/sw-desligar.txt com "1" desliga e apaga tudo) e o registro do service worker
 //     (public/sw.js). A página que não passou por ele (1ª visita, preparada pelo prerender) pede a própria cópia;
 //  2) a faixa "sem conexão" (a cópia guardada já vem com ela, posta pelo SW; aqui só o "a conexão voltou");
+//  3) o convite para instalar (raro, lib/app.ts; o desenho em ./convite.ts só desce quando vai aparecer);
 // Página preparada pelo prerender: nada roda até a pessoa abrir.
-import { ARQUIVO_DESLIGAR, pedeDesligar } from '../../lib/app';
+import { CHAVE_APP, ARQUIVO_DESLIGAR, CHAVE_LISTA, CHAVE_VISTOS, estadoDe, novaVisita, podeConvidar, iosQueInstala, pedeDesligar, type EstadoApp } from '../../lib/app';
+
+type PedidoInstalar = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
 
 const raiz = document.documentElement;
+const SESSAO = 'izzatcar.app.sessao';
+const standalone = () => matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 const semConexaoPagina = () => !!document.querySelector('[data-pagina-offline]');
 
+function lerEstado(): EstadoApp {
+  try { return estadoDe(JSON.parse(localStorage.getItem(CHAVE_APP) || 'null')); } catch { return { v: 0 }; }
+}
+function salvarEstado(e: EstadoApp) {
+  try { localStorage.setItem(CHAVE_APP, JSON.stringify(e)); } catch { /* sem armazenamento: convida no máximo uma vez por página */ }
+}
+const quantos = (chave: string) => { try { const l = JSON.parse(localStorage.getItem(chave) || '[]'); return Array.isArray(l) ? l.length : 0; } catch { return 0; } };
+const sessao = (v?: string) => { try { if (v) sessionStorage.setItem(SESSAO, v); return sessionStorage.getItem(SESSAO) || ''; } catch { return v || ''; } };
 const depoisDoLoad = (f: () => void, folga = 0) => {
   const vai = () => setTimeout(() => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 4000 }) : f()), folga);
   if (document.readyState === 'complete') vai(); else addEventListener('load', vai, { once: true });
@@ -65,12 +78,60 @@ function faixaVoltou() {
   const b = d.querySelector('button'); if (b) b.textContent = 'Atualizar';
 }
 
+// ---- 3) o convite para instalar ----
+let pedido: PedidoInstalar | null = null;
+let pronto = false; // o load + a folga já passaram (o convite nunca disputa a 1ª tela)
+function talvezConvidar() {
+  if (!pronto || document.querySelector('.app-convite')) return;
+  const ios = !pedido && iosQueInstala(navigator.userAgent, navigator.maxTouchPoints);
+  if (!pedido && !ios) return;
+  // só no celular/tablet (no PC o Chrome já mostra o ícone de instalar na barra de endereço)
+  if (!matchMedia('(pointer: coarse)').matches) return;
+  const e = lerEstado();
+  const ok = podeConvidar(e, {
+    agora: Date.now(), standalone: standalone(), nLista: quantos(CHAVE_LISTA), nVistos: quantos(CHAVE_VISTOS),
+    ocupada: !!document.querySelector('.barra-compra, .lst-barra, [data-pagina-offline], dialog[open]'), jaNestaSessao: sessao() === 'convidou',
+  });
+  if (!ok) return;
+  sessao('convidou');
+  const avisar = (resultado: 'aceito' | 'dispensado', onde: string) =>
+    dispatchEvent(new CustomEvent('app-instalar', { detail: { resultado, onde } }));
+  import('./convite').then(({ mostrarConvite }) => mostrarConvite({
+    ios,
+    instalar: async () => {
+      const p = pedido; if (!p) return false;
+      pedido = null;
+      await p.prompt();
+      const { outcome } = await p.userChoice;
+      if (outcome === 'accepted') salvarEstado({ ...lerEstado(), i: 1 });
+      else salvarEstado({ ...lerEstado(), d: Date.now() });
+      avisar(outcome === 'accepted' ? 'aceito' : 'dispensado', 'chrome');
+      return true;
+    },
+    dispensar: () => { salvarEstado({ ...lerEstado(), d: Date.now() }); avisar('dispensado', ios ? 'ios' : 'faixa'); },
+  })).catch(() => { /* sem rede para o pedaço do convite: fica para outra vez */ });
+}
+
 function iniciar() {
+  // visita = sessão nova do navegador
+  if (!sessao()) { sessao('1'); salvarEstado(novaVisita(lerEstado())); }
+
+  addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); // nada de barra do Chrome na 1ª visita: o convite segue as regras daqui
+    pedido = e as PedidoInstalar;
+    talvezConvidar();
+  });
+  addEventListener('appinstalled', () => {
+    salvarEstado({ ...lerEstado(), i: 1 });
+    document.querySelector('.app-convite')?.remove();
+  });
+
   if (!navigator.onLine) faixaSemConexao();
   addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted && !navigator.onLine) faixaSemConexao(); });
   addEventListener('online', faixaVoltou);
 
   depoisDoLoad(servico);
+  depoisDoLoad(() => { pronto = true; talvezConvidar(); }, 3500);
 }
 
 if ((document as Document & { prerendering?: boolean }).prerendering) document.addEventListener('prerenderingchange', iniciar, { once: true });

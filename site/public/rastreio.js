@@ -69,6 +69,11 @@
     var d = e && e.detail; if (!d || d.acao !== 'adicionar') return;
     gtag('event', 'lista_adicionar', { mlb: d.id, origem: d.origem || undefined, pagina: location.pathname });
   });
+  /* App (components/app/app.ts): o convite para instalar, aceito ou dispensado (onde: chrome, faixa ou ios) */
+  window.addEventListener('app-instalar', function (e) {
+    var d = e && e.detail; if (!d || !d.resultado) return;
+    gtag('event', 'app_instalar', { resultado: d.resultado, onde: d.onde || undefined, pagina: location.pathname });
+  });
   /* Meu carro: qual carro o cliente escolheu (so marca/modelo/ano, nada pessoal) */
   window.addEventListener('meu-carro', function (e) {
     var c = e && e.detail; if (!c || !c.b) return;
