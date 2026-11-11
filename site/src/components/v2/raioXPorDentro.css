@@ -97,12 +97,18 @@ button.rxf-item { width: 100%; border: 0; background: none; font: inherit; text-
 .rxf-lig:hover { background: var(--surface-2); }
 .rxf-lig img, .rxf-lig-sem { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: var(--surface-2); display: block; }
 .rxf-lig-tx { min-width: 0; display: grid; gap: 2px; }
-.rxf-lig-tx b { font-size: 14.5px; font-weight: 650; line-height: 1.3; text-wrap: pretty; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.rxf-lig-tx b { font-size: 14.5px; font-weight: 650; line-height: 1.3; text-wrap: pretty; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
 .rxf-lig-tx small { font-size: 12.5px; color: var(--ink-2); }
 .rxf-lig-p { display: grid; justify-items: end; line-height: 1.2; white-space: nowrap; }
 .rxf-lig-p s { font-size: 12px; color: var(--ink-2); }
 .rxf-lig-p b { font-size: 15px; font-weight: 800; }
 .rxf-lig-p small { font-size: 11.5px; font-weight: 600; color: var(--ink-2); }
+/* celular estreito (320): o nome comprido ("churrasqueira") encostava no preço; o preço desce para baixo do nome */
+@media (max-width: 359px) {
+  .rxf-lig { grid-template-columns: 44px minmax(0, 1fr); row-gap: 2px; }
+  .rxf-lig img, .rxf-lig-sem { width: 44px; height: 44px; grid-row: span 2; align-self: start; }
+  .rxf-lig-p { grid-column: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+}
 .rxf-pe { margin-top: auto; padding-top: 14px; display: grid; gap: 10px; }
 .rxf-voltar2 { --h: var(--botao-p); width: 100%; gap: 6px; font-size: 15px; }
 .rxf-nota { margin: 0 2px 8px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
