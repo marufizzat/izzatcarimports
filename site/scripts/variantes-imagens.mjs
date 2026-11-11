@@ -2,6 +2,7 @@
 //   carro-<k>.webp     (1200×800)    -> carro-<k>-600.webp e carro-<k>-900.webp   (/carros, home, marca, carro)
 //   cat-<k>.webp       (até 1200)    -> cat-<k>-600.webp                           (grade de categorias da home)
 //   topo-cat-<k>.webp  (até 1254)    -> topo-cat-<k>-640.webp                      (topo da categoria no celular)
+//   raio-x.webp        (1536×1024)   -> raio-x-320.webp e raio-x-900.webp          (Raio-x: a miniatura e a arte)
 // A arte inteira continua no ar (é a maior do srcset e a prévia do link). Nunca aumenta: variante com largura igual
 // ou maior que a da arte não sai.
 // O hash da arte de onde cada variante saiu fica em src/data/variantes-arte.json (fora do public: não vai pro ar).
@@ -21,6 +22,7 @@ export const GRUPOS = [
   { re: /^carro-[a-z0-9-]+\.webp$/, larguras: [600, 900], q: 80 },
   { re: /^cat-[a-z0-9-]+\.webp$/, larguras: [600], q: 80 },
   { re: /^topo-cat-[a-z0-9-]+\.webp$/, larguras: [640], q: 74 },
+  { re: /^raio-x\.webp$/, larguras: [320, 900], q: 80 },
 ];
 const grupoDe = (nome) => GRUPOS.find((g) => g.re.test(nome));
 

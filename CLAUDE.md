@@ -208,6 +208,20 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **Tela cheia da peça (celular)**: a conta do toque em `components/ui/zoomToque.ts` (pinça em volta dos dedos, toque
      duplo 2,5×, limite pela foto desenhada, elástico); o mouse continua como era.
 
+12. **Raio-x do carro (rodada 14, nov/2026)** — quem não sabe o nome da peça aponta onde ela fica. `v2/RaioX.astro` na home
+   (depois das categorias) e na página do carro (no lugar de "Peças por categoria"; abaixo de 1024 px vem recolhido num
+   cartão com a miniatura: a arte inteira na 1ª tela virava o LCP). Arte `public/arte/v2/raio-x.webp` (ChatGPT, vista
+   fantasma, aprovada pelo dono; variantes 320/900 pelo `variantes-imagens.mjs`). As 9 zonas em `lib/raioX.ts` (`ZONAS`:
+   área de toque que reparte a arte inteira, contorno que acende, ponto, etiqueta e os GRUPOS do estoque: bloco `c`,
+   tipos `s`, lado/posição); cada linha do painel é um link EXATO do catálogo (tipo + sub + lado/pos + carro) e o número
+   é o do catálogo (`contarZonas` usa `Busca.procurar`; teste `raioX.test.ts` com o estoque real). O catálogo entende UM
+   tipo e UM sub: a zona inteira não cabe num endereço, então o botão "Ver as peças da frente" mostra as 12 mais novas
+   no próprio painel (com carro: `/dados/carro/<k>.json`; sem carro: `/dados/raio-x.json`, `pages/dados/raio-x.json.ts`).
+   Com carro salvo, as contas do carro saem no 1º toque (uma zona por vez, sem tarefa longa); zona sem peça = cinza com
+   "Me avise quando chegar" (`linkAvisoParte` em `lib/aviso.ts`). Véu laranja e véu escuro = duas camadas SVG com
+   `filter: blur` do CSS (o filtro do SVG custava 60–110 ms por toque com CPU 6×). Tipo novo no estoque: conferir a zona
+   dele em `ZONAS` (o teste avisa nome de bloco/tipo que sumiu).
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
