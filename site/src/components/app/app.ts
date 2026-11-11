@@ -154,7 +154,9 @@ function iniciar() {
   addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted && !navigator.onLine) faixaSemConexao(); });
   addEventListener('online', faixaVoltou);
 
-  depoisDoLoad(servico);
+  // o service worker só depois de a página assentar (load + 5 s + o navegador folgando): a instalação baixa o casco e
+  // disputava a CPU com o 1º toque na 1ª visita (medido: TBT e INP do 1º toque subiam com o registro logo no load)
+  depoisDoLoad(servico, 5000);
   depoisDoLoad(() => { pronto = true; talvezConvidar(); }, 3500);
 }
 
