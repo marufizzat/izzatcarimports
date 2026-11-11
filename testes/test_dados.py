@@ -1,13 +1,24 @@
 """Casos reais que a leitura antiga errava. Rodar:  python testes/test_dados.py"""
 import json
+import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+import preparar_dados as pd  # noqa: E402
 from preparar_dados import marca_do_titulo, chave_foto  # noqa: E402
 from gerar_paginas_individuais import slugify  # noqa: E402
+
+
+def _pecas():
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    return {x["id"]: x for x in json.loads(pecas.read_text(encoding="utf-8"))} if pecas.exists() else {}
+
+
+def _carros(x):
+    return x.get("ms") or ([x["m"]] if x.get("m") else [])
 
 
 def test_marca_por_palavra_inteira():
@@ -182,9 +193,9 @@ def test_nome_por_extenso_com_genero():
     ]
     for titulo, marca, modelo, esperado in casos:
         assert nome_limpo(titulo, marca, modelo) == esperado, (titulo, nome_limpo(titulo, marca, modelo))
-    # Nao piorar: sem modelo no cartao, o carro escrito no nome e a unica pista e fica
-    assert nome_limpo("Sensor Map Ssangyong Kyron Actyon 10/13 6675420017", "", "") \
-        == "Sensor MAP ssangyong kyron actyon"
+    # SsangYong e marca (auditoria 10/11, R9): com a marca e o modelo no cartao, o nome sai so com a peca
+    assert nome_limpo("Sensor Map Ssangyong Kyron Actyon 10/13 6675420017", "SsangYong", "Actyon") \
+        == "Sensor MAP"
 
 
 def test_codigo_oem_sem_lixo():
@@ -320,7 +331,8 @@ def test_dados_gerados_qualidade():
             assert not fim or a1 <= fim, (x["id"], x["t"], x["y"])
         for c in x["oem"].split():
             assert codigo_valido(c) and c == c.upper(), (x["id"], x["oem"])
-        assert x["o"].split()[:1] == [_cod_chave(c) for c in x["oem"].split()[:1]], (x["id"], x["o"], x["oem"])
+        # o cartao mostra o codigo com traco como na pagina (R10): compara a chave sem traco
+        assert [_cod_chave(c) for c in x["o"].split()[:1]] == [_cod_chave(c) for c in x["oem"].split()[:1]], (x["id"], x["o"], x["oem"])
     for c in resumo["carros"]:
         if c["anos"]:
             ini, fim = PRODUCAO_BR.get((c["b"], gi.chave_modelo(c["m"])), (None, None))
@@ -1244,6 +1256,146 @@ def test_lado_e_posicao_pelo_nome():
             for n, t, l, p in zip(ix["n"], tipos, ix["l"], ix["pos"]):
                 assert lado_posicao(n, t) == (l.replace("0", ""), p.replace("0", "")), n
             assert ix["l"].count("E") + ix["l"].count("D") > 1000
+
+
+# ---- auditoria de dados 10/11/2026: regras R1–R13 ----
+# R1 — carro citado no título (em qualquer posição) é carro da peça
+def test_carro_citado_no_titulo_entra_na_peca():
+    by = _pecas()
+    if not by:
+        return
+    casos = {"Saveiro": "Volkswagen", "Xc90": "Volvo", "V60": "Volvo", "Q5": "Audi", "A5": "Audi", "Bora": "Volkswagen",
+             "Parati": "Volkswagen", "X4": "BMW"}
+    for palavra, marca in casos.items():
+        rx = re.compile(r"\b" + palavra + r"\b", re.I)
+        for x in by.values():
+            if x["b"] == marca and x.get("m") and rx.search(x["t"]):
+                chaves = {pd.gi.chave_modelo(m) for m in _carros(x)}
+                assert pd.gi.chave_modelo(palavra) in chaves, (x["t"], _carros(x))
+
+
+# R2 — "Mini Cooper": o nome da marca não come o modelo
+def test_mini_cooper_tem_modelo():
+    assert pd.palavras("Coletor Admissao Mini Cooper 1.6 16v 07/16 V752817280", "Mini")[:1] == ["Cooper"]
+    by = _pecas()
+    sem = [x["t"] for x in by.values() if x["b"] == "Mini" and not x.get("m")]
+    assert not sem, sem[:3]
+
+
+# R3 — o 1º carro do título com 1 peça só não apaga os outros carros do título
+def test_primeiro_carro_raro_nao_apaga_os_outros():
+    by = _pecas()
+    casos = {"MLB4627333841": "Q3", "MLB6691333402": "Strada", "MLB6906771776": "Kicks", "MLB6792167198": "Fit",
+             "MLB7406470122": "WR-V", "MLB7614387096": "Ranger"}
+    for i, carro in casos.items():
+        if i in by:
+            assert carro in _carros(by[i]), (by[i]["t"], _carros(by[i]))
+
+
+# R4 — preço no pico R$ 2.000,xx: o robô lista para o dono (não esconde o preço: 26 das 81 podem ser preço real)
+def test_preco_de_reserva_sinalizado():
+    assert pd.preco_reserva(2000.64) and pd.preco_reserva(2000.0)
+    assert not pd.preco_reserva(2001.0) and not pd.preco_reserva(1999.99)
+
+
+# R13 — marcação de material do plástico (PA66 GF30) não é o código da peça
+def test_codigo_de_material_nao_e_codigo():
+    for c in ("PA66GF30", "PA6-1-GF30", "PA66GF20"):
+        assert not pd.codigo_valido(c), c
+    for c in ("8K0951177", "DS7T-14F239-BP", "31476671"):
+        assert pd.codigo_valido(c), c
+
+
+# R5 — anos de cada carro: a faixa do título é cortada no período de CADA carro, não só no do 1º
+def test_anos_de_cada_carro_da_peca():
+    by = _pecas()
+    x = by.get("MLB6769111792")            # "Chave Limpador Ford Fiesta Ka 14/21": o Ka foi até 2021
+    if x:
+        ms, ys = x.get("ms") or [], x.get("ys") or []
+        assert "Ka" in ms and ys and ys[ms.index("Ka")] == [2014, 2021], (ms, ys)
+    x = by.get("MLB4638210101")            # "Coletor Admissao Peugeot 2008 208 C3 1.6 13/19": o 208 é de 2013
+    if x:
+        ms, ys = x.get("ms") or [], x.get("ys") or []
+        assert "208" in ms and ys and ys[ms.index("208")] == [2013, 2019], (ms, ys)
+
+
+# R6 — "C4" de 2018 em diante é o C4 Cactus (o C4 hatch/Lounge saiu de linha em 2020)
+def test_c4_depois_de_2020_e_cactus():
+    assert pd.modelo_no_periodo("Citroën", "C4", 2018) == "C4 Cactus"
+    assert pd.modelo_no_periodo("Citroën", "C4", 2011) == "C4"
+    by = _pecas()
+    ruins = [x["t"] for x in by.values() if x["b"] == "Citroën" and "C4" in _carros(x) and x.get("y") and x["y"][1] > 2020]
+    assert not ruins, ruins[:3]
+
+
+# R7 — o nome manda no bloco quando a categoria do ML mistura (relé em "Interruptores", moldura do painel em
+# "Colunas e Copos", suporte do motor em "Coxim do Câmbio", módulo em "Máquina de vidro"...)
+def test_bloco_pelo_nome_quando_o_ml_mistura():
+    casos = [
+        ("Relé limpador vidro", "Peças de Interior", "Chaves do Limpador", "modulos-e-eletrica"),
+        ("Relé auxiliar pisca-alerta", "Peças de Interior", "Botões do Pisca-alerta", "modulos-e-eletrica"),
+        ("Moldura painel instrumentos", "Peças de Interior", "Acabamentos de Coluna", "painel-e-console"),
+        ("Suporte motor", "Transmissão", "Coxins do Câmbio", "motor"),
+        ("Mangueira retorno radiador", "Climatização", "Mangueiras de Ar Condicionado", "mangueiras-do-motor"),
+        ("Mangueira óleo turbina", "Suspensão e Direção", "Mangueiras da Direção", "mangueiras-do-motor"),
+        ("Módulo conforto porta esquerda", "Janelas e Vedações", "Máquinas e Motores de Vidro Elétrico", "modulos-e-eletrica"),
+        ("Comando rádio Sony", "Climatização", "Comandos de Ar Condicionado", "som-e-multimidia"),
+        ("Duto distribuição ar condicionado", "Motor", "Mangueiras de Admissão", "ar-condicionado"),
+        ("Filtro ressonador", "Motor", "Mangueiras de Admissão", "filtro-de-ar-e-turbo"),
+        # o que já estava certo continua
+        ("Moldura inferior coluna", "Peças de Interior", "Acabamentos de Coluna", "acabamentos-e-forros"),
+        ("Coxim câmbio esquerdo", "Transmissão", "Coxins do Câmbio", "cambio-e-transmissao"),
+    ]
+    for nome, fam, tipo, esperado in casos:
+        f, t = pd.classificar(nome, fam, tipo)
+        assert pd.bloco(nome, f, t) == esperado, (nome, f, t, pd.bloco(nome, f, t))
+
+
+# R8 — título quebrado no ML ("Fechadura", "Painel/forro"): a leitura usa o atributo BRAND/MODEL/PART_NUMBER
+def test_titulo_quebrado_le_o_atributo():
+    p = {"title": "Fechadura", "attrs": {"BRAND": "Volvo Coletor Admissao", "MODEL": "XC60"},
+         "part_number": "P32257808 2018-2019-2020-2021-2022-2023-2024"}
+    assert pd.titulo_de_leitura(p) == "Coletor Admissao Volvo XC60 18/24"
+    p2 = {"title": "Lanterna Traseira Esquerda Volvo Xc60 18/24", "attrs": {"BRAND": "Volvo Lanterna"}}
+    assert pd.titulo_de_leitura(p2) == p2["title"]          # título bom não muda
+    by = _pecas()
+    ruins = [x["id"] for x in by.values() if len(x["t"].split()) <= 2 and not x["b"]]
+    assert not ruins, ruins
+
+
+# R9 — SsangYong é marca
+def test_ssangyong_e_marca():
+    assert pd.marca_do_titulo("Coletor Admissao Ssangyong Actyon 2.0 08/14 A6641410801") == "SsangYong"
+
+
+# R10 — o código do cartão (lido do "o") é o mesmo da página (lido do "oem"): com traço
+def test_codigo_do_cartao_igual_ao_da_pagina():
+    def codigo_cartao(o):          # = codigoPeca() de components/catalogo/etiqueta.ts
+        return next((t.upper() for t in re.split(r"[\s,;/|]+", o or "") if 5 <= len(t) <= 24 and re.search(r"\d", t)), "")
+    p = {"oem": "DS7T-14F239-BP", "part_number": "", "title": "Modulo Apim Ford Fusion Ds7t-14f239-bp"}
+    assert codigo_cartao(pd.codigos_busca(p)) == pd.codigos_peca(p)[0] == "DS7T-14F239-BP"
+    assert "ds7t14f239bp" in pd.codigos_busca(p).split()            # a busca sem traço continua achando
+
+
+# R11 — nome: o lado e o aro antes do ano não somem ("Cruze Esq 17/23", "Aro 17 ... 11/14"), a letra da coluna fica
+def test_nome_guarda_lado_aro_e_coluna():
+    assert pd.nome_limpo("Moldura Lateral Painel Chevrolet Cruze Esq 17/23 84142244", "Chevrolet", "Cruze") \
+        == "Moldura lateral painel esquerdo"
+    assert pd.nome_limpo("Suporte Maçaneta Renault Kardian Diant Dir 24/26 806067754r", "Renault", "Kardian") \
+        == "Suporte maçaneta dianteira direita"
+    assert pd.nome_limpo("Roda Aro 17 Vw Passat 09/16 3c0601025k Prateado", "Volkswagen", "Passat") == "Roda aro 17"
+    assert pd.nome_limpo("Acabamento Coluna B Dir Volvo Xc60 18/24 31479434", "Volvo", "XC60") == "Acabamento coluna B direita"
+    assert pd.nome_limpo("Carter Oleo Motor Fiat Toro 1.8 16/24 55242408", "Fiat", "Toro") == "Cárter óleo motor"
+
+
+# R12 — ano da descrição quando o título e o part_number não têm
+def test_ano_da_descricao():
+    assert pd.anos_da_descricao("+ Anos compativeis: 2013 ate 2020") == (2013, 2020)
+    assert pd.anos_da_descricao("Volkswagen Golf Bora Passat 1999 2000 2001 2002 2003") == (1999, 2003)
+    assert pd.anos_da_descricao("Fiat Palio 1.6 2008, Fiat Palio 1.6 2009, Fiat Palio 1.6 2010") == (2008, 2010)
+    assert pd.anos_da_descricao("Código 2008 e 2015") == (None, None)
+
+
 
 
 if __name__ == "__main__":
