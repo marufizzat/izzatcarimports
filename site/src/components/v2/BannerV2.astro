@@ -16,11 +16,11 @@ interface Props { nome: string; texto: string; href?: string; class?: string; fo
 const { nome, texto, href, class: cls, formato = 'faixa', arteW = 1536, arteH = 1024, celW = 1024, celH = 1536 } = Astro.props;
 const Caixa = href ? 'a' : 'figure';
 
-// a conversa de exemplo de cada assunto: [cliente, loja]. Sem prazo, sem "com foto", sem "tem aqui".
+// a conversa de exemplo de cada assunto: [cliente, loja]. Sem prazo, sem promessa de resposta, sem "com foto", sem "tem aqui".
 const naPeca = Astro.url.pathname.startsWith('/peca/');
 const CONVERSA: Record<string, [string, string]> = {
-  'banner-serve': [naPeca ? 'Essa peça serve no meu carro?' : 'Serve no meu Onix 2019?', 'A gente confere na peça e responde aqui.'],
-  'banner-nao-achou': ['Não achei meu carro: é um Tiggo 5x 2020.', 'A gente procura no pátio e responde aqui.'],
+  'banner-serve': [naPeca ? 'Essa peça serve no meu carro?' : 'Serve no meu Onix 2019?', 'Mande o modelo e o ano. A gente confere na peça.'],
+  'banner-nao-achou': ['Não achei meu carro: é um Tiggo 5x 2020.', 'A gente procura no pátio.'],
 };
 // recorte do Maruf com o celular (public/arte/v2/maruf-celular*.webp, com alfa): tamanho do arquivo maior
 const MARUF = { w: 374, h: 440 };
