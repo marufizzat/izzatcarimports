@@ -74,16 +74,30 @@ describe.each(estoques())('o Raio-x vivo ($nome)', ({ ix, fixo }) => {
   describe('com carro: só o que serve no carro (e no ano) da pessoa', () => {
     // os carros que o teste usa saem dos dados: os das peças vivas (com o ano nas pontas da faixa, fora dela e sem ano)
     // e alguns do estoque que podem não ter peça nova nenhuma. Estoque sem carro nenhum: os laços não rodam.
+    // O APELIDO de carro unido (C180 = Classe C: `apelidos` do índice) fica de fora, como no site: o Meu carro salvo com
+    // o apelido vira o principal na leitura (lerMeuCarro, testado em carrosUnidos.test.ts) e a página do carro é a do
+    // principal; o Raio-x nunca pergunta por um apelido. (O filtro do catálogo troca o apelido pelo principal; a conta
+    // do navegador recebe o carro já trocado. Com o apelido aqui, o teste dependeria de QUAIS peças chegaram no dia.)
     type Carro = { b: string; m: string; y?: number };
     const carros: Carro[] = [];
+    const apelidos = new Set(ix.apelidos ?? []);
     const junta = (b: string, m: string, y: [number, number] | null) => {
+      if (apelidos.has(`${b}|${m}`)) return;
       carros.push({ b, m });
       if (y) for (const ano of [y[0], y[1], y[0] - 1, y[1] + 1]) carros.push({ b, m, y: ano });
     };
     for (const p of vivas) (p.ms ?? [p.m]).forEach((m, i) => { if (m) junta(p.b, m, p.ms && p.ys ? p.ys[i] ?? null : p.y); });
     for (const it of busca.itens.filter((_, i) => i % 331 === 0)) if (it.m) junta(it.b, it.m, it.y);
 
-    it('a conta do navegador (serveNoCarro) é a do filtro do catálogo: as peças vivas do carro = a lista do selo ∩ a busca do catálogo', () => {
+    it('a conta do navegador (serveNoCarro) é a do filtro do catálogo para QUALQUER peça do estoque (não só as que chegaram hoje)', () => {
+      // a regra não pode depender de quais peças estão na lista do selo no dia: confere com o estoque inteiro
+      for (const c of carros) {
+        const doCatalogo = procurar({ marca: c.b, modelo: c.m, ano: c.y }).map((it) => it.id).sort();
+        const doNavegador = busca.itens.filter((it) => serveNoCarro(it, c)).map((it) => it.id).sort();
+        expect(doNavegador, `${c.b} ${c.m} ${c.y ?? ''}`).toEqual(doCatalogo);
+      }
+    });
+    it('as peças vivas do carro = a lista do selo ∩ a busca do catálogo, na ordem do selo', () => {
       for (const c of carros) {
         const doCatalogo = new Set(procurar({ marca: c.b, modelo: c.m, ano: c.y }).map((it) => it.id));
         const esperado = vivas.filter((p) => doCatalogo.has(p.id)).map((p) => p.id);
