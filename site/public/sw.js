@@ -172,7 +172,7 @@ async function imutavel(event, chave) {
 // ---- capas e artes: a guardada na hora, a nova por trás (stale-while-revalidate) ----
 async function artes(event, chave) {
   const cache = await caches.open(CACHE.artes);
-  const c = (await cache.match(chave)) || (await caches.match(chave, { cacheName: CACHE.casco }));
+  const c = (await cache.match(chave)) || (CASCO.includes(chave) ? await caches.match(chave, { cacheName: CACHE.casco }) : undefined);
   const rede = fetch(event.request);
   event.waitUntil(rede.then((r) => {
     if (r.ok && r.type === 'basic') return guardar(CACHE.artes, chave, r.clone(), LIMITE.artes);

@@ -1,4 +1,6 @@
-// O app instalável no navegador (toda página, pelo Base.astro; módulo com cache). Nada aqui atrasa a 1ª pintura:
+// O app instalável no navegador. Desce DEPOIS do load, num pedaço à parte, pelo script do cabeçalho (Cabecalho.astro:
+// toda página do site; um <script> no <head> do Base.astro era mais um pedido disputando a 1ª tela). Nada aqui atrasa a
+// 1ª pintura:
 //  1) depois do load: o botão de pânico (/sw-desligar.txt com "1" desliga e apaga tudo) e o registro do service worker
 //     (public/sw.js). A página que não passou por ele (1ª visita, preparada pelo prerender) pede a própria cópia;
 //  2) a faixa "sem conexão" (a cópia guardada já vem com ela, posta pelo SW; aqui só o "a conexão voltou");
@@ -119,6 +121,9 @@ function iniciar() {
   // visita = sessão nova do navegador
   if (!sessao()) { sessao('1'); salvarEstado(novaVisita(lerEstado())); }
 
+  // a janela de instalar que chegou antes deste pedaço (guardada pelo cabeçalho, já com o preventDefault)
+  const cedo = (window as Window & { __izzatInstalar?: Event }).__izzatInstalar;
+  if (cedo) pedido = cedo as PedidoInstalar;
   addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); // nada de barra do Chrome na 1ª visita: o convite segue as regras daqui
     pedido = e as PedidoInstalar;
