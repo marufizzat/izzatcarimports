@@ -12,6 +12,7 @@
 // Uso (na pasta site/):
 //   node scripts/estoque-perturbado.mjs                    30 sementes
 //   node scripts/estoque-perturbado.mjs --sementes 5 --de 12   as sementes 12 a 16
+//   node scripts/estoque-perturbado.mjs --sementes 5 --tirar 40-80   estoque bem menor (tira de 40% a 80%; o padrão é 2-20)
 //   node scripts/estoque-perturbado.mjs --hoje             só o estoque de agora (tira o que saiu do /dados/ativas.json
 //                                                          do site no ar; --ativas arquivo.json para um arquivo salvo)
 //   node scripts/estoque-perturbado.mjs --hoje --novas busca-do-ar.json --so busca   e acrescenta ao busca.json as peças
@@ -45,6 +46,7 @@ const tem = (nome) => args.includes(`--${nome}`);
 const N = Number(op('sementes', 30));
 const DE = Number(op('de', 1));
 const SO = op('so', '');
+const [TIRAR_MIN, TIRAR_MAX] = op('tirar', '2-20').split('-').map((x) => Number(x) / 100);
 
 /** Sorteio com semente (mulberry32): o mesmo número, o mesmo estoque. */
 function sorteio(semente) {
@@ -95,8 +97,18 @@ async function gerar(produtos) {
   return { ok: true };
 }
 
-/** Os testes que o robô roda: python testes/test_dados.py e a suíte do site. */
+/** Os testes que o robô roda: python testes/test_dados.py e a suíte do site. Se TODO vermelho for tempo esgotado (a
+ *  máquina estava ocupada com outra coisa: não é o estoque), roda a suíte mais uma vez com o MESMO estoque e conta a 2ª
+ *  passada; a tabela diz que houve a 1ª. Vermelho que não é de tempo nunca é repetido. */
 async function testar(semPython = false) {
+  const r = await umaPassada(semPython);
+  const soTempo = (fs) => fs.length > 0 && fs.every((f) => /timed out|STACK_TRACE_ERROR|Timeout calling|tempo esgotado/i.test(f));
+  if (!soTempo(r.falhas)) return r;
+  const r2 = await umaPassada(semPython);
+  return { ...r2, nota: `2ª passada (na 1ª, ${r.falhas.length} teste(s) estouraram o tempo com a máquina ocupada)` };
+}
+
+async function umaPassada(semPython) {
   const falhas = [];
   // (com --novas as peças novas entram só no busca.json: o test_dados.py compara o índice com o pecas.json e não vale)
   if (!semPython) {
@@ -141,7 +153,7 @@ function fichas() {
 /** O estoque da semente: tira 2% a 20% ao acaso e, nas sementes múltiplas de 3, um tipo inteiro de um carro. */
 function perturbar(bruto, ficha, semente) {
   const rnd = sorteio(semente);
-  const fracao = 0.02 + rnd() * 0.18;
+  const fracao = TIRAR_MIN + rnd() * (TIRAR_MAX - TIRAR_MIN);
   const fora = new Set();
   for (const p of bruto.products) if (rnd() < fracao) fora.add(p.id);
   let evento = '';
@@ -206,9 +218,9 @@ function acrescentarNovas(arqDoAr, ids) {
 const linhas = [];
 const registrar = (nome, pecas, tirados, evento, t0, r) => {
   const seg = Math.round((Date.now() - t0) / 1000);
-  const linha = { nome, pecas, tirados, evento, ok: !r.falhas.length, testes: r.testes, arquivos: r.arquivos, falhas: r.falhas, seg };
+  const linha = { nome, pecas, tirados, evento, ok: !r.falhas.length, testes: r.testes, arquivos: r.arquivos, falhas: r.falhas, seg, nota: r.nota ?? '' };
   linhas.push(linha);
-  console.log(`${String(nome).padEnd(8)} ${String(pecas).padStart(5)} peças (-${tirados})  ${linha.ok ? 'VERDE' : `VERMELHO (${r.falhas.length})`}  ${r.testes} testes  ${seg}s  ${evento}`);
+  console.log(`${String(nome).padEnd(8)} ${String(pecas).padStart(5)} peças (-${tirados})  ${linha.ok ? 'VERDE' : `VERMELHO (${r.falhas.length})`}  ${r.testes} testes  ${seg}s  ${[evento, r.nota].filter(Boolean).join(' | ')}`);
   for (const f of r.falhas) console.log(`    ✗ ${f}`);
   writeFileSync(join(CACHE, 'tabela.json'), JSON.stringify(linhas, null, 1));
 };
