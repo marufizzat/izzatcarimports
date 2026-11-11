@@ -8419,7 +8419,7 @@
   "foto": "946788-MLB111454238310_052026"
  },
  "MLB6830826638": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Chave seta farol cross",
   "carro": "Toyota Corolla",
   "foto": "813830-MLB112507321043_052026"
@@ -8432,16 +8432,17 @@
   "foto": "844334-MLB112507584985_052026"
  },
  "MLB6830805482": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Retrovisor interno",
   "carro": "Volvo S60",
   "foto": "713800-MLB112506737179_052026"
  },
  "MLB6830805388": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Apoio braço console central",
   "carro": "Volvo S60",
-  "foto": "797919-MLB112507057635_052026"
+  "foto": "797919-MLB112507057635_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/acabamento"
  },
  "MLB6830795358": {
   "status": "pulada",
@@ -8465,10 +8466,11 @@
   "foto": "940262-MLB112507262417_052026"
  },
  "MLB6830770608": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Alavanca acionamento freio mão",
   "carro": "Chevrolet Cruze",
-  "foto": "673563-MLB112507320863_052026"
+  "foto": "673563-MLB112507320863_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/acabamento"
  },
  "MLB6830770504": {
   "status": "pulada",
@@ -8478,7 +8480,7 @@
   "foto": "971066-MLB112507203991_052026"
  },
  "MLB6830765314": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão farol milha",
   "carro": "Fiat Freemont",
   "foto": "610484-MLB112507585409_052026"
@@ -8491,7 +8493,7 @@
   "foto": "740410-MLB112507585443_052026"
  },
  "MLB6830641060": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento superior tampa traseira",
   "carro": "Volvo XC60",
   "foto": "980189-MLB112506679097_052026"
@@ -8525,10 +8527,11 @@
   "foto": "650116-MLB112507205295_052026"
  },
  "MLB6830358754": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote console central",
   "carro": "Volvo S60",
-  "foto": "962300-MLB112507059073_052026"
+  "foto": "962300-MLB112507059073_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6830307034": {
   "status": "pulada",
@@ -8545,7 +8548,7 @@
   "foto": "864948-MLB112506679859_052026"
  },
  "MLB6829766364": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro elétrico direito",
   "carro": "Chevrolet Tracker",
   "foto": "738246-MLB112506828003_052026"
@@ -8565,13 +8568,14 @@
   "foto": "884567-MLB111454240758_052026"
  },
  "MLB6829761930": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Câmera ré",
   "carro": "Chevrolet Cruze",
-  "foto": "974223-MLB116457280314_092026"
+  "foto": "974223-MLB116457280314_092026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6829753694": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botoneira vidro elétrico",
   "carro": "Ford Focus",
   "foto": "607862-MLB112507322895_052026"
@@ -8584,7 +8588,7 @@
   "foto": "621466-MLB112507470779_052026"
  },
  "MLB6829749510": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura superior coluna direção",
   "carro": "Volkswagen Gol",
   "foto": "983183-MLB111116728410_052026"
@@ -8597,10 +8601,11 @@
   "foto": "966205-MLB112506827973_052026"
  },
  "MLB6829726220": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Tampa caixa fusível",
   "carro": "Hyundai Genesis",
-  "foto": "944415-MLB111116639302_052026"
+  "foto": "944415-MLB111116639302_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/acabamento"
  },
  "MLB6829725964": {
   "status": "pulada",
@@ -8631,7 +8636,7 @@
   "foto": "759928-MLB111453979518_052026"
  },
  "MLB6829407476": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta interna dianteira direita",
   "carro": "Ford Focus",
   "foto": "821579-MLB111115839038_052026"
@@ -8665,7 +8670,7 @@
   "foto": "737543-MLB112121368547_052026"
  },
  "MLB4705078035": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botoneira vidro esquerdo",
   "carro": "Volvo S60",
   "foto": "617850-MLB111454002586_052026"
@@ -8720,10 +8725,11 @@
   "foto": "610303-MLB111453914106_052026"
  },
  "MLB4705056527": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Difusor ar direito painel",
   "carro": "Volvo S60",
-  "foto": "906999-MLB112506824651_052026"
+  "foto": "906999-MLB112506824651_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4705051225": {
   "status": "pulada",
@@ -8768,10 +8774,11 @@
   "foto": "811510-MLB112119331837_052026"
  },
  "MLB4705034541": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Difusor ar coluna esquerda traseira",
   "carro": "Volvo S60",
-  "foto": "772303-MLB112507467365_052026"
+  "foto": "772303-MLB112507467365_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4705033147": {
   "status": "pulada",
@@ -8809,13 +8816,13 @@
   "foto": "766443-MLB112506825727_052026"
  },
  "MLB4704996589": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura tomada",
   "carro": "Fiat Toro",
   "foto": "738432-MLB112507468443_052026"
  },
  "MLB4704996389": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar",
   "carro": "Renault Logan",
   "foto": "887206-MLB112506825889_052026"
@@ -8842,7 +8849,7 @@
   "foto": "886710-MLB112507585369_052026"
  },
  "MLB4704878029": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado",
   "carro": "Mercedes-Benz Classe A",
   "foto": "955236-MLB111120971358_052026"
@@ -8876,7 +8883,7 @@
   "foto": "967219-MLB111454239466_052026"
  },
  "MLB4704840117": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Porta-luvas completo",
   "carro": "Volvo S60",
   "foto": "955982-MLB112507204683_052026"
@@ -8889,13 +8896,14 @@
   "foto": "781312-MLB112507409739_052026"
  },
  "MLB4704762743": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Acabamento forro porta traseira direita",
   "carro": "Volvo S60",
-  "foto": "697459-MLB112507586025_052026"
+  "foto": "697459-MLB112507586025_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4704762591": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Acabamento grade alto-falante",
   "carro": "Volvo XC60",
   "foto": "812526-MLB112506827055_052026"
@@ -8908,22 +8916,24 @@
   "foto": "842840-MLB112507410031_052026"
  },
  "MLB4704755607": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Reservatório água radiador",
   "carro": "Volvo S60",
-  "foto": "925489-MLB112507263337_052026"
+  "foto": "925489-MLB112507263337_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4704751447": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Difusor ar lateral traseiro",
   "carro": "Volvo S60",
   "foto": "829366-MLB112507058559_052026"
  },
  "MLB4704713743": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Mangueira arrefecimento superior",
   "carro": "Fiat Toro",
-  "foto": "824535-MLB112111159575_052026"
+  "foto": "824535-MLB112111159575_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4704711351": {
   "status": "pulada",
@@ -8961,10 +8971,11 @@
   "foto": "881747-MLB111454240022_052026"
  },
  "MLB4704701253": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura câmbio DSG",
   "carro": "Volkswagen Passat CC",
-  "foto": "763635-MLB112507060691_052026"
+  "foto": "763635-MLB112507060691_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/acabamento"
  },
  "MLB4704611877": {
   "status": "pulada",
@@ -8981,10 +8992,11 @@
   "foto": "973854-MLB112507059139_052026"
  },
  "MLB4704576333": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote elétrico teto",
   "carro": "Volvo S60",
-  "foto": "716499-MLB112506827735_052026"
+  "foto": "716499-MLB112506827735_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/acabamento"
  },
  "MLB4704575825": {
   "status": "pulada",
@@ -9036,7 +9048,7 @@
   "foto": "859749-MLB112506828487_052026"
  },
  "MLB4704522153": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Coluna direção",
   "carro": "Volvo S60",
   "foto": "820407-MLB112108498073_052026"
@@ -9049,10 +9061,11 @@
   "foto": "965137-MLB112507264501_052026"
  },
  "MLB4704503513": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote cabo alta voltagem",
   "carro": "Volvo XC60",
-  "foto": "736748-MLB112506739475_052026"
+  "foto": "736748-MLB112506739475_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/acabamento"
  },
  "MLB4704503171": {
   "status": "pulada",
@@ -9076,7 +9089,7 @@
   "foto": "867692-MLB112507206371_052026"
  },
  "MLB4704482219": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Bandeja traseira esquerda",
   "carro": "Volvo S60",
   "foto": "617454-MLB112507411671_052026"
