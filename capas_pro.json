@@ -11223,10 +11223,11 @@
   "foto": "818528-MLB111729613702_062026"
  },
  "MLB6907857618": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Cabo bowden fechadura dianteira direita",
   "carro": "Volkswagen Gol",
-  "foto": "678333-MLB112808044821_062026"
+  "foto": "678333-MLB112808044821_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB6907856328": {
   "status": "pulada",
@@ -11250,25 +11251,28 @@
   "foto": "603941-MLB111730545828_062026"
  },
  "MLB6907850338": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote elétrico porta esquerda",
   "carro": "Hyundai Genesis",
-  "foto": "819122-MLB112818203339_062026"
+  "foto": "819122-MLB112818203339_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB6907847844": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura elétrica dianteira direita",
   "carro": "Audi A4",
-  "foto": "807988-MLB111729673266_062026"
+  "foto": "807988-MLB111729673266_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB6907845352": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura trava elétrica tampa traseira",
   "carro": "Renault Captur",
-  "foto": "796772-MLB112819061087_062026"
+  "foto": "796772-MLB112819061087_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB6907845130": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Motor vidro elétrico dianteiro direito",
   "carro": "Ford Ka",
   "foto": "649221-MLB112819524993_062026"
@@ -11281,28 +11285,32 @@
   "foto": "985011-MLB112818234011_062026"
  },
  "MLB6907844168": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Retrovisor elétrico dianteiro direito",
   "carro": "Peugeot 206",
-  "foto": "953200-MLB111730080522_062026"
+  "foto": "953200-MLB111730080522_062026",
+  "motivo": "cor em dúvida (peça pintada/cromada × título): conferir antes de maquiar"
  },
  "MLB6907841932": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Maçaneta interna dianteira direita",
   "carro": "Peugeot 206",
-  "foto": "609509-MLB112818203469_062026"
+  "foto": "609509-MLB112818203469_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB6907841758": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura elétrica dianteira direita",
   "carro": "Peugeot 2008",
-  "foto": "832153-MLB111730080362_062026"
+  "foto": "832153-MLB111730080362_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB6907811498": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote elétrico",
   "carro": "Fiat Palio Weekend",
-  "foto": "947672-MLB112818441611_062026"
+  "foto": "947672-MLB112818441611_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB6907811368": {
   "status": "pulada",
@@ -11319,7 +11327,7 @@
   "foto": "805190-MLB112818827067_062026"
  },
  "MLB6907799840": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Sensor impacto airbag",
   "carro": "Audi A4",
   "foto": "623871-MLB111729673470_062026"
@@ -11332,7 +11340,7 @@
   "foto": "714357-MLB112818264487_062026"
  },
  "MLB6907309472": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botoneira vidro motorista",
   "carro": "Nissan Kicks",
   "foto": "793896-MLB112819526229_062026"
@@ -11387,28 +11395,32 @@
   "foto": "859646-MLB112819585213_062026"
  },
  "MLB6906771776": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão retrovisor Versa Kicks",
   "carro": "Nissan",
-  "foto": "703504-MLB112819585111_062026"
+  "foto": "703504-MLB112819585111_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB6906759350": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte alternador",
   "carro": "Renault Sandero",
-  "foto": "907678-MLB112819267899_062026"
+  "foto": "907678-MLB112819267899_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB6906699554": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Cabo trinco maçaneta",
   "carro": "Audi A3",
-  "foto": "603497-MLB112818443201_062026"
+  "foto": "603497-MLB112818443201_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB6906648810": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Tela falante Bose dianteira direita",
   "carro": "Audi Q3",
-  "foto": "702128-MLB112818384159_062026"
+  "foto": "702128-MLB112818384159_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB6906643068": {
   "status": "pulada",
@@ -11432,16 +11444,18 @@
   "foto": "840775-MLB112800307669_062026"
  },
  "MLB4741957525": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Sensor impacto airbag",
   "carro": "Audi A4",
-  "foto": "657460-MLB111729583136_062026"
+  "foto": "657460-MLB111729583136_062026",
+  "motivo": "foto não confere com o título (motor de vidro num anúncio de sensor de airbag): conferir o anúncio"
  },
  "MLB4741950211": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura elétrica dianteira direita",
   "carro": "Citroën C4",
-  "foto": "906755-MLB112818261309_062026"
+  "foto": "906755-MLB112818261309_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB4741949907": {
   "status": "pulada",
@@ -11465,10 +11479,11 @@
   "foto": "712872-MLB112818083629_062026"
  },
  "MLB4741914615": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Comando botão vidro direito",
   "carro": "Chery Arrizo",
-  "foto": "640392-MLB111729553156_062026"
+  "foto": "640392-MLB111729553156_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB4741914305": {
   "status": "pulada",
@@ -11513,10 +11528,11 @@
   "foto": "620834-MLB112818261903_062026"
  },
  "MLB4741670039": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Maçaneta externa dianteira direita",
   "carro": "Chery Arrizo",
-  "foto": "801124-MLB111729612830_062026"
+  "foto": "801124-MLB111729612830_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB4741660753": {
   "status": "pulada",
@@ -11533,10 +11549,11 @@
   "foto": "980222-MLB112818202093_062026"
  },
  "MLB4741622523": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura puxador porta dianteira direita",
   "carro": "Chevrolet Astra",
-  "foto": "681644-MLB112818440173_062026"
+  "foto": "681644-MLB112818440173_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB4741541241": {
   "status": "pulada",
@@ -11560,22 +11577,24 @@
   "foto": "952857-MLB112818202363_062026"
  },
  "MLB4741489651": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Maçaneta interna traseira esquerda",
   "carro": "Hyundai Genesis",
-  "foto": "846403-MLB112819059785_062026"
+  "foto": "846403-MLB112819059785_062026",
+  "motivo": "cor em dúvida (peça pintada/cromada × título): conferir antes de maquiar"
  },
  "MLB4741486945": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando vidro traseiro esquerdo",
   "carro": "Hyundai Genesis",
   "foto": "958772-MLB112818084623_062026"
  },
  "MLB4741486755": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Maçaneta externa dianteira direita",
   "carro": "Chevrolet Celta",
-  "foto": "789370-MLB111729584284_062026"
+  "foto": "789370-MLB111729584284_062026",
+  "motivo": "ChatGPT mudou perspectiva/proporção/código"
  },
  "MLB4741477775": {
   "status": "pulada",
@@ -11592,10 +11611,11 @@
   "foto": "984467-MLB111721333616_062026"
  },
  "MLB4741474925": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Retrovisor elétrico direito",
   "carro": "BMW 320i",
-  "foto": "817266-MLB111729613308_062026"
+  "foto": "817266-MLB111729613308_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB4741470919": {
   "status": "pulada",
@@ -11626,10 +11646,11 @@
   "foto": "603272-MLB111730544890_062026"
  },
  "MLB4741459061": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Maçaneta interna traseira direita",
   "carro": "Renault Clio",
-  "foto": "820965-MLB112818262645_062026"
+  "foto": "820965-MLB112818262645_062026",
+  "motivo": "cor em dúvida (peça pintada/cromada × título): conferir antes de maquiar"
  },
  "MLB4741455605": {
   "status": "pulada",
@@ -11639,10 +11660,11 @@
   "foto": "756582-MLB111730544990_062026"
  },
  "MLB4741455469": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Maçaneta externa dianteira direita",
   "carro": "Peugeot 2008",
-  "foto": "857654-MLB112818202995_062026"
+  "foto": "857654-MLB112818202995_062026",
+  "motivo": "cor em dúvida (peça pintada/cromada × título): conferir antes de maquiar"
  },
  "MLB4741446345": {
   "status": "pulada",
@@ -11659,10 +11681,11 @@
   "foto": "667192-MLB112819060285_062026"
  },
  "MLB4741374349": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Capa retrovisor interno dianteiro direito",
   "carro": "Peugeot 206",
-  "foto": "991099-MLB111730080664_062026"
+  "foto": "991099-MLB111730080664_062026",
+  "motivo": "foto não confere com o título: conferir o anúncio"
  },
  "MLB4741374101": {
   "status": "pulada",
@@ -11679,19 +11702,20 @@
   "foto": "909814-MLB112818234575_062026"
  },
  "MLB4741363049": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura elétrica porta dianteira direita",
   "carro": "Chevrolet Cruze",
-  "foto": "953888-MLB112818827347_062026"
+  "foto": "953888-MLB112818827347_062026",
+  "motivo": "triagem: cabo solto, etiqueta ou código, não enviar ao ChatGPT"
  },
  "MLB4741360537": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura interna retrovisor",
   "carro": "Volkswagen Gol",
   "foto": "938532-MLB112818203951_062026"
  },
  "MLB4741354011": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão vidro elétrico",
   "carro": "Chevrolet Astra",
   "foto": "787899-MLB112819495967_062026"
