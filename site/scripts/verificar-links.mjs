@@ -9,6 +9,8 @@ const re = /(?:href|src|srcset|poster)="([^"]+)"/g;
 for (const arq of html) {
   const t = readFileSync(arq, 'utf-8');
   for (const m of t.matchAll(re)) {
+    // data: tem vírgula dentro (não é lista de srcset nem link): o valor inteiro fica de fora
+    if (/^\s*data:/.test(m[1])) continue;
     for (let u of m[1].split(',').map((s) => s.trim().split(' ')[0])) {
       if (!u || /^(https?:|mailto:|tel:|data:|#|javascript:)/.test(u)) continue;
       u = u.split('#')[0].split('?')[0]; if (!u) continue;

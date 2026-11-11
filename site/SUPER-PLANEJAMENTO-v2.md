@@ -114,3 +114,53 @@ Catálogo (fila de peças sobre balcão de estúdio: farol, alternador, pinça, 
 - og (1536×1024 → recorte 1200×630): estúdio com farol-herói e 3 peças à direita; à esquerda o título desenhado "Peças originais de desmanche legalizado." e subtítulo "Nota fiscal e 90 dias de garantia."; canto inferior esquerdo livre para o logo real.
 - 404 (1:1, sem texto): um único parafuso sobre o pedestal grafite com aro laranja, sob um holofote, estúdio vazio.
 - vazio-busca (1:1, sem texto): uma lupa grafite deitada sobre o pedestal vazio com aro laranja.
+
+
+## Abertura viva — "o estúdio vira o seu carro" (rodada 15, 11/11/2026)
+Pedido: "aqui você não trabalhou né… fazer a coisa mais fantástica do mundo". A arte parada (P1) saiu; a abertura virou
+uma cena que responde ao seletor. Três conceitos pesados (o escolhido e os dois descartados):
+1. **O estúdio vira o seu carro** (ESCOLHIDO): palco com peças em camadas que são links; ao escolher o carro, o título
+   passa a dizer o carro, a arte dele entra e as peças viram atalhos com a contagem real. O "uau" acontece na hora em que
+   o cliente faz o que a loja mais quer (dizer o carro) e o que aparece encurta o caminho até a peça.
+2. **O carro que se desmonta** (descartado): sequência presa à rolagem até o Raio-x. Mais vistoso e pior para o cliente
+   (atrasa, pesa no celular barato, o Raio-x fica 3 seções abaixo).
+3. **O seletor é o herói** (descartado como conceito, aproveitado em parte): só o cartão, grande e tátil. O mais direto e
+   o menos memorável; dele ficou o retorno a cada passo (título que se reescreve).
+
+### Tela (o que é arte × o que é dado vivo)
+| Bloco | Arte | Dado vivo |
+|---|---|---|
+| Olho + título | traço de pincel laranja (SVG) | "Peças originais usadas"; a palavra do título (carro/marca/modelo e ano) |
+| Selos | medalhões desenhados em CSS (grafite com escudo; verde WhatsApp) | "Desmanche legal · CDV Detran-RS nº 01060"; "10% de desconto · comprando pelo WhatsApp" |
+| Cartão | — | o seletor e a busca, iguais |
+| Palco | fundo de estúdio em CSS (parede, piso, linha de luz laranja) + 18 peças recortadas + as 93 artes de carro que já existiam | rótulo de cada peça (bloco), número de peças do carro, legenda "Para o seu Onix 2019" |
+| Celular, 1ª tela | o farol aceso espiando da direita (140 px) | — |
+
+### Super prompt das peças (Codex, uma geração por peça; anexos: a arte antiga da abertura e o Raio-x, só como acabamento)
+Regras comuns (em toda geração): UM objeto só, sozinho; peça limpa, original, quase nova, fiel à peça real; fundo liso
+e uniforme cinza quente claro `#DAD6D1`, sem linha de piso, sem reflexo, sem vinheta, SEM sombra projetada (a peça como
+se estivesse suspensa); a peça inteira no quadro, centrada, 78–86% do lado maior, margem de 6% nos quatro lados; lente
+85 mm, vista 3/4 um pouco de cima, f/8, tudo nítido; um softbox grande do alto-esquerda, preenchimento suave da direita;
+PROIBIDO: texto, números, etiquetas, adesivos, códigos, logos ou emblemas (reais ou inventados), marca d'água, pessoas.
+| arquivo | objeto |
+|---|---|
+| farol (1536×1024, a heroína) | farol full-LED de sedã genérico, lente clara, moldura preto brilhante, dois projetores cromados, guia de luz do DRL em L ACESA (branco limpo), filete âmbar ACESO no contorno externo, carcaça com as abas de fixação; 3/4 pela esquerda, deitado, 84% da largura |
+| pinca | pinça de freio monobloco de 4 pistões pintada no laranja da marca `#FF6A00`, pastilhas montadas, sangrador, face externa lisa (sem letras) |
+| turbo | turbocompressor: caracol de alumínio acetinado com as pás à vista, carcaça da turbina em ferro fundido com flange quadrada, atuador da wastegate |
+| amortecedor | conjunto amortecedor + mola dianteiro, mola preta, haste cromada, coifa, batente superior com 3 prisioneiros; na diagonal |
+| retrovisor | retrovisor externo esquerdo, capa prata metálica, base preta, pisca apagado, vidro refletindo só um estúdio cinza liso |
+| alternador | alternador de alumínio com os enrolamentos de cobre à vista, polia poly-V preta |
+| motor | motor 4 cilindros a gasolina completo e limpo, coletor de admissão preto, tampa de válvulas lisa |
+| modulo | módulo de injeção (ECU) de alumínio com aletas e dois conectores pretos, sem etiqueta |
+| borboleta | corpo de borboleta eletrônico de alumínio com a borboleta cor de latão entreaberta |
+| macaneta | maçaneta externa prata com filete cromado no suporte preto (mola, alavanca do cabo) |
+| difusor | difusor de ar redondo tipo turbina, aro cromado acetinado, aletas preto brilhante |
+| compressor | compressor de ar-condicionado de alumínio com polia e embreagem eletromagnética, duas saídas com tampa |
+| vidro | comando de vidro elétrico da porta do motorista, 4 teclas com filete cromado e o botão do retrovisor (só pictogramas, sem letras) |
+| seta | chave de seta e limpador (conjunto da coluna), duas hastes abertas, só pictogramas |
+| mangueira | mangueira do radiador moldada em S, borracha preta fosca, uma abraçadeira de mola em cada ponta |
+| parachoque | para-choque dianteiro prata, grade inferior de colmeia preta, nichos de farol de milha, sem placa nem emblema |
+| cambio | alavanca de câmbio manual com manopla de couro lisa (sem o desenho das marchas), coifa e a base com os cabos |
+| forro | forro de porta dianteira esquerda preto e grafite, com apoio de braço, puxador e grade do alto-falante |
+Recorte: `python ferramentas/camada_abertura.py`. Conferência de cada peça: zoom de 200% da borda sobre fundo claro e
+escuro (sem auréola), nenhuma letra, um objeto só. Reprovadas e originais: `izzatcar-wt/_r15hero/arte/gerados/`.
