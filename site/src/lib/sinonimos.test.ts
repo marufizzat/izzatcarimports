@@ -38,9 +38,11 @@ describe('sinônimos: o jeito de falar do cliente', () => {
     expect(MAPA_SINONIMOS.get('frente')!.map((f) => f.join(' '))).toContain('churrasqueira');
   });
 
-  it('cada linha da tabela aponta para um nome que EXISTE no estoque', (ctx) => {
-    let ix;
-    try { ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8')); } catch { return ctx.skip(); }
+  // No estoque CONGELADO de 09/11 (testes/fixtures): a tabela é escrita olhando os nomes do estoque, mas a última
+  // "Fivela cinto" ou o último "Quebra-sol" vender não pode travar a publicação (o robô roda isto a cada 30 min).
+  // Linha nova na tabela: conferir no estoque do dia ao escrever.
+  it('cada linha da tabela aponta para um nome que existia no estoque de 09/11 (o congelado)', () => {
+    const ix = JSON.parse(readFileSync('testes/fixtures/estoque-busca.json', 'utf-8'));
     const b = new Busca(ix);
     const nomes = b.itens.map((it) => new Set([...termos(it.n), ...termos(it.s)]));
     const existe = (frase: string) => {

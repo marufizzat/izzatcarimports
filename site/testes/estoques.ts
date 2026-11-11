@@ -3,9 +3,10 @@
 //  - o VOCABULÁRIO da loja (fixtures/vocabulario.json, gerado de BLOCOS e _TIPOS_DO_BLOCO do preparar_dados.py por
 //    ferramentas/vocabulario_loja.py; testes/test_dados.py confere que anda junto): "este nome de bloco/tipo existe?".
 //    Nunca perguntar isso ao estoque do dia: o tipo some quando a última peça dele vende.
-//  - o ESTOQUE FIXO (fixtures/busca-fixa.json, uma cópia do /dados/busca.json de 11/11/2026, 5.311 peças): tudo que
-//    precisa de peça de verdade para existir ("a frente esquerda acha farol esquerdo", "pelo menos N", exemplos com o
-//    XC60 2019). Não muda nunca: o teste só quebra quando o CÓDIGO muda.
+//  - o ESTOQUE FIXO (fixtures/estoque-busca.json: o /dados/busca.json congelado de 09/11/2026, 5.311 peças, sem as
+//    colunas de foto e de endereço; o MESMO dos testes da busca, rodada 14b; não regenerar): tudo que precisa de peça de
+//    verdade para existir ("a frente esquerda acha farol esquerdo", "pelo menos N", exemplos com o XC60 2019). Não muda
+//    nunca: o teste só quebra quando o CÓDIGO muda.
 //  - o ESTOQUE DO DIA (public/dados/busca.json, o que o robô acabou de gerar): só REGRAS que valem para qualquer estoque
 //    (o número do painel = o do catálogo, nenhuma peça do lado errado, nada em dobro). Nunca "tem de existir", nunca um
 //    anúncio, um carro ou uma quantidade escritos no teste.
@@ -20,7 +21,7 @@ export const BLOCOS_DA_LOJA: ReadonlySet<string> = new Set(voc.blocos);
 export const TIPOS_DA_LOJA: ReadonlySet<string> = new Set(Object.keys(voc.tipos));
 
 export const ARQ_DO_DIA = 'public/dados/busca.json';
-export const ARQ_FIXO = 'testes/fixtures/busca-fixa.json';
+export const ARQ_FIXO = 'testes/fixtures/estoque-busca.json';
 let fixo: Indice | null = null;
 /** O estoque fixo dos testes (sempre o mesmo). */
 export const indiceFixo = (): Indice => (fixo ??= JSON.parse(readFileSync(ARQ_FIXO, 'utf-8')) as Indice);

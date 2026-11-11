@@ -1255,7 +1255,9 @@ def test_lado_e_posicao_pelo_nome():
             tipos = [ix["tipos"][i] if i >= 0 else "" for i in ix["s"]]
             for n, t, l, p in zip(ix["n"], tipos, ix["l"], ix["pos"]):
                 assert lado_posicao(n, t) == (l.replace("0", ""), p.replace("0", "")), n
-            assert ix["l"].count("E") + ix["l"].count("D") > 1000
+            # (um decimo do estoque, pelo menos, diz o lado no nome: hoje e um terco. Numero fixo de pecas aqui nao: o
+            # robo roda este teste antes de publicar e o estoque muda)
+            assert ix["l"].count("E") + ix["l"].count("D") > len(ix["id"]) * 0.1
         # "Peça única" do cartão (coluna "q"): '1' só com 1 em estoque no anúncio; nada de urgência inventada
         if "q" in ix:
             por_id = {p["id"]: p for p in json.loads(pecas.read_text(encoding="utf-8"))}

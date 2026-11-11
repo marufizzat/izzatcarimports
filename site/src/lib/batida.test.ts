@@ -150,7 +150,7 @@ describe.each(estoques())('o kit da batida no $nome', ({ ix, fixo }) => {
     for (const k of kitsDeTodos(procurar, foto)) for (const l of k.linhas) {
       if (!l.rep) continue;
       expect(l.rep.cod).not.toMatch(/MLB\d+_/);
-      expect(l.rep.h).toContain(l.rep.id);
+      if (!fixo) expect(l.rep.h).toContain(l.rep.id);   // o estoque congelado não guarda o endereço nem as fotos
     }
   });
 

@@ -1,6 +1,15 @@
 // O JUIZ da busca (rodada 14, depois da revisão que barrou a publicação): cada consulta tem um GABARITO escrito por regra
 // do ESTOQUE (o nome da peça certa, o carro, o lado, a posição, o ano), nunca pelo motor que está sendo testado, e roda em
-// dois motores sobre o MESMO busca.json:
+// dois motores sobre o MESMO índice.
+//
+// O índice é o ESTOQUE CONGELADO de 09/11/2026 (testes/fixtures/estoque-busca.json), nunca o estoque do dia: os 541
+// gabaritos foram escritos e conferidos à mão olhando aquele estoque (33 linhas ajustadas "pelo estoque", abaixo), e
+// vários só valem nele ("airbag": as 5 primeiras são airbags porque havia 5 peças "Airbag…"; vendido o "Airbag
+// motorista", a 5ª passou a ser o "Módulo airbag" e o robô recusou a rodada 14 em 11/11/2026). Aqui o juiz guarda o motor
+// contra mudança de CÓDIGO; as regras que valem com qualquer estoque rodam no estoque do dia em busca.regressao.test.ts
+// e com o estoque mexido em busca.vendas.test.ts.
+//
+// Os dois motores:
 //   (a) o motor que está NO AR (origin/master na rodada 13, commit fixo abaixo), lido pelo git para node_modules/.cache
 //       (sem cópia do repositório) e empacotado com o esbuild;
 //   (b) o candidato (lib/busca.ts).
@@ -17,7 +26,7 @@
 //   FAMILIA       o estoque não tem a peça e as "parecidas" do topo não são da família dela;
 //   SAIDA         lista vazia por causa do lado/posição e a tela não diz o que faltou nem oferece o outro lado;
 //   MEU           o carro salvo ("Meu carro") tem a peça e ela não abre a lista.
-// Sem git ou sem o commit (clone raso): a comparação é pulada e o gabarito do candidato continua valendo.
+// Sem git ou sem o commit (clone raso, como no robô): a comparação é pulada e o gabarito do candidato continua valendo.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -27,7 +36,7 @@ import { Busca } from './busca';
 
 /** O motor que está no ar (rodada 13): o commit de origin/master no dia da revisão. */
 const NO_AR = 'de8e5b91383982c81bca7422248ce6ea7807b76b';
-const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf8'));
+const ix = JSON.parse(readFileSync('testes/fixtures/estoque-busca.json', 'utf8'));
 const nrm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const junto = (s: string) => nrm(s).replace(/[^a-z0-9]/g, '');
 
@@ -638,7 +647,7 @@ const CONHECIDAS: Record<string, string> = {
 
 const chave = (e: Esp) => `${e.q}${e.f ? ` ${JSON.stringify(e.f)}` : ''}${e.meu ? ` [meu ${e.meu.m}]` : ''}`;
 
-describe('busca: o juiz diferencial (gabarito pelo estoque; candidato × motor do ar)', () => {
+describe('busca: o juiz diferencial (estoque congelado de 09/11; candidato × motor do ar)', () => {
   let Ar: (new (ix: unknown) => Motor) | null = null;
   let Cand: new (ix: unknown) => unknown = Busca as never;
   let cand = null as unknown as Motor;

@@ -10,7 +10,11 @@
 //   4. a peça cujo nome começa pela palavra buscada sobe ("farol": "Farol esquerdo" antes de "Interruptor farol");
 //   5. o jeito de falar do cliente vale (lib/sinonimos.ts: "sinaleira" = lanterna, "máquina de vidro" = motor vidro,
 //      "faróis" = farol) e o lado e a posição digitados viram filtro ("retrovisor direito xc60": os retrovisores DIREITOS
-//      do XC60, pela coluna "l" do índice; sem nenhum, a busca volta a valer como texto, como antes).
+//      do XC60, pela coluna "l" do índice; sem nenhum, a lista sai vazia e diz o que faltou).
+//
+// Vale com QUALQUER estoque (o robô testa a cada 30 min com o estoque do momento; lib/busca.regressao.ts): quando não há
+// peça do tipo digitado para o carro digitado, a lista é vazia (o pátio) ou vem com aviso e abre com a família do tipo;
+// uma peça que só o texto do anúncio liga à busca nunca passa na frente de uma que o nome, o tipo ou o bloco ligam.
 import MiniSearch, { type Query, type SearchResult } from 'minisearch';
 import { serveNoModelo, anosNoModelo, modelosDa } from './meuCarro';
 import { MAPA_SINONIMOS, MAPA_FORA, MAIOR_GATILHO, VAZIAS, singulares, plural } from './sinonimos';
@@ -125,12 +129,22 @@ const som = (w: string) => w.replace(/ch/g, 'x').replace(/ss|c(?=[ei])/g, 's').r
  *  letras ("retrovizor", "alternadro"). Palavra curta só é igual a ela mesma ("par" não é "paralama"; "capa" não é "capô")
  *  e o começo da palavra não basta ("porta" não é "porta-luvas"; "motor" não é "motorista"). */
 export function mesmaPalavra(a: string, b: string): boolean {
+  if (mesmaForma(a, b)) return true;
+  const la = a.length, lb = b.length;
+  if (la < 3 || lb < 3 || la - lb > 2 || lb - la > 2) return false;
+  // o erro de digitação (também na 1ª letra: "etrovisor")
+  return (la < lb ? la : lb) >= 6 && umaEdicao(a, b);
+}
+
+/** A MESMA palavra em outra forma: igual, plural/singular ou a concordância ("lanterna"/"lanternas", "farol"/"faróis",
+ *  "elétrico"/"elétrica"). Sem o erro de digitação: "módulo" não é "modelo" e "lanterna" não é "interna". Quem digita uma
+ *  palavra que o estoque conhece não errou: só as formas dela valem (Busca.casam). */
+export function mesmaForma(a: string, b: string): boolean {
   if (a === b) return true;
   const la = a.length, lb = b.length;
   if (la < 3 || lb < 3 || la - lb > 2 || lb - la > 2) return false;
+  if (a.charCodeAt(0) !== b.charCodeAt(0)) return false;
   const menor = la < lb ? la : lb;
-  // a 1ª letra diferente só vale como erro de digitação ("etrovisor")
-  if (a.charCodeAt(0) !== b.charCodeAt(0)) return menor >= 6 && umaEdicao(a, b);
   let n = 1;
   while (n < menor && a.charCodeAt(n) === b.charCodeAt(n)) n++;
   if (menor >= 5 && n >= 4 && n >= menor - 1) return true;
@@ -138,7 +152,7 @@ export function mesmaPalavra(a: string, b: string): boolean {
     const l = la >= lb ? a : b;
     if (l.charCodeAt(l.length - 1) === 115 /* s */ && singulares(l).includes(la >= lb ? b : a)) return true;
   }
-  return menor >= 6 && umaEdicao(a, b);
+  return false;
 }
 
 /** O que a pessoa procura, tirando o carro, a marca, o ano, o lado e a posição: cada unidade é uma palavra, uma composta
@@ -146,10 +160,11 @@ export function mesmaPalavra(a: string, b: string): boolean {
  *  de lib/sinonimos.ts ("sinaleira": [sinaleira], [lanterna]; "espelho retrovisor": [espelho, retrovisor], [retrovisor]).
  *  fora = as palavras que tiram a peça do caminho do sinônimo ("frente": não o painel). */
 type Unidade = { chave: string; formas: string[][]; fora: string[] };
-/** A busca montada: os grupos para o MiniSearch, a última palavra (pode estar pela metade), as formas de cada palavra (a
- *  ordem usa), as unidades da peça, os termos de carro e marca (valem só inteiros: "gol" não é "Golf") e quantas
+/** A busca montada: os grupos para o MiniSearch (pecas = só os das palavras de peça, sem o carro e a marca), a última
+ *  palavra (pode estar pela metade), as formas de cada palavra (a ordem usa), as unidades da peça, os termos de carro e
+ *  marca (valem só inteiros: "gol" não é "Golf") e quantas
  *  unidades a busca tem ao todo. */
-type Arvore = { grupos: Query[]; ultima: string; formas: Map<string, string[]>; uns: Unidade[]; exatos: Set<string>; n: number };
+type Arvore = { grupos: Query[]; pecas: Query[]; ultima: string; formas: Map<string, string[]>; uns: Unidade[]; exatos: Set<string>; n: number };
 /** Onde um carro ou marca foi digitado (palavras i a i+n-1) e o que também vale por ele no texto do anúncio: a marca por
  *  extenso para "vw"/"gm", o carro principal para o apelido de carro unido ("new fiesta" -> fiesta). */
 type Janela = { i: number; n: number; alt?: string[] };
@@ -375,7 +390,7 @@ export class Busca {
   private _vocabPor = new Map<string, string[]>();
   /** o nome de cada peça sem acento e em minúsculas (a ordem usa em toda busca) */
   private _nn: string[] = [];
-  private _casam = new Map<string, { ig: string[]; pre: string[] }>();
+  private _casam = new Map<string, { ig: string[]; pre: string[]; certa: boolean }>();
   private _principal = new Map<string, string>();
 
   private apelidos: Set<string>;
@@ -578,14 +593,19 @@ export class Busca {
     this._nt = nt;
   }
 
-  /** As palavras do estoque que são a palavra digitada (ig) e as que só começam por ela (pre: a busca ao vivo). */
-  private casam(w: string): { ig: string[]; pre: string[] } {
+  /** As palavras do estoque que são a palavra digitada (ig) e as que só começam por ela (pre: a busca ao vivo).
+   *  certa = o estoque conhece a palavra (ela ou outra forma dela: plural, concordância). Palavra conhecida nunca é
+   *  tratada como erro de digitação de outra: só quando o estoque não a conhece valem as que estão a 1 letra dela
+   *  ("retrovizor" = retrovisor; mas "módulo" digitado certo não é "modelo", e "lanterna" não é "antena"). */
+  private casam(w: string): { ig: string[]; pre: string[]; certa: boolean } {
     let m = this._casam.get(w);
     if (!m) {
-      const ig: string[] = [], pre: string[] = [];
+      const ig: string[] = [], erro: string[] = [], pre: string[] = [];
       // (só as que começam pela mesma letra: o erro na 1ª letra fica com o corretor e com a aproximação do MiniSearch)
-      for (const t of this._vocabPor.get(w[0]) ?? []) { if (mesmaPalavra(t, w)) ig.push(t); else if (w.length >= 2 && t.startsWith(w)) pre.push(t); }
-      m = { ig, pre };
+      for (const t of this._vocabPor.get(w[0]) ?? []) {
+        if (mesmaForma(t, w)) ig.push(t); else if (mesmaPalavra(t, w)) erro.push(t); else if (w.length >= 2 && t.startsWith(w)) pre.push(t);
+      }
+      m = { ig: ig.length ? ig : erro, pre, certa: ig.length > 0 };
       if (this._casam.size > 600) this._casam.clear();
       this._casam.set(w, m);
     }
@@ -617,7 +637,7 @@ export class Busca {
         if (!m) {
           const meio = k.endsWith('*');
           const t = this._vocab.find((x) => this._nome.has(x) && x.startsWith(partes[0].w) && (umaEdicao(x, j) || (meio && x.startsWith(j))));
-          m = { ig: t ? [t] : [], pre: [] };
+          m = { ig: t ? [t] : [], pre: [], certa: false };
           this._casam.set(k, m);
         }
         if (m.ig.length) return { n, junta: m.ig[0] };
@@ -635,6 +655,7 @@ export class Busca {
   private arvore(texto: string, ent: Entendido): Arvore {
     this.montarVocab();
     const grupos: Query[] = [];
+    const pecas: Query[] = [];
     const formas = new Map<string, string[]>();
     const uns: Unidade[] = [];
     const exatos = new Set<string>();
@@ -723,7 +744,8 @@ export class Busca {
         const semFora: Query = fora?.length
           ? { combineWith: 'AND_NOT', queries: [outras, { combineWith: 'OR', queries: fora.map((w) => w.replace(/-/g, '')), fields: ['n', 's'], prefix: true, fuzzy: false }] }
           : outras;
-        grupos.push(alts.length ? { combineWith: 'OR', queries: [orig, semFora] } : orig);
+        const g: Query = alts.length ? { combineWith: 'OR', queries: [orig, semFora] } : orig;
+        grupos.push(g); pecas.push(g);
         formas.set(u0[i].chave, [...new Set(alts.map((f) => f[0]))]);
         uns.push({ chave: k, formas: [jan.flatMap((u) => u.pal), ...alts], fora: (fora ?? []).map(cp) });
         i += n;
@@ -733,14 +755,13 @@ export class Busca {
       // palavra nem erro de digitação: "mais" nunca vira "mal...")
       const u = u0[i];
       const sing = u.solta ? singulares(u.chave) : [];
-      if (sing.length) {
-        grupos.push({ combineWith: 'OR', queries: [u.q, { combineWith: 'OR', queries: sing, prefix: false, fuzzy: false }] });
-        formas.set(u.chave, sing);
-      } else grupos.push(u.q);
+      const g: Query = sing.length ? { combineWith: 'OR', queries: [u.q, { combineWith: 'OR', queries: sing, prefix: false, fuzzy: false }] } : u.q;
+      grupos.push(g); pecas.push(g);
+      if (sing.length) formas.set(u.chave, sing);
       uns.push({ chave: u.chave, formas: [u.pal], fora: [] });
       i++;
     }
-    return { grupos, ultima, formas, uns, exatos, n: u0.length };
+    return { grupos, pecas, ultima, formas, uns, exatos, n: u0.length };
   }
 
   /** Algum código gravado do estoque é este ou começa por ele (a busca ao vivo digita o código aos poucos)? */
@@ -797,7 +818,7 @@ export class Busca {
     const ws = palavras(texto);
     let mudou = false;
     const out = ws.map((w, i) => {
-      if (ent.usado[i] || w.length < 5 || /\d/.test(w) || VAZIAS.has(w) || this._nome.has(w) || GATILHOS.has(w)) return w;
+      if (ent.usado[i] || w.length < 5 || /\d/.test(w) || VAZIAS.has(w) || this._nome.has(w) || GATILHOS.has(w) || this._bloco.has(w)) return w;
       if (this.ms.search(w, { prefix: true, fuzzy: false, tokenize: (s) => [s] }).length) return w;
       const sw = som(w);
       const perto = (t: string) => t.length >= 4 && Math.abs(t.length - w.length) <= 2 && (som(t) === sw || umaEdicao(t, w) || (w.length >= 6 && umaEdicao(som(t), sw)));
@@ -842,6 +863,27 @@ export class Busca {
       const h = nt[k][0];
       return h !== undefined && u.formas.some((f, i) => f.length > 0 && vale(k, u, i) && de(f[0]).has(h) && f.slice(1).every((w) => temW(k, w)));
     };
+    // o que a loja diz que a peça é além do nome: as palavras do tipo "s" e do bloco "c" dela
+    const memoSis = new Map<string, string[]>();
+    const doSistema = (x: string) => { let ws = memoSis.get(x); if (!ws) { ws = this.palavrasDoNome(x); memoSis.set(x, ws); } return ws; };
+    const temWL = (k: number, w: string) => {
+      if (temW(k, w)) return true;
+      const s = de(w), it = this.itens[k];
+      for (const t of doSistema(it.s)) if (s.has(t)) return true;
+      for (const t of doSistema(it.c)) if (s.has(t)) return true;
+      return false;
+    };
+    // ...e as palavras do nome e do tipo como o índice de texto as lê: com as partes da composta ("pisca" está em
+    // "Botão pisca-alerta") e pelo começo ("fechadura" em "Fechaduras do Porta-malas")
+    const memoTok = new Map<number, string[]>();
+    const tocaW = (k: number, w: string) => {
+      let ts = memoTok.get(k);
+      if (!ts) { ts = [...termos(this.itens[k].n), ...termos(this.itens[k].s)]; memoTok.set(k, ts); }
+      const comeco = w.length >= 3 || (w === ultima && w.length >= 2);
+      for (const t of ts) if (t === w || (comeco && t.startsWith(w))) return true;
+      return false;
+    };
+    const unLigada = (k: number, u: Unidade) => u.formas.some((f, i) => vale(k, u, i) && f.every((w) => temWL(k, w) || tocaW(k, w)));
     const memoCab = new Map<Unidade, number[]>();
     /** Como o nome começa pela unidade: 0 = pelas palavras digitadas, na ordem ("Coxim motor…" para "coxim motor"); 1 = por
      *  outra forma do jeito de falar, na ordem ("Calço coxim motor", "Tampa traseira" para "tampa do porta-malas"); 2 e 3 =
@@ -855,6 +897,10 @@ export class Busca {
     return {
       comeco,
       todas: (k: number) => U.every((u) => unNoNome(k, u)),
+      /** o nome, o tipo "s" ou o bloco "c" da peça dizem TODAS as unidades (o "Batente tampa traseira" do tipo
+       *  "Fechaduras do Porta-malas" para "fechadura tampa"; o "Botão pisca-alerta" para "pisca"); quando não, só o texto
+       *  do anúncio (o título, o código) ou a aproximação ligam a peça à busca */
+      ligada: (k: number) => U.every((u) => unLigada(k, u)),
       quantas: (k: number) => U.reduce((s, u) => s + (unNoNome(k, u) ? 1 : 0), 0),
       unNoNome, unNaCabeca,
       /** as peças do estoque que SÃO a unidade (a 1ª palavra do nome é a 1ª da forma, com o resto da forma no nome) */
@@ -892,14 +938,19 @@ export class Busca {
   }
 
   /** A regra da busca de texto (o resultado é guardado por porTexto):
-   *   1. todas as palavras (o MiniSearch, como sempre); sem nada, o erro de digitação corrigido; sem nada, com aproximação;
+   *   1. todas as palavras (o MiniSearch, como sempre); sem nada, o erro de digitação corrigido; sem nada, com aproximação
+   *      (só na palavra que o estoque NÃO conhece: "lanterna" digitada certo nunca vira "antena");
    *   2. das peças achadas, primeiro as que SÃO o que foi digitado (exatas: o nome começa pela palavra, "Farol direito");
-   *      depois as que só citam ("Suporte farol", "Interruptor farol") e as que citam só no anúncio. Nada some;
+   *      depois as que só citam no nome ("Suporte farol", "Interruptor farol"), as que o tipo ou o bloco ligam e, por
+   *      último, as que só o texto do anúncio liga. Nada some. Sem nenhuma exata, a lista nunca conta como achado
+   *      (aproximado ou citam) e o que só o anúncio liga nunca abre a lista: valem as parecidas do item 4, e ele fica no fim;
    *   3. o estoque tem a peça (nome começando pela palavra) mas não para o carro digitado, ou não com as outras palavras
    *      ("alternador gol" com só o "Suporte alternador" do Gol; "caixa de direção" com só o "Motor caixa direção"):
    *      é PARECIDA, com aviso; as do carro primeiro e depois a peça dos outros carros;
    *   4. nenhuma peça com todas as palavras ("forro de teto", "chave reserva xc60", "lanterna led gol"): as parecidas do
-   *      TIPO (a 1ª unidade que é nome de peça no estoque), o carro digitado primeiro, com aviso. Nunca outro tipo. */
+   *      TIPO (a 1ª unidade que é nome de peça no estoque), o carro digitado primeiro, com aviso. Nunca outro tipo. Sem
+   *      nome de peça no estoque para a palavra, as do tipo "s" ou do bloco "c" que a dizem. O carro digitado sozinho
+   *      não faz parecida: sem nada que ligue a peça à palavra, a lista sai vazia (o pátio). */
   private calcular(chave: string, com: string): PorTexto {
     // número do anúncio ("MLB4779038537"): a peça
     if (/^mlb\d{6,}$/.test(chave)) {
@@ -909,15 +960,23 @@ export class Busca {
     let ent = this.entender(chave);
     let av = this.arvore(chave, ent);
     const ms = this.ms;
-    const comErro = (t: string) => (t.length >= 5 && !/\d/.test(t) ? 0.2 : false);
+    // a aproximação (erro de digitação) só vale para a palavra que o estoque NÃO conhece: palavra de nome, de tipo ou de
+    // bloco, carro, marca e gatilho do jeito de falar digitados certo nunca viram outra palavra. (11/11/2026: vendida a
+    // última lanterna do XC60, "lanterna xc60" achava a "Capa antena" e o "Sensor temperatura interna" do XC60, porque
+    // "antena" e "interna" estão a 2 letras de "lanterna", e eles abriam a lista das parecidas.)
+    // (conhece = a palavra, o plural ou o singular dela está escrito em algum nome, tipo ou bloco; "parachoqe" não está:
+    // segue sendo erro de digitação)
+    const noEstoque = (w: string) => this._nome.has(w) || this._sis.has(w) || this._bloco.has(w);
+    const conhecida = (a: Arvore, t: string) => a.exatos.has(t) || GATILHOS.has(t) || noEstoque(t) || noEstoque(plural(t)) || singulares(t).some(noEstoque);
+    const comErro = (a: Arvore) => (t: string) => (t.length >= 5 && !/\d/.test(t) && !conhecida(a, t) ? 0.2 : false);
     const tokenize = (s: string) => [s];
     // a última palavra pode estar pela metade (busca ao vivo): vale o começo dela a partir de 2 letras ("modulo ab" a
     // caminho de "abs"). Quando as 2 letras já são uma palavra de nome do estoque ("ré", "ar"), vale a palavra inteira, e o
     // começo só se ela não achar nada ("sensor de ré" não é "sensor … Renault"). Carro e marca: só a palavra inteira
     // ("gol" não é "Golf")
-    const buscar = (a: Arvore, como: 'AND' | 'OR', erro: boolean, curta: boolean) => ms.search(
-      { combineWith: como, queries: a.grupos },
-      { prefix: (t: string) => !a.exatos.has(t) && (t.length >= 3 || (t === a.ultima && t.length >= 2 && (curta || a.n === 1 || !this._nome.has(t)))), fuzzy: erro ? comErro : false, tokenize, combineWith: 'AND' },
+    const buscar = (a: Arvore, como: 'AND' | 'OR', erro: boolean, curta: boolean, grupos = a.grupos) => ms.search(
+      { combineWith: como, queries: grupos },
+      { prefix: (t: string) => !a.exatos.has(t) && (t.length >= 3 || (t === a.ultima && t.length >= 2 && (curta || a.n === 1 || !this._nome.has(t)))), fuzzy: erro ? comErro(a) : false, tokenize, combineWith: 'AND' },
     );
     let r: SearchResult[] = av.grupos.length ? buscar(av, 'AND', false, false) : [];
     if (!r.length && av.grupos.length && av.ultima.length === 2 && av.n > 1) r = buscar(av, 'AND', false, true);
@@ -948,6 +1007,9 @@ export class Busca {
     const usadoCom = com ? this.entender(com).usado : [];
     const seq = com ? palavras(com).filter((w, i) => !VAZIAS.has(w) && w !== 'lado' && !usadoCom[i]).map(palavraLP) : [];
     const nota = new Map<number, number>();
+    /** as peças cujo nome começa pelo que foi digitado, palavra por palavra ("Amortecedor traseiro…" para "amortecedor
+     *  traseiro"): entre as que SÃO a peça, vêm antes das outras (regra, não só peso: o peso do texto varia com o estoque) */
+    const naOrdemDe = new Set<number>();
     const pontuar = (x: SearchResult) => {
       const it = this.itens[x.id as number];
       const nome = this._nn[it.k];
@@ -956,6 +1018,7 @@ export class Busca {
       const comeca = principaisC.some((w) => nomeC.startsWith(w));
       const nt = this._nt![it.k];
       const naOrdem = seq.length > 1 && seq.every((w, i) => nt[i] !== undefined && mesmaPalavra(nt[i], w));
+      if (naOrdem) naOrdemDe.add(it.k);
       // o nome diz o que foi digitado, do jeito que foi digitado (não só um sinônimo): sobe um pouco
       let exato = false;
       if (digitadas.length > 0) { const ws = nome.split(/[^a-z0-9]+/); exato = digitadas.every((d) => ws.some((w) => w.startsWith(d))); }
@@ -965,14 +1028,24 @@ export class Busca {
     };
     for (const x of r) pontuar(x);
     const pelaNota = (a: Item, b: Item) => nota.get(b.k)! - nota.get(a.k)!;
-    let base: Item[];
+    let base: Item[] = [];
     let aproximado = false;
     let exatas: Set<number> | null = null;
     let citam = false;
 
+    // a busca tem palavra de peça de verdade (não só número: código, versão "t8", motor "2.0")
+    const temPalavra = U.some((u) => u.formas[0].some((w) => !/\d/.test(w)));
+    const doCarroDig = (it: Item) => (!ent.carros.length || doDig(it)) && (!ent.marcas.length || ent.carros.length > 0 || ent.marcas.includes(it.b));
+    const porCarroENota = (a: Item, b: Item) => grupoCarro(a) - grupoCarro(b) || pelaNota(a, b);
+    // as peças que só o ANÚNCIO liga à busca (o nome, o tipo e o bloco não dizem nada do que foi digitado): nunca abrem
+    // a lista nem contam como achado; ficam no fim, depois de tudo o que o nome, o tipo ou o bloco ligam
+    let soAnuncio: Item[] = [];
+    let feito = false;
+
     if (r.length && !U.length) {
       // só carro, marca ou nada que seja peça: a ordem do texto, o carro digitado primeiro
-      base = r.map((x) => this.itens[x.id as number]).sort((a, b) => grupoCarro(a) - grupoCarro(b) || pelaNota(a, b));
+      base = r.map((x) => this.itens[x.id as number]).sort(porCarroENota);
+      feito = true;
     } else if (r.length) {
       const c = this.casador(U, ultima);
       const ks = r.map((x) => x.id as number);
@@ -981,50 +1054,71 @@ export class Busca {
       // nome ("fechadura tampa": a "Fechadura tampa traseira"), ou alguma das achadas começa por ela ("lanterna led")
       const instancias = (u: Unidade) => c.cabecas(u).filter((k) => c.todas(k));
       const tipo = U.find((u) => instancias(u).length > 0 || ks.some((k) => c.unNaCabeca(k, u)));
-      // 0 = é a peça e o nome tem tudo; 1 = é a peça (o resto está no anúncio); 2 = o nome cita tudo; 3 = só o anúncio cita
-      const nivel = new Map(ks.map((k) => [k, tipo && c.unNaCabeca(k, tipo) ? (todas.get(k) ? 0 : 1) : todas.get(k) ? 2 : 3]));
+      // 0 = é a peça e o nome tem tudo; 1 = é a peça (o resto está no anúncio); 2 = o nome cita tudo; 3 = o nome, o tipo
+      // e o bloco citam tudo; 4 = só o texto do anúncio (título, código) liga a peça à busca
+      const nivel = new Map(ks.map((k) => [k, tipo && c.unNaCabeca(k, tipo) ? (todas.get(k) ? 0 : 1) : todas.get(k) ? 2 : c.ligada(k) ? 3 : 4]));
       const nExatas = ks.filter((k) => nivel.get(k)! <= 1).length;
+      const citamNoNome = ks.filter((k) => nivel.get(k) === 2 || nivel.get(k) === 3).length;
       // o estoque tem peça com esse nome (em qualquer carro)? Sem nenhuma, a palavra é o lugar ou o assunto ("teto",
       // "porta-malas", "ar condicionado"): as peças que citam são o resultado, e a tela diz "com … no nome"
       const tipoExiste = () => U.some((u) => c.cabecas(u).length > 0);
       // busca de SISTEMA: a palavra digitada é, letra por letra, o nome de um bloco do estoque ("freios", "suspensão")
       // e de nenhuma peça ("painel" e "motor" são blocos, mas também são peças: sem a peça para o carro, é parecida)
       const sistema = !nExatas && U.length === 1 && U[0].formas[0].length === 1 && this._bloco.has(U[0].formas[0][0]) && !this._cab.has(U[0].formas[0][0]);
-      if (nExatas) exatas = new Set(ks.filter((k) => nivel.get(k)! <= 1));
-      else if (!sistema && tipoExiste()) aproximado = true;
-      else citam = sistema || ks.some((k) => nivel.get(k) === 2);
-      base = ks.map((k) => this.itens[k]);
-      if (aproximado) {
-        // o carro digitado primeiro (o que ele tem de parecido); depois a peça dos outros carros
-        const ord = new Map(base.map((it) => [it.k, grupoCarro(it) * 10 + nivel.get(it.k)!]));
+      const itensDe = (...ns: number[]) => ks.filter((k) => ns.includes(nivel.get(k)!)).map((k) => this.itens[k]);
+      const porCarroNivelENota = (a: Item, b: Item) => grupoCarro(a) - grupoCarro(b) || nivel.get(a.k)! - nivel.get(b.k)! || pelaNota(a, b);
+      const porNivelCarroENota = (a: Item, b: Item) => nivel.get(a.k)! - nivel.get(b.k)! || grupoCarro(a) - grupoCarro(b) || pelaNota(a, b);
+      if (nExatas) {
+        exatas = new Set(ks.filter((k) => nivel.get(k)! <= 1));
+        // entre as que são a peça: a que começa pelo que foi digitado antes da que começa por outra forma de dizer
+        base = ks.map((k) => this.itens[k]);
+        const ord = new Map(base.map((it) => [it.k, nivel.get(it.k)! * 1000 + grupoCarro(it) * 100 + (tipo && nivel.get(it.k)! <= 1 ? c.comeco(it.k, tipo) * 10 + (naOrdemDe.has(it.k) ? 0 : 1) : 0)]));
         base.sort((a, b) => ord.get(a.k)! - ord.get(b.k)! || pelaNota(a, b));
+        feito = true;
+      } else if (citamNoNome && !sistema && tipoExiste()) {
+        // o estoque tem a peça, mas não para este carro ou não com as outras palavras: PARECIDAS. O que o nome (ou o
+        // tipo) cita, o carro digitado primeiro (o "Suporte alternador" do Gol); depois a peça dos outros carros; por
+        // último o que só o anúncio cita
+        aproximado = true;
+        base = itensDe(2, 3).sort(porCarroNivelENota);
         if (temCarro && tipo) {
           const ja = new Set(ks);
           const outras = instancias(tipo).filter((k) => !ja.has(k)).map((k) => this.itens[k]);
           outras.sort((a, b) => this._nt![a.k].length - this._nt![b.k].length || a.k - b.k);
           base = [...base, ...outras];
         }
-      } else {
-        // entre as que são a peça: a que começa pelo que foi digitado antes da que começa por outra forma de dizer
-        const ord = new Map(base.map((it) => [it.k, nivel.get(it.k)! * 100 + grupoCarro(it) * 10 + (tipo && nivel.get(it.k)! <= 1 ? c.comeco(it.k, tipo) : 0)]));
-        base.sort((a, b) => ord.get(a.k)! - ord.get(b.k)! || pelaNota(a, b));
+        base = [...base, ...itensDe(4).sort(porCarroENota)];
+        feito = true;
+      } else if (citamNoNome) {
+        // nenhuma peça do estoque tem esse nome: as que CITAM a palavra no nome (ou no tipo) são o resultado ("teto": a
+        // "Luz teto")
+        citam = true;
+        base = itensDe(2, 3).sort(porNivelCarroENota);
         // busca de SISTEMA ("suspensão xc60"): a palavra é o nome de um bloco do estoque e de nenhuma peça; o bloco
         // inteiro entra depois das peças que citam a palavra (do carro digitado, quando há)
-        if (!nExatas && U.length === 1) {
+        if (U.length === 1) {
           const ja = new Set(ks);
-          const doBloco = [...new Set(c.cita(U[0], 'c'))].filter((k) => !ja.has(k)).map((k) => this.itens[k])
-            .filter((it) => (!ent.carros.length || doDig(it)) && (!ent.marcas.length || ent.carros.length > 0 || ent.marcas.includes(it.b)));
-          if (doBloco.length) { base = [...base, ...doBloco]; citam = true; }
+          base = [...base, ...[...new Set(c.cita(U[0], 'c'))].filter((k) => !ja.has(k)).map((k) => this.itens[k]).filter(doCarroDig)];
         }
+        base = [...base, ...itensDe(4).sort(porCarroENota)];
+        feito = true;
+      } else {
+        // só o texto do anúncio liga estas peças à busca (o nome, o tipo e o bloco não dizem tudo): não é achado. Vale a
+        // regra de quando nada tem todas as palavras (as parecidas pelo nome, pelo tipo e pelo bloco), e estas ficam no fim
+        soAnuncio = ks.map((k) => this.itens[k]).sort(porCarroENota);
       }
-    } else {
+    }
+    if (!feito) {
       const c = U.length ? this.casador(U, ultima) : null;
+      const noFim = (xs: Item[]) => { const ja = new Set(xs.map((it) => it.k)); return [...xs, ...soAnuncio.filter((it) => !ja.has(it.k))]; };
       // busca de SISTEMA sem nenhuma peça com a palavra para o carro ("suspensão gol"): o bloco do carro
       const doBloco = c && U.length === 1 && !c.cabecas(U[0]).length
-        ? [...new Set(c.cita(U[0], 'c'))].map((k) => this.itens[k]).filter((it) => (!ent.carros.length || doDig(it)) && (!ent.marcas.length || ent.carros.length > 0 || ent.marcas.includes(it.b)))
+        ? [...new Set(c.cita(U[0], 'c'))].map((k) => this.itens[k]).filter(doCarroDig)
         : [];
-      // nada com todas as palavras: as PARECIDAS
-      const ror = !doBloco.length && av.grupos.length ? buscar(av, 'OR', true, true) : [];
+      // nada com todas as palavras: as PARECIDAS. Só pelas palavras de peça: o carro digitado põe as dele na frente,
+      // mas sozinho não faz de nenhuma peça uma "parecida" ("churrasqueira gol" sem churrasqueira no estoque não é a
+      // lista das peças do Gol)
+      const ror = !doBloco.length && av.grupos.length ? buscar(av, 'OR', true, true, U.length ? av.pecas : av.grupos) : [];
       // o tipo: a 1ª unidade que é nome de peça no estoque; senão a 1ª que algum nome cita
       const tipo = c && !doBloco.length ? (U.find((u) => c.cabecas(u).length > 0) ?? U.find((u) => c.cita(u, 'o').some((k) => c.unNoNome(k, u)))) : undefined;
       let fam: number[] = [];
@@ -1049,18 +1143,30 @@ export class Busca {
           fam = [...new Set([...c.cabecas(tipo), ...c.cita(tipo, 'o').filter((k) => c.unNoNome(k, tipo)), ...c.cita(tipo, 's'), ...doCarroNoBloco])];
         }
       }
+      // nenhum nome do estoque diz a palavra, mas o TIPO ou o BLOCO de alguma peça diz (vendida a última lanterna do
+      // estoque, "lanterna" ainda é o bloco "Faróis e Lanternas"): essas, em qualquer carro
+      const doTipoOuBloco = c && !doBloco.length && !fam.length ? [...new Set(U.flatMap((u) => [...c.cita(u, 's'), ...c.cita(u, 'c')]))] : [];
+      const ponto = new Map(ror.map((x) => [x.id as number, x.score]));
       if (doBloco.length) {
-        base = doBloco;
+        base = noFim(doBloco);
         citam = true;
       } else if (fam.length && c && tipo) {
-        const ponto = new Map(ror.map((x) => [x.id as number, x.score]));
         const cab = new Set(c.cabecas(tipo));
         const chaveDe = new Map(fam.map((k) => [k, [grupoCarro(this.itens[k]), -c.quantas(k), cab.has(k) ? 0 : 1, -(ponto.get(k) ?? 0)]]));
         const cmp = (a: number, b: number) => { const x = chaveDe.get(a)!, y = chaveDe.get(b)!; for (let i = 0; i < 4; i++) if (x[i] !== y[i]) return x[i] - y[i]; return a - b; };
-        base = fam.sort(cmp).slice(0, 300).map((k) => this.itens[k]);
+        base = noFim(fam.sort(cmp).slice(0, 300).map((k) => this.itens[k]));
         aproximado = true;
+      } else if (doTipoOuBloco.length) {
+        base = noFim(doTipoOuBloco.sort((a, b) => grupoCarro(this.itens[a]) - grupoCarro(this.itens[b]) || (ponto.get(b) ?? 0) - (ponto.get(a) ?? 0) || a - b).slice(0, 300).map((k) => this.itens[k]));
+        aproximado = true;
+      } else if (soAnuncio.length) {
+        // nada no estoque diz essas palavras no nome, no tipo nem no bloco, e o anúncio de algumas peças tem todas: é o
+        // que há (versão, cor, combustível: "t8", "diesel"). Com palavra de peça na busca, a tela diz "peças ligadas
+        // a…", nunca "peças para…": o que só o anúncio cita não se passa por achado
+        base = soAnuncio;
+        citam = temPalavra;
       } else {
-        // sem tipo que o estoque conheça: as peças com alguma das palavras, como antes
+        // sem tipo que o estoque conheça: as peças com alguma das palavras de peça, como antes
         r = ror.slice(0, 300);
         aproximado = r.length > 0;
         for (const x of r) pontuar(x);
