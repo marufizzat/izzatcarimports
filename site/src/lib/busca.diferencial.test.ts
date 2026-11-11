@@ -60,6 +60,21 @@ const grupo = (de: string, linhas: [string, string | null, Omit<Esp, 'q' | 'tipo
 // ---------------------------------------------------------------------------------------------------------------------
 // 1) As 291 consultas do revisor (revisão 14, parte A: scripts/a-consultas.mjs), com o gabarito dele
 // ---------------------------------------------------------------------------------------------------------------------
+// Das 291, 33 linhas foram ajustadas depois de conferir no estoque (o gabarito continua escrito pelo estoque, não pelo motor):
+//  - regex mais larga que a consulta (pegava peça que não é a pedida): puxador de porta (o do freio de mão, o do tanque),
+//    churrasqueira (toda "Grade…", até a do alto-falante), vidro porta, trava eletrica (toda fechadura), camera de re (a
+//    frontal), multimidia (a "Tela computador bordo"), comutador de ignição (o "Comutador coluna seta limpador"), coxim
+//    motor gol (o coxim do câmbio), calço do motor, compressor do ar / compressor ar condicionado xc60 (o da suspensão),
+//    bloco do motor (o "Bloco expansão ar condicionado"), airbag (a "Cortina retrátil porta-malas");
+//  - regex mais estreita que o estoque (deixava de fora a mesma peça com outro nome): pisca alerta gol ("Botão alerta"),
+//    fechadura do capô ("Fechadura trava capô"), botão do vidro / comando de vidro ("Botão trava vidro", "Comando botão
+//    vidro"), central xc60 ("Central multimídia"), sensor de estacionamento ("Sensor ré estacionamento"), chave canivete
+//    ("Chave presencial"), saida de ar ("Difusor saída ar");
+//  - faltava o que a própria consulta diz: porta dianteira direita (pos), lanterna trazeira (pos), lanterna esquerda com a
+//    ficha Direito (lado), ar condicionado (não tinha gabarito);
+//  - campos que o gabarito do revisor não tinha: `fam` (a família aceita nas parecidas quando o carro não tem a peça: farol
+//    milha kardian, farol compass, dobradiça do capô tracker, frente xc60, fechadura tampa traseira xc60, bomba de gasolina
+//    gol) e `aprox: 'livre'` (retrovisor eletrico hb20: o HB20 só tem o interno, o aviso de parecida está certo).
 grupo('revisor', [
   ['sinaleira', '^lanterna'],
   ['sinaleira xc60', '^lanterna', { car: 'XC60' }],
