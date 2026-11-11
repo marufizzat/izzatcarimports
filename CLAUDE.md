@@ -327,7 +327,12 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      (`poucoAnunciado`), com a frase "Nem toda peça está anunciada. Marque o que você precisa e a gente procura no
      pátio." (`FRASE_PATIO`; nunca prometer que tem). **Sem carro**: o estoque inteiro pelo
      `/dados/batida.json` (curto: cada peça uma vez), NADA marcado (são peças de carros diferentes), 6 linhas à vista e o
-     convite "Dizer o meu carro". Pé preso ao pé da tela: "Pedir o conserto no WhatsApp" (`mensagemConserto`,
+     convite "Dizer o meu carro". **A lista da linha é uma regra só** (rodada 17:
+     `listaDaLinha` em `lib/batida.ts`): o endereço do catálogo não sabe tirar "a que diz a posição oposta" (a "Alma do
+     para-choque" da frente abria 7 peças, 3 de traseira); quando o link não mostra EXATAMENTE a lista da linha
+     (`noCatalogo` falso, 34 de 150 linhas em 11/11), o `batida.json` traz todas as peças dela e o painel passa por elas
+     no "Outra opção", como com o carro salvo; o "Ver as N no catálogo" só aparece quando o catálogo mostra as mesmas N
+     (`batidaJson` escreve, `linhaDoJson` lê; o teste confere pelo TÍTULO de cada peça listada, em todo carro e ponto). Pé preso ao pé da tela: "Pedir o conserto no WhatsApp" (`mensagemConserto`,
      `data-botao="raiox-conserto"` → `contato_whatsapp`; a ordem da mensagem é a da tela) e "Guardar na lista"
      (`adicionarNaLista`). Nunca dizer que o kit está completo: "Peça usada: quando vende, acabou. A gente confere na peça
      antes de você comprar." O desmanche vende muito mais peça pequena que lataria (8 faróis e 5 para-choques no estoque

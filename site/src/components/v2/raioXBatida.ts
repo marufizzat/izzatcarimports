@@ -15,7 +15,7 @@
 //   (adicionarNaLista de lib/lista.ts: o cabeçalho ouve o evento).
 // O que NUNCA se diz: que o kit está completo, prazo, frete, troca. Só o estoque de agora.
 import css from './raioXBatida.css?inline';
-import { PONTOS, PONTOS_DO_OUTRO_LADO, FRASE_PATIO, opcoesDoPonto, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
+import { PONTOS, PONTOS_DO_OUTRO_LADO, FRASE_PATIO, opcoesDoPonto, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, repDe, linkDaLinha, linhaDoJson, type BatidaJson, type Linha, type Ponto, type Rep } from '../../lib/batida';
 import { ARTE, fotoDoCodigo, type CarroFiltro, type LadoArte } from '../../lib/raioX';
 import type { PontoTras } from '../../lib/raioXTras';
 import { mensagemConserto, linkWhats, somaPrecos, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
@@ -23,9 +23,7 @@ import { adicionarNaLista, lerLista, PAGINA_LISTA, MAX_LISTA, type ItemLista } f
 import type { Filtros, Item } from '../../lib/busca';
 
 export const ARQUIVO_BATIDA = '/dados/batida.json';
-/** O JSON do build (pages/dados/batida.json.ts): as peças uma vez só e, por ponto, [quantas, qual peça] de cada linha
- *  (com um 3º número, 0, quando a peça à mostra não é a do título da linha). */
-export type BatidaJson = { v: number; pecas: Rep[]; pontos: Record<string, ([number, number] | [number, number, 0])[]> };
+export type { BatidaJson };
 
 type Procurar = (f: Filtros) => Item[];
 export type CarroDaVez = { procurar: Procurar | null; filtro: CarroFiltro; aviso: string; capa: (it: Item) => string };
@@ -163,8 +161,9 @@ export function ligarBatida(ctx: Ctx) {
     json ??= fetch(ARQUIVO_BATIDA).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<BatidaJson>; })
       .catch((e) => { json = null; throw e; });
     const j = await json;
-    const linhas = j.pontos[p.k] ?? [];
-    return linhasDoPainel(p.linhas.map((linha, i): LinhaP => ({ linha, n: linhas[i]?.[0] ?? 0, ops: linhas[i]?.[0] ? [j.pecas[linhas[i][1]]] : [], certa: !!linhas[i]?.[0] && linhas[i][2] !== 0 }))
+    // a linha em que o link do catálogo mostraria peça do lado ou da posição oposta traz TODAS as peças dela (ops): o
+    // painel passa por elas no "Outra opção", como com o carro salvo, e o link do catálogo não aparece (lib/batida.ts)
+    return linhasDoPainel(p.linhas.map((linha, i): LinhaP => ({ linha, ...linhaDoJson(j, p.k, i) }))
       .filter((l) => l.n > 0 || !l.linha.extra), semPeca);
   }
   async function kitDe(k: string): Promise<LinhaP[]> {
