@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { palavraViva, contarBlocos, escolherAtalhos, linkAtalho, PECAS_PALCO, ATALHOS_MAX, type IndiceCarro } from './abertura';
+import { palavraViva, contarBlocos, escolherAtalhos, linkAtalho, lugaresEstreitos, PECAS_PALCO, ATALHOS_MAX, type IndiceCarro } from './abertura';
 import { Busca, type Indice } from './busca';
 import { serveNoModelo } from './meuCarro';
 
@@ -8,19 +8,19 @@ const buscaArq = 'public/dados/busca.json';
 const resumoArq = 'src/data/resumo.json';
 const pecasArq = 'src/data/abertura-pecas.json';
 
-describe('palavraViva: a palavra do título e o tamanho da letra', () => {
+describe('palavraViva: a palavra do título e a largura da 2ª linha', () => {
   it('sem carro, só a marca, modelo, modelo + ano', () => {
-    expect(palavraViva()).toEqual({ t: 'carro', f: 1 });
-    expect(palavraViva(null, null, 'Chevrolet')).toEqual({ t: 'Chevrolet', f: 1 });
-    expect(palavraViva('Onix', null, 'Chevrolet')).toEqual({ t: 'Onix', f: 1 });
-    expect(palavraViva('Onix', 2019, 'Chevrolet')).toEqual({ t: 'Onix 2019', f: 1 });
+    expect(palavraViva()).toEqual({ t: 'carro', l: 5.77 });
+    expect(palavraViva(null, null, 'Chevrolet').t).toBe('Chevrolet');
+    expect(palavraViva('Onix', null, 'Chevrolet').t).toBe('Onix');
+    expect(palavraViva('Onix', 2019, 'Chevrolet')).toEqual({ t: 'Onix 2019', l: 7.64 });
   });
-  it('nome longo: o ano sai e a letra diminui (a linha nunca quebra)', () => {
+  it('nome longo: o ano sai (ele continua no cartão) e a linha fica mais larga, nunca passa de 9,6 com o ano', () => {
     expect(palavraViva('Palio Weekend', 2012).t).toBe('Palio Weekend');
     expect(palavraViva('Range Rover Evoque', 2015).t).toBe('Range Rover Evoque');
-    const { t, f } = palavraViva('Range Rover Evoque', 2015);
-    expect((t.length + 9) * f).toBeLessThanOrEqual(18.01);
-    expect(palavraViva('Tracker', 2020)).toEqual({ t: 'Tracker 2020', f: 0.857 });
+    expect(palavraViva('Tracker', 2020).t).toBe('Tracker 2020');
+    expect(palavraViva('Compass', 2019).l).toBeLessThanOrEqual(9.6);
+    expect(palavraViva('Palio Weekend', 2012).l).toBeGreaterThan(9);
   });
   it('lixo no armazenamento não quebra o título', () => {
     expect(palavraViva(undefined, NaN as unknown as number, 42 as unknown as string).t).toBe('carro');
@@ -29,13 +29,13 @@ describe('palavraViva: a palavra do título e o tamanho da letra', () => {
   });
   it('é sozinha (vai para dentro do HTML por toString)', () => {
     const copia = new Function(`return (${palavraViva.toString()})`)() as typeof palavraViva;
-    expect(copia('Onix', 2019, 'Chevrolet')).toEqual({ t: 'Onix 2019', f: 1 });
+    expect(copia('Onix', 2019, 'Chevrolet')).toEqual({ t: 'Onix 2019', l: 7.64 });
   });
 });
 
 describe('atalhos do carro', () => {
   const d: IndiceCarro = {
-    familias: ['Freios', 'Motor', 'Faróis e Lanternas', 'Acabamentos e Forros'],
+    familias: ['Freios', 'Motor', 'Faróis e Lanternas', 'Escapamento'],
     c: [0, 0, 1, 2, 3, 3, 3, 2],
     m: ['Onix', 'Onix', 'Onix', 'Onix', 'Onix', 'Onix', 'Onix', 'Prisma'],
     y: [[2013, 2019], [2020, 2024], 0, [2017, 2019], 0, 0, 0, [2013, 2019]],
@@ -45,7 +45,7 @@ describe('atalhos do carro', () => {
   it('conta por bloco; a peça de 2 carros conta no Onix com a faixa do Onix', () => {
     const todos = contarBlocos(d, 'Onix', null);
     expect(todos.total).toBe(8);
-    expect(Object.fromEntries(todos.por)).toEqual({ Freios: 2, Motor: 1, 'Faróis e Lanternas': 2, 'Acabamentos e Forros': 3 });
+    expect(Object.fromEntries(todos.por)).toEqual({ Freios: 2, Motor: 1, 'Faróis e Lanternas': 2, Escapamento: 3 });
     const de2019 = contarBlocos(d, 'Onix', 2019);
     expect(Object.fromEntries(de2019.por)).toEqual({ Freios: 1, 'Faróis e Lanternas': 1 });
     expect(contarBlocos(d, 'Onix', 2015).por.get('Faróis e Lanternas')).toBe(1); // a do Prisma/Onix (2013 a 2016 no Onix)
@@ -55,6 +55,14 @@ describe('atalhos do carro', () => {
     expect(a.map((x) => [x.k, x.n])).toEqual([['farol', 2], ['pinca', 2], ['motor', 1]]);
     expect(escolherAtalhos(new Map())).toEqual([]);
     expect(escolherAtalhos(new Map(PECAS_PALCO.map((p) => [p.bloco, 3]))).length).toBe(ATALHOS_MAX);
+  });
+  it('celular: os lugares cabem no palco e nenhum fica em cima do outro', () => {
+    for (let n = 0; n <= ATALHOS_MAX; n++) {
+      const l = lugaresEstreitos(n);
+      expect(l.length).toBe(n);
+      for (const [x, y] of l) { expect(x).toBeGreaterThanOrEqual(14); expect(x).toBeLessThanOrEqual(86); expect(y).toBeLessThan(40); }
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) expect(Math.abs(l[i][0] - l[j][0]) >= 30 || Math.abs(l[i][1] - l[j][1]) >= 15).toBe(true);
+    }
   });
   it('o link é o do catálogo com tipo, marca, modelo e ano', () => {
     expect(linkAtalho('Faróis e Lanternas', { b: 'Chevrolet', m: 'Onix', y: 2019 })).toBe('/catalogo.html?tipo=Far%C3%B3is+e+Lanternas&marca=Chevrolet&modelo=Onix&ano=2019');

@@ -25,37 +25,57 @@ export const PECAS_PALCO: PecaPalco[] = [
   { k: 'difusor', bloco: 'Painel e Console', rot: 'Painel e console', curto: 'Painel' },
   { k: 'macaneta', bloco: 'Maçanetas e Fechaduras', rot: 'Maçanetas e fechaduras', curto: 'Maçanetas' },
   { k: 'alternador', bloco: 'Ignição e Partida', rot: 'Ignição e partida', curto: 'Ignição' },
+  { k: 'forro', bloco: 'Acabamentos e Forros', rot: 'Acabamentos e forros', curto: 'Acabamentos' },
+  { k: 'vidro', bloco: 'Vidro Elétrico', rot: 'Vidro elétrico', curto: 'Vidros' },
+  { k: 'compressor', bloco: 'Ar-condicionado', rot: 'Ar-condicionado', curto: 'Ar cond.' },
+  { k: 'seta', bloco: 'Botões e Chaves de Seta', rot: 'Botões e chaves de seta', curto: 'Botões' },
+  { k: 'mangueira', bloco: 'Mangueiras do Motor', rot: 'Mangueiras do motor', curto: 'Mangueiras' },
+  { k: 'parachoque', bloco: 'Para-choques e Lataria', rot: 'Para-choques e lataria', curto: 'Para-choques' },
+  { k: 'cambio', bloco: 'Câmbio e Transmissão', rot: 'Câmbio e transmissão', curto: 'Câmbio' },
 ];
 
 /** Lugar dos atalhos no palco estreito (celular): fileiras desencontradas, [x, y] do centro em % do palco.
- *  Até 3 numa fileira; 4 = 2 + 2; 5 = 3 + 2 (os rótulos de uma fileira nunca encostam nos da outra). */
+ *  Até 3 numa fileira; 4 = 2 + 2; 5 = 3 + 2. Na fileira de 3, o do meio fica um pouco mais baixo: os rótulos
+ *  ("Acabamentos 59" ao lado de "Mangueiras 43") nunca se encostam. */
 export function lugaresEstreitos(n: number): [number, number][] {
-  const fila = (q: number, y: number): [number, number][] => Array.from({ length: q }, (_, i) => [50 + (i - (q - 1) / 2) * 32, y]);
-  if (n <= 3) return fila(n, 19);
+  const fila = (q: number, y: number): [number, number][] =>
+    Array.from({ length: q }, (_, i) => [50 + (i - (q - 1) / 2) * 32, y + (q === 3 && i === 1 ? 4.5 : 0)]);
+  if (n <= 3) return fila(n, 17);
   const cima = Math.ceil(n / 2);
-  return [...fila(cima, 13), ...fila(n - cima, 33)];
+  return [...fila(cima, 12), ...fila(n - cima, cima === 3 ? 35 : 33)];
 }
 
 /** `sizes` da arte do carro e do farol-herói no palco: os MESMOS no <img> (AberturaV2.astro) e na pré-carga do <head>
- *  (index.astro), para o navegador escolher o mesmo arquivo e baixar uma vez só. */
-export const SIZES_AUTO = '(max-width: 1023px) 108vw, min(62vw, 1100px)';
-export const SIZES_HEROI = '(max-width: 1023px) 94vw, min(52vw, 800px)';
+ *  (index.astro), para o navegador escolher o mesmo arquivo e baixar uma vez só. No celular o valor é menor que a
+ *  largura de verdade de propósito: tela 3x pediria a arte de 1200 px para um palco de 360. */
+export const SIZES_AUTO = '(max-width: 1023px) 70vw, min(56vw, 1060px)';
+export const SIZES_HEROI = '(max-width: 1023px) 62vw, min(52vw, 800px)';
 
 /** Quantos atalhos cabem em volta do carro. */
 export const ATALHOS_MAX = 5;
 
-/** A palavra viva do título ("De qual peça o seu ___ precisa?") e o fator da letra para ela caber na linha.
+/** A palavra viva do título ("De qual peça o seu ___ precisa?") e a largura que a 2ª linha fica tendo.
  *  Sem nada: "carro"; só a marca (passo 1 do seletor): a marca; com o modelo: o modelo, e o ano junto quando cabe
- *  ("Onix 2019"; "Palio Weekend" fica sem o ano: ele continua no cartão). f = 1 até 9 letras; depois a letra do título
- *  diminui para a 2ª linha nunca quebrar (a linha tem lugar para 18 letras: a palavra + " precisa?").
+ *  ("Onix 2019"; "Palio Weekend" fica sem o ano: ele continua no cartão).
+ *  l = largura da 2ª linha (a palavra + " precisa?") em "em" da letra do título, estimada por classe de letra da Archivo
+ *  condensada (medido no navegador em nov/2026 com os 374 nomes do estoque: erra de -1% a +3,6%). O CSS usa l (--ab-l)
+ *  para diminuir a letra só o necessário para a linha caber na coluna de cada tela.
  *  SEM nada de fora: vai copiada para dentro do HTML por toString() (o título de quem volta nasce pronto). */
-export function palavraViva(m?: string | null, y?: number | null, b?: string | null): { t: string; f: number } {
+export function palavraViva(m?: string | null, y?: number | null, b?: string | null): { t: string; l: number } {
   var limpo = function (s: unknown) { return typeof s === 'string' ? s.replace(/\s+/g, ' ').trim().slice(0, 28) : ''; };
+  var larg = function (s: string) {
+    var w = 0;
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charAt(i);
+      w += c === ' ' ? 0.14 : /[ijlíIÍ]/.test(c) ? 0.25 : /[frt.'-]/.test(c) ? 0.31 : /[mwMW]/.test(c) ? 0.78 : /[A-ZÀ-Ý]/.test(c) ? 0.6 : 0.5;
+    }
+    return w;
+  };
+  var resto = 3.65; // " precisa?"
   var mo = limpo(m), ma = limpo(b);
   var ano = typeof y === 'number' && y > 1900 && y < 2100 ? String(y) : '';
-  var t = mo ? (ano && (mo + ' ' + ano).length <= 14 ? mo + ' ' + ano : mo) : ma || 'carro';
-  var f = Math.min(1, Math.round((18 / (t.length + 9)) * 1000) / 1000);
-  return { t: t, f: f };
+  var t = mo ? (ano && larg(mo + ' ' + ano) + resto <= 9.6 ? mo + ' ' + ano : mo) : ma || 'carro';
+  return { t: t, l: Math.round((larg(t) + resto) * 100) / 100 };
 }
 
 /** O que a conta precisa do /dados/carro/<k>.json (o mesmo formato do busca.json, só as peças do carro). */

@@ -31,17 +31,19 @@ export function montarAbertura(sec: HTMLElement) {
   // ---- título: a palavra viva ----
   let palavraAgora = palavra.textContent || 'carro';
   function dizer(m?: string | null, y?: number | null, b?: string | null) {
-    const { t, f } = palavraViva(m, y, b);
+    const { t, l } = palavraViva(m, y, b);
     if (t === palavraAgora) return;
     palavraAgora = t;
-    const trocar = () => { palavra.textContent = t; h1.style.setProperty('--ab-f', String(f)); };
+    const trocar = () => { palavra.textContent = t; h1.style.setProperty('--ab-l', String(l)); };
     if (calmo || !palavra.animate) { trocar(); return; }
     // FLIP do "precisa?": ele desliza para o lugar novo enquanto a palavra troca
     const antes = resto?.getBoundingClientRect();
     trocar();
     const depois = resto?.getBoundingClientRect();
+    h1.classList.add('ab-anima');
     const mola = 'cubic-bezier(.2, .9, .25, 1.12)';
-    palavra.animate([{ opacity: 0, transform: 'translateY(.32em)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: mola });
+    const a = palavra.animate([{ opacity: 0, transform: 'translateY(.32em)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: mola });
+    a.onfinish = a.oncancel = () => { if (palavraAgora === t) h1.classList.remove('ab-anima'); };
     if (resto && antes && depois && Math.abs(antes.top - depois.top) < 4)
       resto.animate([{ transform: `translateX(${antes.left - depois.left}px)` }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2, .8, .2, 1)' });
     if (pincel) { pincel.classList.remove('ab-traca'); void pincel.getBoundingClientRect(); pincel.classList.add('ab-traca'); }
@@ -70,7 +72,7 @@ export function montarAbertura(sec: HTMLElement) {
     if (novas.length) await Promise.race([Promise.all(novas.map((li) => pronta(ligarImagem(li)))), espera(2600)]);
     if (minha !== vez) return;
     novas.forEach((li, i) => { li.style.setProperty('--at', `${calmo ? 0 : i * 80}ms`); li.classList.add('ab-on'); });
-    sec.removeAttribute('data-ab-entrada');
+    palco.removeAttribute('data-ab-entrada');
   }
 
   function brilhar(pisca = false) {
@@ -123,7 +125,7 @@ export function montarAbertura(sec: HTMLElement) {
   }
 
   function estado(e: Estado) {
-    if (e) sec.setAttribute('data-ab', e); else sec.removeAttribute('data-ab');
+    if (e) palco.setAttribute('data-ab', e); else palco.removeAttribute('data-ab');
   }
 
   /** A arte do carro: duas <img> que se revezam (a nova só aparece carregada: dissolvência, nunca um buraco). */
@@ -207,7 +209,7 @@ export function montarAbertura(sec: HTMLElement) {
     const corpo = conteudo?.querySelector<HTMLElement>('.mc-corpo');
     if (!corpo || corpo.dataset.etapa !== 'modelo') return;
     const b = conteudo!.querySelector<HTMLElement>('.mc-campo-cheio[data-alvo="marca"] b')?.textContent?.trim() || '';
-    if (!b || (b === marcaAgora && sec.getAttribute('data-ab') === 'marca')) return;
+    if (!b || (b === marcaAgora && palco.getAttribute('data-ab') === 'marca')) return;
     marcaAgora = b;
     pedido++;
     carroAgora = null;
@@ -227,12 +229,12 @@ export function montarAbertura(sec: HTMLElement) {
   window.addEventListener('pageshow', (ev) => {
     if (!ev.persisted) return;
     const c = lerMeuCarro();
-    if (c && sec.getAttribute('data-ab') === 'carro' && (carroAgora?.m !== c.m || carroAgora?.y !== c.y)) comCarro(c, true);
+    if (c && palco.getAttribute('data-ab') === 'carro' && (carroAgora?.m !== c.m || carroAgora?.y !== c.y)) comCarro(c, true);
   });
 
   // ---- vida: só com o palco na tela e a aba à vista ----
   let naTela = false;
-  const viver = () => sec.toggleAttribute('data-ab-vivo', naTela && !document.hidden && !calmo);
+  const viver = () => palco.toggleAttribute('data-ab-vivo', naTela && !document.hidden && !calmo);
   document.addEventListener('visibilitychange', viver);
 
   // paralaxe pelo ponteiro (mouse de verdade, PC): duas variáveis no palco, suavizadas num laço que para sozinho
@@ -254,12 +256,14 @@ export function montarAbertura(sec: HTMLElement) {
     sec.addEventListener('pointerleave', () => { ax = 0; ay = 0; if (!rodando) rodando = requestAnimationFrame(passo); });
   }
 
+  sec.setAttribute('data-ab-montada', '');
   // ---- começo: quando o palco chega perto da tela (no celular ele fica abaixo do cartão) ----
   let comecou = false;
   function comecar() {
     if (comecou) return;
     comecou = true;
-    const salvo = sec.getAttribute('data-ab') === 'carro' ? lerMeuCarro() : null;
+    palco.removeAttribute('data-ab-dorme');
+    const salvo = palco.getAttribute('data-ab') === 'carro' ? lerMeuCarro() : null;
     if (salvo) comCarro(salvo, true);
     else { whatsDoSelo(null); entrar(cenaBase()).then(() => setTimeout(brilhar, 420)); }
   }
@@ -270,7 +274,7 @@ export function montarAbertura(sec: HTMLElement) {
         if (naTela) comecar();
       }
       viver();
-    }, { rootMargin: '160px 0px' }).observe(palco);
+    }, { rootMargin: '80px 0px' }).observe(palco);
   } else { naTela = true; comecar(); viver(); }
   // a luz do farolzinho da 1ª tela do celular não espera o palco
   if (!largo.matches) setTimeout(brilhar, 700);

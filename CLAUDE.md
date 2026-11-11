@@ -222,6 +222,52 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    `filter: blur` do CSS (o filtro do SVG custava 60–110 ms por toque com CPU 6×). Tipo novo no estoque: conferir a zona
    dele em `ZONAS` (o teste avisa nome de bloco/tipo que sumiu).
 
+13. **Abertura viva: "o estúdio vira o seu carro" (rodada 15, nov/2026)** — `v2/AberturaV2.astro` (marcação e CSS),
+   `v2/aberturaPalco.ts` (comportamento, chega depois da 1ª pintura) e `lib/abertura.ts` (contas puras, testadas com o
+   estoque real em `abertura.test.ts`). Conceito e os dois descartados: `site/SUPER-PLANEJAMENTO-v2.md` ("Abertura viva").
+   - **Título com a palavra viva**: "De qual peça o seu ___ precisa?" — "carro" -> a marca (passo 1 do seletor, lida do que
+     ele desenha: `olharSeletor`) -> o modelo e o ano (evento `meu-carro`). `palavraViva()` decide o texto e estima a
+     largura da 2ª linha pela classe de cada letra (`--ab-l`, em "em"; medido com os 374 nomes do estoque: erra de -1% a
+     +3,6%); o CSS diminui a letra só o necessário para a linha caber na coluna de cada tela (`--ab-col`) e a altura do h1
+     é fixa (2 linhas cheias). O h1 é UM bloco de texto (linha em `display: block`/`inline-block` dividiria a área dele e
+     o LCP do celular passaria para uma imagem: a palavra só vira caixa durante a troca, `.ab-anima`). O HTML continua
+     com "De qual peça o seu carro precisa?" (SEO); quem volta com carro salvo recebe o título dele no script do fim da
+     seção, antes da 1ª pintura (só se o `SeletorCarro` marcou `data-salvo`, isto é, o carro ainda tem peça).
+   - **Selos** (no lugar da frase cinza): "Desmanche legal · CDV Detran-RS nº 01060" (grafite) e "10% de desconto ·
+     comprando pelo WhatsApp" (verde, o ÚNICO verde da abertura; link com `data-botao="abertura-desconto"`, a mensagem
+     leva o carro salvo). Laranja só no botão principal do seletor e nos traços.
+   - **Palco** (à direita a partir de 1024 px; abaixo do cartão no celular/tablet): fundo de estúdio em CSS + peças
+     recortadas, uma por camada (`public/arte/v2/abertura/<k>-<largura>.webp`, medidas em `src/data/abertura-pecas.json`).
+     Cada peça é um LINK do bloco dela (`PECAS_PALCO`, 18 peças = 18 dos 25 blocos: farol-herói, retrovisor, pinça,
+     amortecedor e turbo na cena de abertura; as outras 13 só como atalho de carro). Com o carro escolhido:
+     a arte do carro entra (as 93 têm a mesma pose e o mesmo estúdio; o horizonte dela casa com o do palco:
+     `--ab-horizonte`) e as peças viram até 5 atalhos DELE, do bloco com mais peças para o de menos, com o número do
+     catálogo (`contarBlocos` sobre `/dados/carro/<k>.json`, o mesmo arquivo do "Chegou para o seu carro";
+     `linkAtalho` = `/catalogo.html?tipo=&marca=&modelo=&ano=`). Bloco sem peça não vira atalho; ano salvo sem peça =
+     os atalhos do modelo em todos os anos. A peça é ilustrativa do BLOCO (nunca dizer que é a peça do carro).
+   - **Peça nova no palco**: gerar sozinha em fundo liso `#DAD6D1` (super prompt no SUPER-PLANEJAMENTO), rodar
+     `python ferramentas/camada_abertura.py <png> <nome> --larguras 320,480` (recorte do Vision, borda firme, sem auréola;
+     conferir a 200% sobre claro e escuro), pôr em `PECAS_PALCO` com o nome EXATO do bloco (o teste confere) e commitar o
+     json. Trocar o farol: `--larguras 400,800,1200` (refaz também `farol-drl.webp`, a máscara por onde a luz corre).
+   - **Movimento** (tudo transform/opacity): entrada das peças quando as imagens estão decodificadas (80 ms entre elas),
+     luz correndo pelo DRL, "pisca" ao escolher marca/carro, deriva lenta em CSS, paralaxe pelo ponteiro (só mouse, laço
+     de rAF que para sozinho), saída em camadas na rolagem (CSS `animation-timeline`, só PC). Pausa fora da tela e com a
+     aba escondida (`data-ab-vivo`). `prefers-reduced-motion` e `html.leve`: a mesma cena, parada, trocas secas.
+   - **Orçamento (não estourar)**: celular — a única imagem da 1ª tela é o farolzinho do topo (`farol-400.webp`, ~20 KB)
+     e ela tem de continuar MENOR em área que o título (o LCP do celular é o h1); o palco fica abaixo do cartão e DORME
+     (`data-ab-dorme`: a cena com `display: none` e as imagens sem `srcset`, guardado em `data-srcset`) até chegar a 80 px
+     da tela — montado desde o começo ele custava um layout de 35 ms a mais com CPU 4× e baixava ~250 KB na 1ª visita.
+     PC — o LCP é o farol recortado (ou a arte do carro salvo), pedido no `<head>` pelo script de `index.astro` com o
+     MESMO `srcset`/`sizes` do `<img>` (`SIZES_HEROI`/`SIZES_AUTO`: mudou num, mude no outro; no celular o `sizes` é
+     menor que a tela de propósito, senão a tela 3x pede o arquivo de 1200 px). As peças fora da cena só baixam quando
+     viram atalho; com carro salvo, as da cena também não baixam. Nada entra empurrando: tudo no palco é absoluto; os
+     selos têm colunas de largura fixa e a grade do conteúdo é `minmax(0, 1fr)` (a fonte que chega depois não mexe em
+     nada: a fonte de espera "Ab Espera" tem as medidas verticais da Archivo). Estados (`data-ab`, `data-ab-vivo`,
+     `data-ab-entrada`) ficam no `.ab-palco`, não na seção. JS novo: um arquivo de ~4 KB gzip, sem biblioteca.
+   - **Não quebrar**: o seletor (`ui/meuCarroPicker.ts`) não foi tocado — a abertura só OUVE (`meu-carro`,
+     MutationObserver no `[data-mc-conteudo]`, as classes `.mc-corpo[data-etapa]` e `.mc-campo-cheio[data-alvo="marca"]`);
+     quem mexer nessas classes confere o título. O slot `topo` ("Continuar") e o slot `busca` continuam iguais.
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
@@ -240,6 +286,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 | Cores, fontes, botões, etiqueta da peça | `site/src/styles/global.css` |
 | Página da peça | `site/src/pages/peca/[slug].astro` e `site/src/components/PecaTopo.astro` |
 | Home | `site/src/pages/index.astro` e `site/src/components/v2/*` (abertura, selos, categorias, marcas, carros, banners) |
+| Abertura da home (título vivo, selos, palco com as peças e o carro) | `site/src/components/v2/AberturaV2.astro`, `aberturaPalco.ts`, `site/src/lib/abertura.ts`; camadas: `ferramentas/camada_abertura.py` |
 | Catálogo (busca e filtros) | `site/src/components/catalogo/Catalogo.tsx` e `site/src/lib/busca.ts` |
 | Leitura de marca/modelo/nome | `preparar_dados.py` |
 | GA4 / Meta Pixel | `site/public/rastreio.js` (só mede no domínio de verdade) |
@@ -291,7 +338,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   carro" são montados pelo script. "Do mesmo carro" mostra 6 cartões.
 - Aparelho fraco (`html.leve`, marcado no `<head>` do `Base.astro`: até 2 núcleos, até 4 GB no Chrome ou economia de
   dados; o Safari informa sempre 4 ou 8 núcleos, então iPhone não entra): sem vidro desfocado, sem 3D no coverflow,
-  sem o "respirar" da abertura e sem animação de altura nas perguntas.
+  sem movimento no palco da abertura e sem animação de altura nas perguntas.
 - **Tipo manda (rodada 14, cliente oculto atrito 6)**: `busca.ts` separa o TIPO digitado (`alvosDo`) do carro/lado/ano. Peça do tipo = a 1ª palavra do nome (`tipoDe`: "Para-choque…", "Lanterna…"); a 2ª só sob cabeçalho genérico (`GENERICOS`: guia, suporte, moldura, acabamento, grade, tampa, maquina, motor) ou para o sinônimo (forma do `sinonimos.ts`, "pisca" = "Chave seta" e "Botão pisca"; `CONTROLES`); "Botão farol milha" e "Chave seta farol" NÃO são farol. Vários termos: o 1º é o tipo, os outros têm de estar no nome ("motor vidro"). Sem peça do tipo: as PARECIDAS são da família (`familia`: o sistema "s" ou o bloco "c" com a palavra, todas as palavras digitadas), o carro digitado primeiro, com aviso (`aproximado`); busca de sistema ("suspensão xc60", o nome do bloco) não é parecida. Tabela de regressão: `lib/busca.regressao.ts` (gabarito pelo estoque, 926 consultas, a antiga 612) e `lib/busca.regressao.test.ts`. Palavra curta não é raiz ("par" ≠ "paralama"); erro de uma letra em palavra de 6+ letras vale ("esqurdo").
 - Busca: UMA regra para o catálogo e as sugestões (`lib/busca.ts`): ano solto vira filtro; todas as palavras, depois com
   erro de digitação (nunca em termo com número), depois as parecidas (`aproximado`); o carro digitado vem primeiro.
