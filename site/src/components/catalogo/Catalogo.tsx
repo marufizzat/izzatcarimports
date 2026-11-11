@@ -18,7 +18,7 @@ import {
 import { Busca, FAIXAS, SIZES_CARTAO, capaItem, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item, type Lado, type Posicao } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
-import { serveNoMeuCarro, nomeCarro, nomeModelos } from '../../lib/meuCarro';
+import { serveNoMeuCarro, nomeCarro, nomeModelos, norm } from '../../lib/meuCarro';
 import { zonaDaChave } from '../../lib/raioX';
 import { chaveCarro } from '../../lib/chegouCarro';
 import { adicionarNaLista, lerLista, EVENTO_LISTA, PAGINA_LISTA } from '../../lib/lista';
@@ -118,7 +118,9 @@ const Xis = () => (
 
 /** Cartão da peça (vitrine) — mesmo markup de CartaoPeca.astro. Memorizado: só redesenha se a peça ou o selo mudam. */
 export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModelo, naLista }: {
-  it: Item; eager?: boolean; alta?: boolean; novo?: boolean; meuModelo?: string | null; naLista?: boolean;
+  it: Item; eager?: boolean; alta?: boolean; novo?: boolean; naLista?: boolean;
+  /** o modelo do carro salvo quando a peça serve nele; '?' = serve, mas é de UMA versão do carro unido ("Confira a versão") */
+  meuModelo?: string | null;
 }) {
   // "+ Lista": põe a peça na lista sem abrir a peça (ou, já na lista, leva à lista). Clique: um só (o botão é irmão do link)
   const pôrNaLista = () => {
@@ -158,7 +160,7 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
           {novo && <span className="etiqueta-novo">Chegou agora</span>}
         </div>
         <div className="etiqueta-dados">
-          <span className="etiqueta-serve" hidden={!meuModelo}>{meuModelo ? `Serve no seu ${meuModelo}` : ''}</span>
+          <span className={meuModelo === '?' ? 'etiqueta-serve etiqueta-serve-ano' : 'etiqueta-serve'} hidden={!meuModelo}>{meuModelo === '?' ? 'Confira a versão' : meuModelo ? `Serve no seu ${meuModelo}` : ''}</span>
           {carro && <span className="etiqueta-carro"><span className="etiqueta-modelo">{carro}</span>{it.dif && <> <span className="etiqueta-dif">{it.dif}</span></>}{anos && <span className="etiqueta-anos"><span className="etiqueta-sep"> · </span>{anos}</span>}</span>}
           <h3 className="etiqueta-nome">{it.n}</h3>
           {cod && <span className="etiqueta-cod" title="Código gravado na peça">Cód. <span className="oem">{cod}</span></span>}
@@ -849,7 +851,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
               {grade.flatMap((it, i) => {
                 const cartao = (
                   <Etiqueta key={it.id} it={it} eager={!!busca && i < 4} alta={!!busca && i < 2} novo={!semSelo && novos.has(it.id)} naLista={naLista.has(it.id)}
-                            meuModelo={meuCarro && serveNoMeuCarro(it, meuCarro) === 'sim' ? meuCarro.m : null} />
+                            meuModelo={meuCarro && serveNoMeuCarro(it, meuCarro) === 'sim' ? (it.v1 && norm(it.v1) !== norm(meuCarro.m) ? '?' : meuCarro.m) : null} />
                 );
                 if (blocos && carroDaBusca && i === 0) return [<h2 key="bloco-carro" className="cat-bloco">Do {carroDaBusca.b} {carroDaBusca.m} <span>· {n2(nDoCarro)} {pecas(nDoCarro)}</span></h2>, cartao];
                 if (blocos && i === nDoCarro) return [<h2 key="bloco-outras" className="cat-bloco">Outras parecidas <span>· {n2(resultado.length - nDoCarro)} {pecas(resultado.length - nDoCarro)}</span></h2>, cartao];
