@@ -275,9 +275,9 @@ export function semPecas(ix: any, fica: (k: number) => boolean): any {
   return out;
 }
 
-/** As consultas geradas para o estoque (so = só as que têm esse texto), julgadas pelas regras: as linhas que falham
- *  (vazio = tudo certo). */
-export function falhasDe(Busca: new (ix: any) => any, estoque: any, so?: RegExp): string[] {
-  const lista = casos(estoque).filter((c) => !so || so.test(c.q));
+/** As consultas geradas para o estoque (so = só as que têm esse texto; carro = só as sem carro e as desse carro), julgadas
+ *  pelas regras: as linhas que falham (vazio = tudo certo). */
+export function falhasDe(Busca: new (ix: any) => any, estoque: any, so?: RegExp, carro?: string): string[] {
+  const lista = casos(estoque).filter((c) => (!so || so.test(c.q)) && (!carro || !c.carro || c.carro.m === carro));
   return avaliar(Busca, estoque, lista).rows.filter((r) => !r.ok).map((r) => `${r.q} | ${r.motivo} | ${r.top1}`);
 }

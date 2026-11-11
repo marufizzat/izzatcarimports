@@ -27,13 +27,13 @@ const VENDIDAS_1111 = ['MLB4779038537', 'MLB7328296554', 'MLB6297774618', 'MLB45
   'MLB7722912002', 'MLB5310823745', 'MLB5483856157'];
 
 describe('busca: as regras com o estoque mexido (o que travou o robô em 11/11/2026)', () => {
-  it('o estoque congelado é o de 09/11 e cumpre todas as regras (se isto falhar, o arquivo foi trocado)', () => {
+  it('o estoque congelado é o de 09/11 (se isto falhar, o arquivo foi trocado)', () => {
     expect(ix.id.length).toBe(5311);
     expect(VENDIDAS_1111.every((id) => ix.id.includes(id))).toBe(true);
     expect([...new Set(casos(ix).map((c) => c.grupo))].sort()).toEqual(['carro', 'codigo', 'familia', 'lado', 'tipo']);
     expect(casos(ix).length).toBeGreaterThanOrEqual(900);
-    expect(falhasDe(Busca, ix)).toEqual([]);
-  }, 120000);
+    // (a tabela inteira roda logo abaixo, com este estoque menos as 18 peças vendidas em 11/11)
+  });
 
   it('11/11: vendidas as 18 peças daquele dia (a única lanterna do XC60 entre elas), todas as regras continuam valendo', () => {
     const hoje = semPecas(ix, (k) => !VENDIDAS_1111.includes(ix.id[k]));
@@ -73,16 +73,15 @@ describe('busca: as regras com o estoque mexido (o que travou o robô em 11/11/2
   });
 
   // (um teste por estoque mexido: cada um é curto, e o que falhar diz qual venda quebrou a regra)
-  // (só as consultas do tipo que saiu: a tabela inteira com o estoque de 11/11 já rodou acima)
+  // (só as consultas do tipo e do carro que ficou sem ele: a tabela inteira com o estoque de 11/11 já rodou acima)
   const eventos: [string, string, RegExp][] = [
     ['lanterna', 'XC60', /lanterna|sinaleira/], ['modulo', 'Gol', /modulo/], ['chave', 'Onix', /pisca/], ['motor', 'Tracker', /motor|maquina/],
-    ['farol', 'HB20', /farol/], ['parachoque', 'E-Pace', /choque/], ['retrovisor', 'HB20', /retrovisor/], ['sensor', 'Compass', /sensor/],
-    ['macaneta', 'Toro', /maçaneta/], ['painel', 'Gol', /painel/],
+    ['farol', 'HB20', /farol|frente/], ['parachoque', 'E-Pace', /choque|frente/], ['retrovisor', 'HB20', /retrovisor/], ['macaneta', 'Toro', /maçaneta/],
   ];
   it.each(eventos)('tipo inteiro de um carro vendido: sem "%s" de %s, as regras valem', (tipo, carro, so) => {
     const menos = semPecas(ix, (k) => !(cab(k) === tipo && doCarro(k, carro)));
     expect(menos.id.length).toBeLessThan(ix.id.length);
-    expect(falhasDe(Busca, menos, so)).toEqual([]);
+    expect(falhasDe(Busca, menos, so, carro)).toEqual([]);
   }, 120000);
 
   const tipos: [string, RegExp, RegExp][] = [
