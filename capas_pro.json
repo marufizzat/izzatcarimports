@@ -338,10 +338,11 @@
   "foto": "817793-MLB110172629517_042026"
  },
  "MLB6596117480": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Chave limpador com traseiro",
   "carro": "Chevrolet Astra",
-  "foto": "624023-MLB109380859316_042026"
+  "foto": "624023-MLB109380859316_042026",
+  "motivo": "revisão 14: o ChatGPT alterou o código/texto da etiqueta (número diferente do real)"
  },
  "MLB4602307493": {
   "status": "reprovada",
@@ -633,10 +634,11 @@
   "motivo": "haste completada / geometria mudou"
  },
  "MLB4807092427": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Difusor ar esquerdo painel",
   "carro": "Volvo XC60",
-  "foto": "921331-MLB114211220441_072026"
+  "foto": "921331-MLB114211220441_072026",
+  "motivo": "revisão 14: o ChatGPT alterou o código/texto da etiqueta (número diferente do real)"
  },
  "MLB7039273368": {
   "status": "ok",
@@ -1485,10 +1487,11 @@
   "foto": "756138-MLB92048960813_092025"
  },
  "MLB6501121414": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Painel instrumentos pointer",
   "carro": "Volkswagen Logus",
-  "foto": "887355-MLB92401517457_092025"
+  "foto": "887355-MLB92401517457_092025",
+  "motivo": "revisão 14: peça cortada pela foto, corte seco na capa"
  },
  "MLB6501121100": {
   "status": "pulada",
@@ -1558,10 +1561,11 @@
   "motivo": "ChatGPT mudou ângulo/forma ou completou parte cortada"
  },
  "MLB6501063332": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Moldura central painel difusor ar",
   "carro": "Fiat Uno",
-  "foto": "831489-MLB92109347598_092025"
+  "foto": "831489-MLB92109347598_092025",
+  "motivo": "revisão 14: peça cortada pela foto, corte seco na capa"
  },
  "MLB6501052654": {
   "status": "ok",
@@ -2488,10 +2492,11 @@
   "foto": "894508-MLB90640935708_082025"
  },
  "MLB6505997940": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Espelho retrovisor interno",
   "carro": "Mercedes-Benz GLA",
-  "foto": "881481-MLB90250052938_082025"
+  "foto": "881481-MLB90250052938_082025",
+  "motivo": "revisão 14: peça cortada pela foto, corte seco na capa"
  },
  "MLB4555090377": {
   "status": "pulada",
@@ -3112,10 +3117,11 @@
   "foto": "781718-MLB109275392100_042026"
  },
  "MLB6582695410": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Difusor ar central painel",
   "carro": "Volkswagen Passat",
-  "foto": "802144-MLB109275536806_042026"
+  "foto": "802144-MLB109275536806_042026",
+  "motivo": "revisão 14: letra miúda redesenhada"
  },
  "MLB6582678182": {
   "status": "ok",
@@ -3248,10 +3254,11 @@
   "foto": "614994-MLB109273513060_042026"
  },
  "MLB4589715431": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Carcaça mylink",
   "carro": "Chevrolet Onix",
-  "foto": "786030-MLB110125686799_042026"
+  "foto": "786030-MLB110125686799_042026",
+  "motivo": "revisão 14: o ChatGPT alterou o código/texto da etiqueta (número diferente do real)"
  },
  "MLB4589626111": {
   "status": "pulada",
@@ -5600,10 +5607,11 @@
   "foto": "837421-MLB109992027846_042026"
  },
  "MLB6670990782": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Mangueira drenagem teto solar",
   "carro": "Volvo XC60",
-  "foto": "612364-MLB110898697941_042026"
+  "foto": "612364-MLB110898697941_042026",
+  "motivo": "revisão 14: letra miúda redesenhada"
  },
  "MLB6670989660": {
   "status": "ok",
@@ -5709,10 +5717,11 @@
   "foto": "659041-MLB109992259258_042026"
  },
  "MLB4634346151": {
-  "status": "ok",
+  "status": "reprovada",
   "n": "Módulo sam dianteiro",
   "carro": "Mercedes-Benz C180",
-  "foto": "966440-MLB110899556007_042026"
+  "foto": "966440-MLB110899556007_042026",
+  "motivo": "revisão 14: o ChatGPT alterou o código/texto da etiqueta (número diferente do real)"
  },
  "MLB4634345887": {
   "status": "reprovada",
