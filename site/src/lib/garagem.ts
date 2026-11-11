@@ -24,11 +24,17 @@ export const LOGO_CAIXA: [number, number] = [46, 34];
 
 let memo: GaragemG | null = null;
 
+/** A chave do carro ("Honda" + "HR-V" -> "honda-hr-v"): a MESMA conta do chave_url() do preparar_dados.py (o teste
+ *  confere contra todos os carros do resumo). */
+export const chaveCarro = (b: string, m: string) =>
+  `${b} ${m}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
 /** Arte do carro (marca + modelo exatamente como nos dados), se existir. */
 function arteDo(b: string, m: string): Pick<ModeloG, 'a' | 'as'> {
   const r = resumo();
-  // o apelido salvo (C180 -> Classe C) usa a arte do principal
-  const k = r.carros.find((c) => c.b === b && c.m === m)?.k ?? r.aliases?.find((a) => a.b === b && a.de === m)?.para;
+  // o apelido salvo (C180 -> Classe C) usa a arte do principal; o modelo com poucas peças (sem página /carros/<k>.html,
+  // fora do resumo) usa a chave que a página dele teria: a arte vale no seletor e na abertura mesmo sem a página
+  const k = r.carros.find((c) => c.b === b && c.m === m)?.k ?? r.aliases?.find((a) => a.b === b && a.de === m)?.para ?? chaveCarro(b, m);
   if (!k || !existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`))) return {};
   const ss = srcsetArte(`/arte/v2/carro-${k}.webp`);
   const as = ss ? [...ss.matchAll(/ (\d+)w/g)].map((x) => Number(x[1])) : [];
