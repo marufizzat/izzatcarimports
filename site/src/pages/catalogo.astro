@@ -74,7 +74,7 @@ const confianca: [string, string][] = [
           </ul>
         </div>
       </div>
-      <Catalogo client:load total={r.total} logos={logos} iniciais={iniciais} facetasIniciais={facetasIniciais} novos={novos}>
+      <Catalogo client:load total={r.total} logos={logos} iniciais={iniciais} facetasIniciais={facetasIniciais} novos={novos} carrosComPagina={r.carros.map((c) => c.k)}>
         <SeloReputacao variante="compacto" slot="selo" />
       </Catalogo>
       <nav class="cat-atalhos" aria-label="Atalhos do catálogo">
@@ -378,6 +378,8 @@ const confianca: [string, string][] = [
   /* lado que o estoque não tem: a dica do outro lado, com o botão de texto (44 px de toque, sem cair no botão laranja) */
   .cat-vazio-outro { grid-area: form; margin: 0 0 4px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
   .cat-link-outro { min-height: 44px; padding: 0 6px; margin: 0 -6px; border: 0; background: none; color: var(--accent-text); font: inherit; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .cat-aponte { grid-area: form; margin: 2px 0 0; font-size: 14px; color: var(--ink-3); }
+  .cat-aponte a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
   .cat-link-outro:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
   .cat-vazio .cat-patio-form { grid-area: form; max-width: none; color: var(--ink-3); }
   @media (max-width: 600px) { .cat-vazio-botoes .botao { flex: 1 1 100%; padding-inline: 16px; } }

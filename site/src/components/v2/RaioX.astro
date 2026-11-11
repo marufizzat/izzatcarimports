@@ -288,7 +288,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
             + `<ul class="rx-resto" id="${painel.id}-resto" hidden>${resto.map((l) => linhaHtml(l, false)).join('')}</ul>`;
         }
         html += `<div class="rx-p-pe"><button type="button" class="botao botao-laranja rx-ver" aria-controls="${painel.id}-pecas">Ver as peças ${esc(z.de)}</button>`
-          + `<div class="rx-galeria" id="${painel.id}-pecas" hidden></div></div>`;
+          + `<div class="rx-galeria" id="${painel.id}-pecas" hidden></div>`
+          + `<a class="rx-p-outros" href="${esc(`${linkCatalogo({ b: filtro.marca || raiz.dataset.b || carro!.b, m: filtro.modelo || raiz.dataset.m || carro!.m, y: filtro.ano })}&zona=${z.k}`)}">Ver todas no catálogo</a></div>`;
       }
       if (!esperando()) {
         const carroMsg = home ? (carro ? nomeCarro({ ...carro, y: filtro.ano ?? carro.y }) : '') : `${raiz.dataset.b} ${raiz.dataset.m}`;
@@ -476,11 +477,15 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
 
     // página do carro no celular: o cartão recolhido abre o Raio-x (e o foco vai para a 1ª parte do carro)
     const abrir = raiz.querySelector<HTMLButtonElement>('[data-rx-abrir]');
-    abrir?.addEventListener('click', () => {
+    const abrirJa = () => {
       raiz.classList.add('rx-aberto');
-      abrir.setAttribute('aria-expanded', 'true');
+      abrir?.setAttribute('aria-expanded', 'true');
       zonasA[0]?.focus({ preventScroll: true });
-    });
+    };
+    abrir?.addEventListener('click', abrirJa);
+    // o endereço com #raio-x-t (o link "Aponte no carro" do catálogo vazio) abre o cartão sozinho
+    const tituloId = raiz.querySelector<HTMLElement>('[data-rx-titulo]')?.id;
+    if (tituloId && location.hash === `#${tituloId}`) abrirJa();
 
     if (!home) return;
     raiz.querySelector('[data-rx-trocar]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent(ABRIR)));

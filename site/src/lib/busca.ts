@@ -14,6 +14,7 @@
 import MiniSearch, { type Query, type SearchResult } from 'minisearch';
 import { serveNoModelo, anosNoModelo, modelosDa } from './meuCarro';
 import { MAPA_SINONIMOS, MAPA_FORA, MAIOR_GATILHO, VAZIAS, singulares } from './sinonimos';
+import { zonaDaChave, pecaNaZona } from './raioX';
 
 export type Indice = {
   v: number; updated: string; marcas: string[]; familias: string[]; tipos: string[];
@@ -60,6 +61,8 @@ export type Filtros = {
   preco?: string; frete?: boolean; ordem?: 'rel' | 'asc' | 'desc' | 'novos';
   /** fichas "Esquerdo · Direito" e "Dianteiro · Traseiro" (endereço: &lado=esquerdo|direito, &pos=dianteiro|traseiro) */
   lado?: Lado; pos?: Posicao;
+  /** parte do carro do Raio-x (lib/raioX.ts ZONAS: 'frente', 'motor'…): a zona inteira, com a mesma regra do painel */
+  zona?: string;
 };
 export type Carro = { b: string; m: string };
 /** Linha de atalho das sugestões: o carro, a marca ou o sistema que a pessoa digitou, com a contagem. */
@@ -727,7 +730,8 @@ export class Busca {
         (!f.frete || it.f) &&
         (!lado || it.l === lado) &&
         (!pos || it.pos === pos || it.pos === 'A');
-      const itens = r.base.filter((it) => passa(it, lado, pos));
+      const zonaF = zonaDaChave(f.zona);
+      const itens = r.base.filter((it) => passa(it, lado, pos) && (!zonaF || pecaNaZona(zonaF, it)));
       // o carro digitado sem nenhuma peça na lista (ex.: a maçaneta do Gol só existe do lado direito): é parecida, com aviso
       const aprox = r.aproximado || (r.carros.length > 0 && !itens.some((it) => r.carros.some((c) => doCarro(it, c))));
       // lado/posição digitados que o estoque não tem para este tipo: a lista sai vazia e diz o que faltou (sem trocar por

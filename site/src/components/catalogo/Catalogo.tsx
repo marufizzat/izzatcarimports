@@ -19,6 +19,8 @@ import { Busca, FAIXAS, SIZES_CARTAO, capaItem, codigoJunto, fotoCartao, type Ca
 import Gaveta from '../ui/Gaveta';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
 import { serveNoMeuCarro, nomeCarro, nomeModelos } from '../../lib/meuCarro';
+import { zonaDaChave } from '../../lib/raioX';
+import { chaveCarro } from '../../lib/chegouCarro';
 import { adicionarNaLista, lerLista, EVENTO_LISTA, PAGINA_LISTA } from '../../lib/lista';
 import { itemDeDados, rotulo, avisar, CLASSE_LISTA } from '../ui/listaCartao';
 import {
@@ -60,6 +62,8 @@ function lerUrl(): Filtros {
     q: u.get('q') || '', marca: u.get('marca') || undefined, modelo: u.get('modelo') || undefined,
     ano, tipo: u.get('tipo') || undefined, sub: u.get('sub') || undefined, preco: u.get('preco') || undefined,
     lado: daUrl(LADOS, u.get('lado')), pos: daUrl(POSICOES, u.get('pos')),
+    // parte do carro do Raio-x (?zona=frente): só uma chave que existe
+    zona: zonaDaChave(u.get('zona'))?.k,
     // "frete" dos links antigos: aceito no endereço, mas não filtra mais (filtrava calado: "492 peças para xc60",
     // contra 515, sem ficha nem aviso)
     frete: undefined, ordem,
@@ -76,6 +80,7 @@ function escreverUrl(f: Filtros) {
   if (f.preco) u.set('preco', f.preco);
   if (f.lado) u.set('lado', paraUrl(LADOS, f.lado)!);
   if (f.pos) u.set('pos', paraUrl(POSICOES, f.pos)!);
+  if (f.zona) u.set('zona', f.zona);
   if (f.frete) u.set('frete', '1');
   if (f.ordem && f.ordem !== 'rel') u.set('ordem', f.ordem);
   const qs = u.toString();
@@ -83,7 +88,7 @@ function escreverUrl(f: Filtros) {
 }
 /** A lista da 1ª tela (feita no build) vale: sem busca nem filtro, na ordem padrão. */
 const ehPadrao = (f: Filtros) =>
-  !(f.q || '').trim() && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.sub && !f.preco && !f.frete && !f.lado && !f.pos &&
+  !(f.q || '').trim() && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.sub && !f.preco && !f.frete && !f.lado && !f.pos && !f.zona &&
   (!f.ordem || f.ordem === 'rel' || f.ordem === 'novos');
 
 /** Título da página com os filtros ("Peças para Volvo XC60 2020"). A busca de texto fica na linha do total
@@ -459,12 +464,14 @@ type Props = {
   facetasIniciais?: Facetas | null;
   /** ids das que chegaram agora (selo "Chegou agora"), feitos no build */
   novos?: string[];
+  /** chaves dos carros com página (/carros/<k>.html), para o "Aponte no carro" do catálogo vazio */
+  carrosComPagina?: string[];
 };
 
 const SEM_LOGOS: Record<string, Logo> = {};
 const SEM_IDS: string[] = [];
 
-export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo, iniciais = NENHUMA, facetasIniciais = null, novos: idsNovos = SEM_IDS }: Props) {
+export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo, iniciais = NENHUMA, facetasIniciais = null, novos: idsNovos = SEM_IDS, carrosComPagina = SEM_IDS }: Props) {
   const [busca, setBusca] = useState<Busca | null>(null);
   const [erro, setErro] = useState(false);
   const [f, setF] = useState<Filtros>({});
@@ -597,6 +604,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   if (f.ano) ativos.push({ k: 'ano', rot: `Ano ${f.ano}`, tirar: () => mudaFiltro({ ano: undefined }) });
   if (f.tipo) ativos.push({ k: 'tipo', rot: f.tipo, tirar: () => mudaFiltro({ tipo: undefined, sub: undefined }) });
   if (f.sub) ativos.push({ k: 'sub', rot: f.sub, tirar: () => mudaFiltro({ sub: undefined }) });
+  if (f.zona && zonaDaChave(f.zona)) ativos.push({ k: 'zona', rot: `Parte do carro: ${zonaDaChave(f.zona)!.nome}`, tirar: () => mudaFiltro({ zona: undefined }) });
   if (f.preco) ativos.push({ k: 'preco', rot: FAIXAS.find((x) => x[0] === f.preco)?.[1] || f.preco, tirar: () => mudaFiltro({ preco: undefined }) });
   if (f.lado) ativos.push({ k: 'lado', rot: `Lado ${ROT_LADO[f.lado].toLowerCase()}`, tirar: () => mudaFiltro({ lado: undefined }) });
   if (f.pos) ativos.push({ k: 'pos', rot: ROT_POS[f.pos], tirar: () => mudaFiltro({ pos: undefined }) });
@@ -711,6 +719,9 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
     () => !!busca && !aproximado && resultado.length > 0 && !!(f.q || '').trim() && !busca.bate(resultado, f.q || '', alvo?.m ? alvo : null),
     [busca, aproximado, resultado, f.q, alvo],
   );
+  // "Aponte no carro": o carro do filtro com página vai ao Raio-x dele; sem página, o da home
+  const chaveAponte = f.marca && f.modelo ? chaveCarro(f.marca, f.modelo) : '';
+  const aponteUrl = chaveAponte && carrosComPagina.includes(chaveAponte) ? `/carros/${chaveAponte}.html#raio-x-t` : '/#raio-x-t';
   const botaoPatio = (rotulo: ReactNode) => (
     <a className="botao botao-laranja" href={pedirNoPatio} target="_blank" rel="noopener" data-botao="procurar-patio"><Whats />{rotulo}</a>
   );
@@ -749,7 +760,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
                 : codigoBusca ? <><b className="num">{n2(total)}</b> {pecas(total)} com o código <span className="cat-total-q oem">{codigoBusca.toUpperCase()}</span></>
                 : total === 0 && f.q && falta ? <>Nenhuma peça {falta}<span className="cat-total-q"> para “{f.q}”</span></>
                 : total === 0 && f.q ? <>Nenhuma peça<span className="cat-total-q"> para “{f.q}”</span></>
-                : <><b className="num">{n2(total)}</b> {pecas(total)}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
+                : <><b className="num">{n2(total)}</b> {pecas(total)}{f.zona && zonaDaChave(f.zona) ? <span className="cat-total-q"> {zonaDaChave(f.zona)!.de}</span> : null}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
             </h2>
             <div data-selo-reputacao>{selo}</div>
             {!vazio && (
@@ -808,6 +819,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
                 {(nFiltros > 0 || !!f.q) && <button type="button" className="botao botao-linha" onClick={limpar}>{nFiltros > 0 ? 'Limpar filtros' : 'Limpar a busca'}</button>}
               </div>
               {linkFormulario}
+              <p className="cat-aponte"><a href={aponteUrl}>Não sabe o nome da peça? Aponte no carro</a></p>
             </div>
           )}
 

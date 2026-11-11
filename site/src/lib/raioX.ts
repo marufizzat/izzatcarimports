@@ -299,3 +299,13 @@ export function lerRaioX(j: RaioXJson): ZonaPainel[] {
 
 /** "1 peça" / "1.234 peças" */
 export const qtdPecas = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça' : 'peças'}`;
+
+/** A zona pela chave (o endereço ?zona=frente). Sem zona com essa chave, undefined. */
+export const zonaDaChave = (k?: string | null): Zona | undefined => (k ? ZONAS.find((z) => z.k === k) : undefined);
+
+/** A peça está na zona? A MESMA regra que o painel conta (contarZonas): algum grupo da zona (tipo, sub, lado e posição;
+ *  "sem" tira). A posição 'A' (dianteira e traseira) entra nas duas. Quem filtra o catálogo (busca.ts) usa esta função. */
+export function pecaNaZona(z: Zona, it: Pick<Item, 'c' | 's' | 'l' | 'pos'>): boolean {
+  return z.grupos.some((g) => it.c === g.tipo && (!g.subs || g.subs.includes(it.s)) && !g.sem?.includes(it.s)
+    && (!g.lado || it.l === g.lado) && (!g.pos || it.pos === g.pos || it.pos === 'A'));
+}
