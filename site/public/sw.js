@@ -31,6 +31,9 @@ const CACHE = {
 const LIMITE = { paginas: 60, dados: 12, astro: 250, artes: 300 };
 const ARTES = /^\/(?:estudio[\w-]*|arte|marcas|icones[\w-]*|identidade)\/|^\/icones\.svg$|\.woff2?$/;
 let desligado = false;
+// os caches abertos ficam guardados (abrir de novo a cada pedido custa uma ida ao armazenamento do navegador)
+const abertos = {};
+const abrir = (nome) => (abertos[nome] = abertos[nome] || caches.open(nome));
 // páginas abertas a partir de uma cópia (a faixa está na tela): só elas recebem a cópia dos /dados/ sem rede
 const copias = new Set();
 
@@ -107,14 +110,14 @@ async function responder(event, chave, rede) {
   } catch (e) {
     if (e && e.message === 'prazo') motivo = 'lenta';
   }
-  const copia = await (await caches.open(CACHE.paginas)).match(chave);
+  const copia = await (await abrir(CACHE.paginas)).match(chave);
   if (copia) {
     if (event.resultingClientId) { copias.add(event.resultingClientId); if (copias.size > 40) copias.delete(copias.values().next().value); }
     return comFaixa(copia, motivo);
   }
   // sem cópia e a rede só está lenta: espera por ela (a página sem conexão seria mentira)
   if (motivo === 'lenta') { try { return await rede; } catch (e) { /* caiu de vez */ } }
-  return (await caches.match(OFFLINE, { cacheName: CACHE.casco })) || Response.error();
+  return (await (await abrir(CACHE.casco)).match(OFFLINE)) || Response.error();
 }
 
 const paginaBoa = (r) => r && r.status === 200 && r.type === 'basic' && !r.redirected && /text\/html/.test(r.headers.get('content-type') || '');
@@ -153,7 +156,7 @@ async function dados(event, chave) {
   } catch (e) {
     // a cópia só para a página que já é a cópia (com a faixa); a página que veio da rede segue como sem o SW
     if (copias.has(event.clientId)) {
-      const c = await (await caches.open(CACHE.dados)).match(chave);
+      const c = await (await abrir(CACHE.dados)).match(chave);
       if (c) return c;
     }
     throw e;
@@ -162,7 +165,8 @@ async function dados(event, chave) {
 
 // ---- arquivos com hash: cache primeiro ----
 async function imutavel(event, chave) {
-  const c = await caches.match(chave);
+  // só os 2 caches onde ele pode estar (o caches.match sem nome procura em todos)
+  const c = (await (await abrir(CACHE.astro)).match(chave)) || (CASCO.includes(chave) ? await (await abrir(CACHE.casco)).match(chave) : undefined);
   if (c) return c;
   const r = await fetch(event.request);
   if (r.ok && r.type === 'basic') event.waitUntil(guardar(CACHE.astro, chave, r.clone(), LIMITE.astro).catch(() => {}));
@@ -171,8 +175,8 @@ async function imutavel(event, chave) {
 
 // ---- capas e artes: a guardada na hora, a nova por trás (stale-while-revalidate) ----
 async function artes(event, chave) {
-  const cache = await caches.open(CACHE.artes);
-  const c = (await cache.match(chave)) || (CASCO.includes(chave) ? await caches.match(chave, { cacheName: CACHE.casco }) : undefined);
+  const cache = await abrir(CACHE.artes);
+  const c = (await cache.match(chave)) || (CASCO.includes(chave) ? await (await abrir(CACHE.casco)).match(chave) : undefined);
   const rede = fetch(event.request);
   event.waitUntil(rede.then((r) => {
     if (r.ok && r.type === 'basic') return guardar(CACHE.artes, chave, r.clone(), LIMITE.artes);
@@ -185,7 +189,7 @@ async function artes(event, chave) {
 // ---- casco fora do /_astro (ícone, logo): rede primeiro, o guardado sem rede ----
 async function casco(event, chave) {
   try { return await fetch(event.request); } catch (e) {
-    const c = await caches.match(chave, { cacheName: CACHE.casco });
+    const c = await (await abrir(CACHE.casco)).match(chave);
     if (c) return c;
     throw e;
   }
@@ -195,7 +199,7 @@ async function casco(event, chave) {
 const aparado = {};
 async function guardar(nome, chave, r, limite) {
   if (desligado) return;
-  const cache = await caches.open(nome);
+  const cache = await abrir(nome);
   const velho = await cache.match(chave);
   if (velho && igual(velho, r)) return; // o mesmo arquivo (ETag): não grava de novo
   await cache.put(chave, r);
@@ -212,13 +216,13 @@ function igual(a, b) {
   const la = a.headers.get('last-modified');
   return !!la && la === b.headers.get('last-modified') && a.headers.get('content-length') === b.headers.get('content-length');
 }
-async function apagar(nome, chave) { await (await caches.open(nome)).delete(chave); }
+async function apagar(nome, chave) { await (await abrir(nome)).delete(chave); }
 const idade = (r) => { const t = Date.parse(r.headers.get('date') || ''); return isNaN(t) ? 0 : Date.now() - t; };
 const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // capas e artes com mais de 7 dias saem (na ativação)
 async function vencidas() {
-  const cache = await caches.open(CACHE.artes);
+  const cache = await abrir(CACHE.artes);
   for (const k of await cache.keys()) {
     const r = await cache.match(k);
     if (r && idade(r) >= SETE_DIAS) await cache.delete(k);
@@ -230,7 +234,7 @@ let proxima = 0;
 async function checarDesligar(forcar) {
   if (desligado || (!forcar && Date.now() < proxima)) return;
   try {
-    const ctl = await caches.open(CACHE.ctl);
+    const ctl = await abrir(CACHE.ctl);
     if (!forcar) {
       const r = await ctl.match('/__checado');
       const t = r ? Number(await r.text()) || 0 : 0;
@@ -245,6 +249,7 @@ async function checarDesligar(forcar) {
 }
 async function desligar() {
   desligado = true;
+  for (const k of Object.keys(abertos)) delete abertos[k];
   for (const k of await caches.keys()) if (k.startsWith('izzat-')) await caches.delete(k);
   await self.registration.unregister();
 }
