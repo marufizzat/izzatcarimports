@@ -430,6 +430,8 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
     .abv2 .ab-selo-whats small::after { content: none; }
     .abv2 .ab-so-largo { display: inline; }
     .abv2 .ab-espia { width: 230px; right: -30px; }
+    /* com a faixa "Continuar" em cima, o farol desce (a ponta dele encostava no canto da faixa) */
+    html[data-continuar] .abv2 .ab-espia { transform: translateY(-32%); }
     .abv2 .abv2-cartao { border-radius: 24px; }
     .abv2 .abv2-abas { padding: 0 10px; }
     .abv2 .abv2-painel { padding: 18px 20px 20px; }
