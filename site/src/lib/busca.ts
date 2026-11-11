@@ -124,15 +124,19 @@ const som = (w: string) => w.replace(/ch/g, 'x').replace(/ss|c(?=[ei])/g, 's').r
  *  e o começo da palavra não basta ("porta" não é "porta-luvas"; "motor" não é "motorista"). */
 export function mesmaPalavra(a: string, b: string): boolean {
   if (a === b) return true;
-  if (a.length < 3 || b.length < 3) return false;
-  const [c, l] = a.length <= b.length ? [a, b] : [b, a];
-  if (l.length - c.length > 2) return false;
-  if (singulares(l).includes(c)) return true;
-  if (c.length >= 6 && umaEdicao(a, b)) return true;
-  if (c.length < 5 || a[0] !== b[0]) return false;
-  let n = 0;
-  while (n < c.length && a[n] === b[n]) n++;
-  return n >= 4 && n >= c.length - 1;
+  const la = a.length, lb = b.length;
+  if (la < 3 || lb < 3 || la - lb > 2 || lb - la > 2) return false;
+  const menor = la < lb ? la : lb;
+  // a 1ª letra diferente só vale como erro de digitação ("etrovisor")
+  if (a.charCodeAt(0) !== b.charCodeAt(0)) return menor >= 6 && umaEdicao(a, b);
+  let n = 1;
+  while (n < menor && a.charCodeAt(n) === b.charCodeAt(n)) n++;
+  if (menor >= 5 && n >= 4 && n >= menor - 1) return true;
+  if (n >= 2) {
+    const l = la >= lb ? a : b;
+    if (l.charCodeAt(l.length - 1) === 115 /* s */ && singulares(l).includes(la >= lb ? b : a)) return true;
+  }
+  return menor >= 6 && umaEdicao(a, b);
 }
 
 /** O que a pessoa procura, tirando o carro, a marca, o ano, o lado e a posição: cada unidade é uma palavra, uma composta
@@ -364,6 +368,9 @@ export class Busca {
   private _pares = new Map<string, [string, string]>();
   private _prefixos = new Set<string>();
   private _vocab: string[] = [];
+  private _vocabPor = new Map<string, string[]>();
+  /** o nome de cada peça sem acento e em minúsculas (a ordem usa em toda busca) */
+  private _nn: string[] = [];
   private _casam = new Map<string, { ig: string[]; pre: string[] }>();
   private _principal = new Map<string, string>();
 
@@ -560,6 +567,8 @@ export class Busca {
       for (const w of normal(it.n).split(/\s+/)) { const i = w.indexOf('-'); if (i > 1) this._prefixos.add(w.slice(0, i)); }
     }
     this._vocab = [...new Set([...this._nome.keys(), ...this._sis.keys(), ...this._bloco.keys()])];
+    for (const t of this._vocab) { const l = this._vocabPor.get(t[0]); if (l) l.push(t); else this._vocabPor.set(t[0], [t]); }
+    this._nn = this.itens.map((it) => normal(it.n));
     this._nt = nt;
   }
 
@@ -568,7 +577,8 @@ export class Busca {
     let m = this._casam.get(w);
     if (!m) {
       const ig: string[] = [], pre: string[] = [];
-      for (const t of this._vocab) { if (mesmaPalavra(t, w)) ig.push(t); else if (w.length >= 2 && t.startsWith(w)) pre.push(t); }
+      // (só as que começam pela mesma letra: o erro na 1ª letra fica com o corretor e com a aproximação do MiniSearch)
+      for (const t of this._vocabPor.get(w[0]) ?? []) { if (mesmaPalavra(t, w)) ig.push(t); else if (w.length >= 2 && t.startsWith(w)) pre.push(t); }
       m = { ig, pre };
       if (this._casam.size > 600) this._casam.clear();
       this._casam.set(w, m);
@@ -923,6 +933,7 @@ export class Busca {
     // o nome da peça começa pela palavra buscada (ou uma forma dela: "sinaleira" -> "Lanterna"): sobe
     // ("farol" -> "Farol esquerdo" antes de "Interruptor farol")
     const principais = ent.resto.filter((w) => w.length >= 3 || w === ultima).flatMap((w) => [w, ...(formas.get(w) ?? [])]);
+    const principaisC = principais.map(cp);
     // só conta quando a busca tem sinônimo ou plural (sem eles, a ordem fica a de antes)
     const digitadas = formas.size ? ent.resto.filter((w) => w.length >= 3 && !/\d/.test(w)) : [];
     // o que foi digitado, na ordem, com o lado e a posição ("tampa traseira", "amortecedor traseiro")
@@ -931,15 +942,15 @@ export class Busca {
     const nota = new Map<number, number>();
     const pontuar = (x: SearchResult) => {
       const it = this.itens[x.id as number];
-      const nome = normal(it.n);
+      const nome = this._nn[it.k];
       // sem hífen nem espaço: "parachoque e-pace" acha o "Para-choque dianteiro" como começo do nome
       const nomeC = cp(nome);
-      const comeca = principais.some((w) => nomeC.startsWith(cp(w)));
-      const ws = nome.split(/[^a-z0-9]+/);
+      const comeca = principaisC.some((w) => nomeC.startsWith(w));
       const nt = this._nt![it.k];
       const naOrdem = seq.length > 1 && seq.every((w, i) => nt[i] !== undefined && mesmaPalavra(nt[i], w));
       // o nome diz o que foi digitado, do jeito que foi digitado (não só um sinônimo): sobe um pouco
-      const exato = digitadas.length > 0 && digitadas.every((d) => ws.some((w) => w.startsWith(d)));
+      let exato = false;
+      if (digitadas.length > 0) { const ws = nome.split(/[^a-z0-9]+/); exato = digitadas.every((d) => ws.some((w) => w.startsWith(d))); }
       // "completo" é a peça inteira ("Para-choque dianteiro completo" antes do "Para-choque traseiro" para o para-choque)
       const inteiro = comeca && /\bcomplet[oa]\b/.test(nome) ? 1.25 : 1;
       nota.set(it.k, x.score * (comeca ? 1.6 : 1) * (naOrdem ? 2 : 1) * (exato ? 1.5 : 1) * inteiro);
@@ -977,7 +988,8 @@ export class Busca {
       base = ks.map((k) => this.itens[k]);
       if (aproximado) {
         // o carro digitado primeiro (o que ele tem de parecido); depois a peça dos outros carros
-        base.sort((a, b) => grupoCarro(a) - grupoCarro(b) || nivel.get(a.k)! - nivel.get(b.k)! || pelaNota(a, b));
+        const ord = new Map(base.map((it) => [it.k, grupoCarro(it) * 10 + nivel.get(it.k)!]));
+        base.sort((a, b) => ord.get(a.k)! - ord.get(b.k)! || pelaNota(a, b));
         if (temCarro && tipo) {
           const ja = new Set(ks);
           const outras = instancias(tipo).filter((k) => !ja.has(k)).map((k) => this.itens[k]);
@@ -986,8 +998,8 @@ export class Busca {
         }
       } else {
         // entre as que são a peça: a que começa pelo que foi digitado antes da que começa por outra forma de dizer
-        const como = new Map(ks.map((k) => [k, tipo && nivel.get(k)! <= 1 ? c.comeco(k, tipo) : 0]));
-        base.sort((a, b) => nivel.get(a.k)! - nivel.get(b.k)! || grupoCarro(a) - grupoCarro(b) || como.get(a.k)! - como.get(b.k)! || pelaNota(a, b));
+        const ord = new Map(base.map((it) => [it.k, nivel.get(it.k)! * 100 + grupoCarro(it) * 10 + (tipo && nivel.get(it.k)! <= 1 ? c.comeco(it.k, tipo) : 0)]));
+        base.sort((a, b) => ord.get(a.k)! - ord.get(b.k)! || pelaNota(a, b));
         // busca de SISTEMA ("suspensão xc60"): a palavra é o nome de um bloco do estoque e de nenhuma peça; o bloco
         // inteiro entra depois das peças que citam a palavra (do carro digitado, quando há)
         if (!nExatas && U.length === 1) {
