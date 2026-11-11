@@ -203,6 +203,10 @@ const fileiras = (n: number) => `--f2:${Math.ceil(Math.min(n, POR_GRUPO_CELULAR)
      letra do site chega: as fichas mudavam de linha e a página pulava no PC) */
   :global(.topo-arte-wrap .topo-acoes) { width: 100%; }
   :global(.topo-arte-wrap .anos-carro) { --ac-fundo: #f4f3f0; margin-top: 2px; }
+  /* carro sem arte, no PC (o disco da marca ao lado do texto): a coluna do disco tem a largura DELE desde o começo. Com
+     "auto", quando o navegador pintava a página antes de o disco chegar no HTML, o texto ocupava a largura toda, as fichas
+     de ano cabiam em menos linhas e, com o disco, mudavam de linha (CLS de 0,03–0,06 em 1 de cada 3 cargas a 1024 px) */
+  @media (min-width: 900px) { :global(section.topo-arte-wrap.com-disco .topo-caixa) { grid-template-columns: minmax(0, 1fr) clamp(190px, 24vw, 280px); } }
   :global(.topo-arte-wrap.com-disco .anos-carro), :global(.topo-arte-wrap:not(.com-arte) .anos-carro) { --ac-fundo: var(--bg); }
   @media (max-width: 899px) {
     :global(.topo-arte-wrap.com-arte .anos-carro .ac-trilho) { margin-right: -22px; }
