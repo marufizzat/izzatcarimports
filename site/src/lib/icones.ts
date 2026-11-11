@@ -59,6 +59,17 @@ export const FICHA: Record<string, string> = {
 };
 for (const [nome, d] of Object.entries(FICHA)) SIMBOLOS[nome] = [`${TRACO} stroke-width="1.8"`, d];
 
+/** Lista de orçamento (lib/lista.ts; Lucide, ISC): a prancheta com a lista (cabeçalho e /lista.html), "pôr na lista"
+ *  (o botão da peça e do "Vai junto"), o visto de "já está na lista" e o "x" de tirar. Sempre no sprite: os botões
+ *  são montados pelo script e entram só como <use>. */
+export const LISTA: Record<string, string> = {
+  lista: '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+  'lista-mais': '<path d="M11 12H3M16 6H3M16 18H3M18 9v6M21 12h-6"/>',
+  'lista-ok': '<path d="M11 12H3M16 6H3M16 18H3m12-5.5 2.2 2.2L22 10"/>',
+  tirar: '<path d="M18 6 6 18M6 6l12 12"/>',
+};
+for (const [nome, d] of Object.entries(LISTA)) SIMBOLOS[nome] = [`${TRACO} stroke-width="2"`, d];
+
 /** true quando o ícone mora no sprite (desenho longo); false = desenho no próprio <svg>. */
 export const noSprite = (nome: string) => nome in SIMBOLOS;
 

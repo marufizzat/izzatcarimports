@@ -12,6 +12,8 @@ const { ogTitulo = titulo, ogDescricao = descricao } = Astro.props;
 const canon = canonical ?? new URL(Astro.url.pathname, Astro.site).href;
 // prévia pública (Cloudflare): o Google não indexa a cópia congelada do catálogo
 const previa = process.env.PREVIA === '1';
+// regras de especulação (prerender na intenção: moderate), iguais em toda página
+const REGRAS = JSON.stringify({ prerender: [{ where: { href_matches: ['/peca/*', '/carros/*', '/carros.html', '/categoria/*', '/marca/*', '/catalogo.html'] }, eagerness: 'moderate' }] });
 ---
 <!doctype html>
 <html lang="pt-BR" data-direcao={direcao}>
@@ -31,6 +33,13 @@ const previa = process.env.PREVIA === '1';
       pessoa. Núcleos só abaixo de 3: o Safari (iPhone, iPad, Mac) informa 4 ou 8 de propósito, nunca menos; a memória
       só o Chrome informa (iPhone fica fora, como deve). */}
   <script is:inline>{let n=navigator;(n.hardwareConcurrency<3||n.deviceMemory<5||n.connection?.saveData)&&document.documentElement.classList.add('leve')}</script>
+  {/* navegar como aplicativo: a foto do cartão que voa para a página da peça e, onde não há regras de especulação,
+      o HTML da próxima página baixado no toque (public/navegar.js) */}
+  <script is:inline src="/navegar.js" defer></script>
+  {/* a próxima página já carregada (Chrome/Edge): a peça, o carro, a categoria, a marca e o catálogo são preparados
+      quando o dedo encosta no link (no PC, com o mouse parado 200 ms em cima). Só endereços do site; WhatsApp, Mercado
+      Livre e o que abre noutra aba nunca. O mesmo bloco em toda página (cada byte vale 5 mil vezes). */}
+  <script is:inline type="speculationrules" set:html={REGRAS} />
   <meta name="theme-color" content="#f5f5f7" />
   {/* ícone quadrado (o Google exige quadrado, múltiplo de 48 px; o carro.svg é retangular e virava o globo cinza) */}
   <link rel="icon" href="/favicon.ico" sizes="48x48" />

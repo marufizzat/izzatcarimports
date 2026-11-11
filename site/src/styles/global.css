@@ -426,3 +426,23 @@
 [data-selo-reputacao]:empty, [data-selo-reputacao]:has(> astro-slot:empty) { display: none; }
 /* na faixa "Chegou no pátio" da home todas são novas: o selo seria repetido em todos */
 [aria-labelledby="t-chegou"] .etiqueta-novo { display: none; }
+
+/* === troca de página sem tela branca (nov/2026) ===
+   Transição entre páginas do mesmo site (Chrome/Edge 126+, Safari 18.2+; quem não tem navega como antes): a página
+   velha fica na tela até a nova estar pronta e as duas se cruzam em até 250 ms. Quem pediu menos movimento não ganha
+   animação; aparelho fraco (html.leve) pula no pageswap (public/navegar.js). O cabeçalho fica parado (grupo próprio) e a
+   foto do cartão tocado vira a capa da peça: o nome "foto-peca" vai só no cartão do clique (navegar.js) e na capa do
+   palco, e só durante a troca (:active-view-transition), para nada mudar fora dela. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+/* cabeçalho: fundo cheio durante a troca (o retrato não leva o vidro desfocado: o conteúdo vazava por trás) e sem
+   esmaecer (é o mesmo nas duas páginas; o Safari esmaecia os ícones no meio da troca): a imagem nova entra de uma vez */
+html:active-view-transition .cab { view-transition-name: cab; background: var(--bg); }
+::view-transition-old(cab) { display: none; }
+::view-transition-new(cab) { animation: none; }
+html:active-view-transition .galeria-palco { view-transition-name: foto-peca; }
+::view-transition-group(*) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
+/* a foto que voa fica por cima de tudo, também do cabeçalho */
+::view-transition-group(foto-peca) { animation-duration: .25s; z-index: 2; }

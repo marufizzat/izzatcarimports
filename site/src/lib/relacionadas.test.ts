@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { sobreposicao, mesmaGeracao, doMesmoCarro, MAX_CARRO, MIN_MESMA } from './relacionadas';
+import { sobreposicao, mesmaGeracao, doMesmoCarro, MAX_CARRO, MIN_MESMA, vaiJunto, grupoDa, ladoDa, zonaDa, GRUPOS, JUNTO, MAX_JUNTO } from './relacionadas';
+import { serveNoModelo, anosNoModelo } from './meuCarro';
 import type { Peca } from './dados';
 
 const peca = (o: Partial<Peca>): Peca => ({
@@ -79,3 +80,101 @@ describe('relacionadas: estoque real', () => {
     if (completadas > pecas.length / 10) console.warn(`AVISO: ${completadas} paginas completam "Do mesmo carro" com outros anos`);
   });
 });
+
+describe('"Vai junto": o que costuma ser trocado junto, só do mesmo carro', () => {
+  const cruze = (id: number, n: string, s: string, o: Partial<Peca> = {}) =>
+    peca({ id: `MLB${id}`, n, s, b: 'Chevrolet', m: 'Cruze', y: [2017, 2021], ...o });
+  const farol = cruze(1, 'Farol direito', 'Faróis', { o: 'E131464301' });
+  const estoque = [
+    farol,
+    cruze(2, 'Para-choque dianteiro', 'Para-choques'),
+    cruze(3, 'Para-choque traseiro', 'Para-choques'),
+    cruze(4, 'Grade superior dianteira', 'Grades do Para-choque', { y: [2017, 2023] }),
+    cruze(5, 'Suporte farol direito', 'Suportes do Farol'),
+    cruze(6, 'Suporte farol esquerdo', 'Suportes do Farol'),
+    cruze(7, 'Farol esquerdo', 'Faróis'),
+    cruze(8, 'Compressor ar condicionado', 'Compressores'),
+    cruze(9, 'Grade para-choque antigo', 'Grades do Para-choque', { y: [2011, 2016] }),
+    peca({ id: 'MLB10', n: 'Para-choque dianteiro', s: 'Para-choques', b: 'Chevrolet', m: 'Onix', y: [2017, 2021] }),
+    cruze(11, 'Farol direito', 'Faróis', { o: 'E131464301', p: 900 }),
+    cruze(12, 'Esguicho farol direito', 'Bombas e Esguichos do Lavador'),
+  ];
+  it('farol direito: para-choque dianteiro, grade, suporte direito e o esguicho (nunca traseiro, esquerdo, outro carro ou outra geração)', () => {
+    const r = vaiJunto(farol, estoque);
+    expect(r.pecas.map((x) => x.id)).toEqual(['MLB2', 'MLB4', 'MLB5', 'MLB12']);
+    expect(r.com).toBe('o farol');
+  });
+  it('lanterna chama o para-choque traseiro; sem peça que combine, nada', () => {
+    const lant = cruze(20, 'Lanterna traseira esquerda', 'Lanternas Traseiras');
+    expect(vaiJunto(lant, [...estoque, lant]).pecas.map((x) => x.id)).toEqual(['MLB3']);
+    const comp = estoque[7];
+    expect(vaiJunto(comp, estoque)).toEqual({ pecas: [], com: '' });
+    expect(vaiJunto(cruze(21, 'Farol', 'Faróis', { y: null }), estoque).pecas).toEqual([]);   // sem ano: não dá para garantir
+  });
+  it('maçaneta traseira direita: a fechadura e a máquina de vidro da MESMA porta (ou sem porta dita)', () => {
+    const toro = (id: number, n: string, s: string) => peca({ id: `MLB${id}`, n, s, b: 'Fiat', m: 'Toro', y: [2016, 2022] });
+    const mac = toro(1, 'Maçaneta externa traseira direita', 'Maçanetas das Portas');
+    const r = vaiJunto(mac, [mac,
+      toro(2, 'Fechadura porta dianteira direita', 'Fechaduras das Portas'),
+      toro(3, 'Fechadura porta traseira direita', 'Fechaduras das Portas'),
+      toro(4, 'Máquina vidro elétrico traseiro esquerdo', 'Máquinas e Motores de Vidro Elétrico'),
+      toro(5, 'Máquina vidro elétrico traseira direita', 'Máquinas e Motores de Vidro Elétrico'),
+      toro(6, 'Maçaneta puxador externo traseiro direito', 'Maçanetas das Portas'),
+      toro(7, 'Maçaneta interna traseira direita', 'Maçanetas Internas'),
+    ]);
+    expect(r.pecas.map((x) => x.id)).toEqual(['MLB3', 'MLB7', 'MLB5']);
+  });
+  it('peça de 2+ carros entra no carro em que serve, com os anos daquele carro', () => {
+    const p = peca({ id: 'MLB1', n: 'Retrovisor elétrico esquerdo', s: 'Retrovisores Externos', b: 'Volvo', m: 'XC60', y: [2018, 2024] });
+    const capa = peca({ id: 'MLB2', n: 'Capa retrovisor esquerdo', s: 'Capas e Molduras do Retrovisor', b: 'Volvo', m: 'S60', ms: ['S60', 'XC60'], y: [2018, 2024] });
+    const velha = peca({ id: 'MLB3', n: 'Capa retrovisor', s: 'Capas e Molduras do Retrovisor', b: 'Volvo', m: 'S60', ms: ['S60', 'XC60'], y: [2018, 2024], ys: [[2018, 2024], [2009, 2017]] });
+    expect(vaiJunto(p, [p, capa, velha]).pecas.map((x) => x.id)).toEqual(['MLB2']);
+  });
+  it('lado e frente/trás pelo nome', () => {
+    expect(ladoDa('Retrovisor elétrico esquerdo')).toBe('E');
+    expect(ladoDa('Maçaneta porta motorista')).toBe('E');
+    expect(ladoDa('Macaneta externa tras dir')).toBe('D');
+    expect(ladoDa('Caixa direção')).toBe(null);
+    expect(ladoDa('Par de faróis esquerdo e direito')).toBe(null);
+    expect(zonaDa('Farol direito', 'farol')).toBe('frente');
+    expect(zonaDa('Guia para-choque traseiro', 'parachoque')).toBe('tras');
+    expect(zonaDa('Para-choque', 'parachoque')).toBe(null);
+    expect(grupoDa({ s: 'Amortecedores da Tampa e do Capô', n: 'Amortecedor capô' })).toBe('capo-mola');
+    expect(grupoDa({ s: 'Amortecedores da Tampa e do Capô', n: 'Amortecedor tampa traseira' })).toBe('tampa-mola');
+  });
+  it('todo grupo citado em JUNTO existe', () => {
+    for (const [k, v] of Object.entries(JUNTO)) {
+      expect(GRUPOS[k], k).toBeTruthy();
+      for (const x of v) expect(GRUPOS[x], `${k} -> ${x}`).toBeTruthy();
+    }
+  });
+
+  const arq = 'src/data/pecas.json';
+  it.skipIf(!existsSync(arq))('estoque real: só o mesmo carro e a mesma geração, nunca o outro lado nem a outra ponta, no máximo 4', () => {
+    const pecas: Peca[] = JSON.parse(readFileSync(arq, 'utf-8'));
+    const porModelo = new Map<string, Peca[]>();
+    for (const x of pecas) for (const m of x.ms && x.ms.length ? x.ms : x.m ? [x.m] : []) {
+      const k = `${x.b}|${m}`; porModelo.set(k, [...(porModelo.get(k) ?? []), x]);
+    }
+    let com = 0, cartoes = 0;
+    for (const p of pecas) {
+      const r = vaiJunto(p, porModelo.get(`${p.b}|${p.m}`) ?? []);
+      expect(r.pecas.length).toBeLessThanOrEqual(MAX_JUNTO);
+      if (!r.pecas.length) continue;
+      com++; cartoes += r.pecas.length;
+      const lado = ladoDa(p.n), zona = zonaDa(p.n, grupoDa(p));
+      for (const x of r.pecas) {
+        expect(x.id).not.toBe(p.id);
+        expect(x.b).toBe(p.b);
+        expect(serveNoModelo(x, p.m), `${p.id} -> ${x.id}`).toBe(true);
+        expect(mesmaGeracao(anosNoModelo(p, p.m), anosNoModelo(x, p.m)), `${p.id} -> ${x.id}`).toBe(true);
+        const lx = ladoDa(x.n), zx = zonaDa(x.n, grupoDa(x));
+        if (lado && lx) expect(lx, `${p.n} -> ${x.n}`).toBe(lado);
+        if (zona && zx) expect(zx, `${p.n} -> ${x.n}`).toBe(zona);
+      }
+      expect(new Set(r.pecas.map((x) => x.id)).size).toBe(r.pecas.length);
+    }
+    console.log(`"Vai junto": ${com} de ${pecas.length} peças com o bloco (${cartoes} cartões)`);
+  });
+});
+

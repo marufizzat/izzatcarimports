@@ -1,6 +1,7 @@
 // Catalogo (ilha React): busca instantanea + filtros + grade de cartões (vitrine).
 // Estado na URL com os MESMOS parametros do site antigo:
-//   q, marca, modelo, ano, tipo, preco, frete, ordem (+ sub: o subtipo dos cartões "Por tipo" da categoria)
+//   q, marca, modelo, ano, tipo, preco, frete, ordem (+ sub: o subtipo dos cartões "Por tipo" da categoria;
+//   + lado=esquerdo|direito e pos=dianteiro|traseiro: as fichas de lado e posição)
 // O cartão (Etiqueta) é o MESMO desenho de CartaoPeca.astro; as regras ficam em ./etiqueta.ts.
 //
 // Fluidez (4G e celular fraco):
@@ -14,7 +15,7 @@
 import {
   memo, startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
-import { Busca, FAIXAS, SIZES_CARTAO, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item } from '../../lib/busca';
+import { Busca, FAIXAS, SIZES_CARTAO, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item, type Lado, type Posicao } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
 import { serveNoMeuCarro, nomeCarro } from '../../lib/meuCarro';
@@ -23,6 +24,7 @@ import {
   CLASSE_CARTAO, VITRINE_CLARA, icone,
 } from './etiqueta';
 import { whatsUrl } from '../../lib/whats';
+import { guardarBusca } from '../../lib/buscasRecentes';
 
 /** Logo da marca (calculado no build por logoInfo em catalogo.astro). */
 export type Logo = { src: string; w: number; h: number };
@@ -38,6 +40,13 @@ const ORDENS: [NonNullable<Filtros['ordem']>, string][] = [
 const n2 = (v: number) => v.toLocaleString('pt-BR');
 const NENHUMA: Item[] = [];
 const pecas = (n: number) => (n === 1 ? 'peça' : 'peças');
+// lado e posição: no endereço por extenso (&lado=direito, &pos=traseiro), no índice uma letra
+const LADOS: [Lado, string][] = [['E', 'esquerdo'], ['D', 'direito']];
+const POSICOES: [Posicao, string][] = [['D', 'dianteiro'], ['T', 'traseiro']];
+const ROT_LADO: Record<Lado, string> = { E: 'Esquerdo', D: 'Direito' };
+const ROT_POS: Record<Posicao, string> = { D: 'Dianteiro', T: 'Traseiro' };
+const daUrl = <K extends string>(lista: [K, string][], v: string | null) => lista.find(([, n]) => n === (v || '').toLowerCase())?.[0];
+const paraUrl = <K extends string>(lista: [K, string][], k?: K) => lista.find(([x]) => x === k)?.[1];
 
 function lerUrl(): Filtros {
   const u = new URLSearchParams(location.search);
@@ -46,6 +55,7 @@ function lerUrl(): Filtros {
   return {
     q: u.get('q') || '', marca: u.get('marca') || undefined, modelo: u.get('modelo') || undefined,
     ano, tipo: u.get('tipo') || undefined, sub: u.get('sub') || undefined, preco: u.get('preco') || undefined,
+    lado: daUrl(LADOS, u.get('lado')), pos: daUrl(POSICOES, u.get('pos')),
     // "frete" dos links antigos: aceito no endereço, mas não filtra mais (filtrava calado: "492 peças para xc60",
     // contra 515, sem ficha nem aviso)
     frete: undefined, ordem,
@@ -60,6 +70,8 @@ function escreverUrl(f: Filtros) {
   if (f.tipo) u.set('tipo', f.tipo);
   if (f.sub) u.set('sub', f.sub);
   if (f.preco) u.set('preco', f.preco);
+  if (f.lado) u.set('lado', paraUrl(LADOS, f.lado)!);
+  if (f.pos) u.set('pos', paraUrl(POSICOES, f.pos)!);
   if (f.frete) u.set('frete', '1');
   if (f.ordem && f.ordem !== 'rel') u.set('ordem', f.ordem);
   const qs = u.toString();
@@ -67,7 +79,7 @@ function escreverUrl(f: Filtros) {
 }
 /** A lista da 1ª tela (feita no build) vale: sem busca nem filtro, na ordem padrão. */
 const ehPadrao = (f: Filtros) =>
-  !(f.q || '').trim() && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.sub && !f.preco && !f.frete &&
+  !(f.q || '').trim() && !f.marca && !f.modelo && !f.ano && !f.tipo && !f.sub && !f.preco && !f.frete && !f.lado && !f.pos &&
   (!f.ordem || f.ordem === 'rel' || f.ordem === 'novos');
 
 /** Título da página com os filtros ("Peças para Volvo XC60 2020"). A busca de texto fica na linha do total
@@ -192,11 +204,35 @@ function Opcoes({ itens, ativo, aoEscolher, limite = 8, logos, mais }: {
   );
 }
 
-/** Os filtros (lateral no PC e gaveta no celular). Memorizado: só redesenha quando as contagens ou a escolha mudam. */
-const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo, sub, preco, logos, mudar }: {
-  fa: Facetas; marca?: string; modelo?: string; ano?: number; tipo?: string; sub?: string; preco?: string;
-  logos: Record<string, Logo>; mudar: (p: Partial<Filtros>) => void;
+/** Fichas de lado e posição: duas por linha ("Esquerdo 12 · Direito 15"), só as que têm peça na lista. O escolhido
+ *  é o do filtro ou o que a busca digitou ("retrovisor direito"). */
+function FichasLado<K extends string>({ titulo, opcoes, rot, ativo, aoEscolher }: {
+  titulo: string; opcoes: [K, number][]; rot: Record<K, string>; ativo?: K; aoEscolher: (v: K) => void;
 }) {
+  if (!opcoes.length) return null;
+  return (
+    <div className="cat-lado" role="group" aria-label={titulo}>
+      <span className="cat-lado-titulo" aria-hidden="true">{titulo}</span>
+      {opcoes.map(([v, c]) => (
+        <button key={v} type="button" className="cat-lado-ficha" aria-pressed={ativo === v} onClick={() => aoEscolher(v)}>
+          <span className="cat-lado-nome">{rot[v]}</span>
+          <span className="cat-opcao-qtd num"><span className="sr-only">, </span>{n2(c)}<span className="sr-only"> {pecas(c)}</span></span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Os filtros (lateral no PC e gaveta no celular). Memorizado: só redesenha quando as contagens ou a escolha mudam. */
+const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo, sub, preco, lado, pos, logos, mudar, escolherLado, escolherPos }: {
+  fa: Facetas; marca?: string; modelo?: string; ano?: number; tipo?: string; sub?: string; preco?: string;
+  /** lado e posição em vigor (o do filtro ou o digitado na busca) */
+  lado?: Lado; pos?: Posicao;
+  logos: Record<string, Logo>; mudar: (p: Partial<Filtros>) => void;
+  escolherLado: (v: Lado) => void; escolherPos: (v: Posicao) => void;
+}) {
+  const lados = fa.lados ?? [], posicoes = fa.posicoes ?? [];
+  const ladoRot = [lado && ROT_LADO[lado], pos && ROT_POS[pos]].filter(Boolean).join(' · ') || undefined;
   const marcas = fa.marcas.map(([v, c]) => ({ v, rot: v, c }));
   const modelos = fa.modelos.map(([v, c]) => ({ v, rot: v, c }));
   const tipos = fa.tipos.map(([v, c]) => ({ v, rot: v, c }));
@@ -205,7 +241,7 @@ const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo
   const precoRot = FAIXAS.find((x) => x[0] === preco)?.[1];
   const anos = ano && !fa.anos.some(([a]) => a === ano) ? [...fa.anos, [ano, 0] as [number, number]].sort((a, b) => b[0] - a[0]) : fa.anos;
   // sem opção nenhuma (busca sem resultado): uma linha só, em vez da mesma frase em cada grupo
-  if (!marcas.length && !anos.length && !tipos.length && !precos.length) {
+  if (!marcas.length && !anos.length && !tipos.length && !precos.length && !lados.length && !posicoes.length) {
     return <div className="cat-filtros"><p className="cat-nada">Sem filtros para esta busca.</p></div>;
   }
   return (
@@ -228,6 +264,14 @@ const PainelFiltros = memo(function PainelFiltros({ fa, marca, modelo, ano, tipo
               {anos.map(([a, c]) => <option key={a} value={a}>{c ? `${a} · ${n2(c)} ${pecas(c)}` : String(a)}</option>)}
             </select>
           </label>
+        </Grupo>
+      )}
+      {(lados.length > 0 || posicoes.length > 0) && (
+        <Grupo titulo="Lado e posição" escolhido={ladoRot}>
+          <div className="cat-lados">
+            <FichasLado titulo="Lado" opcoes={lados} rot={ROT_LADO} ativo={lado} aoEscolher={escolherLado} />
+            <FichasLado titulo="Posição" opcoes={posicoes} rot={ROT_POS} ativo={pos} aoEscolher={escolherPos} />
+          </div>
         </Grupo>
       )}
       {precos.length > 0 && (
@@ -369,10 +413,10 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   }, [meuCarro]);
 
   const fDiferido = useDeferredValue(f);
-  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca] = useMemo(() => {
-    if (!busca) return [[] as Item[], false, 0, [] as Carro[], ''] as const;
+  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca, ladoQ, posQ] = useMemo(() => {
+    if (!busca) return [[] as Item[], false, 0, [] as Carro[], '', undefined, undefined] as const;
     const r = busca.procurar(fDiferido);
-    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca] as const;
+    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca, busca.ladoDaBusca, busca.posDaBusca] as const;
   }, [busca, fDiferido]);
   const padrao = ehPadrao(f);
   const facetas = useMemo(() => (busca ? busca.facetas(fDiferido) : padrao ? facetasIniciais : null), [busca, fDiferido, padrao, facetasIniciais]);
@@ -418,7 +462,8 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   const muda = useCallback((parcial: Partial<Filtros>) => { setF((o) => ({ ...o, ...parcial })); carregar(); }, [carregar]);
   const mudaFiltro = useCallback((parcial: Partial<Filtros>) => { muda(parcial); voltaAoTopo(); }, [muda, voltaAoTopo]);
   const mudaTexto = useCallback((q: string) => { muda({ q }); setQTitulo(''); voltaAoTopo('auto'); }, [muda, voltaAoTopo]);
-  const enviaTexto = useCallback((q: string) => { muda({ q }); setQTitulo(q); voltaAoTopo(); }, [muda, voltaAoTopo]);
+  // enviada (Enter / Buscar): vira busca recente das sugestões do cabeçalho
+  const enviaTexto = useCallback((q: string) => { muda({ q }); setQTitulo(q); guardarBusca(q); voltaAoTopo(); }, [muda, voltaAoTopo]);
 
   // fichas do que está escolhido (a busca de texto já aparece no campo, com o "×" dele; o parâmetro antigo
   // "frete" dos links continua filtrando, sem ficha)
@@ -429,12 +474,31 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   if (f.tipo) ativos.push({ k: 'tipo', rot: f.tipo, tirar: () => mudaFiltro({ tipo: undefined, sub: undefined }) });
   if (f.sub) ativos.push({ k: 'sub', rot: f.sub, tirar: () => mudaFiltro({ sub: undefined }) });
   if (f.preco) ativos.push({ k: 'preco', rot: FAIXAS.find((x) => x[0] === f.preco)?.[1] || f.preco, tirar: () => mudaFiltro({ preco: undefined }) });
+  if (f.lado) ativos.push({ k: 'lado', rot: `Lado ${ROT_LADO[f.lado].toLowerCase()}`, tirar: () => mudaFiltro({ lado: undefined }) });
+  if (f.pos) ativos.push({ k: 'pos', rot: ROT_POS[f.pos], tirar: () => mudaFiltro({ pos: undefined }) });
   const nFiltros = ativos.length;
   const limpar = () => { setF({ ordem: f.ordem }); setQTitulo(''); voltaAoTopo(); };
   const limparFiltros = () => { setF({ q: f.q, ordem: f.ordem }); };
 
+  // lado e posição: a ficha tocada manda; a palavra digitada ("retrovisor direito") sai da busca para não brigar com ela.
+  // Tocar na ficha que já vale tira o filtro (e a palavra).
+  const ladoAtivo = f.lado ?? ladoQ, posAtivo = f.pos ?? posQ;
+  const qRef = useRef(f.q); qRef.current = f.q;
+  const escolherLado = useCallback((v: Lado) => {
+    const q = qRef.current && busca ? busca.semLadoPos(qRef.current, { lado: true }) : qRef.current;
+    mudaFiltro({ lado: ladoAtivoRef.current === v ? undefined : v, q });
+    if (q !== qRef.current) setQTitulo((t) => (t ? q || '' : t));
+  }, [busca, mudaFiltro]);
+  const escolherPos = useCallback((v: Posicao) => {
+    const q = qRef.current && busca ? busca.semLadoPos(qRef.current, { pos: true }) : qRef.current;
+    mudaFiltro({ pos: posAtivoRef.current === v ? undefined : v, q });
+    if (q !== qRef.current) setQTitulo((t) => (t ? q || '' : t));
+  }, [busca, mudaFiltro]);
+  const ladoAtivoRef = useRef(ladoAtivo); ladoAtivoRef.current = ladoAtivo;
+  const posAtivoRef = useRef(posAtivo); posAtivoRef.current = posAtivo;
   const filtros = facetas
-    ? <PainelFiltros fa={facetas} marca={f.marca} modelo={f.modelo} ano={f.ano} tipo={f.tipo} sub={f.sub} preco={f.preco} logos={logos} mudar={mudaFiltro} />
+    ? <PainelFiltros fa={facetas} marca={f.marca} modelo={f.modelo} ano={f.ano} tipo={f.tipo} sub={f.sub} preco={f.preco}
+        lado={ladoAtivo} pos={posAtivo} logos={logos} mudar={mudaFiltro} escolherLado={escolherLado} escolherPos={escolherPos} />
     : null;
 
   const carregando = !busca && !erro;

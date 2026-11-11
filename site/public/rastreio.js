@@ -8,6 +8,15 @@
     window.izzatBusca = function () {};
     return;
   }
+  /* Página preparada de antemão (prerender do Chrome, regras de especulação do Base.astro): nada é medido até a pessoa
+     abrir a página de verdade (1 visita = 1 page_view). A busca que o catálogo mandar antes disso espera na fila. */
+  if (document.prerendering) {
+    var fila = [];
+    window.izzatBusca = function (termo) { fila.push(termo); };
+    document.addEventListener('prerenderingchange', function () { iniciar(); fila.forEach(function (t) { window.izzatBusca(t); }); }, { once: true });
+  } else iniciar();
+
+  function iniciar() {
   var META_PIXEL_ID = '2508976816257209';
   var GA_ID = 'G-M9W3R23RY9';
   window.dataLayer = window.dataLayer || [];
@@ -55,9 +64,15 @@
       fbq('track', 'InitiateCheckout', base); gtag('event', 'saida_mercado_livre', { pagina: location.pathname });
     }
   }, true);
+  /* Lista de orcamento (lib/lista.ts): peca posta na lista (origem: 'peca' ou 'vai-junto') */
+  window.addEventListener('lista', function (e) {
+    var d = e && e.detail; if (!d || d.acao !== 'adicionar') return;
+    gtag('event', 'lista_adicionar', { mlb: d.id, origem: d.origem || undefined, pagina: location.pathname });
+  });
   /* Meu carro: qual carro o cliente escolheu (so marca/modelo/ano, nada pessoal) */
   window.addEventListener('meu-carro', function (e) {
     var c = e && e.detail; if (!c || !c.b) return;
     gtag('event', 'meu_carro', { marca: c.b, modelo: c.m, ano: c.y || undefined });
   });
+  }
 })();

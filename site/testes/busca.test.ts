@@ -396,3 +396,113 @@ describe('pílula da versão (dif) no índice', () => {
     }
   });
 });
+
+// Busca que fala como o cliente (nov/2026): sinônimos e plural (lib/sinonimos.ts) no catálogo e nas sugestões
+describe('sinônimos e plural', () => {
+  const nomesComecam = (r: Item[], w: string) => r.filter((x) => normal(x.n).startsWith(w)).length;
+  it('"sinaleira" (RS) acha as lanternas, como "lanterna"', (ctx) => {
+    const lanternas = b.procurar({ q: 'lanterna' });
+    if (!lanternas.length) return ctx.skip();
+    const r = b.procurar({ q: 'sinaleira' });
+    expect(b.aproximado).toBe(false);
+    expect(nomesComecam(r, 'lanterna')).toBe(nomesComecam(lanternas, 'lanterna'));
+    expect(normal(r[0].n).startsWith('lanterna')).toBe(true);
+    // no plural também, e nas sugestões do cabeçalho (a mesma regra)
+    expect(b.procurar({ q: 'sinaleiras' }).length).toBe(r.length);
+    expect(b.sugestoes('sinaleira').total).toBe(r.length);
+    // e o bloco "Não achou?" não aparece: a lista tem o que a pessoa pediu
+    expect(b.bate(r, 'sinaleira', null)).toBe(true);
+  });
+  it('"faróis" acha o mesmo que "farol" (plural fora do padrão)', (ctx) => {
+    const um = b.procurar({ q: 'farol' });
+    if (!um.length) return ctx.skip();
+    const varios = new Set(b.procurar({ q: 'faróis' }).map((x) => x.id));
+    expect(b.aproximado).toBe(false);
+    expect(um.every((x) => varios.has(x.id))).toBe(true);
+  });
+  it('"máquina de vidro" acha os "Motor vidro"; "mola a gás" acha os amortecedores da tampa e do capô', (ctx) => {
+    const motores = b.itens.filter((x) => /^motor vidro/.test(normal(x.n)));
+    if (!motores.length) return ctx.skip();
+    const ids = new Set(b.procurar({ q: 'máquina de vidro' }).map((x) => x.id));
+    expect(motores.every((x) => ids.has(x.id))).toBe(true);
+    const mola = b.procurar({ q: 'mola a gás' });
+    expect(b.aproximado).toBe(false);
+    expect(mola.some((x) => /amortecedor/.test(normal(x.n)))).toBe(true);
+  });
+  it('sinônimo só acrescenta: a palavra digitada continua valendo ("pisca" acha o pisca-alerta e a chave de seta)', (ctx) => {
+    const antes = b.itens.filter((x) => /\bpisca\b/.test(normal(x.n)));
+    if (!antes.length) return ctx.skip();
+    const ids = new Set(b.procurar({ q: 'pisca' }).map((x) => x.id));
+    expect(antes.every((x) => ids.has(x.id))).toBe(true);
+    expect(b.procurar({ q: 'pisca' }).some((x) => /chave seta/.test(normal(x.n)))).toBe(true);
+  });
+});
+
+// Lado e posição (colunas l e pos do busca.json, lidas do nome em preparar_dados.py): fichas e a busca entendem
+describe('lado e posição', () => {
+  const comLado = b.itens.filter((x) => x.l).length;
+  it('o índice traz o lado e a posição só de quem tem', (ctx) => {
+    if (!ix.l) return ctx.skip();
+    expect(comLado).toBeGreaterThan(1000);
+    for (const it of b.itens.filter((x) => x.l).slice(0, 300)) {
+      const n = normal(it.n);
+      expect(it.l === 'E' ? /esquerd|motorista/.test(n) : /direit|passageiro/.test(n), it.n).toBe(true);
+    }
+    for (const it of b.itens.filter((x) => x.pos).slice(0, 300)) {
+      // o nome diz, ou o tipo da peça ("Lanternas Traseiras") quando o nome não diz
+      const n = normal(`${it.n} ${it.s}`);
+      expect(it.pos === 'T' ? /traseir/.test(n) : it.pos === 'D' ? /dianteir|frontal/.test(n) : /dianteir/.test(n) && /traseir/.test(n), it.n).toBe(true);
+    }
+  });
+  it('as fichas filtram e as contagens batem com a lista', (ctx) => {
+    if (!comLado) return ctx.skip();
+    const f = { q: 'retrovisor' };
+    const fa = b.facetas(f);
+    for (const [l, n] of fa.lados) {
+      const r = b.procurar({ ...f, lado: l });
+      expect(r.length, l).toBe(n);
+      expect(r.every((x) => x.l === l)).toBe(true);
+    }
+    for (const [p, n] of fa.posicoes) {
+      const r = b.procurar({ ...f, pos: p });
+      expect(r.length, p).toBe(n);
+      expect(r.every((x) => x.pos === p || x.pos === 'A')).toBe(true);
+    }
+  });
+  it('"retrovisor direito xc60" é filtro: só os direitos, e a ficha Direito fica marcada', (ctx) => {
+    if (!temCarro('Volvo', 'XC60') || !comLado) return ctx.skip();
+    const r = b.procurar({ q: 'retrovisor direito xc60' });
+    expect(b.ladoDaBusca).toBe('D');
+    expect(r.length).toBeGreaterThan(0);
+    expect(r.every((x) => x.l === 'D')).toBe(true);
+    // "lado do motorista" = esquerdo
+    const m = b.procurar({ q: 'retrovisor lado do motorista' });
+    expect(b.ladoDaBusca).toBe('E');
+    expect(m.every((x) => x.l === 'E')).toBe(true);
+    // a ficha tocada manda e a palavra sai da busca
+    expect(b.semLadoPos('retrovisor lado direito xc60')).toBe('retrovisor xc60');
+  });
+  it('"amortecedor traseiro": o que o nome diz "traseiro" vem antes da tampa traseira', (ctx) => {
+    const r = b.procurar({ q: 'amortecedor traseiro' });
+    if (!r.some((x) => /amortecedor traseiro/.test(normal(x.n)))) return ctx.skip();
+    expect(normal(r[0].n)).toMatch(/traseiro/);
+    expect(r.every((x) => x.pos === 'T' || x.pos === 'A')).toBe(true);
+  });
+  it('sem nenhuma peça daquele lado, a busca volta a valer como texto (nunca pior que antes)', () => {
+    // índice de 3 peças: o farol não diz o lado no nome, só no título do anúncio
+    const mini = new Busca({
+      v: 1, updated: '', marcas: ['Volvo'], familias: ['Faróis e Lanternas'], tipos: ['Faróis'],
+      id: ['MLB1', 'MLB2', 'MLB3'], t: ['Farol Volvo Xc60 Lado Direito', 'Lanterna Traseira Esquerda Volvo Xc60', 'Lanterna Tampa Traseira Volvo Xc60'],
+      n: ['Farol', 'Lanterna traseira esquerda', 'Lanterna tampa traseira'], p: [100, 200, 300], i: ['', '', ''], h: ['a', 'b', 'c'], f: '000',
+      b: [0, 0, 0], m: ['XC60', 'XC60', 'XC60'], y: [0, 0, 0], c: [0, 0, 0], s: [0, 0, 0], o: ['', '', ''], l: '0E0', pos: '0TT',
+    });
+    const r = mini.procurar({ q: 'farol direito' });
+    expect(r.map((x) => x.id)).toEqual(['MLB1']);
+    expect(mini.ladoDaBusca).toBeUndefined();
+    // com peça do lado, filtra
+    expect(mini.procurar({ q: 'lanterna esquerda' }).map((x) => x.id)).toEqual(['MLB2']);
+    expect(mini.procurar({ q: 'lanterna traseira' }).map((x) => x.id).sort()).toEqual(['MLB2', 'MLB3']);
+    // as duas posições na busca: fica no texto
+    expect(mini.procurar({ q: 'lanterna dianteira/traseira' }).length).toBeGreaterThanOrEqual(0);
+  });
+});

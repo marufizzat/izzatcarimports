@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, blocoPeca, cabecaPeca, caudaPeca, fichaPeca, blocoDaCabeca, urlDaCauda, linhaMeuCarro, comMeuCarro, carroSalvoTxt, conviteCarro, precoWhats, precoWhatsTxt, mensagemFrete, WHATS } from './whats';
+import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, mensagemLista, LIMITE_MSG_LISTA, blocoPeca, cabecaPeca, caudaPeca, fichaPeca, blocoDaCabeca, urlDaCauda, linhaMeuCarro, comMeuCarro, carroSalvoTxt, conviteCarro, precoWhats, precoWhatsTxt, mensagemFrete, WHATS } from './whats';
 import { formatarCep, cepCompleto, digitosCep } from './cep';
 import { msgWhats } from '../components/catalogo/etiqueta';
 
@@ -108,3 +108,43 @@ describe('frete pelo CEP (envios e "Como é o envio?" da peça)', () => {
     expect(cepCompleto('96445-0001')).toBe(false);
   });
 });
+
+describe('lista de orçamento: o pedido de várias peças (mensagemLista)', () => {
+  const farol = { id: 'MLB123', nome: 'Farol direito', carro: 'Chevrolet Cruze', anos: '2017 a 2021', cod: 'E131464301', preco: 244.64 };
+  const grade = { id: 'MLB456', nome: 'Grade superior dianteira', carro: 'Chevrolet Cruze', anos: '2017 a 2023', preco: 504.33 };
+  const suporte = { id: 'MLB789', nome: 'Suporte farol direito', carro: 'Chevrolet Cruze', anos: '2017 a 2021', cod: '39010101', preco: 485.59 };
+  it('o pedido inteiro: itens numerados, totais, o carro salvo, a pergunta no plural e o link da lista por último', () => {
+    expect(mensagemLista([farol, grade, suporte], 'Volvo XC60 2019')).toBe('Olá! Vim pelo site da Izzat Car.\n\n*PEDIDO DE PEÇAS (3 itens)*\n\n'
+      + '*1. Farol direito*\nChevrolet Cruze · 2017 a 2021\nCódigo: E131464301 · Anúncio: MLB123\nR$ 244,64\n\n'
+      + '*2. Grade superior dianteira*\nChevrolet Cruze · 2017 a 2023\nAnúncio: MLB456\nR$ 504,33\n\n'
+      + '*3. Suporte farol direito*\nChevrolet Cruze · 2017 a 2021\nCódigo: 39010101 · Anúncio: MLB789\nR$ 485,59\n\n'
+      // cada linha com o desconto: 220,18 + 453,90 + 437,03 (o desconto do subtotal daria 1.111,10)
+      + 'Subtotal no site: R$ 1.234,56\n*Total no WhatsApp (10% de desconto): R$ 1.111,11*\n\n'
+      + 'Meu carro: Volvo XC60 2019\nServem e ainda têm?\n\nhttps://izzatcarimports.com.br/lista.html?i=MLB123,MLB456,MLB789');
+  });
+  it('1 item: tudo no singular; sem carro salvo e sem carro/anos, as linhas somem', () => {
+    const m = mensagemLista([{ id: 'MLB9', nome: 'Fechadura', preco: 89.9 }]);
+    expect(m).toBe('Olá! Vim pelo site da Izzat Car.\n\n*PEDIDO DE PEÇA (1 item)*\n\n*1. Fechadura*\nAnúncio: MLB9\nR$ 89,90\n\n'
+      + 'Subtotal no site: R$ 89,90\n*Total no WhatsApp (10% de desconto): R$ 80,91*\n\nServe e ainda tem?\n\nhttps://izzatcarimports.com.br/lista.html?i=MLB9');
+    expect(m.startsWith(ABERTURA)).toBe(true);
+  });
+  it('lista comprida (30 peças de nome longo): encurta até caber, sempre com os totais e o link com todas', () => {
+    const itens = Array.from({ length: 30 }, (_, i) => ({ id: `MLB${7000000000 + i}`, nome: `Módulo conforto BCM carroceria dianteiro esquerdo ${i}`,
+      carro: 'Volkswagen Gol, Fox e Saveiro', anos: '2013 a 2022', cod: `34D937087C${i}`, preco: 318.33 + i }));
+    const m = mensagemLista(itens, 'Volkswagen Gol 2016');
+    expect(m.length).toBeLessThanOrEqual(LIMITE_MSG_LISTA);
+    expect(m).toContain('*PEDIDO DE PEÇAS (30 itens)*');
+    expect(m).toContain('Subtotal no site: R$ 9.984,90');
+    expect(m).toContain('*Total no WhatsApp (10% de desconto): R$ 8.986,50*');
+    expect(m).toContain('(todas no link)');
+    expect(m.endsWith(`https://izzatcarimports.com.br/lista.html?i=${itens.map((x) => x.id).join(',')}`)).toBe(true);
+    // poucas peças longas: uma linha por peça (nome + código + preço), sem cortar nenhuma
+    const dez = itens.slice(0, 10);
+    const c = mensagemLista(dez);
+    expect(c.length).toBeLessThanOrEqual(LIMITE_MSG_LISTA);
+    expect(c).toContain('*10. Módulo conforto BCM carroceria dianteiro esquerdo 9* · Cód. 34D937087C9 · R$ 327,33');
+    expect(c).not.toContain('todas no link');
+    expect(texto(linkWhats(c))).toBe(c);
+  });
+});
+
