@@ -3520,11 +3520,13 @@ def main():
                 break
         boas = fotos_limpas.limpas(cands)[:4]
         anos_l = [y for x in lst if anos_no_modelo(x, mod) for y in anos_no_modelo(x, mod)]
+        # a faixa do carro nunca sai do periodo dele (PRODUCAO_BR): a peca de 2 carros sem "ys" tem a faixa do titulo
+        a_ini, a_fim = limitar_anos(min(anos_l), max(anos_l), mc, mod) if anos_l else (None, None)
         fams = Counter(x["c"] for x in lst)
         carros.append({
             "k": chave_url(f"{mc} {mod}"),
             "b": mc, "m": mod, "c": len(lst),
-            "anos": [min(anos_l), max(anos_l)] if anos_l else None,
+            "anos": [a_ini, a_fim] if a_ini else None,
             "fams": [[n, c] for n, c in fams.most_common(6)],
             # so capas limpas (sem o carro colado) no mosaico do carro
             "capas": (boas + [x["fotos"][0] for x in lst if x["fotos"] and x.get("limpa")
