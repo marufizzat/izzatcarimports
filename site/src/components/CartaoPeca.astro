@@ -41,6 +41,9 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
 </div>
 
 <script>
+  // "+ Lista" do cartão: um ouvinte só para a página (components/ui/listaCartao.ts)
+  import { iniciarListaCartao } from './ui/listaCartao';
+  iniciarListaCartao();
   // selo "Serve no seu ..." quando o carro salvo bate com a peça (regra do contrato meuCarro.ts)
   import { lerMeuCarro, serveNoMeuCarro, lerModelos, nomeModelos, norm, EVENTO } from '../lib/meuCarro';
   import { SITE, icone } from './catalogo/etiqueta';

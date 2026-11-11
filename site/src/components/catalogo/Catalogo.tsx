@@ -15,10 +15,12 @@
 import {
   memo, startTransition, useCallback, useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode,
 } from 'react';
-import { Busca, FAIXAS, SIZES_CARTAO, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item, type Lado, type Posicao } from '../../lib/busca';
+import { Busca, FAIXAS, SIZES_CARTAO, capaItem, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item, type Lado, type Posicao } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
-import { serveNoMeuCarro, nomeCarro } from '../../lib/meuCarro';
+import { serveNoMeuCarro, nomeCarro, nomeModelos } from '../../lib/meuCarro';
+import { adicionarNaLista, lerLista, EVENTO_LISTA, PAGINA_LISTA } from '../../lib/lista';
+import { itemDeDados, rotulo, avisar, CLASSE_LISTA } from '../ui/listaCartao';
 import {
   linhaCarro, codigoPeca, precoPartes, msgWhats, linkWhats, urlPeca, dadosCarro,
   CLASSE_CARTAO, VITRINE_CLARA, icone,
@@ -110,9 +112,20 @@ const Xis = () => (
 );
 
 /** Cartão da peça (vitrine) — mesmo markup de CartaoPeca.astro. Memorizado: só redesenha se a peça ou o selo mudam. */
-export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModelo }: {
-  it: Item; eager?: boolean; alta?: boolean; novo?: boolean; meuModelo?: string | null;
+export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModelo, naLista }: {
+  it: Item; eager?: boolean; alta?: boolean; novo?: boolean; meuModelo?: string | null; naLista?: boolean;
 }) {
+  // "+ Lista": põe a peça na lista sem abrir a peça (ou, já na lista, leva à lista). Clique: um só (o botão é irmão do link)
+  const pôrNaLista = () => {
+    if (naLista) { window.location.href = PAGINA_LISTA; return; }
+    const carro = nomeModelos({ b: it.b, m: it.m, ms: it.ms, ys: it.ys });
+    const anos = it.y ? (it.y[0] === it.y[1] ? String(it.y[0]) : `${it.y[0]}–${it.y[1]}`) : '';
+    const item = itemDeDados({ id: it.id, slug: it.h, nome: it.n, carro, anos, cod: codigoPeca(it.o), preco: it.p, capa: capaItem(it, 'E') });
+    if (!item) { avisar('Não deu para pôr esta peça na lista agora.'); return; }
+    const r = adicionarNaLista(item, 'cartao');
+    avisar(r === 'cheia' ? 'A lista está cheia. Tire uma peça para pôr outra.' : r === 'ja' ? 'Essa peça já está na sua lista.' : `Peça na sua lista (${lerLista().length}).`);
+  };
+  const lr = rotulo(!!naLista, it.n);
   const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
   const [reais, cent] = precoPartes(it.p);
   const cod = codigoPeca(it.o);
@@ -129,6 +142,8 @@ export const Etiqueta = memo(function Etiqueta({ it, eager, alta, novo, meuModel
   }, []);
   return (
     <div className={CLASSE_CARTAO}>
+      <button type="button" className={`${CLASSE_LISTA}${naLista ? ' na' : ''}`} data-react data-botao="lista-cartao" data-na={naLista ? '1' : '0'}
+              aria-label={lr.label} onClick={pôrNaLista}>{lr.txt}</button>
       <a className="etiqueta" href={`/peca/${it.h}.html`} {...dadosCarro(it.b, it.m, it.y, it.ms, it.ys)}>
         <div className="etiqueta-foto">
           <img ref={img} sizes={f.sizes} srcSet={f.srcset} src={f.src}
@@ -511,6 +526,14 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   }, [meuCarro]);
 
   const fDiferido = useDeferredValue(f);
+  // as peças que estão na lista (um ouvinte só para o catálogo inteiro; cada cartão recebe um booleano)
+  const [naLista, setNaLista] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    const ler = () => setNaLista(new Set(lerLista().map((x) => x.id)));
+    ler();
+    window.addEventListener(EVENTO_LISTA, ler);
+    return () => window.removeEventListener(EVENTO_LISTA, ler);
+  }, []);
   const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca, ladoQ, posQ, faltou, outrosLados] = useMemo(() => {
     if (!busca) return [[] as Item[], false, 0, [] as Carro[], '', undefined, undefined, null, [] as Item[]] as const;
     const r = busca.procurar(fDiferido);
@@ -815,7 +838,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             <div className={busca ? 'cat-grade' : 'cat-grade cat-ini'}>
               {grade.flatMap((it, i) => {
                 const cartao = (
-                  <Etiqueta key={it.id} it={it} eager={!!busca && i < 4} alta={!!busca && i < 2} novo={!semSelo && novos.has(it.id)}
+                  <Etiqueta key={it.id} it={it} eager={!!busca && i < 4} alta={!!busca && i < 2} novo={!semSelo && novos.has(it.id)} naLista={naLista.has(it.id)}
                             meuModelo={meuCarro && serveNoMeuCarro(it, meuCarro) === 'sim' ? meuCarro.m : null} />
                 );
                 if (blocos && carroDaBusca && i === 0) return [<h2 key="bloco-carro" className="cat-bloco">Do {carroDaBusca.b} {carroDaBusca.m} <span>· {n2(nDoCarro)} {pecas(nDoCarro)}</span></h2>, cartao];
