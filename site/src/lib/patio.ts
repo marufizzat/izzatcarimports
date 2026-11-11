@@ -4,6 +4,7 @@
 // Sem node:fs: roda no navegador.
 import { codigoJunto, type Carro } from './busca';
 import { nomeCarro, type MeuCarro } from './meuCarro';
+import { mensagem } from './whats';
 
 export type PedidoPatio = {
   /** o que a pessoa digitou */
@@ -52,4 +53,9 @@ export function pedidoPatio(o: PedidoPatio): { texto: string; procuro: string; o
   const paraCarro = carro ? `para ${carro}` : ano ? `para carro ano ${ano}` : '';
   const procuro = [oQue, paraCarro].filter(Boolean).join(' ');
   return { texto: `Procuro ${procuro}. Não achei no site, tem no pátio?`, procuro, oQue, digitado, carro, ano };
+}
+
+/** Peça que vendeu e chegou só pelo link da lista (sem nome): o WhatsApp leva o número do anúncio e pergunta pelo pátio. */
+export function mensagemPatioVendida(id: string): string {
+  return mensagem(`Quero uma peça parecida com a do anúncio ${id}, da minha lista de orçamento, que já vendeu. Tem no pátio?`);
 }

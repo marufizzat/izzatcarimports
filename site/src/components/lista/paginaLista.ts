@@ -15,7 +15,8 @@ import {
   lerLista, salvarLista, remover, restaurar, juntar, atualizar, itemDe, idsDoLink, linkDaLista, pecasTxt, total, totalWhats, desconto,
   EVENTO_LISTA, PAGINA_LISTA, MAX_LISTA, listaConferida, marcarConferida, type ItemLista,
 } from '../../lib/lista';
-import { mensagem, mensagemLista, linkWhats, precoWhats, anosTexto } from '../../lib/whats';
+import { mensagemLista, linkWhats, precoWhats, anosTexto } from '../../lib/whats';
+import { mensagemPatioVendida } from '../../lib/patio';
 import { lerMeuCarro, nomeCarro, nomeModelos, linkCatalogo, EVENTO as EVENTO_CARRO, ABRIR } from '../../lib/meuCarro';
 import { carregarAtivas, type Ativas } from '../../lib/vistos';
 import { ligarCampoCep, cepCompleto, salvarCep } from '../../lib/cep';
@@ -126,7 +127,7 @@ export function iniciarLista() {
       // a busca do catálogo com o que se sabe (Procurar parecida).
       precos = `<span class="lst-vendida">Já vendida</span>${x.nome
         ? `<a class="lst-parecida" href="${esc(procurar(x))}">Procurar parecida</a>`
-        : `<a class="lst-parecida lst-patio" href="${esc(linkWhats(mensagem(`Quero uma peça parecida com a do anúncio ${x.id}, da minha lista de orçamento, que já vendeu. A gente procura no pátio?`)))}" target="_blank" rel="noopener" data-botao="lista-patio">A gente procura no pátio</a>`}`;
+        : `<a class="lst-parecida lst-patio" href="${esc(linkWhats(mensagemPatioVendida(x.id)))}" target="_blank" rel="noopener" data-botao="lista-patio">A gente procura no pátio</a>`}`;
     } else if (x.preco <= 0) {
       // sem preço conferido (nunca "R$ 0,00"): sem o bloco do preço
       precos = '';

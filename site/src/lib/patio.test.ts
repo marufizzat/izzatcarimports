@@ -1,7 +1,8 @@
 // "Não achou? A gente procura no pátio": a mesma mensagem no bloco do catálogo e nas sugestões da busca do cabeçalho.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { pedidoPatio, semCarro } from './patio';
+import { pedidoPatio, semCarro, mensagemPatioVendida } from './patio';
+import { ABERTURA } from './whats';
 
 const xc60 = { b: 'Volvo', m: 'XC60', y: 2019 };
 describe('pedido para procurar no pátio', () => {
@@ -32,5 +33,12 @@ describe('pedido para procurar no pátio', () => {
   it('o catálogo ainda escreve o mesmo texto (quem mudar um, muda os dois: Catalogo.tsx deve passar a usar pedidoPatio)', () => {
     const cat = readFileSync('src/components/catalogo/Catalogo.tsx', 'utf-8');
     expect(cat).toContain('whatsUrl(`Procuro ${procuro}. Não achei no site, tem no pátio?`)');
+  });
+});
+
+describe('peça vendida que chegou pela lista (sem nome): a mensagem do pátio', () => {
+  it('leva o número do anúncio e pergunta se tem no pátio (sem virar pedido de quem se oferece para procurar)', () => {
+    expect(mensagemPatioVendida('MLB4779038537')).toBe(`${ABERTURA} Quero uma peça parecida com a do anúncio MLB4779038537, `
+      + 'da minha lista de orçamento, que já vendeu. Tem no pátio?');
   });
 });
