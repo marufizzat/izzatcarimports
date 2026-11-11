@@ -6,10 +6,12 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { PONTOS_DA_ZONA } from './porDentro/todas';
 import { pontosLateral } from './porDentro/lateral';
-import { contarPontos, filtrosDoQuente, ehDoPonto, TIPO_INTEIRO, type PontoQuente } from './porDentro/base';
+import { contarPontos, contarComLigadas, ligadasTxt, filtrosDoQuente, ehDoPonto, TIPO_INTEIRO, type PontoQuente } from './porDentro/base';
+import { dentroJson } from './porDentro/todas';
+import { serveNoModelo } from './meuCarro';
 import { VISTAS, ARTE_VISTA, ARQUIVO_DENTRO, arteDaVista } from './raioXVistas';
 import { ZONAS, ARTE, linkLinha, filtrosLinha, zonasDaPeca } from './raioX';
-import { Busca, type Lado, type Posicao } from './busca';
+import { Busca, capaItem, type Lado, type Posicao } from './busca';
 import { estoques, carroMaisCheio, carrosDoIndice, indiceDoCarro, indiceFixo, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
 
 const VISTAS_K = Object.keys(VISTAS);
@@ -181,6 +183,47 @@ describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do c
     }
     expect(erros.slice(0, 10)).toEqual([]);
   });
+  it('3º estado, em todo carro: a peça ligada serve no carro, é desta parte, NÃO é a peça do título, e título + ligadas = o link (nada some)', () => {
+    // a conta do "é a peça do título" é refeita aqui (a 1ª palavra do nome, o que a regra exige e o que ela proíbe no
+    // resto do nome), sem chamar a função do site
+    const plano = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/-/g, '');
+    const palavras = (nome: string) => plano(nome).split(/[^a-z0-9]+/).filter(Boolean);
+    const formas = (c: string) => [c, `${c}s`, `${c}es`, c.replace(/m$/, 'ns'), c.replace(/l$/, 'is'), c.replace(/ao$/, 'oes')];
+    const diz = (ws: string[], lista: string) => lista.split(' ').map(plano).some((c) => formas(c).some((f) => ws.includes(f)));
+    const abre = (p: PontoQuente, nome: string) => {
+      if (p.eh === TIPO_INTEIRO) return true;
+      const ws = palavras(nome);
+      const cab = ws.filter((w) => !['kit', 'par', 'jogo', 'conjunto'].includes(w))[0] ?? '';
+      return (Array.isArray(p.eh) ? p.eh : p.eh ? [p.eh] : []).some((e) => diz([cab], e.cab) && (!e.tem || diz(ws, e.tem)) && !(e.sem && diz(ws, e.sem)));
+    };
+    const erros: string[] = [];
+    for (const c of [null, ...carrosDoIndice(ix)]) {
+      const bc = c ? new Busca(indiceDoCarro(ix, c.marca, c.modelo)) : b;
+      const carro = c ?? {};
+      const quem = c ? `${c.marca} ${c.modelo}` : 'sem carro';
+      const r = contarComLigadas((f) => bc.procurar(f), carro, PONTOS);
+      for (const p of PONTOS) {
+        const { n, ligadas } = r[p.k];
+        if (!p.tipo) { if (n || ligadas.length) erros.push(`${quem} ${p.k}: ponto de pátio com peça`); continue; }
+        const doLink = bc.procurar(filtrosDoQuente(p, carro));
+        const daOutraPonta = (it: { pos?: string }) => !!p.fora && it.pos === p.fora;
+        // com número: o link inteiro, sem ligadas (o catálogo mostra tudo)
+        if (n) { if (n !== doLink.length || ligadas.length) erros.push(`${quem} ${p.k}: ${n} no número, ${doLink.length} no link, ${ligadas.length} ligadas`); continue; }
+        // sem número: nada some do Raio-x (as ligadas são o link, menos a peça que DIZ a posição da outra ponta)
+        const esperadas = doLink.filter((it) => !daOutraPonta(it)).map((it) => it.id).sort();
+        if (JSON.stringify(ligadas.map((it) => it.id).sort()) !== JSON.stringify(esperadas)) erros.push(`${quem} ${p.k}: ligadas ${ligadas.length}, o link tem ${esperadas.length}`);
+        const zonaEsperada = DE_OUTRA_ZONA[zona]?.[p.k] ?? zona;
+        for (const it of ligadas) {
+          if (abre(p, it.n) && !daOutraPonta(it)) erros.push(`${quem} ${p.k}: "${it.n}" é a peça do título e está nas ligadas`);
+          if (c && !(it.b === c.marca && serveNoModelo(it, c.modelo))) erros.push(`${quem} ${p.k}: "${it.n}" é de ${it.b} ${it.m}`);
+          // a parte do carro: a mesma conta do painel das zonas (a frente tem a regra dela em raioXFrente.test.ts)
+          if (zona !== 'frente' && !zonasDaPeca({ c: it.c, s: it.s, l: it.l, pos: it.pos }).some((z) => z.k === zonaEsperada)) erros.push(`${quem} ${p.k}: "${it.n}" não é da zona ${zonaEsperada}`);
+          if (p.lado && it.l !== p.lado) erros.push(`${quem} ${p.k}: "${it.n}" é do outro lado`);
+        }
+      }
+    }
+    expect(erros.slice(0, 10)).toEqual([]);
+  });
   // a frente (o piloto) tem a regra dela em raioXFrente.test.ts (o para-lama fica na lateral, a alma vai sem posição)
   it.skipIf(zona === 'frente')('no estoque inteiro, as peças de cada ponto são peças DESTA parte do carro no painel do Raio-x', () => {
     const fora: string[] = [];
@@ -269,6 +312,22 @@ describe('vistas por dentro: o arquivo das contas do estoque inteiro', () => {
       expect(Object.values(n).filter((x) => x > 0).length, k).toBeGreaterThanOrEqual(6);
     }
   });
+  it.each(estoques())('no $nome, o arquivo de quem não tem carro: os números são os da conta e só o ponto SEM número leva peças ligadas', ({ ix }) => {
+    const b = new Busca(ix);
+    const j = dentroJson((f) => b.procurar(f), (it) => capaItem(it, 'A'));
+    for (const k of VISTAS_K) {
+      const c = contarComLigadas((f) => b.procurar(f), {}, PONTOS_DA_ZONA[k]);
+      expect(j.z[k], k).toEqual(contarPontos((f) => b.procurar(f), {}, PONTOS_DA_ZONA[k]));
+      for (const p of PONTOS_DA_ZONA[k]) {
+        const l = j.l[k]?.[p.k] ?? [];
+        expect(l.map((x) => x.id), `${k} ${p.k}`).toEqual(c[p.k].ligadas.map((it) => it.id));
+        if (l.length) expect(j.z[k][p.k], `${k} ${p.k}`).toBe(0);
+        // (o endereço `h` não é conferido aqui: o estoque fixo não guarda essa coluna)
+        for (const x of l) { expect(x.n.length).toBeGreaterThan(0); expect(x.p).toBeGreaterThan(0); }
+      }
+    }
+  });
+  it('"1 ligada", "3 ligadas"', () => { expect(ligadasTxt(1)).toBe('1 ligada'); expect(ligadasTxt(3)).toBe('3 ligadas'); });
   it.each(estoques())('no $nome, a conta de todo ponto é um número (0 = cinza, pedido de pátio) e nunca passa do estoque', ({ ix }) => {
     const b = new Busca(ix);
     for (const k of VISTAS_K) {

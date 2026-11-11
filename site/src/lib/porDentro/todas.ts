@@ -9,7 +9,8 @@ import { PONTOS as TETO } from './teto';
 import { PONTOS as TRASEIRA } from './traseira';
 import { PONTOS as RODAS } from './rodas';
 import { PONTOS as EMBAIXO } from './embaixo';
-import type { PontoQuente } from './base';
+import { contarComLigadas, ligadaDe, type Ligada, type PontoQuente } from './base';
+import type { Filtros, Item } from '../busca';
 
 /** Os pontos quentes de cada vista, pela chave da ZONA do Raio-x (as mesmas chaves de VISTAS, lib/raioXVistas.ts). */
 export const PONTOS_DA_ZONA: Record<string, PontoQuente[]> = {
@@ -23,3 +24,18 @@ export const PONTOS_DA_ZONA: Record<string, PontoQuente[]> = {
   rodas: RODAS,
   embaixo: EMBAIXO,
 };
+
+/** O arquivo das vistas para quem NÃO tem carro (/dados/raio-x-dentro.json): `z` = quantas peças de cada ponto, por
+ *  vista; `l` = as peças ligadas dos pontos que não têm a peça do título no estoque inteiro (poucos), para o painel
+ *  mostrar sem link de catálogo. */
+export type DentroJson = { v: number; z: Record<string, Record<string, number>>; l: Record<string, Record<string, Ligada[]>> };
+export function dentroJson(procurar: (f: Filtros) => Item[], fotoDe: (it: Item) => string): DentroJson {
+  const z: DentroJson['z'] = {}, l: DentroJson['l'] = {};
+  for (const [k, pontos] of Object.entries(PONTOS_DA_ZONA)) {
+    const c = contarComLigadas(procurar, {}, pontos);
+    z[k] = Object.fromEntries(pontos.map((p) => [p.k, c[p.k].n]));
+    const lig = pontos.filter((p) => c[p.k].ligadas.length).map((p) => [p.k, c[p.k].ligadas.map((it) => ligadaDe(it, fotoDe))]);
+    if (lig.length) l[k] = Object.fromEntries(lig);
+  }
+  return { v: 2, z, l };
+}

@@ -367,7 +367,16 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      "Fechadura da tampa · 4" não tinha fechadura, a "Caixa do filtro de ar" do Onix era um ressonador), mais a guarda
      de posição (`fora`) onde a vista é de uma ponta: sem NENHUMA peça que seja a do título no link, conta 0 e vira
      pedido de pátio. `TIPO_INTEIRO` só para o ponto que é o próprio tipo ("Painel (acabamentos)"). Ponto novo = dizer o
-     `eh` dele (o teste cobra; onde a batida tem a mesma linha, a mesma regra). Com a peça, o número segue o do link (o catálogo não sabe tirar "a que diz traseiro"). Sem peça, ou tipo que o estoque não tem (capô,
+     `eh` dele (o teste cobra; onde a batida tem a mesma linha, a mesma regra).
+     **O 3º estado: "a gente procura" + "N ligadas"** (ajuste da rodada 17): o ponto SEM a peça do título mas com peça
+     ligada no link (a tampa e a moldura da grade, o absorvedor da alma, as molduras do console) continua cinza e
+     dizendo "a gente procura", e mostra, embaixo, "N ligadas"; tocar abre no PRÓPRIO painel o pedido de pátio da peça
+     do título (o mesmo WhatsApp, `data-botao="raio-x"`) e "Peças ligadas que a gente tem" (nome de verdade, preço do
+     site riscado e o do WhatsApp, link da peça). Nunca um link de catálogo e nunca conta no "N de M peças com
+     anúncio". `contarComLigadas` (`lib/porDentro/base.ts`): ligadas = o link, menos a peça que DIZ a posição da
+     outra ponta (`fora`); sem carro, as peças vêm no `l` do `/dados/raio-x-dentro.json` (`dentroJson`, 6 pontos).
+     Esc volta das ligadas à lista (`porDentro.esc()`). Em 11/11: 366 dos 370 pontos que tinham virado só pátio
+     mostram ligadas (504 peças; a maior lista, 8). Com a peça, o número segue o do link (o catálogo não sabe tirar "a que diz traseiro"). Sem peça, ou tipo que o estoque não tem (capô,
      tampa traseira, vidro e quadro do teto solar, forro do teto, longarinas, bancos, disco de freio, protetor de
      cárter): cinza e o link é o WhatsApp "a gente procura no pátio" (`linkProcuraPeca` em `lib/aviso.ts`,
      `data-botao="raio-x"`). Zona sem peça do carro também mostra o botão (a vista vira a lista de pedidos de pátio).

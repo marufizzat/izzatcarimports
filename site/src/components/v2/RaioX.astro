@@ -826,7 +826,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         return;
       }
       if (e.key !== 'Escape') return;
-      if (vista === 'dentro') { e.preventDefault(); porDentro?.sair(true); }
+      if (vista === 'dentro') { e.preventDefault(); porDentro?.esc(); }
       else if (vista === 'batida') { if (batida?.esc()) e.preventDefault(); }
       else if (ativa) { e.preventDefault(); limpar(); }
     });
