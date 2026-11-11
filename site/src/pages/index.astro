@@ -1,5 +1,6 @@
 ---
 import { lojaLd } from '../lib/loja';
+import MigrarCarro from '../components/MigrarCarro.astro';
 import Pagina from '../layouts/Pagina.astro';
 import AberturaV2 from '../components/v2/AberturaV2.astro';
 import SelosV2 from '../components/v2/SelosV2.astro';
@@ -44,6 +45,7 @@ const ld = {
 ---
 <Pagina titulo="Izzat Car Imports | Peças originais de desmanche legalizado" rodapeSelos={false}
         descricao={`Peças originais de carros com baixa legal no Detran-RS (CDV nº 01060). Nota fiscal e 90 dias de garantia em toda peça. Ache pelo carro ou pelo código gravado.`}>
+  <MigrarCarro slot="head" />
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio.webp" media="(min-width: 768px)" fetchpriority="high" />
   <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio-celular.webp" media="(max-width: 767px)" fetchpriority="high" />
@@ -174,7 +176,7 @@ const ld = {
         <div class="faq-ajuda-txt">
           <b>Ficou outra dúvida?</b>
           <span>Mande no WhatsApp. Quem responde é a equipe do pátio.</span>
-          <a class="botao botao-laranja" href={whatsUrl('Tenho uma dúvida:')}><Icone nome="whats" />Chamar no WhatsApp</a>
+          <a class="botao botao-laranja" href={whatsUrl('Tenho uma dúvida:')} data-botao="home-duvida"><Icone nome="whats" />Chamar no WhatsApp</a>
         </div>
       </div>
     </div>

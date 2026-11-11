@@ -3,14 +3,12 @@
 // os mesmos arquivos dos primeiros cartões), busca e marcas logo em cima, a lista e, no fim, a saída
 // "Não achou o seu carro?". O filtro diz quantos carros sobraram e procura palavra por palavra ("golf mk7" acha o
 // Golf; "vw", "gm" e "mercedes" também valem).
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import CarrosPatio from '../../components/v2/CarrosPatio.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
-import { resumo, logoInfo, whatsUrl } from '../../lib/dados';
+import { resumo, logoInfo, whatsUrl, arteDoCarro } from '../../lib/dados';
 import { srcArte, SIZES } from '../../lib/variantes';
 import { caber } from '../../lib/descricao';
 const r = resumo();
@@ -19,7 +17,7 @@ const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCas
 const n = r.carros.length;
 const leadLista = `${n} carros, do que tem mais peças para o que tem menos.`;
 // três carros de verdade para o topo do PC (os maiores do pátio que têm arte)
-const vitrine = r.carros.filter((c) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${c.k}.webp`))).slice(0, 3);
+const vitrine = r.carros.filter((c) => arteDoCarro(c.k)).slice(0, 3).map((c) => ({ ...c, arte: `/arte/v2/carro-${arteDoCarro(c.k)}.webp` }));
 ---
 <Pagina titulo="Peças por carro | Izzat Car Imports"
         descricao={caber([8, 6, 5, 4, 3].map((k) => `Escolha o seu carro e confira as peças originais que saíram dele: ${r.carros.slice(0, k).map((c) => `${c.b} ${c.m}`).join(', ')} e mais ${n - k} modelos.`))}>
@@ -27,8 +25,8 @@ const vitrine = r.carros.filter((c) => existsSync(join(process.cwd(), 'public', 
     lead={`Os ${n} modelos que já passaram pelo pátio. Escolha o seu e confira as peças originais que saíram dele.`}>
     <div slot="lado" class="carros-vitrine" aria-hidden="true">
       {vitrine.map((c, i) => (
-        <img class={`cv cv-${i + 1}`} src={`/arte/v2/carro-${c.k}.webp`}
-          {...srcArte(`/arte/v2/carro-${c.k}.webp`, i === 0 ? SIZES.vitrine1 : SIZES.vitrine23)} alt="" width="1200" height="800" loading="lazy" decoding="async" />
+        <img class={`cv cv-${i + 1}`} src={c.arte}
+          {...srcArte(c.arte, i === 0 ? SIZES.vitrine1 : SIZES.vitrine23)} alt="" width="1200" height="800" loading="lazy" decoding="async" />
       ))}
     </div>
   </TopoArte>
@@ -56,7 +54,7 @@ const vitrine = r.carros.filter((c) => existsSync(join(process.cwd(), 'public', 
         <p class="nenhum-titulo" data-nenhum-txt>Nenhum carro com esse nome por aqui.</p>
         <p>Nem toda peça está anunciada. Mande o modelo e o ano: a gente procura no pátio e responde pelo WhatsApp.</p>
         <div class="nenhum-acoes">
-          <a class="botao botao-laranja" href={whatsUrl('Procuro peça para o meu carro: ____')} rel="noopener" data-nenhum-whats><Icone nome="whats" />Chamar no WhatsApp</a>
+          <a class="botao botao-laranja" href={whatsUrl('Procuro peça para o meu carro: ____')} rel="noopener" data-botao="carros-nenhum" data-nenhum-whats><Icone nome="whats" />Chamar no WhatsApp</a>
           <a class="botao botao-linha" href="/procuro-peca.html">Preencher o formulário</a>
         </div>
       </div>

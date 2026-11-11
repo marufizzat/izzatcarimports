@@ -5,6 +5,7 @@
 //     build (components/v2/RaioX.astro). Ocupa o lugar dos cartões "Peças por categoria": as partes do carro levam aos
 //     tipos de peça com o link exato do catálogo (os blocos continuam no filtro do catálogo e na home);
 //  3. a grade, com título; o texto de apoio vai para o fim.
+import MigrarCarro from '../../components/MigrarCarro.astro';
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
@@ -16,7 +17,7 @@ import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS, SITE } from '../../lib/dados';
+import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS, SITE, arteDoCarro } from '../../lib/dados';
 import { textosCarro, tituloCarro } from '../../lib/textos';
 import { linkAviso } from '../../lib/aviso';
 import { SIZES } from '../../lib/variantes';
@@ -52,13 +53,15 @@ const logo = logoInfo(marca?.k ?? c.b.toLowerCase(), 64, 36);
 const texto = textosCarro(c, lista);
 // a contagem já está no lead: o 1º parágrafo do texto de apoio (que é a contagem) sai, para não repetir
 const apoio = texto.paragrafos.slice(1);
-const arteCarro = `/arte/v2/carro-${c.k}.webp`;
+// a arte do carro; o principal sem arte própria usa a do apelido (Série 3: a do 320i; GLA: a do GLA200), lib/dados.ts
+const arteCarro = `/arte/v2/carro-${arteDoCarro(c.k) ?? c.k}.webp`;
 // prévia do link (WhatsApp, Instagram): a arte de estúdio do carro; sem ela, a foto da 1ª peça
 const og = existe(arteCarro) ? arteCarro : '/identidade/og.jpg';
 // a arte do carro como a garagem a vê (a/as): vai junto quando a pessoa salva este carro (a abertura já nasce com ela)
 const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n === c.m);
 ---
 <Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta} canonical={canonicoCarro}>
+  <MigrarCarro slot="head" />
   <TopoArte trilha={[['Início', '/'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
     antes={c.b} antesNoTitulo titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} arteSizes={SIZES.topoCarro} encaixe="meio" lead={lead}>
     <Fragment slot="acoes">
@@ -70,7 +73,7 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
       </div>
       {/* "Avise-me" só no carro com poucas peças (no XC60, com 515, ele só empurrava a grade para baixo) */}
       {N < AVISO_ATE && (
-        <a class="botao botao-linha carro-aviso" href={linkAviso(WHATS, nome)} rel="noopener" data-aviso data-whats={WHATS} data-nome={nome} data-b={c.b} data-m={c.m}>
+        <a class="botao botao-linha carro-aviso" href={linkAviso(WHATS, nome)} rel="noopener" data-botao="carro-avise" data-aviso data-whats={WHATS} data-nome={nome} data-b={c.b} data-m={c.m}>
           <Icone nome="whats" /><span>Me avise quando chegar peça</span>
         </a>
       )}
