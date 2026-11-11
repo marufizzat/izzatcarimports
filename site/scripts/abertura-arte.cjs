@@ -1,11 +1,19 @@
 // Abertura da home: a arte do carro NO PALCO em todos os caminhos (CLAUDE.md, item 13) — nascer com o carro salvo (com e sem
 // a chave da arte, com e sem ano), modelo sem arte, escolher, trocar, esquecer e escolher outro, voltar pelo histórico,
 // apelido de carro unido. Confere naturalWidth > 0 e opacidade 1 (o estado sozinho não basta: já passou com o palco vazio).
-// uso (com o preview no ar): node scripts/abertura-arte.cjs http://localhost:4321/
+// uso (com o preview no ar): node scripts/abertura-arte.cjs http://localhost:4321/ ["Marca|Modelo" ...]
+//   cada "Marca|Modelo" a mais (ex.: "Volkswagen|Voyage") entra no caminho "nascer com o carro salvo SEM a chave": prova que a
+//   arte nova desse carro chega ao palco pela garagem. O carro "sem arte" do item 2 é escolhido na garagem do dia (o modelo sem
+//   arte com mais peças): nenhum modelo fica escrito aqui como "sem arte" (um dia ele ganha a dele).
 const pw = require('/Users/izzat/wa-export/node_modules/playwright');
 // o Chromium do Playwright para de pintar depois de uma troca de página com transição: religar o PaintHolding (CLAUDE.md)
 const real = require('../../ferramentas/navegacao/chromium-real.cjs');
 const base = process.argv[2];
+const extras = process.argv.slice(3).map((x) => x.split('|')).filter((x) => x.length === 2);
+/** a garagem do dia: a chave da arte de um modelo (ou null) e o primeiro modelo sem arte */
+const garagem = fetch(new URL('/dados/meu-carro.json', base)).then((r) => r.json());
+const arteNaGaragem = async (b, m) => (await garagem).marcas.find((x) => x.n === b)?.modelos.find((x) => x.n === m)?.a ?? null;
+const semArteNaGaragem = async () => { let r = null; for (const ma of (await garagem).marcas) for (const mo of ma.modelos) if (!mo.a && (!r || mo.c > r.c)) r = { b: ma.n, m: mo.n, c: mo.c }; return r && { b: r.b, m: r.m }; };
 let falhas = 0;
 const ok = (c, msg, extra = '') => { if (!c) falhas++; console.log((c ? '  ok  ' : '  FALHOU ') + msg + (c ? '' : ' ' + extra)); };
 const estadoArte = (p) => p.evaluate(() => {
@@ -58,13 +66,33 @@ async function esperaArte(p, chave, t0, limite = 6000) {
       if (motor === 'chromium') { const v = await cls(p); ok(v <= 0.01, `   CLS ${v.toFixed(4)}`); }
       ok(p.erros.length === 0, '   0 erros', p.erros.join(' | ')); await p.context().close();
     }
-    // 2. carro SEM arte própria: o desenho "sem carro" (atalhos grandes no meio), nunca um buraco
-    {
-      const p = await novo({ b: 'Volkswagen', m: 'Voyage', y: null }); await p.goto(base, { waitUntil: 'load' }); await aoPalco(p); await p.waitForTimeout(2600);
+    // 1b. os carros pedidos na linha de comando (artes novas): salvos SEM a chave, a arte chega pela garagem
+    for (const [b, m] of extras) {
+      const chave = await arteNaGaragem(b, m);
+      ok(!!chave, `${b} ${m}: a garagem diz que tem arte (${chave})`);
+      if (!chave) continue;
+      const p = await novo({ b, m, y: null }); const t0 = Date.now();
+      await p.goto(base, { waitUntil: 'commit' });
+      if (movel) { await p.waitForLoadState('load'); await aoPalco(p); }
+      const ms = await esperaArte(p, `carro-${chave}`, movel ? Date.now() : t0);
+      await p.waitForTimeout(1200);
       const e = await estadoArte(p);
-      ok(e.estado === 'carro' && e.semArte && !e.arte, 'carro sem arte (Voyage): palco no desenho "sem carro"', JSON.stringify(e));
-      ok(e.atalhos >= 3 && e.comImagem === e.atalhos && e.yMedio > 0.3 && e.yMedio < 0.62, `   ${e.atalhos} atalhos com imagem, no meio do palco (centro em ${(e.yMedio * 100).toFixed(0)}% da altura)`, JSON.stringify(e));
-      await p.context().close();
+      ok(ms != null && e.arte && e.arte.larg > 0 && !e.semArte && e.palavra === m, `nascer com ${b} ${m} salvo: ${e.arte ? e.arte.src : 'sem arte'} (${e.arte ? e.arte.larg : 0} px) à vista em ${ms} ms, título "${e.palavra}"`, JSON.stringify(e));
+      if (motor === 'chromium') { const v = await cls(p); ok(v <= 0.01, `   CLS ${v.toFixed(4)}`); }
+      ok(p.erros.length === 0, '   0 erros', p.erros.join(' | ')); await p.context().close();
+    }
+    // 2. carro SEM arte própria (o de mais peças na garagem do dia): o desenho "sem carro" (atalhos grandes no meio), nunca um buraco
+    {
+      const sem = await semArteNaGaragem();
+      if (!sem) console.log('  --   carro sem arte: todos os modelos da garagem têm arte hoje (nada a conferir)');
+      else {
+        const p = await novo({ ...sem, y: null }); await p.goto(base, { waitUntil: 'load' }); await aoPalco(p); await p.waitForTimeout(2600);
+        const e = await estadoArte(p);
+        ok(e.estado === 'carro' && e.semArte && !e.arte, `carro sem arte (${sem.b} ${sem.m}): palco no desenho "sem carro"`, JSON.stringify(e));
+        // com poucas peças o carro pode ter menos de 3 atalhos: o que se confere é que os que entram têm imagem e ficam no meio
+        ok(e.atalhos >= 1 && e.comImagem === e.atalhos && e.yMedio > 0.3 && e.yMedio < 0.62, `   ${e.atalhos} atalhos com imagem, no meio do palco (centro em ${(e.yMedio * 100).toFixed(0)}% da altura)`, JSON.stringify(e));
+        await p.context().close();
+      }
     }
     // 3. escolher no seletor, trocar de carro, esquecer e escolher outro
     {
