@@ -49,7 +49,7 @@ const rotulo = (k: string, nome: string) => {
 const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(CHAVE)})||'null');`
   + `if(!c||typeof c.b!=='string'||typeof c.m!=='string'||!c.b||!c.m)return;var r=document.currentScript.parentNode,`
   + `y=typeof c.y==='number'?' '+c.y:'',t=r.querySelector('[data-rx-titulo]'),l=r.querySelector('[data-rx-lead]'),b=r.querySelector('[data-rx-txt]');`
-  + `t.textContent='Onde fica a peça no seu '+c.b+' '+c.m+y+'?';l.textContent='Toque na parte do carro e veja as peças do seu '+c.m+' que a gente tem dela.';`
+  + `t.textContent='Onde fica a peça no seu '+c.b+' '+c.m+y+'?';l.textContent='Toque na parte do carro e veja as peças do seu '+c.m+' que a gente tem.';`
   + `if(b)b.textContent='Trocar o carro'}catch(e){}})()`;
 ---
 <div class:list={['rx', { 'rx-compacto': compacto, 'rx-recolhido': recolhido }]} data-rx data-modo={carro ? 'carro' : 'home'} data-b={carro?.b} data-m={carro?.m}>
@@ -161,6 +161,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     const zonasA = [...raiz.querySelectorAll<SVGAElement>('a[data-z]')];
     const fichas = [...raiz.querySelectorAll<HTMLButtonElement>('[data-ficha]')];
     const todos = (sel: string) => [...raiz.querySelectorAll<HTMLElement>(sel)];
+    // a linha de apoio sem carro (a do HTML; com carro salvo o script antes da pintura já trocou: volta para esta)
+    const lead0 = 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
     // as peças de cada parte acesa (realce, furo do véu, linha-guia, etiqueta, ponto, ficha, zona), lidas uma vez
     const pecasVisuais = todos('[data-realce], [data-furo], [data-guia], [data-etiqueta], [data-ponto], [data-ficha], a[data-z]')
       .map((el) => ({ el, k: el.dataset.realce ?? el.dataset.furo ?? el.dataset.guia ?? el.dataset.etiqueta ?? el.dataset.ponto ?? el.dataset.ficha ?? el.dataset.z }));
@@ -429,6 +431,38 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     }
     for (const f of fichas) f.addEventListener('click', () => selecionar(f.dataset.ficha!, { rolar: true }));
     raiz.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ativa) { e.preventDefault(); limpar(); } });
+    // Aquecimento: quando a arte aparece na tela, com o navegador folgando, as duas camadas de desfoque são desenhadas
+    // uma vez (quase transparentes) e um painel é montado fora da vista e desfeito. O 1º toque não paga a 1ª vez.
+    const aquecer = () => {
+      const k = ZONAS[1].k;
+      const els = todos(`[data-realce="${k}"], [data-furo="${k}"]`);
+      for (const el of els) el.classList.add('aquece');
+      // a cópia do painel (com o atributo do escopo do CSS) fora da vista
+      const molde = conteudo.cloneNode(false) as HTMLElement;
+      molde.removeAttribute('hidden');
+      molde.removeAttribute('data-rx-conteudo');
+      molde.classList.add('rx-molde');
+      molde.setAttribute('aria-hidden', 'true');
+      const c = conta(k);
+      molde.innerHTML = `<div class="rx-p-cabeca"><h3 class="rx-p-titulo">${esc(zona(k).nome)}</h3><p class="rx-p-sub">&nbsp;</p></div>`
+        + `<ul class="rx-linhas">${c.l.slice(0, NA_FRENTE).map((l) => linhaHtml({ ...l, foto: '' }, true)).join('')}</ul>`;
+      painel.appendChild(molde);
+      void molde.offsetHeight;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        for (const el of els) el.classList.remove('aquece');
+        molde.remove();
+      }));
+    };
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((es) => {
+        if (!es.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        if ('requestIdleCallback' in window) requestIdleCallback(aquecer, { timeout: 1500 });
+        else setTimeout(aquecer, 200);
+      }, { rootMargin: '200px' });
+      io.observe(raiz.querySelector('[data-rx-palco]')!);
+    }
+
     // "1º toque" na seção: o carro salvo começa a descer antes do clique (mouse em cima, dedo encostando, Tab)
     const cedo = () => void carregarCarro();
     raiz.addEventListener('pointerenter', cedo, { once: true });
@@ -458,7 +492,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       const l = raiz.querySelector('[data-rx-lead]');
       const b = raiz.querySelector('[data-rx-txt]');
       t.textContent = carro ? `Onde fica a peça no seu ${nomeCarro(carro)}?` : 'Não sabe o nome da peça? Aponte no carro.';
-      if (l) l.textContent = carro ? `Toque na parte do carro e veja as peças do seu ${carro.m} que a gente tem dela.` : 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
+      if (l) l.textContent = carro ? `Toque na parte do carro e veja as peças do seu ${carro.m} que a gente tem.` : lead0;
       if (b) b.textContent = carro ? 'Trocar o carro' : 'Diga o seu carro';
       pintarZonas();
       if (ativa) { mostrar(ativa, false); void carregarCarro(); }
@@ -521,6 +555,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-escuros path.aceso { opacity: 1; }
   .rx-realces g { fill: #ff6a00; opacity: 0; transition: opacity .16s ease; }
   .rx-realces g.aceso { opacity: .42; }
+  /* aquecimento (a 1ª vez que a arte aparece): desenhar a camada uma vez, sem ninguém ver */
+  .rx-realces g.aquece, .rx-escuros path.aquece { opacity: .01; transition: none; }
   .rx-realces g.vazia { fill: #9a9aa0; }
 
   /* o ponto de cada parte (convida a tocar); com número na arte estreita */
@@ -600,6 +636,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-conteudo { --linha: 69px; display: flex; flex-direction: column; min-height: calc(var(--linha) * 6 + 300px); padding: 20px 18px 8px;
     border-radius: 24px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
   .rx-conteudo[hidden] { display: none; }
+  .rx-molde { position: absolute; left: -10000px; top: 0; width: 420px; visibility: hidden; pointer-events: none; }
   @media (min-width: 600px) { .rx-conteudo { padding: 24px 22px 10px; } }
   @media (max-width: 400px) { .rx-conteudo { --linha: 63px; } }
   .rx-conteudo :global(.rx-p-cabeca) { display: grid; gap: 2px; padding: 0 4px 12px; }
