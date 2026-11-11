@@ -9,7 +9,7 @@
 import Pagina from '../layouts/Pagina.astro';
 import Icone from '../components/Icone.astro';
 import { whatsUrl, SITE, pecas } from '../lib/dados';
-import { montarDicionario, RE_VENDIDA } from '../lib/vendida';
+import { montarDicionario, RE_MLB_PECA } from '../lib/vendida';
 
 const canonical = `${SITE}/404.html`;
 const ld = {
@@ -22,11 +22,10 @@ const ld = {
 };
 // marcas, modelos e a grafia das palavras do estoque (~7 KB; só a 404 leva)
 const dic = JSON.stringify(montarDicionario(pecas())).replace(/</g, '\\u003c');
-// antes do 1º desenho: é peça? (a MESMA regra de lib/vendida.ts) -> html.nf-peca, o título da aba, o MLB para o GA4
-// e o índice da busca já descendo (os cartões parecidos)
-const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)}).exec(location.pathname);if(!m)return;`
-  + `document.documentElement.classList.add('nf-peca');window.IZZAT_VENDIDA=m[2];document.title='Essa peça já foi vendida | Izzat Car Imports';`
-  + `var l=document.createElement('link');l.rel='preload';l.as='fetch';l.href='/dados/busca.json';l.crossOrigin='anonymous';document.head.appendChild(l)})();`;
+// antes do 1º desenho: o endereço tem MLB de peça? então a página fica escondida (html.nf-conferindo) até o estoque
+// dizer se a peça ainda está à venda (lib/vendida.ts: decidirEndereco). Sem resposta em 4 s, a 404 de sempre aparece.
+const topo = `(function(){var h=document.documentElement;if(!new RegExp(${JSON.stringify(RE_MLB_PECA.source)},'i').test(location.pathname))return;`
+  + `h.classList.add('nf-conferindo');setTimeout(function(){h.classList.remove('nf-conferindo')},4000)})();`;
 ---
 <Pagina
   titulo="Página não encontrada | Izzat Car Imports"
@@ -36,6 +35,10 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
 >
   <Fragment slot="head">
     <script is:inline set:html={topo} />
+    <style is:inline set:html=".nf-conferindo body{visibility:hidden}" />
+    {/* sem a troca entre páginas nesta 404: o endereço antigo de peça que segue à venda vai para o certo com location.replace,
+        e uma troca interrompida dava "Transition was skipped" no console */}
+    <meta name="view-transition" content="none" />
     <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
   </Fragment>
 
@@ -103,14 +106,26 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
 </Pagina>
 
 <script>
-  import { RE_VENDIDA, lerSlug, mensagemVendida, filtrosIniciais, linkFiltros, anosCurto, type Dicionario } from '../lib/vendida';
+  import { RE_VENDIDA, mlbDoEndereco, shardDe, decidirEndereco, lerSlug, mensagemVendida, filtrosIniciais, linkFiltros, anosCurto, type Dicionario } from '../lib/vendida';
   import { linkWhats } from '../lib/whats';
 
-  const m = RE_VENDIDA.exec(location.pathname);
-  const raiz = document.querySelector<HTMLElement>('[data-vendida]');
-  const json = document.getElementById('nf-dic')?.textContent;
-  if (m && raiz && json) {
-    const v = lerSlug(m[1], m[2], JSON.parse(json) as Dicionario);
+  const html = document.documentElement;
+  const caminho = location.pathname;
+  const revelar = () => html.classList.remove('nf-conferindo');
+  const w = window as unknown as { IZZAT_VENDIDA?: string; gtag?: (...a: unknown[]) => void };
+
+  // a peça que saiu do site (o MLB não está mais no estoque e o endereço é de peça): a página "vendida" de sempre
+  function mostrarVendida(mlb: string) {
+    const raiz = document.querySelector<HTMLElement>('[data-vendida]');
+    const json = document.getElementById('nf-dic')?.textContent;
+    const m = RE_VENDIDA.exec(caminho);
+    if (!raiz || !json || !m) return;
+    html.classList.add('nf-peca');
+    w.IZZAT_VENDIDA = mlb;
+    // o GA4 (rastreio.js) lê IZZAT_VENDIDA quando carrega; se já carregou, manda daqui (uma vez só)
+    if (w.gtag) w.gtag('event', 'peca_vendida', { mlb, pagina: caminho });
+    document.title = 'Essa peça já foi vendida | Izzat Car Imports';
+    const v = lerSlug(m[1].toLowerCase(), mlb, JSON.parse(json) as Dicionario);
     const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s);
     // o nome e o carro só aparecem quando o carro foi reconhecido (texto inventado no endereço nunca vira texto do site)
     const nome = $('[data-v-nome]'), carro = $('[data-v-carro]');
@@ -140,6 +155,26 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
       }).catch(() => { grade.classList.add('nf-v-fora'); /* sem o índice: ficam os botões, que já levam ao catálogo */ });
     } else grade?.classList.add('nf-v-fora');
   }
+
+  // o endereço com MLB: o estoque (um arquivo pequeno) diz se a peça segue à venda. Sem resposta, a 404 de sempre
+  // (nunca "vendida" sem ter conferido).
+  async function decidir() {
+    const mlb = mlbDoEndereco(caminho);
+    if (!mlb) return revelar();
+    let h: string | null;
+    try {
+      const r = await fetch(`/dados/peca/${shardDe(mlb)}.json`);
+      if (!r.ok) throw new Error(String(r.status));
+      h = (await r.json() as Record<string, string>)[mlb] ?? null;
+    } catch {
+      return revelar();
+    }
+    const d = decidirEndereco(caminho, location.search, location.hash, h);
+    if (d.acao === 'ir') { location.replace(d.destino); return; }
+    if (d.acao === 'vendida') mostrarVendida(mlb);
+    revelar();
+  }
+  decidir();
 </script>
 
 <style>

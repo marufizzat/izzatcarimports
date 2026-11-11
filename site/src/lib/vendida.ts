@@ -368,3 +368,50 @@ export function parecidas(busca: Busca, v: Vendida, n = 6): { filtros: Filtros; 
   }
   return { filtros, itens, doCarro: !filtros.q && !filtros.tipo };
 }
+
+// ---------------------------------------------------------------- endereço antigo de peça que segue à venda
+// Friction 4 (cliente oculto 2): o slug sai do título do anúncio; quando o título muda, o endereço antigo (Google, WhatsApp)
+// cai na 404 e diz "vendida" para uma peça que ainda está à venda. A 404 acha o MLB no endereço (qualquer slug, sem
+// diferenciar maiúsculas) e confere no estoque: se está, vai para o endereço de hoje; "vendida" só se o MLB sumiu.
+
+/** /peca/<qualquer coisa>-MLB<n>.html (ou sem .html). Mais solto que RE_VENDIDA: serve só para achar o MLB; quem decide
+ *  "vendida" continua com RE_VENDIDA (o texto de quem monta o link nunca vira texto do site). */
+export const RE_MLB_PECA = /^\/peca\/(?:.*-)?(MLB\d{6,14})(?:\.html)?$/i;
+
+/** O MLB do endereço, em maiúsculas (null = o endereço não tem MLB de peça). */
+export function mlbDoEndereco(caminho: string): string | null {
+  const m = RE_MLB_PECA.exec(caminho);
+  return m ? m[1].toUpperCase() : null;
+}
+
+/** Quantos arquivos de estoque (/dados/peca/<k>.json): o MLB cai em um só, pelo resto da divisão do número. */
+export const SHARDS = 64;
+export function shardDe(mlb: string): number {
+  return Number(mlb.toUpperCase().replace(/^MLB/, '')) % SHARDS;
+}
+
+/** O que sai do build para cada arquivo: os MLB ativos desse resto, com o endereço de hoje (slug + MLB, o `h` do busca.json).
+ *  Um arquivo por resto: a 404 baixa só o seu (uns 2 KB comprimido). */
+export function shardDoEstoque(pares: readonly (readonly [string, string])[], k: number): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [id, h] of pares) {
+    const mlb = id.toUpperCase();
+    if (shardDe(mlb) === k) out[mlb] = h;
+  }
+  return out;
+}
+
+export type Desfecho = { acao: 'ir'; destino: string } | { acao: 'vendida' } | { acao: 'geral' };
+/** O que a 404 faz com o endereço. h = o endereço de hoje da peça (null = o MLB não está no estoque). Ativa e com outro
+ *  endereço: vai para o de hoje, com a busca e a âncora do endereço que a pessoa abriu. Sumiu e o endereço é de peça
+ *  (RE_VENDIDA): "vendida". Qualquer outra coisa: a 404 de sempre. */
+export function decidirEndereco(caminho: string, busca: string, hash: string, h: string | null): Desfecho {
+  if (!mlbDoEndereco(caminho)) return { acao: 'geral' };
+  if (h) {
+    const destino = `/peca/${h}.html`;
+    // o estoque diz que está à venda mas o endereço já é o de hoje: nunca um laço de volta para a própria 404
+    if (destino === caminho) return { acao: 'geral' };
+    return { acao: 'ir', destino: destino + busca + hash };
+  }
+  return RE_VENDIDA.test(caminho) ? { acao: 'vendida' } : { acao: 'geral' };
+}

@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import {
   RE_VENDIDA, montarDicionario, lerEndereco, lerSlug, anosDoSlug, nomeDoSlug, mensagemVendida, filtrosIniciais,
   linkFiltros, parecidas, categoriaDoNome, type Dicionario,
+  mlbDoEndereco, shardDe, shardDoEstoque, decidirEndereco, SHARDS,
 } from './vendida';
 import { ABERTURA } from './whats';
 import { Busca } from './busca';
@@ -194,5 +195,60 @@ describe('com o estoque do momento', () => {
     const amostra = pecas.filter((p, i) => i % 23 === 0 && p.c && p.c !== 'Outros');
     const certas = amostra.filter((p) => categoriaDoNome(pecas.filter((x) => x.id !== p.id), p.n) === p.c).length;
     expect(certas / amostra.length).toBeGreaterThan(0.7);   // hoje ~88%
+  });
+});
+
+// ---- endereço antigo de peça que segue à venda (friction 4): o MLB do endereço, o arquivo do estoque e a decisão
+describe('endereço antigo: o MLB, o arquivo do estoque e o que a 404 faz', () => {
+  it('mlbDoEndereco: acha o MLB com qualquer slug, sem diferenciar maiúsculas, com ou sem .html', () => {
+    expect(mlbDoEndereco('/peca/para-choque-MLB7684800042.html')).toBe('MLB7684800042');
+    expect(mlbDoEndereco('/peca/Para-choque-Dianteiro-E-Pace-mlb7684800042')).toBe('MLB7684800042');
+    expect(mlbDoEndereco('/peca/MLB7684800042.html')).toBe('MLB7684800042');
+    expect(mlbDoEndereco('/peca/a%20b-MLB7684800042.html')).toBe('MLB7684800042');
+    expect(mlbDoEndereco('/peca/modulo-abs-xc60-MLB4524344387.html')).toBe('MLB4524344387');
+  });
+  it('mlbDoEndereco: nada que não é endereço de peça com MLB de 6 a 14 números', () => {
+    for (const u of ['/catalogo.html', '/peca/x.html', '/peca/airbag-MLB12.html', '/carros/airbag-MLB4811340217.html',
+      '/peca/airbag-MLB4811340217/extra.html', '/peca/airbag-MLBX123456.html', '/', '/peca/']) {
+      expect(mlbDoEndereco(u), u).toBeNull();
+    }
+  });
+  it('shardDe: o mesmo MLB cai no mesmo arquivo, em maiúsculas ou minúsculas, dentro de 0..SHARDS-1', () => {
+    expect(shardDe('MLB4518662815')).toBe(shardDe('mlb4518662815'));
+    for (const m of ['MLB4518662815', 'MLB7684800042', 'MLB123456', 'MLB99999999999999']) {
+      expect(shardDe(m)).toBeGreaterThanOrEqual(0);
+      expect(shardDe(m)).toBeLessThan(SHARDS);
+    }
+  });
+  it('shardDoEstoque: cada peça ativa sai em UM só arquivo (o do seu resto) e com o endereço de hoje', () => {
+    const pares: [string, string][] = [['MLB4518662815', 'sensor-x-MLB4518662815'], ['MLB7684800042', 'para-choque-MLB7684800042'],
+      ['MLB123456', 'bobina-MLB123456']];
+    const arquivos = Array.from({ length: SHARDS }, (_, k) => shardDoEstoque(pares, k));
+    for (const [id, h] of pares) {
+      const achou = arquivos.filter((a) => a[id] !== undefined);
+      expect(achou).toHaveLength(1);
+      expect(achou[0][id]).toBe(h);
+      expect(arquivos[shardDe(id)][id]).toBe(h);
+    }
+    expect(Object.keys(arquivos.reduce((a, b) => ({ ...a, ...b }), {})).sort()).toEqual(pares.map(([id]) => id).sort());
+  });
+  it('decidirEndereco: peça à venda com outro endereço vai para o de hoje, com a busca e a âncora', () => {
+    expect(decidirEndereco('/peca/para-choque-MLB7684800042.html', '?x=1', '#fotos', 'para-choque-dianteiro-e-pace-MLB7684800042'))
+      .toEqual({ acao: 'ir', destino: '/peca/para-choque-dianteiro-e-pace-MLB7684800042.html?x=1#fotos' });
+    expect(decidirEndereco('/peca/Para-choque-MLB7684800042.html', '', '', 'para-choque-MLB7684800042'))
+      .toEqual({ acao: 'ir', destino: '/peca/para-choque-MLB7684800042.html' });
+  });
+  it('decidirEndereco: mesmo endereço de hoje não redireciona (nada de laço)', () => {
+    expect(decidirEndereco('/peca/para-choque-MLB7684800042.html', '', '', 'para-choque-MLB7684800042'))
+      .toEqual({ acao: 'geral' });
+  });
+  it('decidirEndereco: MLB que sumiu do estoque com endereço de peça = vendida; sem o formato certo = 404 comum', () => {
+    expect(decidirEndereco('/peca/airbag-motorista-mercedes-benz-c320-01-07-2034601898-MLB4811340217.html', '', '', null))
+      .toEqual({ acao: 'vendida' });
+    // maiúsculas no slug: a peça não é mostrada como vendida (só a 404 comum), mas se a peça segue à venda vai para o certo
+    expect(decidirEndereco('/peca/Airbag-MLB4811340217.html', '', '', null)).toEqual({ acao: 'geral' });
+    expect(decidirEndereco('/peca/Airbag-MLB4811340217.html', '', '', 'airbag-MLB4811340217')).toEqual({ acao: 'ir', destino: '/peca/airbag-MLB4811340217.html' });
+    expect(decidirEndereco('/catalogo.html', '', '', null)).toEqual({ acao: 'geral' });
+    expect(decidirEndereco('/peca/x-MLB12.html', '', '', null)).toEqual({ acao: 'geral' });
   });
 });
