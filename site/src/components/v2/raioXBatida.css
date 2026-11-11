@@ -71,6 +71,11 @@
 .rxb-fichas button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
 .rxb-fichas button.on { background: #ff6a00; color: #1d1d1f; box-shadow: none; }
 .rxb-fichas button.on i { background: #1d1d1f; color: #fff; }
+/* "Girar o carro": o ponto que fica do outro lado nesta vista leva o sinal de girar (escolher gira o carro) */
+.rxb-fichas button.outro::after, .rxb-etiqueta.outro::after { content: ""; flex: none; width: 14px; height: 14px; background: currentColor; opacity: .72;
+  -webkit-mask: var(--rx-giro) center / contain no-repeat; mask: var(--rx-giro) center / contain no-repeat; }
+.rxb-fichas button.outro:not(.on) { background: var(--surface-2); }
+.rxb-etiqueta.outro::after { display: inline-block; margin-left: 6px; vertical-align: -2px; }
 @container rxarte (min-width: 640px) { .rxb-fichas button { padding-left: 14px; } .rxb-fichas i { display: none; } }
 @media (min-width: 768px) { .rxb-fichas { flex-wrap: wrap; overflow: visible; } }
 
@@ -145,6 +150,9 @@
 .rxb-patio { min-width: 0; margin: 14px 0 0; padding: 14px 14px 12px; border: 0; border-radius: 16px; background: var(--surface-2); }
 .rxb-patio legend { float: left; width: 100%; padding: 0; font-size: 15px; font-weight: 760; line-height: 1.3; color: var(--ink); }
 .rxb-patio p { clear: both; margin: 0; padding-top: 3px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+/* pouca peça anunciada para o carro: a lista de pátio abre o painel (antes das peças com preço) */
+.rxb-patio-1 { margin: 0 0 4px; }
+.rxb-patio-1 + .rxb-junto { margin-top: 10px; padding-top: 12px; border-top: 0; }
 .rxb-chips { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
 .rxb-chip { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 0 11px; border-radius: 999px; cursor: pointer;
   background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 14.5px; font-weight: 620; line-height: 1.25; color: var(--ink);

@@ -4,7 +4,9 @@
 //   borda visível, com a etiqueta dizendo o lado). Arte larga: etiqueta fixa com linha-guia; arte estreita: pontos
 //   numerados + as fichas embaixo. Tocar acende a parte batida (o mesmo véu laranja das zonas).
 // - No painel: a LISTA DO CONSERTO. Com carro (o salvo ou o da página): as peças do carro em cada linha, a mais barata
-//   das PRINCIPAIS já marcada (as pequenas que "costumam ir junto" ficam para a pessoa marcar); "Outra opção" passa
+//   das PRINCIPAIS já marcada, e só quando ela É a peça do título da linha (lib/batida.ts: `ehDaLinha`; a linha que só
+//   tem peça ligada vai para o pátio e a ligada fica em "Também costuma ir junto", sem marcar: revisão 15, P1-2). As
+//   pequenas que "costumam ir junto" ficam para a pessoa marcar; "Outra opção" passa
 //   pelas outras peças da mesma linha (nunca a palavra "trocar": é de política de loja). Sem carro: o estoque inteiro,
 //   nada marcado (as peças são de carros diferentes) e o convite para dizer o carro. Linha principal sem peça: "a gente
 //   procura no pátio" (entra no pedido como item para procurar, se a pessoa marcar).
@@ -13,15 +15,17 @@
 //   (adicionarNaLista de lib/lista.ts: o cabeçalho ouve o evento).
 // O que NUNCA se diz: que o kit está completo, prazo, frete, troca. Só o estoque de agora.
 import css from './raioXBatida.css?inline';
-import { PONTOS, opcoesDoPonto, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
-import { ARTE, fotoDoCodigo, type CarroFiltro } from '../../lib/raioX';
+import { PONTOS, PONTOS_DO_OUTRO_LADO, FRASE_PATIO, opcoesDoPonto, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
+import { ARTE, fotoDoCodigo, type CarroFiltro, type LadoArte } from '../../lib/raioX';
+import type { PontoTras } from '../../lib/raioXTras';
 import { mensagemConserto, linkWhats, somaPrecos, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
 import { adicionarNaLista, lerLista, PAGINA_LISTA, MAX_LISTA, type ItemLista } from '../../lib/lista';
 import type { Filtros, Item } from '../../lib/busca';
 
 export const ARQUIVO_BATIDA = '/dados/batida.json';
-/** O JSON do build (pages/dados/batida.json.ts): as peças uma vez só e, por ponto, [quantas, qual peça] de cada linha. */
-export type BatidaJson = { v: number; pecas: Rep[]; pontos: Record<string, [number, number][]> };
+/** O JSON do build (pages/dados/batida.json.ts): as peças uma vez só e, por ponto, [quantas, qual peça] de cada linha
+ *  (com um 3º número, 0, quando a peça à mostra não é a do título da linha). */
+export type BatidaJson = { v: number; pecas: Rep[]; pontos: Record<string, ([number, number] | [number, number, 0])[]> };
 
 type Procurar = (f: Filtros) => Item[];
 export type CarroDaVez = { procurar: Procurar | null; filtro: CarroFiltro; aviso: string; capa: (it: Item) => string };
@@ -38,6 +42,9 @@ export type Ctx = {
   dizerCarro(): void;
   /** o ícone do WhatsApp (do sprite) */
   whats: string;
+  /** "Girar o carro": a vista que a arte mostra agora e o pedido para girar (o ponto escolhido fica do outro lado) */
+  lado(): LadoArte;
+  girar(): Promise<boolean>;
 };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -55,8 +62,10 @@ function porEstilo() {
   document.head.appendChild(Object.assign(document.createElement('style'), { textContent: css }));
 }
 
-/** Uma linha do painel: a linha do kit, quantas peças e as opções (com carro: todas, da mais barata; sem: a 1ª). */
-type LinhaP = { linha: Linha; n: number; ops: Rep[] };
+/** Uma linha do painel: a linha do kit, quantas peças, as opções (com carro: todas, as que são a peça da linha primeiro
+ *  e a mais barata na frente; sem: a 1ª) e se a 1ª é a peça do título da linha. */
+type LinhaP = { linha: Linha; n: number; ops: Rep[]; certa: boolean };
+const semPeca = (linha: Linha): LinhaP => ({ linha, n: 0, ops: [], certa: false });
 /** Sem carro: quantas linhas com peça aparecem antes do "Ver as N peças deste conserto". */
 const NA_FRENTE_SEM_CARRO = 6;
 type Estado = { op: number[]; marcadas: Set<number> };
@@ -72,13 +81,23 @@ export function ligarBatida(ctx: Ctx) {
   camada.setAttribute('aria-label', 'Onde foi a batida');
   const vb = `viewBox="0 0 ${ARTE.w} ${ARTE.h}"`;
   const poli = (p: string) => `M${p.trim().split(/\s+/).join('L')}Z`;
-  camada.innerHTML = `<svg class="rxb-camada rxb-escuros" ${vb} aria-hidden="true">${PONTOS.map((p) => `<path data-b="${p.k}" fill-rule="evenodd" d="M-120,-120H${ARTE.w + 120}V${ARTE.h + 120}H-120Z ${p.realce.map(poli).join(' ')}"/>`).join('')}</svg>`
-    + `<svg class="rxb-camada rxb-realces" ${vb} aria-hidden="true">${PONTOS.map((p) => `<g data-b="${p.k}">${p.realce.map((r) => `<polygon points="${r}"/>`).join('')}</g>`).join('')}</svg>`
-    + `<svg class="rxb-mapa" ${vb} aria-hidden="true"><g class="rxb-guias">${PONTOS.map((p) => `<line data-b="${p.k}" x1="${p.ancora[0]}" y1="${p.ancora[1]}" x2="${p.etiqueta[0]}" y2="${p.etiqueta[1]}"/>`).join('')}</g>`
-    + PONTOS.map((p) => `<g class="rxb-toque" data-toque="${p.k}">${p.toque.map((t) => `<polygon points="${t}"/>`).join('')}</g>`).join('') + '</svg>'
-    + '<span class="rxb-pergunta" aria-hidden="true">Toque onde foi a batida</span>'
-    + PONTOS.map((p, i) => `<button type="button" class="rxb-ponto" data-b="${p.k}" data-ponto="${p.k}" aria-pressed="false" aria-controls="${id}" style="left:${pct(p.ancora[0], ARTE.w)};top:${pct(p.ancora[1], ARTE.h)}"><span class="sr-only">Batida ${esc(p.em)}</span><i class="num" aria-hidden="true">${i + 1}</i></button>`).join('')
-    + PONTOS.map((p) => `<span class="rxb-etiqueta" data-b="${p.k}" data-toque="${p.k}" aria-hidden="true" style="left:${pct(p.etiqueta[0], ARTE.w)};top:${pct(p.etiqueta[1], ARTE.h)}">${esc(p.nome)}</span>`).join('');
+  // os pontos da vista: na da frente, os 8 de lib/batida.ts; na de trás ("Girar o carro"), os 5 que aparecem nela, com a
+  // geometria de lib/raioXTras.ts (o nome, o número e as linhas continuam os do ponto de mesma chave)
+  type Geo = Pick<Ponto, 'k' | 'ancora' | 'etiqueta' | 'toque' | 'realce'>;
+  let ladoB: LadoArte = 'frente';
+  let geoTras: PontoTras[] | null = null;
+  const numero = (k: string) => PONTOS.findIndex((p) => p.k === k) + 1;
+  function htmlCamada(geo: readonly Geo[]): string {
+    const nome = (k: string) => PONTOS.find((p) => p.k === k)!;
+    return `<svg class="rxb-camada rxb-escuros" ${vb} aria-hidden="true">${geo.map((p) => `<path data-b="${p.k}" fill-rule="evenodd" d="M-120,-120H${ARTE.w + 120}V${ARTE.h + 120}H-120Z ${p.realce.map(poli).join(' ')}"/>`).join('')}</svg>`
+      + `<svg class="rxb-camada rxb-realces" ${vb} aria-hidden="true">${geo.map((p) => `<g data-b="${p.k}">${p.realce.map((r) => `<polygon points="${r}"/>`).join('')}</g>`).join('')}</svg>`
+      + `<svg class="rxb-mapa" ${vb} aria-hidden="true"><g class="rxb-guias">${geo.map((p) => `<line data-b="${p.k}" x1="${p.ancora[0]}" y1="${p.ancora[1]}" x2="${p.etiqueta[0]}" y2="${p.etiqueta[1]}"/>`).join('')}</g>`
+      + geo.map((p) => `<g class="rxb-toque" data-toque="${p.k}">${p.toque.map((t) => `<polygon points="${t}"/>`).join('')}</g>`).join('') + '</svg>'
+      + '<span class="rxb-pergunta" aria-hidden="true">Toque onde foi a batida</span>'
+      + geo.map((p) => `<button type="button" class="rxb-ponto" data-b="${p.k}" data-ponto="${p.k}" aria-pressed="false" aria-controls="${id}" style="left:${pct(p.ancora[0], ARTE.w)};top:${pct(p.ancora[1], ARTE.h)}"><span class="sr-only">Batida ${esc(nome(p.k).em)}</span><i class="num" aria-hidden="true">${numero(p.k)}</i></button>`).join('')
+      + geo.map((p) => `<span class="rxb-etiqueta" data-b="${p.k}" data-toque="${p.k}" aria-hidden="true" style="left:${pct(p.etiqueta[0], ARTE.w)};top:${pct(p.etiqueta[1], ARTE.h)}">${esc(nome(p.k).nome)}</span>`).join('');
+  }
+  camada.innerHTML = htmlCamada(PONTOS);
   palco.appendChild(camada);
   // as fichas (um alvo maior para o dedo, com os mesmos números): fora do Tab e do leitor de tela, que têm os pontos
   const fila = document.createElement('div');
@@ -86,8 +105,31 @@ export function ligarBatida(ctx: Ctx) {
   fila.setAttribute('aria-hidden', 'true');
   fila.innerHTML = PONTOS.map((p, i) => `<button type="button" tabindex="-1" data-b="${p.k}" data-toque="${p.k}"><i class="num">${i + 1}</i><span>${esc(p.nome)}</span></button>`).join('');
   fichas.appendChild(fila);
-  const pecasVisuais = [...camada.querySelectorAll<HTMLElement>('[data-b]'), ...fila.querySelectorAll<HTMLElement>('[data-b]')].map((el) => ({ el, k: el.dataset.b! }));
-  const botoes = [...camada.querySelectorAll<HTMLButtonElement>('.rxb-ponto')];
+  let pecasVisuais: { el: HTMLElement; k: string }[] = [];
+  let botoes: HTMLButtonElement[] = [];
+  /** As peças da arte desta vista (refeitas quando o carro gira) e as fichas "do outro lado". */
+  function lerCamada() {
+    pecasVisuais = [...camada.querySelectorAll<HTMLElement>('[data-b]'), ...fila.querySelectorAll<HTMLElement>('[data-b]')].map((el) => ({ el, k: el.dataset.b! }));
+    botoes = [...camada.querySelectorAll<HTMLButtonElement>('.rxb-ponto')];
+    for (const f of fila.querySelectorAll<HTMLElement>('[data-b]')) f.classList.toggle('outro', PONTOS_DO_OUTRO_LADO[ladoB].includes(f.dataset.b!));
+    // na vista da frente, o ponto do lado de lá (na borda visível) também gira o carro: a etiqueta dele avisa
+    for (const e of camada.querySelectorAll<HTMLElement>('.rxb-etiqueta')) e.classList.toggle('outro', PONTOS_DO_OUTRO_LADO[ladoB].includes(e.dataset.b!));
+  }
+  lerCamada();
+  /** "Girar o carro": a geometria da outra vista, baixada antes da troca (a troca em si é síncrona). */
+  async function preparar(l: LadoArte) {
+    if (l === 'tras' && !geoTras) geoTras = (await import('../../lib/raioXTras')).PONTOS_TRAS;
+  }
+  /** O carro girou: os pontos passam para o lugar deles na outra vista (o escolhido continua escolhido). */
+  function virou(l: LadoArte) {
+    if (l === ladoB || (l === 'tras' && !geoTras)) return;
+    const foco = document.activeElement instanceof HTMLElement && camada.contains(document.activeElement) ? document.activeElement.dataset.b : undefined;
+    ladoB = l;
+    camada.innerHTML = htmlCamada(l === 'tras' ? geoTras! : PONTOS);
+    lerCamada();
+    acender();
+    if (foco) camada.querySelector<HTMLElement>(`.rxb-ponto[data-b="${foco}"]`)?.focus({ preventScroll: true });
+  }
 
   // ---- o estado ----
   let ligado = false;
@@ -115,15 +157,15 @@ export function ligarBatida(ctx: Ctx) {
   // ---- os dados: a busca do carro (uma linha por vez, sem tarefa longa) ou o JSON do estoque inteiro ----
   function kitComCarro(p: Ponto): LinhaP[] {
     const c = carro!;
-    return opcoesDoPonto(p, c.procurar!, c.filtro).map(({ linha, itens }) => ({ linha, n: itens.length, ops: itens.map((it) => repDe(it, c.capa)) }));
+    return linhasDoPainel(opcoesDoPonto(p, c.procurar!, c.filtro).map(({ linha, itens, certa }): LinhaP => ({ linha, n: itens.length, ops: itens.map((it) => repDe(it, c.capa)), certa })), semPeca);
   }
   async function kitDoEstoque(p: Ponto): Promise<LinhaP[]> {
     json ??= fetch(ARQUIVO_BATIDA).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<BatidaJson>; })
       .catch((e) => { json = null; throw e; });
     const j = await json;
     const linhas = j.pontos[p.k] ?? [];
-    return p.linhas.map((linha, i) => ({ linha, n: linhas[i]?.[0] ?? 0, ops: linhas[i]?.[0] ? [j.pecas[linhas[i][1]]] : [] }))
-      .filter((l) => l.n > 0 || !l.linha.extra);
+    return linhasDoPainel(p.linhas.map((linha, i): LinhaP => ({ linha, n: linhas[i]?.[0] ?? 0, ops: linhas[i]?.[0] ? [j.pecas[linhas[i][1]]] : [], certa: !!linhas[i]?.[0] && linhas[i][2] !== 0 }))
+      .filter((l) => l.n > 0 || !l.linha.extra), semPeca);
   }
   async function kitDe(k: string): Promise<LinhaP[]> {
     const pronto = kits.get(k);
@@ -134,9 +176,11 @@ export function ligarBatida(ctx: Ctx) {
     const kit = comCarro() ? kitComCarro(ponto(k)) : await kitDoEstoque(ponto(k));
     if (minha !== vez) throw new Error('trocou');
     kits.set(k, kit);
-    // com carro: a mais barata de cada linha já marcada; sem carro: nada marcado (as peças são de carros diferentes)
-    // (só as principais: a peça pequena que "costuma ir junto" a pessoa marca se precisar, o total não infla sozinho)
-    if (!estados.has(k)) estados.set(k, { op: kit.map(() => 0), marcadas: new Set(comCarro() ? kit.flatMap((l, i) => (l.n && !l.linha.extra ? [i] : [])) : []) });
+    // com carro: as principais já marcadas (marcadasDeInicio): a com peça, quando a peça é a do título, entra no total;
+    // a sem peça vai como "a gente procura no pátio". Sem carro: nada marcado (as peças são de carros diferentes). A
+    // peça pequena que "costuma ir junto" a pessoa marca se precisar (o total não infla sozinho). Ano salvo sem peça
+    // (a lista é do modelo em todos os anos, com o aviso): nenhuma peça com preço marcada, são de outro ano.
+    if (!estados.has(k)) estados.set(k, { op: kit.map(() => 0), marcadas: marcadasDeInicio(kit, comCarro(), !carro?.aviso) });
     return kit;
   }
   /** Ao entrar no modo: o carro e os 8 pontos contados quando o navegador folga (o toque no ponto já acha pronto). */
@@ -207,7 +251,13 @@ export function ligarBatida(ctx: Ctx) {
     const total = pe.querySelector<HTMLElement>('.rxb-total')!;
     const pedir = pe.querySelector<HTMLAnchorElement>('.rxb-pedir')!;
     const guardar = pe.querySelector<HTMLButtonElement>('.rxb-guardar')!;
-    const nada = !itens.length && !patio.length;
+    const pe2 = peDoConserto(itens.length, patio.length);
+    const nada = pe2.estado === 'nada';
+    // o botão diz o que o pedido é: o orçamento (com preço) ou a procura no pátio (sem total em dinheiro)
+    const rotulo = pedir.querySelector<HTMLElement>('.rxb-pedir-t');
+    if (rotulo && rotulo.textContent !== pe2.botao) rotulo.textContent = pe2.botao;
+    pedir.dataset.botao = pe2.dataBotao;
+    pedir.querySelector<HTMLElement>('.rxb-pedir-d')?.toggleAttribute('hidden', pe2.estado !== 'conserto');
     const txt = nada ? '<span class="rxb-t-n">Marque as peças que você precisa.</span>'
       : !itens.length ? `<span class="rxb-t-n">${patio.length === 1 ? '1 peça' : `${patio.length} peças`} para a gente procurar no pátio</span>`
       : `<span class="rxb-t-n">${itens.length === 1 ? '1 peça marcada' : `${itens.length} peças marcadas`}${patio.length ? ` + ${patio.length} para procurar` : ''}</span>`
@@ -234,9 +284,18 @@ export function ligarBatida(ctx: Ctx) {
     const tem = kit.filter((l) => l.n);
     const patio = kit.map((l, i) => ({ l, i })).filter((x) => !x.l.n);
     const dc = comCarro() ? ctx.doCarro(carro!.filtro) : '';
+    // sem nenhuma peça anunciada, o painel não termina num vazio: a lista do conserto vira o pedido de pátio
     const sub = tem.length
       ? `${dc ? `${esc(dc)} · ` : ''}${tem.length === 1 ? '1 peça deste conserto' : `${tem.length} peças deste conserto`} ${dc ? 'no estoque agora' : 'no estoque inteiro'}`
-      : `${dc ? `${esc(dc)} · ` : ''}nenhuma peça deste conserto no site agora`;
+      : `${dc ? `${esc(dc)} · ` : ''}sem anúncio agora: a gente procura no pátio`;
+    // pouca peça anunciada para o carro (0 ou 1 linha principal): a lista de pátio vem primeiro
+    const patioPrimeiro = comCarro() && poucoAnunciado(kit);
+    const htmlPatio = patio.length
+      ? `<fieldset class="rxb-patio${patioPrimeiro ? ' rxb-patio-1' : ''}"><legend>A gente procura no pátio</legend>`
+        + `<p>${esc(FRASE_PATIO)}</p><div class="rxb-chips">`
+        + patio.map(({ l, i }) => `<label class="rxb-chip"><input type="checkbox" data-marca="${i}"${e.marcadas.has(i) ? ' checked' : ''}><span>${esc(l.linha.nome)}</span></label>`).join('')
+        + '</div></fieldset>'
+      : '';
     let html = `<div class="rxb-painel">${cabeca(`Batida ${p.em}`, sub)}`;
     if (carro?.aviso) html += `<p class="rx-p-aviso">${esc(carro.aviso)}</p>`;
     if (!comCarro()) {
@@ -247,6 +306,7 @@ export function ligarBatida(ctx: Ctx) {
     // Com carro, todas à vista (estão marcadas e entram no total: nada marcado fica escondido).
     const cabem = comCarro() ? Infinity : NA_FRENTE_SEM_CARRO;
     let vistas = 0;
+    if (patioPrimeiro) html += htmlPatio;
     if (tem.length) {
       // primeiro as peças principais do conserto (com carro, já marcadas); depois as pequenas que costumam ir junto
       const grupo = (extra: boolean) => kit.map((l, i) => (l.n && !!l.linha.extra === extra ? linhaHtml(k, l, i, e, ++vistas > cabem && !e.marcadas.has(i)) : '')).join('');
@@ -256,15 +316,10 @@ export function ligarBatida(ctx: Ctx) {
       if (junto) html += `<p class="rxb-junto${vistas - kit.filter((l) => l.n && l.linha.extra).length >= cabem ? ' rxb-junto-oculto' : ''}">Também costuma ir junto</p><ul class="rxb-linhas" aria-label="Peças que costumam ir junto">${junto}</ul>`;
       if (tem.length > cabem) html += `<button type="button" class="rxb-mais" data-mais aria-expanded="false">Ver as ${tem.length} peças deste conserto</button>`;
     }
-    if (patio.length) {
-      html += `<fieldset class="rxb-patio"><legend>A gente procura no pátio</legend>`
-        + `<p>Sem anúncio no site agora. Marque o que você também precisa: vai no pedido para a gente procurar.</p><div class="rxb-chips">`
-        + patio.map(({ l, i }) => `<label class="rxb-chip"><input type="checkbox" data-marca="${i}"${e.marcadas.has(i) ? ' checked' : ''}><span>${esc(l.linha.nome)}</span></label>`).join('')
-        + '</div></fieldset>';
-    }
+    if (!patioPrimeiro) html += htmlPatio;
     // o total e o botão: filhos diretos do painel (presos ao pé da tela enquanto a lista inteira rola)
     html += `<div class="rxb-fixo"><p class="rxb-total" role="status" aria-live="polite"></p>`
-      + `<a class="botao botao-laranja rxb-pedir" data-botao="raiox-conserto" target="_blank" rel="noopener">${ctx.whats}Pedir o conserto no WhatsApp<span class="sr-only">, com ${DESCONTO_WHATS}% de desconto</span></a></div>`
+      + `<a class="botao botao-laranja rxb-pedir" data-botao="raiox-conserto" target="_blank" rel="noopener">${ctx.whats}<span class="rxb-pedir-t">Pedir o conserto no WhatsApp</span><span class="sr-only rxb-pedir-d">, com ${DESCONTO_WHATS}% de desconto</span></a></div>`
       + `<div class="rxb-pe"><button type="button" class="botao botao-linha rxb-guardar">Guardar na lista</button>`
       + `<p class="rxb-status" role="status" aria-live="polite"></p>`
       + `<p class="rxb-honesto">Peça usada: quando vende, acabou. A gente confere na peça antes de você comprar.</p></div></div>`;
@@ -323,6 +378,8 @@ export function ligarBatida(ctx: Ctx) {
   async function selecionar(k: string, como: { focar?: boolean; rolar?: boolean } = {}) {
     raiz.classList.add('tocado');
     escolhidaEm = performance.now();
+    // o ponto fica do outro lado do carro: o carro gira sozinho (a lista monta enquanto isso)
+    if (PONTOS_DO_OUTRO_LADO[ctx.lado()].includes(k)) void ctx.girar();
     const igual = ativo === k && !!conteudo.querySelector('.rxb-pe');
     ativo = k;
     passando = null;
@@ -507,7 +564,7 @@ export function ligarBatida(ctx: Ctx) {
   }
 
   return {
-    entrar, sair, trocouCarro, selecionar,
+    entrar, sair, trocouCarro, selecionar, preparar, virou,
     /** Esc: limpa o ponto e devolve o foco a ele */
     esc: () => { if (ligado && ativo) { limpar(true); return true; } return false; },
     get erro() { return erro; },

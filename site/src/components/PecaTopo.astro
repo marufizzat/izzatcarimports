@@ -310,18 +310,27 @@ const perguntas = [
       // 1) o foco já, dentro do gesto: é o que o iPhone exige para subir o teclado
       campo.focus({ preventScroll: true });
       // 2) Chrome (Android e PC): o conteúdo do <details> recém-aberto ainda está com content-visibility: hidden (a
-      //    transição do ::details-content) e o foco é recusado; dois quadros depois ele vale (medido na revisão 14,
-      //    item 24). Por último, o evento toggle, que só sai com a pergunta aberta de verdade.
-      if (document.activeElement !== campo) {
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          campo.focus({ preventScroll: true });
-          if (document.activeElement !== campo) envio.addEventListener('toggle', () => { if (envio.open) campo.focus({ preventScroll: true }); }, { once: true });
-        }));
-      }
+      //    transição do ::details-content) e o foco é recusado. A revisão 14 mediu "dois quadros depois ele vale"; a 15
+      //    mostrou que não é sempre: no 2º quadro e no evento toggle o conteúdo ainda podia estar escondido e o cursor
+      //    ficava no link (P2-8). Agora tenta a cada quadro até valer (medido: 2 a 3 quadros, ~30–40 ms também com CPU
+      //    4×; no máximo 1,2 s) e para se a pessoa fechou a pergunta ou já foi para outro lugar.
       // 3) quando a altura acaba de abrir, o CAMPO vai para o meio da tela (antes parava na metade de baixo, onde o
       //    teclado cobre); só se a pessoa ainda está nele
-      setTimeout(() => { if (envio.open && document.activeElement === campo) campo.scrollIntoView({ block: 'center', behavior: rolar }); },
-        calmo || document.documentElement.classList.contains('leve') ? 60 : 400);
+      const espera = calmo || document.documentElement.classList.contains('leve') ? 60 : 400;
+      const t0 = performance.now();
+      const centrar = () => { if (envio.open && document.activeElement === campo) campo.scrollIntoView({ block: 'center', behavior: rolar }); };
+      if (document.activeElement !== campo) {
+        const dono = document.activeElement;
+        const tentar = () => {
+          const ativo = document.activeElement;
+          if (!envio.open || (ativo !== dono && ativo !== document.body && ativo !== campo)) return;
+          campo.focus({ preventScroll: true });
+          if (document.activeElement === campo) { if (performance.now() - t0 >= espera) centrar(); }
+          else if (performance.now() - t0 < 1200) requestAnimationFrame(tentar);
+        };
+        requestAnimationFrame(tentar);
+      }
+      setTimeout(centrar, espera);
     });
   }
 

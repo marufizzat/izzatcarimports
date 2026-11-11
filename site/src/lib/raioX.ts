@@ -174,6 +174,18 @@ export const ZONAS: Zona[] = [
   },
 ];
 
+/** As duas vistas do carro ("Girar o carro"): a da frente (pelo lado esquerdo, a arte de sempre) e a de trás (pelo lado
+ *  direito: lib/raioXTras.ts, que só desce quando a pessoa gira). */
+export type LadoArte = 'frente' | 'tras';
+/** As zonas que, em cada vista, ficam do OUTRO lado do carro: escolher uma delas gira o carro sozinho. As que não estão
+ *  em nenhuma das duas listas (interior, teto, rodas, embaixo) aparecem de verdade nas duas vistas. */
+export const DO_OUTRO_LADO: Record<LadoArte, readonly string[]> = {
+  frente: ['lateral-direita', 'traseira'],
+  tras: ['frente', 'motor', 'lateral-esquerda'],
+};
+/** A outra vista. */
+export const outroLado = (l: LadoArte): LadoArte => (l === 'frente' ? 'tras' : 'frente');
+
 /** O carro das contagens (as do catálogo: marca, modelo e, se houver, o ano). */
 export type CarroFiltro = { marca?: string; modelo?: string; ano?: number };
 /** Uma linha do painel: um tipo da zona, com o filtro exato do catálogo e a peça mais nova dele (a foto). */
@@ -227,6 +239,37 @@ export function pecasDaZona(procurar: (f: Filtros) => Item[], carro: CarroFiltro
   return [...vistas.values()].sort((a, b) => b.id.length - a.id.length || (b.id > a.id ? 1 : b.id < a.id ? -1 : 0));
 }
 
+// ---- o NOME da peça: a regra "este nome É a peça" (a lista do conserto, lib/batida.ts; os pontos quentes das vistas
+// por dentro, lib/porDentro/base.ts) e as palavras do nome para o "Onde fica" ----
+const junto = (w: string) => w.replace(/-/g, '');
+/** As palavras do nome: sem acento, minúsculas, a composta inteira e sem o hífen ("Para-choque" e "Parachoque" =
+ *  "parachoque"; "porta-malas" nunca é "porta"). */
+export const palavrasDoNome = (nome: string): string[] =>
+  nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[^a-z0-9-]+/).map(junto).filter(Boolean);
+const QUANTAS = new Set(['kit', 'par', 'jogo', 'conjunto']);
+// a palavra do nome é a da regra, no singular ou no plural ("maçanetas", "motores", "coxins", "faróis", "botões")
+const mesma = (t: string, w: string) => t === w || t === `${w}s` || t === `${w}es`
+  || (w.endsWith('m') && t === `${w.slice(0, -1)}ns`) || (w.endsWith('l') && t === `${w.slice(0, -1)}is`) || (w.endsWith('ao') && t === `${w.slice(0, -2)}oes`);
+const lista = (s?: string) => (s ? s.split(' ').map(junto) : []);
+/** Qual nome É a peça: `cab` = as palavras que podem ABRIR o nome ("Kit"/"Par" na frente não contam; o plural vale),
+ *  `tem` = o nome diz pelo menos uma destas, `sem` = não diz nenhuma destas. Palavras separadas por espaço, sem acento;
+ *  a composta vale inteira ("porta" não é "porta-malas"). Várias formas = basta uma. */
+export type Eh = { cab: string; tem?: string; sem?: string };
+/** O nome É a peça da regra? A mesma leitura do "tipo" da busca (lib/busca.ts, `unNaCabeca`): a 1ª palavra do nome é a
+ *  da peça ("Maçaneta externa dianteira esquerda" é maçaneta; "Suporte maçaneta" é suporte), com o que a regra exige
+ *  do resto do nome ("Forro porta…" sim, "Forro porta-malas" não). Sem regra: nunca. */
+export function nomeEh(eh: Eh | Eh[] | undefined, nome: string): boolean {
+  if (!eh) return false;
+  const ws = palavrasDoNome(nome);
+  let i = 0;
+  while (i < ws.length - 1 && QUANTAS.has(ws[i])) i++;
+  const cab = ws[i];
+  if (!cab) return false;
+  const diz = (w: string) => ws.some((t) => mesma(t, w));
+  return (Array.isArray(eh) ? eh : [eh]).some((e) =>
+    lista(e.cab).some((c) => mesma(cab, c)) && (!e.tem || lista(e.tem).some(diz)) && !lista(e.sem).some(diz));
+}
+
 /** A peça como a zona precisa dela: o bloco, o tipo e o lado/posição que o nome diz (os campos c, s, l, pos do índice). */
 export type PecaZona = { c: string; s: string; l?: Lado | '' | '0'; pos?: Posicao | 'A' | '' | '0' };
 /** A peça cabe no grupo? A MESMA regra da busca do catálogo (lib/busca.ts): bloco e tipo iguais, o lado igual, e a
@@ -243,6 +286,45 @@ function noGrupo(p: PecaZona, g: Grupo): boolean {
  *  porta sem lado no nome), nenhuma. O "Onde fica" da página da peça usa a 1ª (components/peca/OndeFica.astro). */
 export function zonasDaPeca(p: PecaZona, zonas: Zona[] = ZONAS): Zona[] {
   return zonas.filter((z) => z.grupos.some((g) => noGrupo(p, g)));
+}
+
+// ---- "Onde fica" (a legenda da página da peça: "Fica na frente do carro") ----
+// O painel junta o que o cliente PROCURA apontando ali (a chave de roda na roda, o sensor do freio perto do freio, a luz
+// da porta junto das luzes de dentro). A legenda AFIRMA onde a peça está: é mais exigente (revisão 15, P2-1). A peça
+// cujo tipo não tem lugar certo, ou cujo nome diz outro lugar, fica sem o bloco (nunca um lugar meio certo); as
+// contagens e os links do painel não mudam.
+/** Tipos que o painel mostra numa zona mas que não ficam nela (ou mudam de lugar de carro para carro): a chave de roda
+ *  e o macaco (porta-malas, ou atrás do banco na picape), o suporte do estepe, o sensor do freio (do pedal, do
+ *  hidrovácuo, do ESP), a portinhola do tanque (na lateral), o módulo do câmbio, o triângulo e a sirene. */
+const SEM_LUGAR: ReadonlySet<string> = new Set(['Macacos e Chaves de Roda', 'Suportes do Estepe', 'Sensores do Freio', 'Portinholas e Tampas do Tanque',
+  'Módulos do Câmbio e da Tração', 'Triângulos de Segurança', 'Alarmes e Sirenes']);
+const dizAlguma = (ws: string[], palavras: string) => palavras.split(' ').some((w) => ws.includes(junto(w)));
+/** Por zona: o NOME diz outro lugar (as palavras como palavrasDoNome as lê). */
+const OUTRO_LUGAR: Record<string, (ws: string[]) => boolean> = {
+  // a luz de cortesia da porta, do porta-luvas e do porta-malas e o puxador do porta-malas não ficam no teto; o
+  // amplificador da antena fica na coluna ou no vidro
+  teto: (ws) => (dizAlguma(ws, 'porta portas porta-malas porta-luvas') && !ws.includes('teto')) || ws.includes('amplificador'),
+  // forro, isopor e moldura do PORTA-MALAS (com lado) e o friso da tampa não ficam nas portas
+  'lateral-esquerda': (ws) => dizAlguma(ws, 'porta-malas bagagito tampa'),
+  'lateral-direita': (ws) => dizAlguma(ws, 'porta-malas bagagito tampa'),
+  // do porta-malas, da tampa traseira, de fora do carro ou do cofre do motor ("Caixa fusíveis motor")
+  interior: (ws) => dizAlguma(ws, 'porta-malas externa externo') || (ws.includes('tampa') && dizAlguma(ws, 'traseira traseiro')) || (ws.length > 1 && ws[ws.length - 1] === 'motor'),
+  // a mangueira e o sensor do hidrovácuo e os canos do ABS ficam no cofre do motor; o módulo do TPMS, dentro do carro
+  rodas: (ws) => dizAlguma(ws, 'hidrovacuo vacuo servo modulo') || (dizAlguma(ws, 'mangueira tubo cano') && ws.includes('abs')),
+  // o relé e o módulo da bomba ficam com os fusíveis; a portinhola, na lateral; a travessa e a barra da frente, na frente
+  embaixo: (ws) => dizAlguma(ws, 'rele modulo portinhola frontal superior churrasqueira'),
+  motor: (ws) => ws.includes('tanque'),
+};
+/** A zona que a página da peça afirma: a do painel (zonasDaPeca), quando é UMA só, o tipo tem lugar certo e nem a
+ *  posição nem o nome dizem outro lugar (o braço TRASEIRO do limpador não fica na frente; o sensor de estacionamento
+ *  DIANTEIRO não fica na traseira). null = a página não mostra o bloco. */
+export function zonaOndeFica(p: PecaZona & { n?: string }, zonas: Zona[] = ZONAS): Zona | null {
+  const zs = zonasDaPeca(p, zonas);
+  if (zs.length !== 1 || SEM_LUGAR.has(p.s)) return null;
+  const z = zs[0];
+  if ((z.k === 'frente' && p.pos === 'T') || (z.k === 'traseira' && p.pos === 'D')) return null;
+  const fora = OUTRO_LUGAR[z.k];
+  return fora && p.n && fora(palavrasDoNome(p.n)) ? null : z;
 }
 
 // lado e posição no endereço do catálogo, por extenso (os mesmos de catalogo/Catalogo.tsx: LADOS e POSICOES)

@@ -70,7 +70,7 @@ export const PONTOS: PontoQuente[] = [
     poligonos: ['1079,685 1027,668 996,670 988,688 956,703 805,724 596,730 545,704 517,705 502,720 468,719 466,763 483,775 548,785 575,774 787,767 1002,739 1045,744 1077,726'],
   },
   {
-    k: 'sensores', nome: 'Sensores de estacionamento', procuro: 'o sensor de estacionamento', ancora: [1000, 788], tipo: 'Módulos e Elétrica', sub: 'Sensores de Estacionamento',
+    k: 'sensores', nome: 'Sensores de estacionamento', procuro: 'o sensor de estacionamento', ancora: [1000, 788], tipo: 'Módulos e Elétrica', sub: 'Sensores de Estacionamento', eh: { cab: 'sensor' }, fora: 'D',
     poligonos: [
       '618,808 605,801 595,801 589,803 571,802 566,804 560,813 561,825 563,829 571,835 579,835 597,827 613,827 619,820',
       '762,805 760,802 746,796 731,799 713,798 707,803 704,809 704,818 707,825 711,829 722,831 736,824 754,823 759,821 762,817',

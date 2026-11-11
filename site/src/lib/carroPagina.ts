@@ -9,7 +9,7 @@
 //    por tarefa: nenhum quadro longo;
 //  - a ficha ativa da barra acompanha a rolagem.
 // As funções puras (chaveGrupo, agrupar, textoSalvo) são usadas também no build e testadas em carroPagina.test.ts.
-import { lerMeuCarro, salvarMeuCarro, norm, anosNoModelo, serveNoModelo, lerModelos, EVENTO, type MeuCarro } from './meuCarro';
+import { lerMeuCarro, salvarMeuCarro, carroDe, norm, anosNoModelo, serveNoModelo, lerModelos, EVENTO, type MeuCarro } from './meuCarro';
 import { rolarFila } from './anosFila';
 import type { Item, Indice } from './busca';
 
@@ -64,6 +64,35 @@ export function textoSalvo(antes: MeuCarro | null, b: string, m: string): string
   if (!antes || (norm(antes.b) === norm(b) && norm(antes.m) === norm(m))) return 'Salvo como seu carro';
   return `Salvo no lugar do ${antes.m}${antes.y ? ` ${antes.y}` : ''}`;
 }
+
+/** O mesmo carro salvo (marca, modelo e ano; nenhum dos dois = o mesmo)? */
+export function mesmoCarro(a: MeuCarro | null, b: MeuCarro | null): boolean {
+  if (!a || !b) return !a && !b;
+  return norm(a.b) === norm(b.b) && norm(a.m) === norm(b.m) && (a.y ?? null) === (b.y ?? null);
+}
+/** O que o "Desfazer" do ano devolve: o carro salvo e o ano da página de ANTES do 1º toque num ano nesta visita. */
+export type Origem = { carro: MeuCarro | null; ano: number | null };
+/** O "Desfazer" guardado na aba (sessionStorage: vale depois de recarregar). Só volta a valer NESTA página e enquanto o
+ *  carro salvo ainda é o que ela gravou (`salvo`: este modelo, no ano `y`): trocado noutro lugar, não há o que desfazer. */
+export function origemGuardada(bruto: string | null, caminho: string, salvo: MeuCarro | null, doModelo: boolean): Origem | null {
+  try {
+    const g = JSON.parse(bruto || 'null') as { p?: unknown; y?: unknown; o?: { carro?: unknown; ano?: unknown } } | null;
+    if (!g || g.p !== caminho || typeof g.y !== 'number' || !g.o || !salvo || !doModelo || salvo.y !== g.y) return null;
+    const o: Origem = { carro: carroDe(g.o.carro ?? null), ano: typeof g.o.ano === 'number' ? g.o.ano : null };
+    return mesmoCarro(o.carro, salvo) ? null : o;
+  } catch { return null; }
+}
+/** Onde a página estava ao sair (sessionStorage), para voltar ao mesmo lugar quando ela é montada de novo com a vista de
+ *  um ano (recarregar, voltar sem bfcache, o app que recarrega): só nesta página, com o MESMO ano e numa volta. */
+export function rolagemGuardada(bruto: string | null, caminho: string, ano: number | null, tipoNav: string | undefined): number | null {
+  if (tipoNav !== 'reload' && tipoNav !== 'back_forward') return null;
+  try {
+    const g = JSON.parse(bruto || 'null') as { p?: unknown; y?: unknown; a?: unknown } | null;
+    return g && g.p === caminho && ano != null && g.a === ano && typeof g.y === 'number' && g.y > 0 ? g.y : null;
+  } catch { return null; }
+}
+export const CHAVE_ORIGEM = 'izzatcar.carro.antes';
+export const CHAVE_ROLAGEM = 'izzatcar.carro.rolagem';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** O "Ver as N" só aparece onde o grupo tem mais peças do que os cartões à vista (classe por largura de tela). */
@@ -264,8 +293,25 @@ export function iniciarPaginaCarro() {
     });
     return n;
   };
+  /** A página foi montada de novo (recarregar, voltar sem bfcache, o app instalado depois de 30 min) no meio da vista de
+   *  um ano: onde ela estava (guardado ao sair). O navegador repõe a rolagem sobre o HTML de todos os anos (bem mais
+   *  alto); quando a vista do ano entrava um grupo por tarefa, a página encolhia, a rolagem caía no fim e o WebKit
+   *  (iPhone) deixava a pessoa no rodapé (revisão 15, P2-4). Agora, nessa volta, a vista do ano entra inteira numa
+   *  tarefa e a página vai para onde estava; quem já mexeu na tela não é levado a lugar nenhum. */
+  let voltarPara: number | null = null;
+  let mexeu = false;
+  const sair = () => { try { sessionStorage.setItem(CHAVE_ROLAGEM, JSON.stringify({ p: location.pathname, y: Math.round(scrollY), a: ano })); } catch { /* sem armazenamento */ } };
+  window.addEventListener('pagehide', sair);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) sair(); });
+  const repor = () => {
+    const y = voltarPara;
+    voltarPara = null;
+    if (y == null) return;
+    if (!mexeu) scrollTo({ top: y, behavior: 'instant' as ScrollBehavior });
+    try { history.scrollRestoration = 'auto'; } catch { /* navegador antigo */ }
+  };
   async function verAno(y: number) {
-    if (!zona || !estatico || !dadosEm) { filtrarProntos(y); return; }
+    if (!zona || !estatico || !dadosEm) { filtrarProntos(y); repor(); return; }
     try {
       const [itens, { cartao, vigiarFotos }] = await Promise.all([itensDoCarro(), cartoesDe()]);
       if (ano !== y) return;   // trocou de ano enquanto o arquivo descia
@@ -279,8 +325,10 @@ export function iniciarPaginaCarro() {
       }
       const caixa = doAno;
       const grupoHtml = (g: Grupo<Item>) => htmlGrupo(g.c, g.itens.length, g.itens.slice(0, POR_GRUPO).map(cartao).join(''), `${base}&ano=${y}&tipo=${encodeURIComponent(g.c)}`);
-      // o 1º grupo e a barra já; o resto, um grupo por tarefa (nenhum quadro passa de 50 ms num celular lento)
-      caixa.innerHTML = grupos.length ? grupoHtml(grupos[0]) : '';
+      // o 1º grupo e a barra já; o resto, um grupo por tarefa (nenhum quadro passa de 50 ms num celular lento).
+      // Na volta com a página rolada: todos de uma vez (a altura final antes de repor a rolagem).
+      const inteira = voltarPara != null;
+      caixa.innerHTML = inteira ? grupos.map(grupoHtml).join('') : grupos.length ? grupoHtml(grupos[0]) : '';
       if (fila) fila.innerHTML = grupos.map((g) => htmlFicha(g.c, g.itens.length)).join('');
       fichaAtiva = null;
       estatico.hidden = true;
@@ -288,14 +336,15 @@ export function iniciarPaginaCarro() {
       caixa.hidden = false;
       filtrarProntos(null);
       textos(y, n);
-      for (let i = 1; i < grupos.length; i++) {
+      if (inteira) repor();
+      else for (let i = 1; i < grupos.length; i++) {
         await pausa();
         if (ano !== y) return;
         caixa.insertAdjacentHTML('beforeend', grupoHtml(grupos[i]));
       }
       pedirAcompanhar();
       filtrarLista(y, new Set(itens.filter((it) => serveNoAno(it, y)).map((it) => `/peca/${it.h}.html`)));
-    } catch { /* sem rede: fica a vista de todos os anos com os cartões do ano (filtrarProntos) */ }
+    } catch { repor(); /* sem rede: fica a vista de todos os anos com os cartões do ano (filtrarProntos) */ }
   }
   /** De volta a todos os anos. Os grupos voltam um por tarefa (os ~160 cartões de uma vez eram um quadro de 90–170 ms
    *  num celular lento); a vista do ano é esvaziada (menos nós para quem percorre os cartões da página). */
@@ -352,8 +401,21 @@ export function iniciarPaginaCarro() {
   lista.addEventListener('scroll', bordas, { passive: true });
   window.addEventListener('resize', bordas, { passive: true });
 
-  /** "Salvo como seu carro · Desfazer": o desfazer devolve o carro salvo de antes (ou nenhum) e o ano que estava na página. */
-  let desfazer: (() => void) | null = null;
+  /** "Salvo como seu carro · Desfazer". O Desfazer devolve o carro salvo e o ano da página de ANTES do 1º toque num ano
+   *  nesta visita, não o do toque anterior (revisão 15, P2-5: com o Onix salvo, tocar 2019 e depois 2020 devolvia o
+   *  XC60 2019 e o Onix ficava perdido; a mensagem do WhatsApp passava a dizer "Meu carro: Volvo XC60"). O aviso
+   *  continua à vista com o "Todos" (que não mexe no carro salvo) e depois de recarregar (guardado na aba), enquanto o
+   *  carro salvo for o que esta página gravou; trocado noutro lugar (o painel "Meu carro"), não há o que desfazer. */
+  let origem: Origem | null = null;
+  /** verdadeiro enquanto ESTA página grava o carro (o evento volta para cá na mesma tarefa) */
+  let gravando = false;
+  const gravar = (c: MeuCarro | null) => { gravando = true; try { salvarMeuCarro(c); } finally { gravando = false; } };
+  const guardarOrigem = (y: number | null) => {
+    try {
+      if (origem && y != null) sessionStorage.setItem(CHAVE_ORIGEM, JSON.stringify({ p: location.pathname, y, o: origem }));
+      else sessionStorage.removeItem(CHAVE_ORIGEM);
+    } catch { /* sem armazenamento: o Desfazer vale só até recarregar */ }
+  };
   const avisar = (txt: string, comDesfazer: boolean) => {
     if (!aviso) return;
     aviso.textContent = '';
@@ -363,28 +425,39 @@ export function iniciarPaginaCarro() {
       aviso.append(' · ', Object.assign(document.createElement('button'), { type: 'button', className: 'ac-desfazer', textContent: 'Desfazer' }));
     }
   };
-  aviso?.addEventListener('click', (e) => {
-    if (!(e.target as HTMLElement).closest('.ac-desfazer') || !desfazer) return;
-    const d = desfazer;
-    desfazer = null;
-    d();
-  });
+  const mostrarSalvo = () => { if (origem) avisar(textoSalvo(origem.carro, B, M), true); };
+  const esquecerOrigem = () => { origem = null; guardarOrigem(null); avisar('', false); };
+  function desfazer() {
+    const o = origem;
+    if (!o) return;
+    origem = null;
+    guardarOrigem(null);
+    // a página primeiro; devolver o carro salvo avisa o cabeçalho e os cartões noutra tarefa
+    setTimeout(() => gravar(o.carro), 0);
+    escolher(o.ano);
+    if (o.ano != null) centrar(o.ano, true);
+    avisar('Desfeito', false);
+    (chips.find((c) => (c.dataset.y ? Number(c.dataset.y) : null) === o.ano) ?? todosChip)?.focus({ preventScroll: true });
+  }
+  aviso?.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('.ac-desfazer')) desfazer(); });
   function salvar(y: number, anoAntes: number | null) {
     const antes = lerMeuCarro();
-    if (eh(antes) && antes.y === y) return;   // já é o carro salvo, com este ano
+    if (eh(antes) && antes.y === y) {
+      // já é o carro salvo, com este ano (voltou a ele depois do "Todos"): se é o carro de antes da visita, não há o
+      // que desfazer; senão o aviso e o Desfazer continuam
+      if (origem && mesmoCarro(origem.carro, antes)) esquecerOrigem(); else mostrarSalvo();
+      return;
+    }
     // o trabalho do toque primeiro (a ficha acesa e a grade); salvar avisa o cabeçalho e os cartões num quadro próprio
     setTimeout(() => {
       if (ano !== y) return;
-      salvarMeuCarro(eh(antes) ? { ...antes, y } : { b: B, m: M, y, ...(arte.a ? { a: arte.a, ...(arte.as ? { as: arte.as } : {}) } : {}) });
-      desfazer = () => {
-        // a página primeiro; devolver o carro salvo avisa o cabeçalho e os cartões noutra tarefa
-        setTimeout(() => salvarMeuCarro(antes), 0);
-        escolher(anoAntes);
-        if (anoAntes != null) centrar(anoAntes, true);
-        avisar('Desfeito', false);
-        (chips.find((c) => (c.dataset.y ? Number(c.dataset.y) : null) === anoAntes) ?? todosChip)?.focus({ preventScroll: true });
-      };
-      avisar(textoSalvo(antes, B, M), true);
+      const novo: MeuCarro = eh(antes) ? { ...antes, y } : { b: B, m: M, y, ...(arte.a ? { a: arte.a, ...(arte.as ? { as: arte.as } : {}) } : {}) };
+      origem ??= { carro: antes, ano: anoAntes };
+      gravar(novo);
+      // de volta, pelo próprio toque, ao carro que tinha ao entrar (XC60 2021 -> 2019 -> 2021): nada a desfazer
+      if (mesmoCarro(origem.carro, novo)) { esquecerOrigem(); return; }
+      guardarOrigem(y);
+      mostrarSalvo();
     }, 60);
   }
 
@@ -394,21 +467,42 @@ export function iniciarPaginaCarro() {
     const y = chip.dataset.y ? Number(chip.dataset.y) : null;
     const anoAntes = ano;
     if (y === ano) return;
-    desfazer = null;
-    avisar('', false);
+    mexeu = true;
+    if (!origem) avisar('', false);   // some o "Desfeito" de antes; com o que desfazer, o aviso continua
     escolher(y);
-    // "Todos" não mexe no carro salvo; o ano salva (com Desfazer)
+    // "Todos" não mexe no carro salvo (o aviso e o Desfazer continuam à vista); o ano salva (com Desfazer)
     if (y != null) {
       salvar(y, anoAntes);
       requestAnimationFrame(() => setTimeout(() => { if (ano === y) centrar(y, true); }, 0));
-    }
+    } else mostrarSalvo();
   });
 
   // o carro salvo deste modelo, com ano: o ano dele já vem escolhido (e acompanha a troca feita no cabeçalho)
   const doSalvo = (c: MeuCarro | null) => {
     if (eh(c) && c.y && c.y !== ano && chips.some((x) => x.dataset.y === String(c.y))) { centrar(c.y); escolher(c.y); }
   };
-  window.addEventListener(EVENTO, (e) => doSalvo((e as CustomEvent<MeuCarro | null>).detail));
-  doSalvo(lerMeuCarro());
+  window.addEventListener(EVENTO, (e) => {
+    if (gravando) return;   // o aviso desta própria página
+    // o carro mudou por fora (o painel "Meu carro", outra aba pelo bfcache): o Desfazer daqui não vale mais
+    if (origem) esquecerOrigem();
+    doSalvo((e as CustomEvent<MeuCarro | null>).detail);
+  });
+  const salvo = lerMeuCarro();
+  // a volta à página no meio da vista de um ano: a rolagem é nossa (ver verAno)
+  try {
+    const nav = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type;
+    voltarPara = rolagemGuardada(sessionStorage.getItem(CHAVE_ROLAGEM), location.pathname, eh(salvo) ? salvo.y : null, nav);
+    if (voltarPara != null) {
+      history.scrollRestoration = 'manual';
+      for (const ev of ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const) window.addEventListener(ev, () => { mexeu = true; }, { once: true, passive: true });
+    }
+  } catch { voltarPara = null; }
+  doSalvo(salvo);
+  if (voltarPara != null && ano == null) repor();   // o ano salvo não tem ficha nesta página: a vista é a de todos os anos
+  // o Desfazer de antes de recarregar (só se o carro salvo ainda é o que esta página gravou)
+  try {
+    origem = origemGuardada(sessionStorage.getItem(CHAVE_ORIGEM), location.pathname, salvo, eh(salvo));
+    if (origem) mostrarSalvo(); else sessionStorage.removeItem(CHAVE_ORIGEM);
+  } catch { origem = null; }
   bordas();
 }

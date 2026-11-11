@@ -119,6 +119,22 @@ export function salvarMeuCarro(c: MeuCarro | null) {
   window.dispatchEvent(new CustomEvent(EVENTO, { detail: c }));
 }
 
+// Voltar/avançar (bfcache): a página volta como estava quando a pessoa saiu. Se o carro salvo mudou noutra página (a
+// ficha de ano da página do carro, o painel "Meu carro") ou foi esquecido, quem mostra o carro é avisado pelo MESMO
+// evento da casa (também com null). Antes só a abertura da home olhava o `pageshow`: a home voltava com o título e a
+// arte de um carro e o cartão, o cabeçalho e as categorias de outro (revisão 15, P2-6). Vale para toda página.
+const assinatura = (c: MeuCarro | null) => (c ? `${norm(c.b)}|${norm(c.m)}|${c.y ?? ''}` : '');
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  /** o carro que esta página conhece (o que ela leu ao abrir ou o último que o evento disse) */
+  let conhecido = assinatura(lerMeuCarro());
+  window.addEventListener(EVENTO, (e) => { conhecido = assinatura((e as CustomEvent<MeuCarro | null>).detail ?? null); });
+  window.addEventListener('pageshow', (e) => {
+    if (!(e as PageTransitionEvent).persisted) return;
+    const c = lerMeuCarro();
+    if (assinatura(c) !== conhecido) window.dispatchEvent(new CustomEvent(EVENTO, { detail: c }));
+  });
+}
+
 /** Guarda a arte do carro salvo SEM avisar o resto do site (nada muda para quem mostra peças): só a abertura usa,
  *  na próxima visita. Sem carro salvo, ou outro carro salvo, não faz nada. */
 export function lembrarArte(b: string, m: string, a?: string, as?: number[]) {
