@@ -45,6 +45,13 @@ export type Item = {
   dif?: string;
   /** lado e posição que o nome diz (só quando diz; a posição, senão, a do tipo; A = as duas) */
   l?: Lado; pos?: Posicao | 'A';
+  /** o TIPO da peça na busca (memo, sem coluna no índice): as duas primeiras palavras do nome, sem acento e sem hífen
+   *  ("Para-choque" = "parachoque"). É o que diz se a peça é do tipo que a pessoa digitou. */
+  tp?: string[];
+  /** todas as palavras do nome (memo): o que a busca de vários termos ainda pede ("motor vidro": o vidro) */
+  nt?: string[];
+  /** o sistema ("s") por palavra, sem acento e sem hífen (memo, para a família do tipo) */
+  st?: string[];
 };
 export type Filtros = {
   q?: string; marca?: string; modelo?: string; ano?: number; tipo?: string;
@@ -82,6 +89,41 @@ export function palavras(texto: string): string[] {
   return normal(texto).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
 }
 const compacto = (s: string) => palavras(s).join('');
+/** Só letras e números, sem hífen nem espaço ("Para-choque" -> "parachoque"). */
+const cp = (s: string) => s.replace(/[^a-z0-9]/g, '');
+
+/** a e b diferem em uma letra só (trocada, a mais ou a menos). */
+function umaEdicao(a: string, b: string): boolean {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1);
+  const [curta, longa] = a.length < b.length ? [a, b] : [b, a];
+  return curta.slice(i) === longa.slice(i + 1);
+}
+
+/** Uma palavra do estoque e uma palavra digitada são da mesma raiz? (começo em comum de 4 letras, ou o menor dos dois, e
+ *  no máximo 2 letras a menos ("paralelo" não é "paralama"): "lanternas" = "lanterna", "farois" = "farol"; "tras" não acha "traseira" por acaso). */
+export function raizEq(a: string, b: string): boolean {
+  if (a.length < 3 || b.length < 3) return false;
+  // erro de digitação numa palavra longa ("esqurdo" = "esquerdo"): uma letra a mais, a menos ou trocada
+  if (Math.min(a.length, b.length) >= 6 && umaEdicao(a, b)) return true;
+  if (a[0] !== b[0]) return false;
+  const menor = Math.min(a.length, b.length);
+  // palavra curta ("par", "tras") só é igual a ela mesma: "par" não é "paralama"
+  if (menor < 4) return a === b;
+  let n = 0;
+  while (n < a.length && n < b.length && a[n] === b[n]) n++;
+  return n >= 4 && n >= menor - 2;
+}
+
+/** O TIPO digitado: T = as palavras da pessoa (e as formas juntas, "para-choque" = "parachoque"); F = as formas do jeito
+ *  de falar (lib/sinonimos.ts), com as palavras que tiram a peça do caminho do sinônimo (fora). */
+type Alvo = { T: string[]; F: { w: string; fora: string[] }[]; G: string[] };
+/** cabeçalhos que descrevem a peça: a 2ª palavra é o tipo ("Guia para-choque", "Acabamento coluna") */
+const GENERICOS = new Set(['guia', 'suporte', 'moldura', 'acabamento', 'grade', 'tampa', 'maquina', 'motor']);
+/** cabeçalhos de controle (botão, chave, interruptor): a 2ª palavra vale quando a pessoa digitou um gatilho do jeito de falar ("pisca" = o botão pisca) */
+const CONTROLES = new Set(['botao', 'chave', 'interruptor', 'alavanca']);
 
 // letra(s) + número de modelo separados ("xc 60", "s 10", "c 4"): a forma junta também vale
 const parLetraNumero = (a: string, b: string) => /^[a-z]{1,3}$/.test(a) && /^\d{1,3}[a-z]?$/.test(b);
@@ -217,6 +259,10 @@ export class Busca {
   /** lado e posição que a última busca digitou e que estão filtrando a lista ("retrovisor direito": 'D') */
   ladoDaBusca: Lado | undefined = undefined;
   posDaBusca: Posicao | undefined = undefined;
+  /** a busca pediu um lado ou posição que o estoque não tem para o tipo digitado ("sinaleira direita tracker" sem a
+   *  direita): a lista sai vazia e isto diz o que faltou; outrosLados = as peças do outro lado (a dica "tem a esquerda"). */
+  faltou: { lado?: Lado; pos?: Posicao } | null = null;
+  outrosLados: Item[] = [];
   // Fluidez: o índice de texto (MiniSearch, ~5 mil peças) não é montado de uma vez no construtor.
   // Sem texto na busca (catálogo aberto, filtros) ele nem é preciso; prepararIndice() monta aos poucos,
   // em pedaços pequenos entre as tarefas da página; quem precisar antes (this.ms) completa na hora. O índice
@@ -249,6 +295,10 @@ export class Busca {
       if (ms) it.ms = ms;
       if (ys) it.ys = ys;
       if (dif) it.dif = dif;
+      // o tipo da peça (tp): as 2 primeiras palavras do nome; nada novo no busca.json (o "s" já está no índice)
+      it.nt = normal(it.n).split(/\s+/).map(cp).filter(Boolean);
+      it.tp = it.nt.slice(0, 2);
+      it.st = [...normal(it.s).split(/\s+/), ...normal(it.c).split(/\s+/)].map(cp).filter(Boolean);
       return it;
     });
   }
@@ -465,6 +515,57 @@ export class Busca {
     return q.trim().split(/\s+/).filter((w) => w && !tirar(w)).join(' ');
   }
 
+  /** O tipo que a pessoa digitou (o que a peça É): as palavras do texto que não são carro, marca, lado, posição nem vazias,
+   *  e as formas do jeito de falar (formas: o que arvore() acrescentou). Sem tipo digitado (busca só de carro): null. */
+  private alvosDo(texto: string, ent: Entendido, formas: Map<string, string[]>): Alvo | null {
+    const parts = new Set<string>();
+    const T: string[] = [];
+    // "para-choque" digitado com hífen vale junto ("parachoque"), e as partes não valem sozinhas ("para" acharia "parabrisa")
+    for (const bl of normal(texto).split(/\s+/)) {
+      const ps = palavras(bl);
+      if (ps.length > 1 && /-/.test(bl) && ps.every((p) => ent.resto.includes(p) || VAZIAS.has(p))) { T.push(ps.join('')); ps.forEach((p) => parts.add(p)); }
+    }
+    const ok = (w: string) => w.length >= 3 && !/\d/.test(w) && !LADO_Q[w] && !POS_Q[w] && !VAZIAS.has(w);
+    for (const w of ent.resto) if (ok(w) && !parts.has(w)) T.push(w);
+    if (!T.length) return null;
+    const G = T.filter((w) => MAPA_SINONIMOS.has(w));
+    const F: Alvo['F'] = [];
+    for (const w of T) for (const f of formas.get(w) ?? []) if (!T.includes(f) && !F.some((x) => x.w === f)) F.push({ w: f, fora: MAPA_FORA.get(w) ?? [] });
+    return { T, F, G };
+  }
+
+  /** A peça é do tipo digitado? A 1ª palavra do nome é o tipo ("Pestana…", "Lanterna…", "Para-choque…"). A 2ª vale só
+   *  quando a 1ª é um cabeçalho que descreve a peça ("Guia para-choque", "Grade churrasqueira", "Máquina vidro"): nunca no
+   *  "Botão farol milha", "Chave seta farol milha" nem na "Capa espelho retrovisor". A forma do jeito de falar (F: a
+   *  palavra do sinônimo) também vale na 2ª palavra ("pisca" = "Chave seta"), mas não quando a peça diz uma das palavras do
+   *  "fora" ("frente": não a moldura do painel, nem a chave de farol). cabeca = só a 1ª palavra (família de tipo). */
+  private tipoDe(it: Item, a: Alvo, cabeca = false): boolean {
+    const [h = '', d = ''] = it.tp ?? [];
+    const gen = !cabeca && GENERICOS.has(h);
+    const ctl = !cabeca && CONTROLES.has(h);
+    const noun = a.T[0];
+    let ok = raizEq(h, noun) || (gen && raizEq(d, noun)) || (ctl && a.G.includes(noun) && raizEq(d, noun));
+    // a forma do sinônimo vale na 2ª palavra de qualquer peça ("Emblema grade" para a frente); o "fora" tira o resto
+    if (!ok) ok = !cabeca ? false : false;
+    if (!ok) ok = a.F.some((f) => (raizEq(h, f.w) || (!cabeca && raizEq(d, f.w))) && !f.fora.some((fo) => raizEq(h, fo) || raizEq(d, fo)));
+    if (!ok) return false;
+    // os outros termos da busca ("motor vidro": o vidro) têm de estar no nome
+    return a.T.slice(1).every((q) => (it.nt ?? []).some((x) => raizEq(x, q)));
+  }
+
+  /** A família do tipo digitado (as parecidas ficam nela): a peça que tem alguma palavra do tipo no nome, no sistema ("s":
+   *  "Para-lamas") ou no bloco ("c": "Suspensão e Direção" para "suspensão xc60"). Não usa a maioria: a categoria do ML erra
+   *  às vezes (4 "Para-choque" com o sistema "Amortecedores…" não viram a família do para-choque). */
+  private familia(a: Alvo): (it: Item) => boolean {
+    const T = a.T;
+    return (it) => {
+      // as palavras do tipo, todas (a família de "motor vidro" é a do vidro com motor, não a de qualquer motor). O nome
+      // conta só no começo ("Chave seta farol milha" não é da família do farol: o farol é o 3º termo do nome)
+      const xs = [...(it.tp ?? []), ...(it.st ?? [])];
+      return T.every((t) => xs.some((x) => raizEq(x, t)));
+    };
+  }
+
   /** Peças da busca de texto, na ordem de relevância (com as mais próximas quando nenhuma tem todas as palavras).
    *  bonus: o lado/posição digitados que viraram filtro ("amortecedor traseiro"): a peça cujo nome diz a mesma palavra
    *  sobe um pouco ("Amortecedor traseiro" antes de "Amortecedor tampa traseira"). */
@@ -487,6 +588,42 @@ export class Busca {
     if (!r.length && grupos.length) r = busca('AND', true);
     let aproximado = false;
     if (!r.length && grupos.length) { r = busca('OR', true).slice(0, 300); aproximado = r.length > 0; }
+    // o TIPO digitado manda (tipoDe): só conta como achado a peça desse tipo; sem ela, a "parecida" é só da família do tipo
+    // (os blocos onde ele mora), nunca outra peça do mesmo carro ("paralama do Gol" não traz a luz de teto nem o quebra-sol)
+    const alvo = this.alvosDo(chave, ent, formas);
+    if (alvo) {
+      const famOk = this.familia(alvo);
+      const fam = (x: { id: string | number }) => famOk(this.itens[x.id as number]);
+      const doDig = (k: number) => ent.carros.some((c) => doCarro(this.itens[k], c));
+      // as peças do carro digitado que são da família, como resultados (score 1: a ordem delas é a do grupo)
+      const dele = (exclui: Set<number>) => this.itens
+        .filter((x) => ent.carros.length && doDig(x.k) && famOk(x) && !exclui.has(x.k))
+        .map((x): SearchResult => ({ id: x.k, score: 1, terms: [], queryTerms: [], match: {} } as unknown as SearchResult));
+      // busca de SISTEMA ("suspensão xc60", "motor"): nenhuma peça tem o tipo como nome, então vale a família inteira (o
+      // carro primeiro); não é "parecida" de nada
+      // (só quando o termo é o nome de um BLOCO do estoque, o "Suspensão e Direção"; "pisca" não é, a "chave seta" é o tipo)
+      const sistema = !this.itens.some((it) => this.tipoDe(it, alvo, true)) &&
+        this.itens.some((it) => (it.c ? normal(it.c).split(/\s+/).map(cp) : []).some((x) => alvo.T.some((t) => raizEq(x, t))));
+      if (sistema) {
+        const de = dele(new Set());
+        r = [...de, ...r.filter((x) => fam(x) && !de.some((d) => d.id === x.id))];
+        aproximado = false;
+      } else {
+        const exato = r.filter((x) => this.tipoDe(this.itens[x.id as number], alvo));
+        if (exato.length && (!ent.carros.length || exato.some((x) => doDig(x.id as number)))) {
+          r = exato;
+        } else if (ent.carros.length) {
+          // carro digitado sem peça desse tipo para ele: as parecidas DELE primeiro (do estoque inteiro, não só do que a
+          // busca trouxe), depois as outras do tipo (com o aviso)
+          const de = dele(new Set(exato.map((x) => x.id as number)));
+          r = [...exato, ...de, ...r.filter((x) => !exato.includes(x) && !de.some((d) => d.id === x.id) && fam(x))];
+          aproximado = true;
+        } else {
+          r = r.filter(fam);
+          aproximado = true;
+        }
+      }
+    }
 
     // o nome da peça começa pela palavra buscada (ou uma forma dela: "sinaleira" -> "Lanterna"): sobe
     // ("farol" -> "Farol esquerdo" antes de "Interruptor farol")
@@ -497,12 +634,16 @@ export class Busca {
     for (const x of r) {
       const it = this.itens[x.id as number];
       const nome = normal(it.n);
-      const comeca = principais.some((w) => nome.startsWith(w));
+      // sem hífen nem espaço: "parachoque e-pace" acha o "Para-choque dianteiro" como começo do nome
+      const nomeC = cp(nome);
+      const comeca = principais.some((w) => nomeC.startsWith(cp(w)));
       const ws = nome.split(/[^a-z0-9]+/);
       const diz = bonus.length > 0 && ws.some((w) => bonus.includes(w));
       // o nome diz o que foi digitado, do jeito que foi digitado (não só um sinônimo): sobe um pouco
       const exato = digitadas.length > 0 && digitadas.every((d) => ws.some((w) => w.startsWith(d)));
-      nota.set(it.k, x.score * (comeca ? 1.6 : 1) * (diz ? 1.25 : 1) * (exato ? 1.5 : 1));
+      // "completo" é a peça inteira ("Para-choque dianteiro completo" antes do "Para-choque traseiro" para o para-choque)
+      const inteiro = comeca && /\bcomplet[oa]\b/.test(nome) ? 1.25 : 1;
+      nota.set(it.k, x.score * (comeca ? 1.6 : 1) * (diz ? 1.25 : 1) * (exato ? 1.5 : 1) * inteiro);
     }
     let base = r.map((x) => this.itens[x.id as number]).sort((a, b) => nota.get(b.k)! - nota.get(a.k)!);
     // Parecidas ("farol compass" sem farol do Compass): o NOME da peça é o que diz o que a pessoa procura. As categorias
@@ -520,7 +661,12 @@ export class Busca {
       const nomeTem = new Set(r.filter((x) => Object.values(x.match).some((f) => f.includes('n'))).map((x) => x.id as number));
       daPalavra = (it) => nomeTem.has(it.k) || fortes.has(it.c);
     }
-    const frente = (xs: Item[]) => (aproximado ? [...xs.filter(daPalavra), ...xs.filter((x) => !daPalavra(x))] : xs);
+    // dentro de cada grupo (carro, marca, outras): as peças do TIPO digitado antes das parecidas da família
+    const doTipo = (it: Item) => (alvo ? this.tipoDe(it, alvo) : false);
+    const frente = (xs: Item[]) => {
+      const ys = aproximado ? [...xs.filter(daPalavra), ...xs.filter((x) => !daPalavra(x))] : xs;
+      return alvo ? [...ys.filter(doTipo), ...ys.filter((x) => !doTipo(x))] : ys;
+    };
     // o carro digitado primeiro; depois a marca digitada; depois o resto (a ordem dentro de cada bloco fica)
     if (ent.carros.length || ent.marcas.length) {
       const doCarroDig: Item[] = [], daMarca: Item[] = [], outras: Item[] = [];
@@ -554,7 +700,7 @@ export class Busca {
    *  volta ao jeito antigo (as palavras como texto, e as parecidas): nunca pior que antes. derivado diz qual valeu. */
   private filtrar(f: Filtros, como: ComoFiltrar = {}): {
     itens: Item[]; aproximado: boolean; carros: Carro[]; comTexto: boolean; codigo: string; derivado: boolean;
-    ladoQ?: Lado; posQ?: Posicao;
+    ladoQ?: Lado; posQ?: Posicao; faltou?: { lado?: Lado; pos?: Posicao }; outros: Item[];
   } {
     const sep = this.separar((f.q || '').trim());
     const o = f.ordem || 'rel';
@@ -571,7 +717,7 @@ export class Busca {
       const posQ = derivado && !f.pos ? sep.pos : undefined;
       const lado = como.semLado ? undefined : f.lado ?? ladoQ;
       const pos = como.semPos ? undefined : f.pos ?? posQ;
-      const itens = r.base.filter((it) =>
+      const passa = (it: Item, lado?: Lado, pos?: Posicao) =>
         (!f.marca || it.b === f.marca) &&
         (!f.modelo || serveNoModelo(it, f.modelo)) &&
         (!ano || dentro(ano, f.modelo ? anosNoModelo(it, f.modelo) : it.y)) &&
@@ -580,12 +726,18 @@ export class Busca {
         (!faixa || (it.p >= faixa[2] && it.p < faixa[3])) &&
         (!f.frete || it.f) &&
         (!lado || it.l === lado) &&
-        (!pos || it.pos === pos || it.pos === 'A'));
-      return { itens, aproximado: r.aproximado, carros: r.carros, comTexto: !!texto, codigo: r.codigo ?? '', derivado, ladoQ, posQ };
+        (!pos || it.pos === pos || it.pos === 'A');
+      const itens = r.base.filter((it) => passa(it, lado, pos));
+      // o carro digitado sem nenhuma peça na lista (ex.: a maçaneta do Gol só existe do lado direito): é parecida, com aviso
+      const aprox = r.aproximado || (r.carros.length > 0 && !itens.some((it) => r.carros.some((c) => doCarro(it, c))));
+      // lado/posição digitados que o estoque não tem para este tipo: a lista sai vazia e diz o que faltou (sem trocar por
+      // outro lado do mesmo tipo em silêncio); as do outro lado vão à parte, para a dica "tem a esquerda"
+      const faltou = derivado && !itens.length && (ladoQ || posQ) ? { lado: ladoQ, pos: posQ } : undefined;
+      const outros = faltou ? r.base.filter((it) => passa(it, ladoQ ? (ladoQ === 'E' ? 'D' : 'E') : lado, posQ ? (posQ === 'D' ? 'T' : 'D') : pos)).slice(0, 6) : [];
+      return { itens, aproximado: aprox, carros: r.carros, comTexto: !!texto, codigo: r.codigo ?? '', derivado, ladoQ, posQ, faltou, outros };
     };
     if (!tem || como.derivado === false) return rodar(false);
-    const r = rodar(true);
-    return r.itens.length || como.derivado === true ? r : rodar(false);
+    return rodar(true);
   }
 
   procurar(f: Filtros): Item[] {
@@ -599,6 +751,8 @@ export class Busca {
     this.carrosDaBusca = r.carros;
     this.ladoDaBusca = r.ladoQ;
     this.posDaBusca = r.posQ;
+    this.faltou = r.faltou ?? null;
+    this.outrosLados = r.outros;
     this.codigoDaBusca = r.codigo && out.some((it) => codigosDa(it).includes(r.codigo)) ? r.codigo : '';
     this.nDoCarro = 0;
     if (r.aproximado && o === 'rel' && r.carros.length) {
@@ -660,19 +814,15 @@ export class Busca {
     const r = this.porTexto(texto);
     if (r.codigo) return lista.some((it) => codigosDa(it).includes(r.codigo!));
     const ent = this.entender(texto);
-    const principal = ent.resto.find((w) => w.length >= 3 && !/\d/.test(w));
-    if (!principal || ent.familia) return true;
-    // a palavra principal ou uma forma dela ("sinaleira" -> lanterna, "faróis" -> farol)
-    const formas = [principal, ...(this.arvore(texto).formas.get(principal) ?? [])];
-    const raiz = (a: string, b: string) => {
-      let n = 0;
-      while (n < a.length && n < b.length && a[n] === b[n]) n++;
-      const menor = Math.min(a.length, b.length);
-      return n >= Math.min(4, menor) && n >= menor - 3;
-    };
+    if (ent.familia) return true;
+    // o mesmo TIPO da busca (tipoDe): a lista só "bate" com uma peça desse tipo (no carro-alvo, se houver); busca de sistema
+    // ("suspensão xc60") bate pelo bloco
+    const tipo = this.alvosDo(texto, ent, this.arvore(texto).formas);
+    if (!tipo) return true;
+    // busca de sistema ("suspensão xc60"): nenhuma peça tem o tipo no nome, então a lista é da família
+    if (!this.itens.some((it) => this.tipoDe(it, tipo, true))) return true;
     return lista.some((it) => {
-      const p0 = palavras(it.n)[0] || '';
-      if (!formas.some((w) => raiz(p0, w))) return false;
+      if (!this.tipoDe(it, tipo)) return false;
       if (!alvo) return true;
       if (!doCarro(it, alvo)) return false;
       const y = anosNoModelo(it, alvo.m);
