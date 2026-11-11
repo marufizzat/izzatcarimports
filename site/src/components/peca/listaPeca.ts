@@ -126,8 +126,8 @@ export function ligarVaiJunto(raiz: HTMLElement) {
     const img = li.querySelector('img');
     const item: ItemLista = {
       id, slug: /\/peca\/([^/]+)\.html$/.exec(href)?.[1] ?? '', nome, carro,
-      // <small>2018–2024 · Cód. <code>X</code></small>
-      anos: anosDoCartao((li.querySelector('small')?.firstChild?.textContent || '').split('·')[0]),
+      // <small>2018–2024</small><small>Cód. <code>X</code></small> (o dos anos é o <small> sem o <code>)
+      anos: anosDoCartao([...li.querySelectorAll('small')].find((s) => !s.querySelector('code'))?.textContent || ''),
       cod: li.querySelector('code')?.textContent?.trim() || '',
       preco: precoDoTexto(li.querySelector('.num')?.textContent || ''),
       capa: img ? capaPequenaDe(img.getAttribute('src') || '', id) : '',

@@ -20,11 +20,13 @@ const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0
         <p class="vj-sub">Do mesmo {carro}{anos && ` (${anos})`}: peças que costumam ser trocadas com {com}. Junte na sua lista e peça tudo de uma vez.</p>
       </div>
       <ul class="vj-lista" data-vj-raiz>
-        {/* HTML curto (cada byte vai em 4 mil páginas): nome em <b>, anos e código em <small>, o código em <code> */}
+        {/* HTML curto (cada byte vai em 4 mil páginas): nome em <b>, os anos num <small> e o código noutro, numa linha só dele
+            e sempre inteiro (é o dado que decide para quem conserta: revisão 12, P2.3) */}
         {pecas.map((x) => {
           const cod = codigoPeca(x.o);
+          const anosX = anosCartao(x.y);
           return (
-            <li><a href={`/peca/${x.slug}.html`}><img src={capaPequena(capa(x, 'V'))} alt="" width="72" height="72" loading="lazy" /><b>{x.n}</b><small>{anosCartao(x.y)}{cod && <> · Cód. <code>{cod}</code></>}</small><span class="num">R$ {brl(x.p)}</span></a></li>
+            <li><a href={`/peca/${x.slug}.html`}><img src={capaPequena(capa(x, 'V'))} alt="" width="72" height="72" loading="lazy" /><b>{x.n}</b>{anosX && <small>{anosX}</small>}{cod && <small>Cód. <code>{cod}</code></small>}<span class="num">R$ {brl(x.p)}</span></a></li>
           );
         })}
       </ul>
@@ -44,15 +46,16 @@ const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0
      quebra o HTML) */
   .vj .vj-lista > li { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 8px; min-height: 96px;
     padding: 10px 12px 10px 10px; border-radius: 16px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s; }
-  .vj li > a { display: grid; grid-template-columns: 72px minmax(0, 1fr); grid-template-rows: auto auto auto; column-gap: 12px; align-items: start; align-content: center; min-width: 0; }
+  .vj li > a { display: grid; grid-template-columns: 72px minmax(0, 1fr); column-gap: 12px; align-items: start; align-content: center; min-width: 0; }
   /* o cartão inteiro é o alvo do link (a área de fora do botão) */
   .vj li > a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
   .vj li > a:focus-visible { outline: none; box-shadow: none; }
   .vj li:has(> a:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
-  .vj li img { grid-row: 1 / 4; width: 72px; height: 72px; border-radius: 12px; object-fit: cover; background: linear-gradient(#f4f3f0, #e7e5e1); }
+  .vj li img { grid-row: 1 / 5; width: 72px; height: 72px; border-radius: 12px; object-fit: cover; background: linear-gradient(#f4f3f0, #e7e5e1); }
   .vj li b { margin-top: 1px; font-size: 15px; font-weight: 650; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
-  .vj li small { margin-top: 3px; font-size: 12.5px; line-height: 1.3; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* anos e código: cada um na sua linha; o código nunca é cortado (quebra se for maior que a coluna) */
+  .vj li small { margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--ink-3); overflow-wrap: anywhere; }
   .vj li code { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .02em; color: var(--ink-2); }
   .vj li .num { align-self: end; margin-top: 4px; font-stretch: 86%; font-weight: 820; font-size: 18px; line-height: 1.1; color: var(--ink); }
   @media (hover: hover) {

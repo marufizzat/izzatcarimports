@@ -129,7 +129,8 @@ import { MAX_LISTA } from '../lib/lista';
   @media (max-width: 459px) { .lst .lst-anos { display: block; } .lst .lst-anos::before { content: none; } }
   .lst .lst-nome { font-size: 16px; font-weight: 700; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; text-wrap: pretty; }
   .lst a.lst-nome:hover { text-decoration: underline; text-underline-offset: 3px; }
-  .lst .lst-cod { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* o código nunca é cortado ("Cód. 11…" não serve para quem conserta): quebra se não couber */
+  .lst .lst-cod { font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
   .lst .lst-cod .oem { font-size: 12px; color: var(--ink-2); }
   .lst .lst-precos { grid-area: precos; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
   .lst .lst-pw { font-stretch: 86%; font-weight: 850; font-size: 21px; line-height: 1.05; color: var(--ink); }
