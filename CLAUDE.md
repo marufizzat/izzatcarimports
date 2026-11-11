@@ -178,7 +178,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    "Copiar o link da lista" (`/lista.html?i=MLB1,MLB2`: quem abre vê a mesma lista, só para ver e pedir, e "Guardar na
    minha lista" junta sem apagar a dele); preço e disponibilidade conferidos no `/dados/ativas.json` (o leve: id, preço,
    capa; peça fora dele = "Já vendida", fora do total; sem rede, ou o arquivo vazio, ficam os valores guardados com um
-   aviso: nunca "tudo vendido"). O índice inteiro (`busca.json`, e a busca com o MiniSearch, sob demanda) só na lista de
+   aviso: nunca "tudo vendido"). Voltar/avançar (bfcache): o `pageshow` com `persisted` dispara o mesmo aviso de "mudou noutra
+   aba" (`ouvirOutrasAbas`, `lib/lista.ts`): os cartões e o número do cabeçalho acompanham a lista. O índice inteiro (`busca.json`, e a busca com o MiniSearch, sob demanda) só na lista de
    um link (precisa de nome, carro, anos e código), quando falta um dado que o leve não tem (nome, endereço, a foto do ML
    de peça sem capa de estúdio) ou UMA vez na lista de antes da rodada 13 (`izzatcar.lista.conferida`, marcada ao começar
    uma lista nova: o nome e o carro guardados já são os de agora). A capa só é pedida depois de saber se a peça existe (a
