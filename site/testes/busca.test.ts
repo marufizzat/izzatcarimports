@@ -136,18 +136,24 @@ describe('relevancia: o modelo exato vem primeiro', () => {
     const r = b.procurar({ q: 'farol compass' });
     const exatas = r.filter((x) => serveNoModelo(x, 'Compass') && /farol/.test(normal(x.t)));
     if (exatas.length) return ctx.skip(); // chegou farol do Compass: o caso não vale hoje
-    // rodada 14 (cliente oculto, atrito 6): a parecida é da FAMÍLIA do farol (luzes e faróis), nunca qualquer peça do carro
-    expect(b.aproximado).toBe(true);
+    const daFamilia = (x: Item) => /farol|farois|lanterna/.test(`${normal(x.n)} ${normal(x.c)} ${normal(x.s)}`);
+    if (!b.itens.some(daFamilia)) return ctx.skip(); // estoque sem nenhuma luz: não há família para mostrar
+    // rodada 14 (cliente oculto, atrito 6): a parecida é da FAMÍLIA do farol (luzes e faróis), nunca qualquer peça do carro.
+    // Com aviso: "parecidas" enquanto houver alguma peça chamada "Farol…" no estoque; vendida a última, a palavra é só o
+    // bloco "Faróis e Lanternas" e a tela diz "peças ligadas a…" (citam). Nunca como achado
+    const aviso = b.aproximado || b.citam;
+    expect(aviso).toBe(true);
+    expect(b.nExatas).toBe(0);
     expect(r.length).toBeGreaterThan(0);
     // (o que só o anúncio cita pode vir, mas no fim: nunca antes de uma da família)
-    const daFamilia = (x: Item) => /farol|farois|lanterna/.test(`${normal(x.n)} ${normal(x.c)} ${normal(x.s)}`);
     const ultimaDaFamilia = r.map(daFamilia).lastIndexOf(true);
     expect(daFamilia(r[0])).toBe(true);
     expect(r.slice(0, ultimaDaFamilia + 1).every(daFamilia)).toBe(true);
     const primeiroFora = r.findIndex((x) => !serveNoModelo(x, 'Compass'));
     if (primeiroFora > 0) expect(r.slice(0, primeiroFora).every((x) => serveNoModelo(x, 'Compass'))).toBe(true);
     const s = b.sugestoes('farol compass');
-    expect(s.aproximado).toBe(true);
+    expect(s.aproximado || s.citam).toBe(true);
+    expect(s.nExatas).toBe(0);
     expect(s.total).toBe(r.length);
   });
 
@@ -329,7 +335,9 @@ describe('termos do índice', () => {
     const luzCompass = compass.some((i) => i.c === 'Faróis e Lanternas');
     if (farolCompass || !luzCompass) return ctx.skip();
     const r = b.procurar({ q: 'farol compass' });
-    expect(b.aproximado).toBe(true);
+    // (com aviso: parecidas, ou "ligadas a…" quando o estoque não tem mais nenhuma peça chamada "Farol…")
+    expect(b.aproximado || b.citam).toBe(true);
+    expect(b.nExatas).toBe(0);
     expect(serveNoModelo(r[0], 'Compass')).toBe(true);
     // do bloco das luzes, ou de um tipo que diz "farol" (o nome do bloco não é o que importa: a família é)
     expect(`${normal(r[0].c)} ${normal(r[0].s)}`).toMatch(/farol|farois/);

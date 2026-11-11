@@ -12,6 +12,7 @@
 // Uso (na pasta site/):
 //   node scripts/estoque-perturbado.mjs                    30 sementes
 //   node scripts/estoque-perturbado.mjs --sementes 5 --de 12   as sementes 12 a 16
+//   node scripts/estoque-perturbado.mjs --sementes 5 --tirar 40-80   estoque bem menor (tira de 40% a 80%; o padrão é 2-20)
 //   node scripts/estoque-perturbado.mjs --hoje             só o estoque de agora (tira o que saiu do /dados/ativas.json
 //                                                          do site no ar; --ativas arquivo.json para um arquivo salvo)
 //   node scripts/estoque-perturbado.mjs --hoje --novas busca-do-ar.json --so busca   e acrescenta ao busca.json as peças
@@ -45,6 +46,7 @@ const tem = (nome) => args.includes(`--${nome}`);
 const N = Number(op('sementes', 30));
 const DE = Number(op('de', 1));
 const SO = op('so', '');
+const [TIRAR_MIN, TIRAR_MAX] = op('tirar', '2-20').split('-').map((x) => Number(x) / 100);
 
 /** Sorteio com semente (mulberry32): o mesmo número, o mesmo estoque. */
 function sorteio(semente) {
@@ -151,7 +153,7 @@ function fichas() {
 /** O estoque da semente: tira 2% a 20% ao acaso e, nas sementes múltiplas de 3, um tipo inteiro de um carro. */
 function perturbar(bruto, ficha, semente) {
   const rnd = sorteio(semente);
-  const fracao = 0.02 + rnd() * 0.18;
+  const fracao = TIRAR_MIN + rnd() * (TIRAR_MAX - TIRAR_MIN);
   const fora = new Set();
   for (const p of bruto.products) if (rnd() < fracao) fora.add(p.id);
   let evento = '';
