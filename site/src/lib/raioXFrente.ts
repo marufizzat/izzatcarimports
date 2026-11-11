@@ -11,12 +11,8 @@
 // Sem node:fs e sem valores de lib/busca.ts: roda no build, no teste e no navegador.
 import type { Filtros, Lado, Posicao } from './busca';
 
-export const ARTE_FRENTE = { src: '/arte/v2/raio-x-frente.webp', w: 1536, h: 1024 } as const;
-/** As variantes menores da arte (scripts/variantes-imagens.mjs): a de 320 é a miniatura do botão "Ver a frente por dentro". */
-export const ARTE_FRENTE_320 = '/arte/v2/raio-x-frente-320.webp';
-export const ARTE_FRENTE_900 = '/arte/v2/raio-x-frente-900.webp';
-/** A zona do Raio-x que tem a vista por dentro (o piloto: só a frente). */
-export const ZONA_PILOTO = 'frente';
+// a arte e a zona do piloto: lib/raioXPiloto.ts (o Raio-x usa só elas, sem puxar esta tabela)
+export { ARTE_FRENTE, ARTE_FRENTE_320, ARTE_FRENTE_900, ZONA_PILOTO } from './raioXPiloto';
 
 export type PontoQuente = {
   k: string;
@@ -109,6 +105,6 @@ export const filtrosDoQuente = (p: PontoQuente, carro: Partial<Pick<Filtros, 'ma
 
 /** Quantas peças cada ponto quente tem, pela busca do catálogo (`procurar` = Busca.procurar): { 'farol-esquerdo': 4 }.
  *  Ponto de pátio (sem tipo): 0. */
-export function contarQuentes(procurar: (f: Filtros) => { id: string }[], carro: Partial<Pick<Filtros, 'marca' | 'modelo' | 'ano'>> = {}): Record<string, number> {
-  return Object.fromEntries(PONTOS_QUENTES.map((p) => [p.k, p.tipo ? procurar(filtrosDoQuente(p, carro)).length : 0]));
+export function contarQuentes(procurar: (f: Filtros) => { id: string }[], carro: Partial<Pick<Filtros, 'marca' | 'modelo' | 'ano'>> = {}, pontos: PontoQuente[] = PONTOS_QUENTES): Record<string, number> {
+  return Object.fromEntries(pontos.map((p) => [p.k, p.tipo ? procurar(filtrosDoQuente(p, carro)).length : 0]));
 }

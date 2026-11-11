@@ -148,7 +148,26 @@ export function ligarBatida(ctx: Ctx) {
         await kitDe(p.k);
         await pausa();
       }
+      if (minha === vez && ligado && !ativo) aquecerPainel();
     } catch { /* o toque no ponto mostra o erro e o "Tentar de novo" */ }
+  }
+  /** Com as contas prontas e ninguém escolhido ainda: uma lista é montada fora da vista e desfeita (o estilo e as
+   *  medidas das classes novas ficam calculados: o 1º toque num ponto não paga a 1ª vez). */
+  function aquecerPainel() {
+    const k = PONTOS[1].k;
+    const kit = kits.get(k);
+    if (!kit) return;
+    const molde = conteudo.cloneNode(false) as HTMLElement;
+    molde.removeAttribute('hidden');
+    molde.removeAttribute('data-rx-conteudo');
+    molde.classList.add('rx-molde');
+    molde.setAttribute('aria-hidden', 'true');
+    molde.inert = true;
+    // sem os ids (a lista de verdade usa os mesmos) e sem baixar foto nenhuma
+    molde.innerHTML = htmlPainel(k, kit).replace(/ (id|for|aria-describedby)="[^"]*"/g, '').replace(/<img [^>]*>/g, '');
+    raiz.appendChild(molde);
+    void molde.offsetHeight;
+    requestAnimationFrame(() => requestAnimationFrame(() => molde.remove()));
   }
 
   // ---- o painel ----
@@ -209,7 +228,7 @@ export function ligarBatida(ctx: Ctx) {
     guardar.disabled = !itens.length;
   }
 
-  function mostrarPainel(k: string, kit: LinhaP[], focar: boolean) {
+  function htmlPainel(k: string, kit: LinhaP[]): string {
     const p = ponto(k);
     const e = estados.get(k)!;
     const tem = kit.filter((l) => l.n);
@@ -249,11 +268,14 @@ export function ligarBatida(ctx: Ctx) {
       + `<div class="rxb-pe"><button type="button" class="botao botao-linha rxb-guardar">Guardar na lista</button>`
       + `<p class="rxb-status" role="status" aria-live="polite"></p>`
       + `<p class="rxb-honesto">Peça usada: quando vende, acabou. A gente confere na peça antes de você comprar.</p></div></div>`;
+    return html;
+  }
+  function mostrarPainel(k: string, kit: LinhaP[], focar: boolean) {
     dica.hidden = true;
     conteudo.hidden = false;
     painel.classList.add('aberto');
-    conteudo.innerHTML = html;
-    pintarPe(k, kit, e, false);
+    conteudo.innerHTML = htmlPainel(k, kit);
+    pintarPe(k, kit, estados.get(k)!, false);
     if (focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
   }
 
@@ -308,8 +330,12 @@ export function ligarBatida(ctx: Ctx) {
     if (igual) { if (como.focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true }); return; }
     const minha = vez;
     const pronto = kits.get(k);
-    if (pronto) mostrarPainel(k, pronto, !!como.focar);
-    else {
+    if (pronto) {
+      // a parte acende já; a lista entra na tarefa seguinte, depois da pintura (duas tarefas curtas em vez de uma longa)
+      await new Promise<void>((ok) => requestAnimationFrame(() => setTimeout(ok, 0)));
+      if (ativo !== k || minha !== vez || !ligado) return;
+      mostrarPainel(k, pronto, !!como.focar);
+    } else {
       esqueleto(k);
       if (como.focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
       try {

@@ -152,8 +152,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel,
   } from '../../lib/raioX';
   import { linkAvisoParte, linkProcuraParte } from '../../lib/aviso';
-  import { carroSalvoTxt } from '../../lib/whats';
-  import { ZONA_PILOTO, ARTE_FRENTE_320 } from '../../lib/raioXFrente';
+  import { ZONA_PILOTO, ARTE_FRENTE_320 } from '../../lib/raioXPiloto';
   import type { Filtros, Indice, Item } from '../../lib/busca';
   import type { Batida, CarroDaVez } from './raioXBatida';
   import type { PorDentro } from './raioXPorDentro';
@@ -482,7 +481,9 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     const doCarroDe = (f: CarroFiltro) => (!f.modelo ? '' : `${home ? 'do seu' : 'do'} ${f.modelo}${f.ano ? ` ${f.ano}` : ''}`);
     /** O carro nas mensagens: o salvo (home; na página do carro, se é o mesmo) ou o da página, sem o ano. */
     const carroTxt = (): { nome: string; meu: boolean } => {
-      if (home) return { nome: carro ? carroSalvoTxt(carro) : '', meu: true };
+      // salvo sem ano: o ano em branco para a pessoa escrever (o mesmo texto de carroSalvoTxt, lib/whats.ts, que este
+      // script não importa para não pesar em toda visita)
+      if (home) return { nome: !carro ? '' : carro.y ? nomeCarro(carro) : `${carro.b} ${carro.m}, ano ____`, meu: true };
       const s = lerMeuCarro();
       return s && s.b === raiz.dataset.b && s.m === raiz.dataset.m && s.y
         ? { nome: nomeCarro(s), meu: true } : { nome: `${raiz.dataset.b} ${raiz.dataset.m}`, meu: false };

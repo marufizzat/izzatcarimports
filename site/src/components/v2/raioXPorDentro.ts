@@ -35,6 +35,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const pct = (v: number, t: number) => `${((v / t) * 100).toFixed(2)}%`;
 const SETA = '<svg class="rxf-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 const VOLTA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>';
+const pausa = () => (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler?.yield?.() ?? new Promise<void>((ok) => setTimeout(ok, 0));
 const calmo = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('leve');
 
 let estilo = false;
@@ -191,7 +192,14 @@ export function ligarPorDentro(ctx: CtxDentro) {
       if (c.procurar && c.filtro.modelo) {
         filtro = c.filtro;
         doCarro = ctx.doCarro(filtro);
-        contas = contarQuentes(c.procurar, filtro);
+        // uma peça por vez, devolvendo a vez ao navegador (15 buscas de uma vez davam uma tarefa de ~60 ms com CPU 6×)
+        const n: Record<string, number> = {};
+        for (const p of PONTOS_QUENTES) {
+          Object.assign(n, contarQuentes(c.procurar, filtro, [p]));
+          await pausa();
+          if (minha !== vez) return;
+        }
+        contas = n;
       } else {
         filtro = {};
         doCarro = '';

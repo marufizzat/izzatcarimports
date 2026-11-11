@@ -247,7 +247,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      `/carros/<k>.html#raio-x=<zona>` (carro sem Raio-x na página: `/#raio-x=<zona>`). A zona é a do painel
      (`zonasDaPeca` em `lib/raioX.ts`, a mesma regra da busca; `zonaDaPecaId` em `lib/raioXDados.ts`); peça sem zona ou
      em duas zonas (pos `A`) não mostra o bloco. HTML parado; estilo no arquivo com cache.
-   - **"A frente por dentro"** (PILOTO, só a zona Frente; `v2/raioXPorDentro.ts` + `.css`, tabela em `lib/raioXFrente.ts`):
+   - **"A frente por dentro"** (PILOTO, só a zona Frente; `v2/raioXPorDentro.ts` + `.css`, tabela em `lib/raioXFrente.ts`;
+     o Raio-x só importa `lib/raioXPiloto.ts`, para a tabela não entrar no script de toda visita):
      o botão no painel da Frente troca a arte pela vista explodida (`public/arte/v2/raio-x-frente.webp`, variantes
      320/900 pelo `variantes-imagens.mjs`) no MESMO palco, com View Transition onde existe. Cada peça é um link com a
      FORMA dela (polígonos medidos na arte; o farol e o para-lama à direita de quem olha são os ESQUERDOS do carro), com
