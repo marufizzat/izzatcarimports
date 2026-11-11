@@ -519,9 +519,10 @@ def _girar(peca, graus):
     return g.crop(caixa) if caixa else g
 
 
-def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=False):
+def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=False, cor=None):
     """Peça recortada (RGBA) -> capa LADO_V2 x LADO_V2, enquadrada pela REGRA (SEM logo; ver com_logo).
-    Devolve (capa, cortada) como compor()."""
+    Devolve (capa, cortada) como compor(). cor = função (medida, guarda) -> (modo, motivo, conferir, prova) que decide
+    a correção do azul da luz (decisor_cor); None = sem correção (como antes). O que foi feito vai em info["cor"]."""
     import numpy as np
     from PIL import Image, ImageDraw, ImageFilter
     recorte, tirou = limpar_mascara(recorte, checar_cantos, cantos_baixo=checar_cantos, confiar=confiar)
@@ -561,6 +562,11 @@ def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=Fal
     if info is not None:
         info.update(escala=round(s, 3), x=x, y=y, w=nw, h=nh, alongamento=round(E, 1), haste=E >= REGRA["HASTE"],
                     pedacos=pedacos_grandes(recorte.split()[3]), cortes=cortes, lado=L)
+    peca_sem_cor = peca
+    if cor is not None:                           # tom azul da luz na peça: só os pixels da peça (alfa > 0) mudam
+        peca, rc = aplicar_cor(peca, cor, foto, alfa)
+        if info is not None and rc:
+            info["cor"] = rc
     tela = _fundo_v2(L).copy().convert("RGBA")
     escuro = Image.new("RGBA", (L, L), (38, 34, 30, 255))
     a = peca.split()[3]
@@ -577,8 +583,346 @@ def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=Fal
     amb = amb.filter(ImageFilter.GaussianBlur(max(14, nw * 0.045)))
     tela = Image.composite(escuro, tela, amb)
     tela = Image.composite(escuro, tela, contato)
+    if info is not None and peca is not peca_sem_cor and os.getenv("ESTUDIO_COR_PROVA"):
+        sem = tela.copy()                         # prova: a mesma capa sem a correção, e onde a peça está
+        sem.alpha_composite(peca_sem_cor, (x, y))
+        info["_sem_cor"] = sem.convert("RGB")
+        m = Image.new("L", (L, L), 0)
+        m.paste(a, (x, y))
+        info["_alfa"] = m
     tela.alpha_composite(peca, (x, y))
     return tela.convert("RGB"), cortada
+
+
+# ---- COR: o tom AZUL da luz na peça (nov/2026) ----------------------------------------------------------------------
+# As fotos do vendedor saem com luz azulada: o fundo das fotos sem edição tem B−R de +5 a +40 e as partes ESCURAS da
+# peça preta ficam azul-marinho (B−R 20 a 90). Na foto, o olho compensa pelo fundo azulado; na capa, sobre o estúdio
+# neutro, a peça preta parece AZUL. O balanço de branco pelo fundo (balanco()) não resolve: o azul está nas sombras
+# (cresce quanto mais escuro), não na luz inteira. Medida em todas as capas (nov/2026): 1.171 de 5.312 automáticas com
+# B−R médio >= 20 nas partes escuras da peça (lum < 95).
+# O que a evidência mostrou (77 peças, todas as fotos de cada anúncio, ver CLAUDE.md): pelos pixels NÃO dá para separar
+# a peça preta sob luz azul da peça azul-marinho de verdade (a alavanca "preta" do New Fiesta tem os mesmos números da
+# portinhola pintada de azul do BMW X3), e a ficha "Cor: Preto" é o padrão do vendedor (90% das peças) — a portinhola
+# azul diz "Preto". Por isso a decisão é em camadas (decidir_cor):
+#   manter ........ ajuste `cor: "manter"`; palavra de azul no título/nome/ficha (trava); peça PINTADA da cor do carro
+#                   (lataria: dobradiça, portinhola, para-lama, retrovisor externo...); ou azul FORTE também nos CLAROS
+#                   da peça acima do tom do fundo da própria foto (tinta/plástico azul: Kicks, portinhola BMW). As duas
+#                   últimas vão para o _revisar.json como "cor a conferir". Azul moderado nos claros: só o excesso.
+#   neutra ........ ajuste `cor: "neutra"`, ou as OUTRAS fotos do anúncio mostram a peça neutra (1º quartil do B−R das
+#                   partes escuras <= PROVA, em >= PROVA_MIN fotos da peça; classes de fotos-ml-caixas.json). O título que
+#                   diz preto/cinza/prata só vai anotado no motivo (sozinho não basta: a portinhola azul diz "Preto").
+#   conservadora .. azulada sem evidência para nenhum lado: tira só o EXCESSO (deixa as partes escuras em ~ALVO_CONS de
+#                   B−R) e entra no _revisar.json como "cor a conferir".
+# A correção (corrigir_azul) muda só o CROMA e só para o lado do azul: a luminância de cada pixel fica (riscos e
+# granulado intactos), nada passa do neutro (cromado e metal nunca amarelam), vermelho/laranja/amarelo/verde não são
+# tocados (o croma deles não aponta para o azul), o claro (cromado, brilho, etiqueta) fica, e o azul muito mais forte que
+# o típico da peça naquela luminância (fio, conector, ícone azul) ou saturado demais para ser luz é poupado. Mexe só nos
+# pixels da peça (alfa > 0) antes de colar no estúdio: fundo, sombra, enquadramento e selo idênticos.
+COR = dict(
+    ESCURO=95.0,          # "partes escuras" da peça (luminância): onde a medida é feita (a mesma da auditoria)
+    LIMIAR=18.0,          # B−R médio nas partes escuras abaixo disto: capa não está azulada (nada muda, nada é baixado)
+    L0=110.0, L1=200.0,   # peso pela luminância: inteiro até L0, nada a partir de L1 (claro, cromado, brilho)
+    COS0=0.85, COS1=0.55, # direção do croma: inteiro se aponta para o azul da luz (cos >= COS0), nada abaixo de COS1
+    P0=85.0, P1=125.0,    # croma azul absoluto: até P0 pode ser luz; a partir de P1 é cor de verdade (poupado)
+    FORA=1.8, FORA2=3.0,  # pixel com mais de FORA x o azul típico da peça naquela luminância começa a ser poupado
+    ALVO_CONS=16.0,       # conservadora: as partes escuras ficam com ~ este B−R (só o excesso sai)
+    GUARDA=22.0,          # B−R dos claros da peça (lum 130–215) menos o B−R do fundo da foto >= isto: pode ser tinta
+                          # azul (só o excesso sai, cor a conferir)...
+    GUARDA_FORTE=40.0,    # ... e a partir disto é cor de verdade (não mexe, cor a conferir)
+    PROVA=30.0,           # outras fotos: 1º quartil do B−R das partes escuras <= isto = a peça é neutra
+    PROVA_MIN=2,          # ... medido em pelo menos tantas fotos da peça (classe "p")
+    PROVA_FOTOS=8,        # no máximo tantas fotos baixadas (a -O do ML, ~30 KB) — só quando a capa está azulada
+)
+LUMA = (0.299, 0.587, 0.114)
+# direção do azul da luz no espaço de croma (RGB − luminância), medida nas partes escuras das peças pretas azuladas
+# (Fiesta, Gol, Toro: R cai, G fica, B sobe); luminância zero (tirar croma nessa direção não muda o brilho)
+AZUL_LUZ = (-0.39, 0.02, 0.92)
+PALAVRA_AZUL = r"\b(azul|azuis|azulad[oa]s?|marinho|blue|navy|anil|turquesa|celeste|petr[oó]leo)\b"
+# cor NEUTRA escrita pelo vendedor no TÍTULO: só ANOTA o motivo (o dono aprova rápido na folha "cor a conferir"); sozinha
+# não neutraliza — a capa só fica neutra se as outras fotos mostram a peça neutra (a portinhola AZUL do BMW diz "Preto")
+PALAVRA_NEUTRA = r"\b(pret[oa]s?|black|cinza|grafite|prata|prateado|chumbo|cromad[oa]s?)\b"
+# peça PINTADA da cor do carro (lataria): a cor é a do carro de onde saiu — nunca neutralizar sem o olho humano
+PINTADA = (r"^(para-?lama|paralama|porta (dianteira|traseira)|para-?choque (dianteiro|traseiro)$|portinhola|spoiler|"
+           r"aerof[oó]lio|cap[oô]\b|tampa (traseira|porta-?malas)$|capa retrovisor externo|"
+           r"retrovisor (el[eé]trico|manual|direito|esquerdo|dianteiro|externo)|ma[cç]aneta (externa|dianteira|traseira)|"
+           r"(aplique |moldura )?friso .*(tampa|porta-?malas|traseir))|dobradi[cç]a|portinhola")
+
+
+def _suave(t):
+    import numpy as np
+    t = np.clip(t, 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def _dir_azul():
+    import numpy as np
+    u = np.array(AZUL_LUZ, float)
+    y = np.array(LUMA)
+    u -= (u @ y) / (y @ y) * y          # luminância exatamente zero
+    return u / np.linalg.norm(u)
+
+
+def medir_azul(img, alfa=None, r=COR):
+    """Azul nas partes escuras da peça: dict(br = B−R médio dos pixels da peça com lum < ESCURO, frac = fração escura da
+    peça, n). img = RGBA (alfa da própria) ou RGB + alfa (L/array). Sem partes escuras (< 200 px): br None."""
+    import numpy as np
+    a = np.asarray(img, dtype=np.float32)
+    if alfa is None:
+        al = a[..., 3]
+    else:
+        al = np.asarray(alfa, dtype=np.float32)
+    rgb = a[..., :3]
+    m = al > 128
+    y = rgb @ np.array(LUMA, np.float32)
+    esc = m & (y < r["ESCURO"])
+    n = int(esc.sum())
+    if n < 200:
+        return {"br": None, "frac": 0.0, "n": n}
+    px = rgb[esc]
+    return {"br": round(float((px[:, 2] - px[:, 0]).mean()), 2), "frac": round(n / max(int(m.sum()), 1), 3), "n": n}
+
+
+def guarda_tinta(original, alfa, r=COR):
+    """Azul nos CLAROS da peça (lum 130–215) além do tom do fundo da própria foto (B−R). Peça preta sob luz azul tem
+    os claros quase neutros (o azul fica nas sombras); tinta ou plástico azul continua azul no claro. Fundo branco
+    colado pelo vendedor (>= 250) não diz nada da luz: conta 0. None = sem claros suficientes."""
+    import numpy as np
+    if original is None:
+        return None
+    a = np.asarray(original.convert("RGB"), dtype=np.float32)
+    if hasattr(alfa, "resize") and alfa.size != original.size:
+        alfa = alfa.resize(original.size)
+    al = np.asarray(alfa, dtype=np.float32)
+    if al.shape != a.shape[:2]:
+        return None
+    y = a @ np.array(LUMA, np.float32)
+    claros = (al > 128) & (y >= 130) & (y < 215)
+    if claros.sum() < 300:
+        return None
+    hi = float((a[claros][:, 2] - a[claros][:, 0]).mean())
+    fora = al < 10
+    tom = 0.0
+    if fora.sum() > 1000:
+        f = np.median(a[fora], axis=0)
+        if f.min() < 250:
+            tom = float(f[2] - f[0])
+    return round(hi - tom, 2)
+
+
+def corrigir_azul(peca, modo="neutra", r=COR, info=None):
+    """Tira o tom azul da LUZ da peça (RGBA): croma só, só do lado do azul, luminância intacta. modo 'neutra' tira tudo
+    o que é luz; 'conservadora' tira só o excesso (partes escuras em ~ALVO_CONS de B−R); outro = nada. Pixels com alfa 0
+    não mudam. info (dict) recebe a medida antes/depois e a fração de pixels mexidos."""
+    import numpy as np
+    from PIL import Image
+    if modo not in ("neutra", "conservadora"):
+        return peca
+    arr = np.asarray(peca.convert("RGBA"), dtype=np.float32)
+    rgb, al = arr[..., :3], arr[..., 3]
+    luma = np.array(LUMA, np.float32)
+    y = rgb @ luma
+    c = rgb - y[..., None]
+    u = _dir_azul().astype(np.float32)
+    p = c @ u                                         # quanto do croma aponta para o azul da luz
+    n = np.sqrt((c * c).sum(-1)) + 1e-6
+    cos = p / n
+    peca_m = al > 128
+    # azul típico da peça em cada luminância (pixels da peça que apontam para o azul): referência do "detalhe azul"
+    base = peca_m & (cos > r["COS1"]) & (p > 0) & (y < r["L1"])
+    if base.sum() < 200:
+        if info is not None:
+            info.update(modo=modo, mudou=0.0)
+        return peca
+    yb, pb = y[base], p[base]
+    bordas = np.unique(np.quantile(yb, np.linspace(0, 1, 9)))
+    centros, tip = [], []
+    for b0, b1 in zip(bordas[:-1], bordas[1:]):
+        s = (yb >= b0) & (yb <= b1)
+        if s.sum() >= 50:
+            centros.append(float(yb[s].mean()))
+            tip.append(float(np.median(pb[s])))
+    if not centros:
+        centros, tip = [float(yb.mean())], [float(np.median(pb))]
+    t = np.interp(y, centros, tip).astype(np.float32)
+    w = (1 - _suave((y - r["L0"]) / (r["L1"] - r["L0"])))                    # claro / cromado / brilho: fica
+    w *= _suave((cos - r["COS1"]) / (r["COS0"] - r["COS1"]))                 # só croma que aponta para o azul
+    w *= 1 - _suave((p - r["P0"]) / (r["P1"] - r["P0"]))                     # azul forte demais para ser luz
+    lim = r["FORA"] * t + 6
+    w *= 1 - _suave((p - lim) / ((r["FORA2"] - r["FORA"]) * t + 6))         # detalhe azul bem acima do típico
+    w *= (al > 0)
+    tira = w * np.clip(p, 0, None)                                           # nunca mais que o croma (não passa do neutro)
+    esc = peca_m & (y < r["ESCURO"])
+    br0 = float((rgb[esc][:, 2] - rgb[esc][:, 0]).mean()) if esc.sum() >= 200 else None
+    k = 1.0
+    if modo == "conservadora" and br0 is not None:
+        s_full = (1 - tira / n)[esc]
+        br1 = float(((rgb[esc][:, 2] - rgb[esc][:, 0]) * s_full).mean())    # B−R depois de tirar tudo
+        k = float(np.clip((br0 - r["ALVO_CONS"]) / max(br0 - br1, 1e-3), 0, 1)) if br0 > r["ALVO_CONS"] else 0.0
+    escala = 1 - k * tira / n
+    novo = y[..., None] + c * escala[..., None]           # combinação do pixel com o cinza de mesma luminância
+    out = np.dstack([np.clip(np.rint(novo), 0, 255), al]).astype(np.uint8)
+    res = Image.fromarray(out, "RGBA")
+    if info is not None:
+        depois = medir_azul(res)
+        info.update(modo=modo, br_antes=None if br0 is None else round(br0, 2), br_depois=depois["br"], forca=round(k, 3),
+                    mudou=round(float(((k * tira) > 0.5)[peca_m].mean()) if peca_m.any() else 0.0, 3))
+    return res
+
+
+def aplicar_cor(peca, cor, original=None, alfa=None, r=COR):
+    """Mede o azul da peça (RGBA já no tamanho da capa), pede a decisão a cor(medida, guarda) e corrige.
+    Devolve (peça, registro) — registro vazio quando a peça não está azulada e nenhum ajuste manda."""
+    t0 = time.time()
+    med = medir_azul(peca)
+    g = guarda_tinta(original, alfa) if (med["br"] or 0) >= r["LIMIAR"] and original is not None and alfa is not None \
+        else None
+    modo, motivo, conferir, prova = cor(med, g)
+    if modo == "nada":
+        return peca, {}
+    rc = {"modo": modo, "motivo": motivo, "conferir": conferir, "br": med["br"], "guarda": g}
+    if prova:
+        rc["prova"] = {"q1": prova.get("q1"), "n": prova.get("n")}
+    if modo in ("neutra", "conservadora"):
+        det = {}
+        corrigida = corrigir_azul(peca, modo, r, det)
+        rc.update(br_depois=det.get("br_depois"), forca=det.get("forca"), mudou=det.get("mudou"))
+        caiu = (med["br"] or 0) - (det.get("br_depois") if det.get("br_depois") is not None else med["br"] or 0)
+        if caiu < 2 and not motivo.startswith("ajuste"):   # nada no tom da luz (verde, azul saturado de verdade):
+            rc.update(modo="manter", conferir=False, br_depois=med["br"], forca=0.0, mudou=0.0,   # fica como está
+                      motivo=f"cor forte, não é o azul da luz (B−R {med['br'] or 0:.0f})")
+        else:
+            peca = corrigida
+    rc["t"] = round(time.time() - t0, 3)
+    return peca, rc
+
+
+def palavra_azul(*textos):
+    """True se algum texto diz que a peça é azul (título, nome, cor da ficha)."""
+    import re
+    return any(t and re.search(PALAVRA_AZUL, str(t), re.I) for t in textos)
+
+
+def peca_pintada(nome):
+    """Peça de lataria pintada da cor do carro (dobradiça, portinhola, para-lama, retrovisor externo...)."""
+    import re
+    return bool(nome) and bool(re.search(PINTADA, str(nome).strip().lower()))
+
+
+def cor_da_ficha(x):
+    for f in (x or {}).get("ficha") or []:
+        if f and str(f[0]).strip().lower() == "cor":
+            return str(f[1])
+    return None
+
+
+def decidir_cor(medida, peca=None, ajuste=None, guarda=None, prova=None, r=COR):
+    """Puro (sem imagem): (modo, motivo, conferir). medida = medir_azul() da peça na capa; peca = item do pecas.json
+    (t, n, ficha); ajuste = valor de `cor` em capas_ajustes.json ("manter" | "neutra" | None); guarda = guarda_tinta();
+    prova = evidencia_cor() das outras fotos (ou None). conferir = vai para o _revisar.json como "cor a conferir"."""
+    import re
+    peca = peca or {}
+    if ajuste in ("manter", "neutra"):
+        return ajuste, f"ajuste manual (cor: {ajuste})", False
+    br = (medida or {}).get("br")
+    if br is None or br < r["LIMIAR"]:
+        return "nada", "não está azulada", False
+    if palavra_azul(peca.get("t"), peca.get("n"), cor_da_ficha(peca)):
+        return "manter", "azul no título/ficha", False
+    if peca_pintada(peca.get("n")):
+        return "manter", "peça pintada da cor do carro", True
+    if guarda is not None and guarda >= r["GUARDA_FORTE"]:
+        return "manter", f"azul forte também nos claros da peça ({guarda:.0f} acima do fundo da foto)", True
+    neutra = re.search(PALAVRA_NEUTRA, str(peca.get("t") or ""), re.I)
+    diz = f"; o título diz \"{neutra.group(1).lower()}\"" if neutra else ""
+    if guarda is not None and guarda >= r["GUARDA"]:
+        return "conservadora", f"azul também nos claros da peça ({guarda:.0f} acima do fundo da foto{diz})", True
+    if prova and prova.get("n", 0) >= r["PROVA_MIN"] and prova.get("q1") is not None and prova["q1"] <= r["PROVA"]:
+        return "neutra", f"as outras fotos mostram a peça neutra (1º quartil {prova['q1']:.0f} em {prova['n']} fotos)", False
+    if prova and prova.get("n", 0) >= r["PROVA_MIN"]:
+        return "conservadora", f"azul em todas as fotos (1º quartil {prova['q1']:.0f} em {prova['n']} fotos{diz})", True
+    return "conservadora", "sem outras fotos da peça para conferir" + (f" ({diz[2:]})" if diz else ""), True
+
+
+_CAIXAS_ML = None
+
+
+def caixas_ml():
+    """site/src/data/fotos-ml-caixas.json: {chave: [W, H, x0, y0, x1, y1, classe, ...]} (vazio se não existe)."""
+    global _CAIXAS_ML
+    if _CAIXAS_ML is None:
+        arq = ROOT / "site" / "src" / "data" / "fotos-ml-caixas.json"
+        try:
+            _CAIXAS_ML = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
+        except ValueError:
+            _CAIXAS_ML = {}
+    return _CAIXAS_ML
+
+
+def br_escuro_na_caixa(img, cx, r=COR):
+    """B−R médio dos pixels escuros (lum < ESCURO) dentro da caixa da peça (sem recorte: o fundo da foto é claro, os
+    escuros são a peça — na auditoria bate com o recorte do Vision, correlação 0,996). None se < 60 px escuros."""
+    import numpy as np
+    a = np.asarray(img.convert("RGB"), dtype=np.float32)
+    H, W = a.shape[:2]
+    if cx and len(cx) >= 6 and all(isinstance(v, (int, float)) for v in cx[:6]) and cx[0] and cx[1]:
+        sx, sy = W / cx[0], H / cx[1]
+        a = a[max(0, int(cx[3] * sy)):int(cx[5] * sy) + 1, max(0, int(cx[2] * sx)):int(cx[4] * sx) + 1]
+    y = a @ np.array(LUMA, np.float32)
+    esc = y < r["ESCURO"]
+    if esc.sum() < 60:
+        return None
+    px = a[esc]
+    return float((px[:, 2] - px[:, 0]).mean())
+
+
+def evidencia_cor(fotos, fonte, baixar_foto=None, r=COR, cache=None):
+    """As OUTRAS fotos da peça (classe "p" em fotos-ml-caixas.json, sem a da capa, até PROVA_FOTOS): B−R das partes
+    escuras de cada uma (foto -O do ML, ~30 KB, na caixa da peça; baixadas em paralelo). Devolve dict(q1 = 1º quartil,
+    n, fotos={chave: br}). Foto sem caixa/classe (peça nova, ainda não medida) não conta."""
+    import concurrent.futures as cf
+    import numpy as np
+    from PIL import Image
+    cx = caixas_ml()
+    baixar_foto = baixar_foto or (lambda k: baixar(k, "O"))
+    usar = [k for k in fotos if k != fonte and len(cx.get(k) or []) >= 7 and cx[k][6] == "p"][:r["PROVA_FOTOS"]]
+    cache = {} if cache is None else cache          # {foto: br} já medidas (outra foto candidata da mesma peça)
+
+    def uma(k):
+        if k in cache:
+            return k, cache[k]
+        try:
+            img = Image.open(io.BytesIO(baixar_foto(k))).convert("RGB")
+        except Exception:  # noqa: BLE001  (rede: fica sem essa foto)
+            return k, None
+        return k, br_escuro_na_caixa(img, cx[k], r)
+    if len(usar) > 1:
+        with cf.ThreadPoolExecutor(min(8, len(usar))) as ex:
+            res = list(ex.map(uma, usar))
+    else:
+        res = [uma(k) for k in usar]
+    cache.update(res)
+    medidas = {k: round(v, 1) for k, v in res if v is not None}
+    vals = list(medidas.values())
+    return {"q1": round(float(np.percentile(vals, 25)), 1) if vals else None, "n": len(vals), "fotos": medidas}
+
+
+def decisor_cor(peca=None, ajuste=None, baixar_foto=None, r=COR):
+    """Função para compor_v2(cor=...): recebe (medida, guarda, fonte) e devolve (modo, motivo, conferir). A evidência
+    das outras fotos só é baixada se a capa está azulada e nada antes decidiu (uma vez por peça)."""
+    peca = peca or {}
+    memo, medidas = {}, {}
+
+    def decide(medida, guarda, fonte):
+        modo, motivo, conf = decidir_cor(medida, peca, ajuste, guarda, None, r)
+        if modo != "conservadora" or not motivo.startswith("sem outras fotos da peça para conferir"):
+            return modo, motivo, conf, None          # ajuste, trava ou guarda decidiram: nada a baixar
+        if fonte not in memo:
+            fs = [k for k in (peca.get("fotos") or []) if k and not str(k).startswith("http")]
+            memo[fonte] = evidencia_cor(fs, fonte, baixar_foto, r, medidas)
+        prova = memo[fonte]
+        modo, motivo, conf = decidir_cor(medida, peca, ajuste, guarda, prova, r)
+        return modo, motivo, conf, prova
+    return decide
 
 
 # ---- foto MONTAGEM (duas fotos coladas numa só, ex.: o painel do carro em cima e a peça solta embaixo) ----
@@ -852,10 +1196,14 @@ def etiqueta_de_texto(original, recorte):
 # {"MLB...": {"sem_capa": true}} .............. nenhuma foto serve: a capa sai (o site mostra a foto do ML).
 # {"MLB...": {"ok": true, "chave": "<foto>"}} .. capa conferida (falso alarme): não volta para o _revisar.json
 #                                                enquanto o robô escolher a mesma foto.
+# {"MLB...": {"cor": "manter" | "neutra"}} ..... tom azul da peça (ver COR): "neutra" = a peça é preta/cinza, tira todo o
+#                                                azul da luz; "manter" = a peça é azul de verdade, não mexe. Combina com
+#                                                os outros ajustes; novo/mudado refaz a capa (entra na assinatura).
 # Chaves que começam com "_" são comentário. O ajuste aplicado fica assinado em <saída>/_ajustes_aplicados.json:
 # ajuste novo ou mudado refaz a capa mesmo que ela já exista (o robô só gera peça nova).
 AJUSTES = Path(os.getenv("ESTUDIO_AJUSTES", str(ROOT / "capas_ajustes.json")))
 APLICADOS = "_ajustes_aplicados"
+COR_ARQ = "_cor"            # <saída>/_cor.json: tom azul corrigido/mantido em cada capa (modo, motivo, B−R antes/depois)
 
 
 def carregar_ajustes(arq=None):
@@ -891,6 +1239,8 @@ def assinatura(aj, chave=None):
     import hashlib
     base = {"chave": chave or aj.get("chave"), "foto": None if (chave or aj.get("chave")) else aj.get("foto"),
             "corte": aj.get("corte"), "apagar": aj.get("apagar")}
+    if aj.get("cor"):                 # só quando existe: a assinatura dos ajustes antigos não muda
+        base["cor"] = aj["cor"]
     return hashlib.sha1(json.dumps(base, sort_keys=True).encode()).hexdigest()[:12]
 
 
@@ -986,6 +1336,7 @@ def main(recortar=None):
     ajustes = carregar_ajustes()                    # capas_ajustes.json: o olho humano manda
     sem_capa = tirar_sem_capa(ajustes)
     aplicados = ler_aplicados()
+    por_id = {x["id"]: x for x in pecas}
     feitas = {p.stem for p in SAIDA.glob("*.webp")}
     refazer = os.getenv("ESTUDIO_REFAZER") == "1"   # gerar de novo numa SAIDA nova (retoma se parar)
     fila = []
@@ -1009,9 +1360,15 @@ def main(recortar=None):
             manual = {"_ok": aj.get("chave")}     # só para não voltar ao _revisar
             if VERSAO == "2" and aj.get("chave") in fs:   # a foto conferida vem primeiro (o robô nunca troca a capa
                 cands = [aj["chave"]] + [k for k in cands if k != aj["chave"]]   # que o olho humano aprovou)
+        cor_aj = (aj or {}).get("cor") if (aj or {}).get("cor") in ("manter", "neutra") else None
+        if cor_aj and VERSAO == "2":              # tom da peça mandado a mão: entra na assinatura (mudou = refaz)
+            manual = dict(manual or {}, _cor=cor_aj)
+            if not manual.get("_assinatura"):
+                manual["_cor_assinatura"] = assinatura(aj)
         # v2: as outras fotos do anúncio só entram se todas as candidatas tiverem a peça cortada
         extras = [k for k in fs if k not in cands] if VERSAO == "2" else []
-        mudou = bool(manual and manual.get("_assinatura") and aplicados.get(x["id"]) != manual["_assinatura"])
+        assin = (manual or {}).get("_assinatura") or (manual or {}).get("_cor_assinatura")
+        mudou = bool(assin and aplicados.get(x["id"]) != assin)
         if (x["id"] not in feitas or mudou) and (refazer or mudou or x["id"] not in falhas):
             fila.append((x["id"], cands, manual, extras))
     so = set(filter(None, os.getenv("ESTUDIO_IDS", "").split(",")))   # ex.: teste em poucas peças
@@ -1053,6 +1410,8 @@ def main(recortar=None):
               + (f", cópia sem logo em {limpa}" if limpa else ""), flush=True)
 
     revisar = {}    # v2: capas suspeitas para o olho humano (montagem, cortada, vários pedaços, reserva)
+    cores = {}      # v2: tom azul da luz corrigido/mantido em cada capa (vai em <saída>/_cor.json)
+    usar_cor = v2 and os.getenv("ESTUDIO_COR", "1") != "0"   # ESTUDIO_COR=0 desliga a correção (comparação)
     registro = {}   # ESTUDIO_REGISTRO=<arquivo>: foto usada e cortes de cada capa feita (auditoria; opcional)
     novos_aplicados = {}   # MLB -> assinatura do ajuste manual aplicado nesta rodada
 
@@ -1060,24 +1419,26 @@ def main(recortar=None):
         with trava if trabalhadores > 1 and recortar is not recortar_vision else _nulo():
             return recortar(img)
 
-    def montar(recorte, original, checar_cantos=True, inf=None, confiar=False):
+    def montar(recorte, original, checar_cantos=True, inf=None, confiar=False, cor=None):
         if v2:
-            return compor_v2(recorte, checar_cantos=checar_cantos, original=original, info=inf, confiar=confiar)
+            return compor_v2(recorte, checar_cantos=checar_cantos, original=original, info=inf, confiar=confiar,
+                             cor=cor)
         return compor(recorte, checar_cantos=checar_cantos, original=original, confiar=confiar)
 
-    def capa_manual(mlb, aj):
+    def capa_manual(mlb, aj, decide=None):
         """Foto escolhida a mão (capas_ajustes.json): corte/apagar, sem os filtros automáticos.
         Devolve (capa, info) ou (None, motivo)."""
         k = aj["_chave"]
+        cor = (lambda m, g: decide(m, g, k)) if decide else None
         try:
             original = Image.open(io.BytesIO(baixar(k))).convert("RGB")
             original.thumbnail((fonte, fonte))
             foto, recorte = recorte_manual(original, aj, cortar_fundo)
             inf = {}
-            img, corte = montar(recorte, foto, checar_cantos=False, inf=inf)
+            img, corte = montar(recorte, foto, checar_cantos=False, inf=inf, cor=cor)
             if img is None:      # o classificador de carro levou a PEÇA (lanterna, módulo...): a foto é dela
                 inf = {}
-                img, corte = montar(recorte, foto, checar_cantos=False, inf=inf, confiar=True)
+                img, corte = montar(recorte, foto, checar_cantos=False, inf=inf, confiar=True, cor=cor)
             if img is None:
                 return None, f"ajuste manual sem peça ({k})"
             if corte:
@@ -1098,8 +1459,12 @@ def main(recortar=None):
         ok_chave = aj.get("_ok") if aj else None   # foto conferida a olho: fica, mesmo com a peça cortada
         montagem = None                       # v2: montagem que não deu para separar (último recurso)
         notas, inf_de = [], {}                # v2: o que aconteceu com cada foto / info da capa escolhida
+        decide = decisor_cor(por_id.get(mlb), (aj or {}).get("_cor")) if usar_cor else None
+
+        def cor_de(k):
+            return (lambda m, g: decide(m, g, k)) if decide else None
         if aj and aj.get("_chave"):
-            img, r = capa_manual(mlb, aj)
+            img, r = capa_manual(mlb, aj, decide)
             if img is not None:
                 capa, inf_de, cands, extras = img, r, [], []
                 with trava:
@@ -1120,16 +1485,17 @@ def main(recortar=None):
                 if sinal:                                   # foto montagem: fica só o bloco da peça
                     iso = isolar_montagem(original, sinal, cortar_fundo)
                     if iso is None:
-                        img, _ = montar(recorte, original)
+                        inf_m = {}
+                        img, _ = montar(recorte, original, inf=inf_m, cor=cor_de(k))
                         if img is not None and montagem is None:
-                            montagem = (img, k)
+                            montagem = (img, k, inf_m)
                         notas.append(f"montagem sem separar ({k})")
                         motivo = "montagem"
                         continue                            # tenta a próxima foto
                     original, recorte = iso
                     notas.append(f"montagem separada ({k})")
                 inf = {}
-                img, corte = montar(recorte, original, inf=inf)
+                img, corte = montar(recorte, original, inf=inf, cor=cor_de(k))
                 if img is None and inf.get("so_carro"):
                     notas.append(f"carro colado na foto ({k})")
                 if img is not None and (not corte or (v2 and ok_chave and k == ok_chave)):
@@ -1144,7 +1510,7 @@ def main(recortar=None):
                     continue
                 if reserva is None:   # se nenhuma foto ficar limpa, usa a 1a sem os pedaços de carro soltos
                     inf = {}
-                    reserva, _ = montar(recorte, original, checar_cantos=False, inf=inf)
+                    reserva, _ = montar(recorte, original, checar_cantos=False, inf=inf, cor=cor_de(k))
                     inf_reserva = dict(inf, foto=k)
                 motivo = "so carro/vazio"
             except Exception as e:  # rede, imagem corrompida...
@@ -1153,7 +1519,7 @@ def main(recortar=None):
             if cortada is not None:
                 capa, inf_de = cortada, inf_cortada
             elif montagem is not None:
-                capa, inf_de = montagem[0], {"foto": montagem[1]}
+                capa, inf_de = montagem[0], {"foto": montagem[1], **({"cor": montagem[2]["cor"]} if "cor" in montagem[2] else {})}
                 notas.append("capa de foto montagem")
             elif reserva is not None:
                 capa, inf_de = reserva, inf_reserva
@@ -1169,6 +1535,16 @@ def main(recortar=None):
             if notas:
                 with trava:
                     revisar[mlb] = {"motivos": notas, "foto": inf_de.get("foto")}
+        rc = inf_de.get("cor") if (v2 and capa is not None) else None
+        if rc:
+            with trava:
+                cores[mlb] = dict(rc, foto=inf_de.get("foto"))
+                if rc.get("conferir"):            # o tom da peça pede o olho humano (mesmo em capa já conferida)
+                    nota = f"cor a conferir: {rc['motivo']}"
+                    revisar.setdefault(mlb, {"motivos": [], "foto": inf_de.get("foto")})["motivos"].append(nota)
+        if v2 and capa is not None and aj and aj.get("_cor_assinatura"):
+            with trava:
+                novos_aplicados[mlb] = aj["_cor_assinatura"]   # ajuste de cor aplicado (assinatura)
         with trava:
             contagem["i"] += 1
             if contagem["i"] % 200 == 0:
@@ -1181,9 +1557,25 @@ def main(recortar=None):
             if limpa:                                    # cópia sem logo (Google Shopping)
                 capa.save(limpa / f"{mlb}.webp", quality=QUALIDADE_V2, method=6)
             com_logo(capa).save(SAIDA / f"{mlb}.webp", quality=QUALIDADE_V2, method=6)
+            prova = os.getenv("ESTUDIO_COR_PROVA")
+            if prova and inf_de.get("_sem_cor") is not None:   # prova da correção: fora da peça, nada muda
+                import numpy as np
+                pp = Path(prova)
+                pp.mkdir(parents=True, exist_ok=True)
+                a1 = np.asarray(com_logo(capa), np.int16)
+                a0 = np.asarray(com_logo(inf_de["_sem_cor"]), np.int16)
+                fora = np.asarray(inf_de["_alfa"]) == 0
+                inf_de["cor"]["fora_max"] = int(np.abs(a1 - a0).max(-1)[fora].max())   # tem que ser 0
+                with trava:
+                    if mlb in cores:
+                        cores[mlb]["fora_max"] = inf_de["cor"]["fora_max"]
+                com_logo(inf_de["_sem_cor"]).save(pp / f"{mlb}.sem.webp", quality=QUALIDADE_V2, method=6)
+                inf_de["_alfa"].save(pp / f"{mlb}.alfa.png")
             with trava:
                 registro[mlb] = {"foto": inf_de.get("foto"), "cortes": inf_de.get("cortes") or {},
                                  "escala": inf_de.get("escala"), "manual": bool(inf_de.get("manual"))}
+                if inf_de.get("cor"):
+                    registro[mlb]["cor"] = inf_de["cor"]
         else:
             capa.save(SAIDA / f"{mlb}.webp", quality=84, method=6)
         with trava:
@@ -1220,6 +1612,15 @@ def main(recortar=None):
         antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
         antigo.update(registro)
         arq.write_text(json.dumps(antigo, ensure_ascii=False, indent=0), encoding="utf-8")
+    if v2 and cores:   # tom azul da luz: o que foi corrigido/mantido e por quê (vai junto no ramo capas-estudio)
+        arq = SAIDA / (COR_ARQ + (f".{fatia.replace('/', 'de')}" if fatia else "") + ".json")
+        antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
+        antigo.update(cores)
+        arq.write_text(json.dumps(antigo, ensure_ascii=False, indent=0, sort_keys=True), encoding="utf-8")
+        print(f"  tom azul: {sum(1 for v in cores.values() if v['modo'] == 'neutra')} neutralizadas, "
+              f"{sum(1 for v in cores.values() if v['modo'] == 'conservadora')} só o excesso, "
+              f"{sum(1 for v in cores.values() if v['modo'] == 'manter')} mantidas, "
+              f"{sum(1 for v in cores.values() if v.get('conferir'))} a conferir -> {arq}", flush=True)
     if v2:   # lista para o olho humano (ferramentas/folha_revisar.py monta a folha)
         arq = REVISAR if not fatia else Path(str(REVISAR).replace(".json", f".{fatia.replace('/', 'de')}.json"))
         antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
