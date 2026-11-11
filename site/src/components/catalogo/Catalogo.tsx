@@ -511,11 +511,14 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   }, [meuCarro]);
 
   const fDiferido = useDeferredValue(f);
-  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca, ladoQ, posQ] = useMemo(() => {
-    if (!busca) return [[] as Item[], false, 0, [] as Carro[], '', undefined, undefined] as const;
+  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca, ladoQ, posQ, faltou, outrosLados] = useMemo(() => {
+    if (!busca) return [[] as Item[], false, 0, [] as Carro[], '', undefined, undefined, null, [] as Item[]] as const;
     const r = busca.procurar(fDiferido);
-    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca, busca.ladoDaBusca, busca.posDaBusca] as const;
+    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca, busca.ladoDaBusca, busca.posDaBusca, busca.faltou, busca.outrosLados] as const;
   }, [busca, fDiferido]);
+  // o lado/posição que a busca pediu e o estoque não tem ("Nenhuma peça direita"): o outro lado, para a dica
+  const falta = faltou ? [faltou.lado === 'D' ? 'direita' : faltou.lado === 'E' ? 'esquerda' : '', faltou.pos === 'D' ? 'dianteira' : faltou.pos === 'T' ? 'traseira' : ''].filter(Boolean).join(' ') : '';
+  const ladoOposto = faltou?.lado ? (faltou.lado === 'D' ? 'E' : 'D') : null;
   const padrao = ehPadrao(f);
   const facetas = useMemo(() => (busca ? busca.facetas(fDiferido) : padrao ? facetasIniciais : null), [busca, fDiferido, padrao, facetasIniciais]);
 
@@ -721,6 +724,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
                 : total === null ? <span className="cat-total-espera">Buscando peças…</span>
                 : aproximado ? <><b className="num">{n2(total)}</b> {total === 1 ? 'parecida' : 'parecidas'}<span className="cat-total-q"> com “{f.q}”</span></>
                 : codigoBusca ? <><b className="num">{n2(total)}</b> {pecas(total)} com o código <span className="cat-total-q oem">{codigoBusca.toUpperCase()}</span></>
+                : total === 0 && f.q && falta ? <>Nenhuma peça {falta}<span className="cat-total-q"> para “{f.q}”</span></>
                 : total === 0 && f.q ? <>Nenhuma peça<span className="cat-total-q"> para “{f.q}”</span></>
                 : <><b className="num">{n2(total)}</b> {pecas(total)}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
             </h2>
@@ -770,7 +774,11 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             <div className="cat-vazio cat-patio">
               <img src="/arte/v2/vazio-busca.webp" alt="" width={360} height={360} loading="lazy" decoding="async" />
               <h2>Não achou? A gente procura no pátio</h2>
-              <p>Nada {f.q ? <>com “{f.q}”{f.marca && carroPedido ? ` para ${carroPedido}` : ''}</> : 'com esses filtros'} no site agora. Nem toda peça está anunciada: mande pelo WhatsApp que a gente confere no pátio.</p>
+              <p>Nada {falta ? <>{falta} </> : null}{f.q ? <>com “{f.q}”{f.marca && carroPedido ? ` para ${carroPedido}` : ''}</> : 'com esses filtros'} no site agora. Nem toda peça está anunciada: mande pelo WhatsApp que a gente confere no pátio.</p>
+              {ladoOposto && outrosLados.length > 0 && (
+                <p className="cat-vazio-outro">Do outro lado ({ladoOposto === 'E' ? 'esquerda' : 'direita'}) a gente tem {n2(outrosLados.length)} {pecas(outrosLados.length)} com esse nome.
+                  {' '}<button type="button" className="cat-link-outro" onClick={() => mudaFiltro({ lado: ladoOposto })}>Ver as da {ladoOposto === 'E' ? 'esquerda' : 'direita'}</button></p>
+              )}
               <div className="cat-vazio-botoes">
                 {botaoPatio(<span>Procurar no pátio<span className="cat-so-largo"> pelo WhatsApp</span></span>)}
                 {botaoAvise}
@@ -780,12 +788,14 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             </div>
           )}
 
-          {!!busca && resultado.length > 0 && (aproximado || naoBate) && (
+          {!!busca && resultado.length > 0 && (aproximado || naoBate || resultado.length <= 3) && (
             <div className="cat-aviso cat-patio">
               <img className="cat-patio-rosto" src="/arte/v2/atendimento-rosto.webp" alt="" width={192} height={192} decoding="async" />
               <b className="cat-patio-titulo">Não achou? A gente procura no pátio</b>
               {aproximado
                 ? <span className="cat-patio-texto">Nada exato com “{f.q}”. Nem toda peça está anunciada: a gente confere no pátio. Abaixo, as parecidas{blocos && carroDaBusca ? <>: primeiro as do {carroDaBusca.b} {carroDaBusca.m}</> : null}.</span>
+                : resultado.length <= 3 && !naoBate
+                  ? <span className="cat-patio-texto">Só {resultado.length === 1 ? 'achei uma peça' : `achei ${resultado.length} peças`} com “{f.q}”. Nem toda peça está anunciada: a gente confere no pátio{carroPedido ? <> o que você procura para o <b className="cat-patio-carro">{carroPedido}</b></> : null}.</span>
                 : <span className="cat-patio-texto">Nem toda peça está anunciada. Mande pelo WhatsApp{carroPedido ? <> o que você procura para o <b className="cat-patio-carro">{carroPedido}</b></> : null}: a gente confere no pátio.</span>}
               <div className="cat-aviso-botoes">
                 {botaoPatio('Procurar no pátio')}
