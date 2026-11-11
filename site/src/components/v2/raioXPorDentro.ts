@@ -243,7 +243,11 @@ export function ligarPorDentro(ctx: CtxDentro) {
     if (!luz) { rotulo.hidden = true; return; }
     const p = quente(luz);
     const q = quantas(p);
-    rotulo.innerHTML = `<b>${esc(p.nome)}</b>${q ? `<span class="num">${esc(q)}</span>` : ''}${SETA}`;
+    // só reescreve quando o texto muda: no toque, o 2º toque é NO rótulo, e o foco que sai da peça chama este acender()
+    // de novo; reescrever o rótulo debaixo do dedo fazia o Chrome do Android perder o clique (o alvo do toque sumia
+    // antes do clique: nem o catálogo nem as peças ligadas abriam; no ar desde a rodada 16)
+    const html = `<b>${esc(p.nome)}</b>${q ? `<span class="num">${esc(q)}</span>` : ''}${SETA}`;
+    if (rotulo.dataset.html !== html) { rotulo.innerHTML = html; rotulo.dataset.html = html; }
     atributos(rotulo, p);
     rotulo.hidden = false;
     // em cima do número; perto da borda de cima, embaixo; sem sair pelos lados (medido depois de escrito, num quadro só)
