@@ -7936,16 +7936,17 @@
   "foto": "835723-MLB110857707200_052026"
  },
  "MLB4687531345": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão comando farol milha",
   "carro": "Ford Ranger",
   "foto": "805747-MLB111821080735_052026"
  },
  "MLB4687529647": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Difusor ar esquerdo",
   "carro": "Honda Civic",
-  "foto": "849747-MLB110857730052_052026"
+  "foto": "849747-MLB110857730052_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4687527823": {
   "status": "pronta",
@@ -7954,10 +7955,11 @@
   "foto": "804304-MLB111821001143_052026"
  },
  "MLB4687524687": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Alavanca freio mão",
   "carro": "Volkswagen Up",
-  "foto": "723472-MLB110857364382_052026"
+  "foto": "723472-MLB110857364382_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4687522729": {
   "status": "pulada",
@@ -7967,25 +7969,27 @@
   "foto": "657589-MLB110857359324_052026"
  },
  "MLB4687522439": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão comando abertura porta-malas",
   "carro": "Volvo S60",
-  "foto": "966032-MLB110857330274_052026"
+  "foto": "966032-MLB110857330274_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4687519359": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Antena teto shark",
   "carro": "Volvo S60",
   "foto": "773875-MLB111820863209_052026"
  },
  "MLB4687516509": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão comando teto solar",
   "carro": "Audi A4",
-  "foto": "981441-MLB111820683485_052026"
+  "foto": "981441-MLB111820683485_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB4687516061": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Alavanca freio mão",
   "carro": "Volkswagen Gol",
   "foto": "755192-MLB114211079957_072026"
@@ -7998,10 +8002,11 @@
   "foto": "870398-MLB111820992441_052026"
  },
  "MLB4687510647": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Fechadura trava porta-malas",
   "carro": "Volvo S60",
-  "foto": "889001-MLB111821016305_052026"
+  "foto": "889001-MLB111821016305_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4687505111": {
   "status": "pulada",
@@ -8011,10 +8016,11 @@
   "foto": "871563-MLB111820515893_052026"
  },
  "MLB4687485753": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura tomada USB",
   "carro": "Volvo S60",
-  "foto": "903476-MLB111820863883_052026"
+  "foto": "903476-MLB111820863883_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB4687481095": {
   "status": "pulada",
@@ -8038,10 +8044,11 @@
   "foto": "748762-MLB110856428528_052026"
  },
  "MLB4687409751": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Cilindro miolo chave ignição",
   "carro": "Chevrolet Onix",
-  "foto": "770768-MLB111918133463_052026"
+  "foto": "770768-MLB111918133463_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6820219386": {
   "status": "pulada",
@@ -8078,10 +8085,11 @@
   "foto": "983975-MLB112020635529_052026"
  },
  "MLB6820184468": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Difusor ar direito painel",
   "carro": "Jeep Renegade",
-  "foto": "888835-MLB112021086347_052026"
+  "foto": "888835-MLB112021086347_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6820180946": {
   "status": "pulada",
@@ -8111,10 +8119,11 @@
   "foto": "661526-MLB112505481547_052026"
  },
  "MLB6826080758": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote volante airbag",
   "carro": "Volvo S60",
-  "foto": "924187-MLB112074574973_052026"
+  "foto": "924187-MLB112074574973_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6825907434": {
   "status": "pulada",
@@ -8124,7 +8133,7 @@
   "foto": "890275-MLB112070029275_052026"
  },
  "MLB6825868096": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Chave roda 17mm",
   "carro": "Mercedes-Benz C320",
   "foto": "857865-MLB111083705512_052026"
@@ -8144,7 +8153,7 @@
   "foto": "930945-MLB111453979382_052026"
  },
  "MLB4702901551": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Puxador alavanca abertura capô",
   "carro": "Volvo S60",
   "foto": "839759-MLB114211082179_072026"
@@ -8178,19 +8187,20 @@
   "foto": "832214-MLB112505856867_052026"
  },
  "MLB6831155694": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Rádio bluetooth",
   "carro": "Ford Ka",
-  "foto": "660931-MLB112506670779_052026"
+  "foto": "660931-MLB112506670779_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6831154164": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado",
   "carro": "Hyundai Genesis",
   "foto": "656213-MLB112120636057_052026"
  },
  "MLB6831153880": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botoneira vidro elétrico",
   "carro": "Volkswagen Golf",
   "foto": "948484-MLB112507196477_052026"
@@ -8238,10 +8248,11 @@
   "foto": "840025-MLB111454001482_052026"
  },
  "MLB6831121808": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Comando ar condicionado",
   "carro": "Citroën C5",
-  "foto": "739792-MLB112120924531_052026"
+  "foto": "739792-MLB112120924531_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6831121604": {
   "status": "pulada",
@@ -8265,7 +8276,7 @@
   "foto": "782501-MLB112120565257_052026"
  },
  "MLB6831114678": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botão memória trava banco direito",
   "carro": "Volvo S60",
   "foto": "640418-MLB112506819263_052026"
@@ -8299,10 +8310,11 @@
   "foto": "882533-MLB112507319559_052026"
  },
  "MLB6831071368": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Alavanca freio mão",
   "carro": "Peugeot 206",
-  "foto": "882110-MLB111454237458_052026"
+  "foto": "882110-MLB111454237458_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6831067196": {
   "status": "pulada",
@@ -8312,10 +8324,11 @@
   "foto": "916212-MLB112507202915_052026"
  },
  "MLB6831066842": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão pisca-alerta",
   "carro": "Audi A4",
-  "foto": "700923-MLB112506677303_052026"
+  "foto": "700923-MLB112506677303_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6831064902": {
   "status": "pulada",
@@ -8332,7 +8345,7 @@
   "foto": "650734-MLB112118479313_052026"
  },
  "MLB6831019402": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado",
   "carro": "Audi A4",
   "foto": "703919-MLB112118915501_052026"
@@ -8352,22 +8365,24 @@
   "foto": "932089-MLB112506677463_052026"
  },
  "MLB6831007316": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Manopla seletor marcha",
   "carro": "Volvo S60",
   "foto": "654134-MLB112506677091_052026"
  },
  "MLB6831004814": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Moldura câmbio i-motion",
   "carro": "Volkswagen Fox",
-  "foto": "610443-MLB112507408061_052026"
+  "foto": "610443-MLB112507408061_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6831003808": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão regulagem farol",
   "carro": "JAC J3",
-  "foto": "794129-MLB112118409419_052026"
+  "foto": "794129-MLB112118409419_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6830999944": {
   "status": "pulada",
@@ -8377,10 +8392,11 @@
   "foto": "863457-MLB112507468115_052026"
  },
  "MLB6830996738": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Módulo gateway diagnóstico",
   "carro": "Ford Fusion",
-  "foto": "848655-MLB112507261563_052026"
+  "foto": "848655-MLB112507261563_052026",
+  "motivo": "triagem: etiqueta/código pequeno, não enviar ao ChatGPT"
  },
  "MLB6830994494": {
   "status": "pulada",
@@ -8397,7 +8413,7 @@
   "foto": "869822-MLB112507261351_052026"
  },
  "MLB6830984938": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Botoneira vidro elétrico",
   "carro": "Geely GC2",
   "foto": "946788-MLB111454238310_052026"
