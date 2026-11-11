@@ -12,12 +12,17 @@
 //   Com "reduzir movimento" ou aparelho fraco, troca na hora.
 import css from './raioXGirar.css?inline';
 import { ARTE_TRAS, ZONAS_TRAS } from '../../lib/raioXTras';
-import type { LadoArte } from '../../lib/raioX';
+import { ARTE_TRAS_PEQUENA, SRCSET_TRAS, type LadoArte } from '../../lib/raioX';
 
 export type CtxGirar = {
   raiz: HTMLElement; palco: HTMLElement;
   /** o sizes da arte no palco (o mesmo da arte da frente) */
   sizes: string;
+  /** a arte de trás que o Raio-x já pediu (no 1º contato com a seção, ou junto com o pedido do giro) e desde quando;
+   *  e a pequena, se ele a pediu (o giro pedido com a grande ainda a caminho) */
+  arte?: HTMLImageElement | null;
+  pequena?: () => HTMLImageElement | null;
+  desde?: number;
 };
 
 const pct = (v: number, t: number) => `${((v / t) * 100).toFixed(2)}%`;
@@ -41,10 +46,10 @@ function copia<T extends Element>(el: T, fundo = false): T {
 export function ligarGirar(ctx: CtxGirar) {
   porEstilo();
   const { raiz, palco } = ctx;
-  const filho = <T extends Element>(sel: string) => palco.querySelector<T>(`:scope > ${sel}`)!;
-  // ---- a camada da frente (a do HTML): só a marca de qual vista é ----
+  // ---- a camada da frente: já vem do HTML na caixa dela (.rxg-lado[data-v="f"]); nada dela é mexido aqui ----
+  const ladoF = palco.querySelector<HTMLElement>(':scope > .rxg-lado[data-v="f"]')!;
+  const filho = <T extends Element>(sel: string) => ladoF.querySelector<T>(`:scope > ${sel}`)!;
   const imgF = filho<HTMLImageElement>('img');
-  const daFrente = [...palco.querySelectorAll<HTMLElement>(':scope > img, :scope > .rx-camada, :scope > .rx-mapa, :scope > .rx-ponto, :scope > .rx-etiqueta')];
 
   // ---- a camada de trás: cópias das peças da frente com a geometria de lib/raioXTras.ts ----
   const novos: Element[] = [];
@@ -52,9 +57,11 @@ export function ligarGirar(ctx: CtxGirar) {
   const imgT = copia(imgF);
   imgT.removeAttribute('loading');
   imgT.removeAttribute('fetchpriority');
-  imgT.sizes = ctx.sizes;
-  imgT.srcset = `${ARTE_TRAS.src.replace(/\.webp$/, '-900.webp')} 900w, ${ARTE_TRAS.src} ${ARTE_TRAS.w}w`;
-  imgT.src = ARTE_TRAS.src;
+  // (a cópia traz o endereço da arte da FRENTE: sai; a arte de trás entra em preparar(), a grande ou, em rede lenta,
+  // a pequena primeiro)
+  imgT.removeAttribute('srcset');
+  imgT.removeAttribute('sizes');
+  imgT.removeAttribute('src');
   novos.push(imgT);
 
   const escurosF = filho<SVGSVGElement>('.rx-escuros');
@@ -118,33 +125,70 @@ export function ligarGirar(ctx: CtxGirar) {
     e.style.top = pct(z.etiqueta[1], ARTE_TRAS.h);
     novos.push(e);
   }
-  // cada vista na caixa dela, no começo do palco: o botão de girar e as camadas dos outros modos (.rxb, .rxf) ficam por
-  // cima e fora das caixas (não giram junto)
-  const caixa = (v: 'f' | 't', filhos: Element[]) => {
-    const c = document.createElement('div');
-    c.className = 'rxg-lado';
-    c.dataset.v = v;
-    for (const el of filhos) c.appendChild(el);
-    return c;
-  };
-  const antes = daFrente[0];
-  const ladoF = document.createElement('div');
-  ladoF.className = 'rxg-lado';
-  ladoF.dataset.v = 'f';
-  palco.insertBefore(ladoF, antes);
-  for (const el of daFrente) ladoF.appendChild(el);
-  const ladoT = caixa('t', novos);
+  // a vista de trás na caixa dela, logo depois da da frente: uma cópia vazia da caixa da frente (leva a classe e o escopo
+  // do CSS). Fica com display: none até o giro: entrar na página não custa layout. O botão de girar e as camadas dos
+  // outros modos (.rxb, .rxf) ficam por cima e fora das caixas (não giram junto).
+  const ladoT = copia(ladoF);
+  ladoT.dataset.v = 't';
+  ladoT.append(...novos);
   palco.insertBefore(ladoT, ladoF.nextSibling);
 
   // ---- a arte de trás, baixada e decodificada antes da 1ª troca (a transição nunca mostra a imagem pela metade) ----
+  // A grande (o srcset de sempre; o Raio-x já a pediu no 1º contato com a seção, então costuma estar no cache) é
+  // baixada num <img> solto. Chegou: a arte da página a veste e o giro sai. Rede lenta (rodada 18; a revisão 16 mediu
+  // 18 s com o carro parado): se a grande não chegou em ESPERA_DA_GRANDE, a PEQUENA (8 KB) é pedida e o carro gira
+  // com ela; a grande entra por cima quando chega (a mesma arte, só mais nítida: nada muda de lugar).
+  const ESPERA_DA_GRANDE = 350;
+  const grande = ctx.arte ?? new Image();
+  if (!ctx.arte) {
+    grande.decoding = 'async';
+    grande.setAttribute('fetchpriority', 'high');
+    grande.sizes = ctx.sizes;
+    grande.srcset = SRCSET_TRAS;
+    grande.src = ARTE_TRAS.src;
+  }
+  const desde = ctx.arte && ctx.desde ? ctx.desde : performance.now();
+  const chegou = (im: HTMLImageElement) => im.complete && im.naturalWidth > 0;
+  const decodificada = (im: HTMLImageElement) => (im.decode ? im.decode().catch(() => {}) : Promise.resolve());
+  let nitida = false;
+  /** A arte da página passa a ser a grande (o mesmo srcset do <img> solto: sai do cache). */
+  const vestir = () => {
+    if (nitida) return Promise.resolve();
+    nitida = true;
+    imgT.sizes = ctx.sizes;
+    imgT.srcset = SRCSET_TRAS;
+    imgT.src = ARTE_TRAS.src;
+    return decodificada(imgT);
+  };
   let pronta: Promise<void> | null = null;
   function preparar(): Promise<void> {
     pronta ??= new Promise<void>((ok, falha) => {
-      const fim = () => (imgT.decode ? imgT.decode().then(() => ok(), () => ok()) : ok());
-      if (imgT.complete && imgT.naturalWidth) fim();
-      else { imgT.addEventListener('load', fim, { once: true }); imgT.addEventListener('error', () => falha(new Error('arte')), { once: true }); }
+      let feito = false;
+      const sai = () => { if (!feito) { feito = true; ok(); } };
+      const comGrande = () => void vestir().then(sai);
+      if (chegou(grande)) comGrande();
+      else {
+        grande.addEventListener('load', comGrande, { once: true });
+        grande.addEventListener('error', () => { if (!feito) falha(new Error('arte')); }, { once: true });
+        // a espera conta de quando a grande foi PEDIDA (o Raio-x a pede antes de este código chegar)
+        setTimeout(() => {
+          if (feito || nitida) return;
+          const pequena = ctx.pequena?.() ?? new Image();
+          const comPequena = () => {
+            if (feito || nitida) return;
+            imgT.src = ARTE_TRAS_PEQUENA;
+            void decodificada(imgT).then(() => { if (!nitida) sai(); });
+          };
+          if (chegou(pequena)) comPequena();
+          else {
+            pequena.addEventListener('load', comPequena, { once: true });
+            if (!pequena.getAttribute('src')) { pequena.setAttribute('fetchpriority', 'high'); pequena.src = ARTE_TRAS_PEQUENA; }
+          }
+        }, Math.max(0, ESPERA_DA_GRANDE - (performance.now() - desde)));
+      }
     });
-    pronta.catch(() => { pronta = null; imgT.src = ARTE_TRAS.src; });
+    // falhou (sem conexão): a próxima tentativa pede a arte de novo
+    pronta.catch(() => { pronta = null; grande.srcset = ''; grande.srcset = SRCSET_TRAS; });
     return pronta;
   }
 

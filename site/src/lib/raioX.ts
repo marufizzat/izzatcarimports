@@ -183,6 +183,12 @@ export const DO_OUTRO_LADO: Record<LadoArte, readonly string[]> = {
   frente: ['lateral-direita', 'traseira'],
   tras: ['frente', 'motor', 'lateral-esquerda'],
 };
+/** A arte da vista de trás ("Girar o carro"): o endereço e o srcset num lugar só. O Raio-x pede a arte cedo, com
+ *  prioridade baixa (1º contato com a seção), e components/v2/raioXGirar.ts a põe na página: os dois têm de pedir o
+ *  MESMO arquivo (o que um baixou o outro acha no cache). A pequena (8 KB) é a que entra primeiro em rede lenta. */
+export const ARTE_TRAS_SRC = '/arte/v2/raio-x-tras.webp';
+export const ARTE_TRAS_PEQUENA = '/arte/v2/raio-x-tras-320.webp';
+export const SRCSET_TRAS = '/arte/v2/raio-x-tras-900.webp 900w, /arte/v2/raio-x-tras.webp 1536w';
 /** A outra vista. */
 export const outroLado = (l: LadoArte): LadoArte => (l === 'frente' ? 'tras' : 'frente');
 
@@ -279,6 +285,13 @@ export const EH_PAINEL_FRONTAL: Eh[] = [
   { cab: 'painel', tem: 'frontal dianteiro radiador' },
   { cab: 'travessa suporte', tem: 'travessa', sem: 'esquerdo direito esquerda direita coxim braco placa inferior superior lateral' },
 ];
+
+/** O nome diz pelo menos UMA destas palavras? (palavras separadas por espaço, sem acento; o plural vale; a composta
+ *  vale inteira: "porta" não é "porta-malas"). A mesma leitura de `nomeEh`. */
+export function nomeDiz(nome: string, palavras: string): boolean {
+  const ws = palavrasDoNome(nome);
+  return lista(palavras).filter(Boolean).some((w) => ws.some((t) => mesma(t, w)));
+}
 
 /** A peça como a zona precisa dela: o bloco, o tipo e o lado/posição que o nome diz (os campos c, s, l, pos do índice). */
 export type PecaZona = { c: string; s: string; l?: Lado | '' | '0'; pos?: Posicao | 'A' | '' | '0' };

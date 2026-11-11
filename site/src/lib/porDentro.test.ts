@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { PONTOS_DA_ZONA } from './porDentro/todas';
 import { pontosLateral } from './porDentro/lateral';
-import { contarPontos, contarComLigadas, ligadasTxt, filtrosDoQuente, ehDoPonto, TIPO_INTEIRO, type PontoQuente } from './porDentro/base';
+import { contarPontos, contarComLigadas, ligadasTxt, filtrosDoQuente, ehDoPonto, ehLigada, TIPO_INTEIRO, type PontoQuente } from './porDentro/base';
 import { dentroJson } from './porDentro/todas';
 import { serveNoModelo } from './meuCarro';
 import { VISTAS, ARTE_VISTA, ARQUIVO_DENTRO, arteDaVista } from './raioXVistas';
@@ -209,9 +209,25 @@ describe.each(CASOS)('vista por dentro de "$zona": pontos quentes ↔ links do c
         const daOutraPonta = (it: { pos?: string }) => !!p.fora && it.pos === p.fora;
         // com número: o link inteiro, sem ligadas (o catálogo mostra tudo)
         if (n) { if (n !== doLink.length || ligadas.length) erros.push(`${quem} ${p.k}: ${n} no número, ${doLink.length} no link, ${ligadas.length} ligadas`); continue; }
-        // sem número: nada some do Raio-x (as ligadas são o link, menos a peça que DIZ a posição da outra ponta)
-        const esperadas = doLink.filter((it) => !daOutraPonta(it)).map((it) => it.id).sort();
-        if (JSON.stringify(ligadas.map((it) => it.id).sort()) !== JSON.stringify(esperadas)) erros.push(`${quem} ${p.k}: ligadas ${ligadas.length}, o link tem ${esperadas.length}`);
+        // sem número: toda ligada é peça do link; a que ficou de fora diz a posição da outra ponta ou aponta para
+        // outra peça-mãe (revisão 17, N-P3-1). A conta do "aponta para outra" é refeita aqui: o nome não diz nenhuma
+        // palavra do título do ponto (o nome dele, a regra, o tipo) e diz um LUGAR do carro que o título não diz, ou
+        // diz uma palavra que a regra do ponto proíbe.
+        const idsDoLink = new Set(doLink.map((it) => it.id));
+        for (const it of ligadas) if (!idsDoLink.has(it.id)) erros.push(`${quem} ${p.k}: "${it.n}" não está no link`);
+        // (as famílias de lugar: a tampa TRASEIRA, o porta-malas e o bagagito são o mesmo lugar; o console e o câmbio também)
+        const LUGAR = [['porta'], ['portamalas', 'bagagito', 'tampa+traseira'], ['capo'], ['painel'], ['console', 'cambio'], ['teto'], ['coluna'], ['banco'], ['parachoque'], ['paralama'], ['portaluvas'], ['volante'], ['assoalho']];
+        const regras = p.eh === TIPO_INTEIRO || !p.eh ? [] : Array.isArray(p.eh) ? p.eh : [p.eh];
+        const doTitulo = palavras(`${p.nome} ${p.sub} ${regras.map((e) => `${e.cab} ${e.tem ?? ''}`).join(' ')}`);
+        const tem = (ws: string[], familia: string[]) => familia.some((w) => (w === 'tampa+traseira' ? ws.includes('tampa') && ['traseira', 'traseiro', 'traseiras', 'traseiros'].some((t) => ws.includes(t)) : formas(w).some((f) => ws.includes(f))));
+        const outraMae = (nome: string) => {
+          const ws = palavras(nome);
+          const chave = regras.some((e) => diz(ws, `${e.cab} ${e.tem ?? ''}`.trim()) && !(e.sem && diz(ws, e.sem)));
+          return !chave && LUGAR.some((l) => tem(ws, l) && !tem(doTitulo, l));
+        };
+        const dentro = new Set(ligadas.map((it) => it.id));
+        for (const it of ligadas) if (outraMae(it.n)) erros.push(`${quem} ${p.k}: "${it.n}" aponta para outra peça-mãe e está nas ligadas`);
+        for (const it of doLink) if (!dentro.has(it.id) && !daOutraPonta(it) && !outraMae(it.n)) erros.push(`${quem} ${p.k}: "${it.n}" sumiu das ligadas sem motivo`);
         const zonaEsperada = DE_OUTRA_ZONA[zona]?.[p.k] ?? zona;
         for (const it of ligadas) {
           if (abre(p, it.n) && !daOutraPonta(it)) erros.push(`${quem} ${p.k}: "${it.n}" é a peça do título e está nas ligadas`);
@@ -278,6 +294,13 @@ describe('vistas por dentro: a peça do link é a do desenho', () => {
     ['motor', 'caixa-filtro', { n: 'Ressonador filtro ar' }, false],
     ['motor', 'caixa-filtro', { n: 'Caixa filtro ar' }, true],
     ['frente', 'alma', { n: 'Alma para-choque traseiro', pos: 'T' }, false],
+    // revisão 17: decididas pela foto do anúncio. O "Módulo central multimídia" do Focus é a própria central (a caixa
+    // "Radio AHU" do Sync); a "Bandeja traseira esquerda" do S60 (tipo Braços da Suspensão) é o braço. O "Módulo bomba
+    // combustível" do Classe C é a caixinha eletrônica da bomba, não a bomba: continua peça ligada.
+    ['interior', 'multimidia', { n: 'Módulo central multimídia' }, true],
+    ['interior', 'multimidia', { n: 'Comando central multimídia' }, false],
+    ['rodas', 'braco', { n: 'Bandeja traseira esquerda' }, true],
+    ['embaixo', 'bomba-combustivel', { n: 'Módulo bomba combustível' }, false],
     ['frente', 'intercooler', { n: 'Chicote radiador intercooler' }, false],
     ['frente', 'intercooler', { n: 'Intercooler radiador' }, true],
     ['lateral-esquerda', 'forros', { n: 'Forro porta dianteira esquerda', pos: 'D' }, true],
@@ -286,6 +309,34 @@ describe('vistas por dentro: a peça do link é a do desenho', () => {
   ];
   it.each(casos)('%s / %s × %o = %s', (zona, k, peca, esperado) => {
     expect(ehDoPonto(ponto(zona, k), peca)).toBe(esperado);
+  });
+  // Revisão 17, N-P3-1: a peça ligada compartilha o substantivo-chave do título ou não aponta para outra peça-mãe.
+  const ligadasCasos: [string, string, string, boolean][] = [
+    ['lateral-direita', 'forros', 'Forro direito porta-malas', false],
+    ['lateral-esquerda', 'forros', 'Acabamento forro esquerdo porta-malas', false],
+    ['lateral-direita', 'forros', 'Isopor porta-malas direito', false],
+    ['lateral-esquerda', 'soleira', 'Friso soleira tampa traseira esquerda', false],
+    ['teto', 'alcas', 'Puxador interno porta-malas', false],
+    ['lateral-esquerda', 'capa-retrovisor', 'Acabamento lateral esquerdo painel', false],
+    ['lateral-esquerda', 'capa-retrovisor', 'Moldura retrovisor esquerdo', true],
+    ['frente', 'grade', 'Tampa grade churrasqueira', true],
+    ['frente', 'grade', 'Moldura churrasqueira direita', true],
+    ['frente', 'alma', 'Absorvedor impacto', true],
+    ['frente', 'painel-frontal', 'Suporte radiador direito', true],
+    ['teto', 'motor-teto', 'Mangueira drenagem teto solar', true],
+    ['traseira', 'fechadura', 'Sensor tampa traseira', true],
+    ['traseira', 'fechadura', 'Acabamento trava porta-malas', true],
+    ['traseira', 'tampao', 'Suporte direito bagagito', true],
+    ['motor', 'caixa-filtro', 'Ressonador filtro ar', true],
+    ['embaixo', 'bomba-combustivel', 'Módulo bomba combustível', true],
+    ['interior', 'console', 'Moldura console central', true],
+    ['interior', 'console', 'Moldura alavanca câmbio', true],
+    ['interior', 'volante', 'Tampa acionador buzina', true],
+    ['traseira', 'acabamento-tampa', 'Capa dobra porta-malas esquerda', true],
+    ['interior', 'console', 'Moldura painel central', false],
+  ];
+  it.each(ligadasCasos)('peça ligada: %s / %s × "%s" = %s', (zona, k, nome, esperado) => {
+    expect(ehLigada(ponto(zona, k), { n: nome })).toBe(esperado);
   });
   it('só com o acessório no link, o ponto conta 0 (pátio); com a peça, o número do link inteiro', () => {
     const p = ponto('embaixo', 'escapamento');

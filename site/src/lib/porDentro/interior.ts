@@ -28,7 +28,7 @@ export const PONTOS: PontoQuente[] = [
     ],
   },
   {
-    k: 'multimidia', nome: 'Central multimídia', procuro: 'a central multimídia', ancora: [843, 336], tipo: 'Som e Multimídia', sub: 'Centrais Multimídia', eh: { cab: 'central radio multimidia tela display' },
+    k: 'multimidia', nome: 'Central multimídia', procuro: 'a central multimídia', ancora: [843, 336], tipo: 'Som e Multimídia', sub: 'Centrais Multimídia', eh: [{ cab: 'central radio multimidia tela display' }, { cab: 'modulo', tem: 'multimidia' }],
     poligonos: ['761,301 760,313 771,320 769,346 757,352 756,363 782,385 797,388 803,396 815,397 822,390 879,397 885,406 899,407 906,401 920,400 933,388 946,383 946,370 935,365 937,339 951,336 955,322 941,314 943,295 939,291 789,273 776,280 774,295'],
   },
   {

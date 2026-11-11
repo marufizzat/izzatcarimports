@@ -123,6 +123,8 @@ export function ligarPorDentro(ctx: CtxDentro) {
   let escolhido: string | null = null;
   let passando: string | null = null;
   let ultimoPonteiro = 'mouse';
+  // quando o dedo encostou pela última vez (o foco que vem do toque não acende nada: ver o focusin da camada)
+  let toqueEm = -1e9;
   let quemAbriu: HTMLElement | null = null;
   let vez = 0;
   // o que vale agora: quantas de cada ponto (null = contando), o filtro do carro e o nome dele nas frases
@@ -195,7 +197,7 @@ export function ligarPorDentro(ctx: CtxDentro) {
       fila.addEventListener('click', (e) => { if ((e.target as Element).closest('[data-voltar]')) sair(true); });
     }
 
-    camada.addEventListener('pointerdown', (e) => { ultimoPonteiro = e.pointerType || 'mouse'; }, true);
+    camada.addEventListener('pointerdown', (e) => { ultimoPonteiro = e.pointerType || 'mouse'; if (ultimoPonteiro !== 'mouse') toqueEm = performance.now(); }, true);
     camada.addEventListener('click', (e) => {
       const alvo = e.target as Element;
       if (alvo.closest('[data-voltar]')) { sair(true); return; }
@@ -229,6 +231,11 @@ export function ligarPorDentro(ctx: CtxDentro) {
     });
     camada.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') passar(null); });
     camada.addEventListener('focusin', (e) => {
+      // O foco que vem do TOQUE não acende a peça: quem acende é o clique (escolher). No Chrome com toque o foco chega
+      // antes do clique; o rótulo aparecia ali mesmo, debaixo do dedo, o clique caía no rótulo/na camada em vez da
+      // peça, a peça não ficava escolhida e o 2º toque (no rótulo) o escondia sem abrir nada (revisão 17, N-P2-1:
+      // "Cinto de segurança", "Escapamento", "Semieixos traseiros", as peças cujo rótulo cobre o ponto tocado).
+      if (performance.now() - toqueEm < 800) return;
       const a = (e.target as Element).closest<HTMLElement>('a[data-q]');
       if (a) passar(a.dataset.q!);
     });
@@ -392,8 +399,11 @@ export function ligarPorDentro(ctx: CtxDentro) {
     escolher(null);
     pintarLinks();
     pintarPainel(false);
-    if (focar && k) conteudo.querySelector<HTMLElement>(`.rxf-lista [data-q="${k}"]`)?.focus({ preventScroll: true });
+    // o foco volta à linha, mas a peça não fica acesa na arte: o rótulo dela (agora de duas linhas) ficava por cima das
+    // peças vizinhas e o toque seguinte na arte caía nele
+    if (focar && k) { focoSemLuz = true; conteudo.querySelector<HTMLElement>(`.rxf-lista [data-q="${k}"]`)?.focus({ preventScroll: true }); focoSemLuz = false; }
   }
+  let focoSemLuz = false;
 
   const noPainel = (e: Event) => {
     if (!ligado) return;
@@ -405,6 +415,7 @@ export function ligarPorDentro(ctx: CtxDentro) {
   };
   const sobreLista = (e: Event) => {
     if (!ligado) return;
+    if (e.type === 'focusin' && focoSemLuz) return;
     const a = (e.target as Element).closest<HTMLElement>('.rxf-item');
     passar(e.type === 'pointerover' || e.type === 'focusin' ? a?.dataset.q ?? null : null);
   };

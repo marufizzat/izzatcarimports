@@ -577,6 +577,39 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    (o WebKit não ancora a rolagem); e pôr a caixa `.rxg-lado` da vista da frente já no HTML (o 1º giro deixa de refazer
    o layout da vista inteira).
 
+20. **Rodada 18 (11/11/2026): o 1º giro leve e o giro em rede lenta**
+   - **A caixa da vista da frente já vem no HTML** (`<div class="rxg-lado" data-v="f">` dentro do `.rx-palco`, `RaioX.astro`;
+     +47 bytes por página com Raio-x). Antes o 1º giro punha a arte, os véus, o mapa, os pontos e as etiquetas dentro
+     dela na hora e o navegador refazia o layout da vista inteira num quadro (até 94 ms com CPU 4× na página do carro).
+     `raioXGirar.ts` só acrescenta a caixa de trás (cópia vazia da da frente, `display: none` até o giro). Quem mira os
+     filhos do palco tem de contar com a caixa (`raioXPorDentro.css`: `.rx-palco > :is(…, .rxg-lado)`).
+   - **A arte de trás desce cedo, com prioridade baixa**: no 1º contato com o Raio-x (mouse em cima, dedo, foco:
+     `pedirArteTras` no `cedo`, `RaioX.astro`), nunca para quem não chega à seção. O endereço e o srcset moram em
+     `lib/raioX.ts` (`ARTE_TRAS_SRC`, `SRCSET_TRAS`, `ARTE_TRAS_PEQUENA`): o Raio-x e o `raioXGirar.ts` pedem o MESMO
+     arquivo (o `<img>` que o Raio-x criou é entregue ao giro: `ctx.arte`).
+   - **Giro pedido com a arte ainda a caminho** (rede lenta, ou o 1º contato é o próprio toque): o painel abre na hora;
+     depois de 300 ms o palco mostra a espera (`data-giro-espera`: o ícone do botão gira e a pílula "Girando o carro…");
+     a arte PEQUENA (`raio-x-tras-320.webp`, 8 KB) é pedida junto com o código do giro e, se a grande não chegou 350 ms
+     depois de pedida, o carro gira com a pequena e a grande entra por cima quando chega (`preparar()` em
+     `raioXGirar.ts`). Medir em rede lenta SEM o `route()` do Playwright (ele desliga o cache do navegador e a arte é
+     baixada duas vezes): `_r18giro/scripts/giro-lento.cjs`.
+
+   - **Reteste da rodada 17 (o que ficou valendo)**: (1) **o foco que vem do TOQUE não acende a peça da vista por
+     dentro** (`toqueEm` em `raioXPorDentro.ts`): no Chrome com toque o foco chega antes do clique, o rótulo aparecia
+     debaixo do dedo, o clique caía nele e a peça não ficava escolhida; o 2º toque escondia o rótulo sem abrir nada (as
+     peças cujo rótulo cobre o ponto tocado: "Cinto de segurança", "Escapamento"). Quem acende no toque é o clique
+     (`escolher`). Ao voltar das ligadas para a lista, o foco vai à linha sem acender a peça (`focoSemLuz`). (2) **Peça
+     ligada por REGRA** (`ehLigada`, `lib/porDentro/base.ts`): compartilha o substantivo-chave do título (`cab`/`tem` da
+     regra do ponto, sem dizer o que o `sem` proíbe) ou não aponta para outra peça-mãe (não diz nenhum dos `LUGARES`
+     do carro que o título não diga); o forro do porta-malas não é ligada do forro de porta, o puxador do porta-malas
+     não é da alça de teto. Decididas pela foto: o "Módulo central multimídia" (a caixa do rádio) É a central; a
+     "Bandeja" do tipo Braços da Suspensão É o braço; o "Módulo bomba combustível" (a caixinha eletrônica) NÃO é a
+     bomba. (3) O rótulo do ponto com ligadas tem duas linhas (o nome inteiro; embaixo, menor, "a gente procura · N
+     ligadas"); até 379 px a lista põe o estado embaixo do nome (nome em no máximo 2 linhas). (4) Um parêntese só:
+     "Grade (peça ligada, lado direito)" (`nomeNaTela`, `lib/batida.ts`). (5) O Chrome de verdade, com janela e com as
+     transições de página ligadas, pinta normal do Raio-x ao catálogo e de volta (10 idas e voltas a 390 com toque e a
+     1440: `_r18giro/scripts/pinta-com-janela.cjs`); o que trava é o Chromium sem janela do Playwright.
+
 ## Testes e o estoque do dia (regra de 11/11/2026: o robô parou a loja por causa de teste)
 O robô roda `python testes/test_dados.py` e `npm --prefix site test` com o ESTOQUE DO DIA antes de publicar: teste vermelho
 = loja parada. Por isso nenhum teste pode depender do que está à venda hoje. Três fontes (`site/testes/estoques.ts`):

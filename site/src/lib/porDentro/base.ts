@@ -4,7 +4,7 @@
 // Uma tabela por vista (lib/raioXFrente.ts, o piloto, e lib/porDentro/<vista>.ts), baixada só quando a vista abre.
 // Sem node:fs e sem valores de lib/busca.ts: roda no build, no teste e no navegador.
 import type { Filtros, Item, Lado, Posicao } from '../busca';
-import { nomeEh, codigoDaFoto, type Eh } from '../raioX';
+import { nomeEh, nomeDiz, codigoDaFoto, type Eh } from '../raioX';
 import { anosTexto } from '../whats';
 import { nomeModelos } from '../meuCarro';
 
@@ -46,20 +46,49 @@ export const filtrosDoQuente = (p: PontoQuente, carro: CarroDoQuente = {}): Filt
 export const ehDoPonto = (p: PontoQuente, it: { n?: string; pos?: string }): boolean =>
   (p.eh === TIPO_INTEIRO || nomeEh(p.eh, it.n ?? '')) && !(p.fora && it.pos === p.fora);
 
+/** Os LUGARES do carro (a peça-mãe ou a parte) que o nome de uma peça pode dizer, em FAMÍLIAS: as palavras da mesma
+ *  família dizem o mesmo lugar (a tampa traseira, o porta-malas e o bagagito; o console e o câmbio, cuja alavanca fica
+ *  nele). Serve para UMA pergunta: "este nome aponta para outra peça-mãe que não a do título?" (o forro do
+ *  PORTA-MALAS na linha do forro de porta, o puxador do porta-malas na da alça de teto, o acabamento do PAINEL na da
+ *  capa do retrovisor). É vocabulário de partes do carro, não lista de peças: lugar novo no estoque entra aqui. */
+const LUGARES: readonly string[] = ['porta', 'porta-malas bagagito tampa-traseira', 'capo', 'painel', 'console cambio', 'teto', 'coluna', 'banco', 'para-choque', 'para-lama',
+  'porta-luvas', 'volante', 'assoalho'];
+/** O nome diz este lugar? "tampa" sozinha é a tampa de qualquer coisa (a "Tampa grade churrasqueira", a "Tampa
+ *  acionador buzina"): só é o lugar quando o nome diz a tampa TRASEIRA. */
+const dizLugar = (nome: string, familia: string) => familia.split(' ').some((w) => (w === 'tampa-traseira' ? nomeDiz(nome, 'tampa') && nomeDiz(nome, 'traseira traseiro') : nomeDiz(nome, w)));
+
+/** A peça do link é LIGADA à peça do título do ponto? (revisão 17, N-P3-1: uma regra, não uma lista de exceções.)
+ *  O tipo do estoque junta coisas de mais de um lugar ("Forros": porta e porta-malas; "Alças e Puxadores": teto e
+ *  porta-malas). Ligada é a que:
+ *  (1) compartilha o SUBSTANTIVO-CHAVE do título (uma palavra que a regra do ponto usa para dizer a peça: `cab` ou
+ *      `tem`: a "Tampa GRADE churrasqueira", o "Suporte direito BAGAGITO", a "Moldura RETROVISOR") e não diz nada que a
+ *      regra proíbe (`sem`: o forro do PORTA-MALAS, o friso soleira da TAMPA); ou
+ *  (2) não aponta para outra peça-mãe: o nome não diz nenhum LUGAR do carro que o título do ponto (o nome dele, a
+ *      regra e o tipo do catálogo) não diga (o "Absorvedor impacto" da alma, o "Sensor TAMPA traseira" da fechadura da
+ *      tampa, a "Moldura alavanca CÂMBIO" do console ficam; o "Puxador interno PORTA-MALAS" sai da alça de teto).
+ *  A que não passa só deixa de aparecer NESTE ponto: continua no site, no catálogo e na zona do Raio-x. */
+export function ehLigada(p: PontoQuente, it: { n?: string }): boolean {
+  const nome = it.n ?? '';
+  const regras = p.eh === TIPO_INTEIRO || !p.eh ? [] : Array.isArray(p.eh) ? p.eh : [p.eh];
+  if (regras.some((e) => nomeDiz(nome, `${e.cab} ${e.tem ?? ''}`) && !(e.sem && nomeDiz(nome, e.sem)))) return true;
+  const doTitulo = `${p.nome} ${p.sub ?? ''} ${regras.map((e) => `${e.cab} ${e.tem ?? ''}`).join(' ')}`;
+  return !LUGARES.some((f) => dizLugar(nome, f) && !dizLugar(doTitulo, f));
+}
+
 /** A conta de um ponto: `n` = o número que a vista mostra (0 = "a gente procura"); `ligadas` = as peças do link quando
  *  NENHUMA delas é a do título (o 3º estado, ajuste da revisão 16): a loja não tem a peça do título, mas tem peça
  *  ligada a ela (a tampa e a moldura da grade, o absorvedor da alma, as molduras do console). A linha continua
  *  dizendo "a gente procura" e mostra "N ligadas"; as peças aparecem no próprio painel, nunca num link do catálogo.
  *  - com a peça do título no link: `n` = o link inteiro, `ligadas` vazia (o catálogo mostra tudo, como sempre);
- *  - sem a peça do título: `n` = 0 e `ligadas` = o link, menos a peça que DIZ a posição da outra ponta (`fora`: a alma
- *    TRASEIRA não é peça ligada da frente). Nada some do Raio-x: título + ligadas = o que o link mostra, fora essa. */
+ *  - sem a peça do título: `n` = 0 e `ligadas` = as peças do link que são LIGADAS à do título (`ehLigada`), menos a
+ *    que DIZ a posição da outra ponta (`fora`: a alma TRASEIRA não é peça ligada da frente). */
 export type ContaPonto<T> = { n: number; ligadas: T[] };
 export function contarComLigadas<T extends { id: string; n?: string; pos?: string }>(procurar: (f: Filtros) => T[], carro: CarroDoQuente, pontos: PontoQuente[]): Record<string, ContaPonto<T>> {
   return Object.fromEntries(pontos.map((p): [string, ContaPonto<T>] => {
     if (!p.tipo) return [p.k, { n: 0, ligadas: [] }];
     const itens = procurar(filtrosDoQuente(p, carro));
     if (itens.some((it) => ehDoPonto(p, it))) return [p.k, { n: itens.length, ligadas: [] }];
-    return [p.k, { n: 0, ligadas: itens.filter((it) => !(p.fora && it.pos === p.fora)) }];
+    return [p.k, { n: 0, ligadas: itens.filter((it) => !(p.fora && it.pos === p.fora) && ehLigada(p, it)) }];
   }));
 }
 
