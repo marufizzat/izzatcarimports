@@ -15,7 +15,7 @@
 //   (adicionarNaLista de lib/lista.ts: o cabeçalho ouve o evento).
 // O que NUNCA se diz: que o kit está completo, prazo, frete, troca. Só o estoque de agora.
 import css from './raioXBatida.css?inline';
-import { PONTOS, opcoesDoPonto, linhasDoPainel, marcadasDeInicio, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
+import { PONTOS, FRASE_PATIO, opcoesDoPonto, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
 import { ARTE, fotoDoCodigo, type CarroFiltro } from '../../lib/raioX';
 import { mensagemConserto, linkWhats, somaPrecos, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
 import { adicionarNaLista, lerLista, PAGINA_LISTA, MAX_LISTA, type ItemLista } from '../../lib/lista';
@@ -139,11 +139,11 @@ export function ligarBatida(ctx: Ctx) {
     const kit = comCarro() ? kitComCarro(ponto(k)) : await kitDoEstoque(ponto(k));
     if (minha !== vez) throw new Error('trocou');
     kits.set(k, kit);
-    // com carro: a 1ª de cada linha principal já marcada, e só a que É a peça do título (marcadasDeInicio); sem carro:
-    // nada marcado (as peças são de carros diferentes). A peça pequena que "costuma ir junto" a pessoa marca se
-    // precisar (o total não infla sozinho). Ano salvo sem peça (a lista é do modelo em todos os anos, com o aviso):
-    // nada marcado também, as peças são de outro ano.
-    if (!estados.has(k)) estados.set(k, { op: kit.map(() => 0), marcadas: marcadasDeInicio(kit, comCarro() && !carro?.aviso) });
+    // com carro: as principais já marcadas (marcadasDeInicio): a com peça, quando a peça é a do título, entra no total;
+    // a sem peça vai como "a gente procura no pátio". Sem carro: nada marcado (as peças são de carros diferentes). A
+    // peça pequena que "costuma ir junto" a pessoa marca se precisar (o total não infla sozinho). Ano salvo sem peça
+    // (a lista é do modelo em todos os anos, com o aviso): nenhuma peça com preço marcada, são de outro ano.
+    if (!estados.has(k)) estados.set(k, { op: kit.map(() => 0), marcadas: marcadasDeInicio(kit, comCarro(), !carro?.aviso) });
     return kit;
   }
   /** Ao entrar no modo: o carro e os 8 pontos contados quando o navegador folga (o toque no ponto já acha pronto). */
@@ -214,7 +214,13 @@ export function ligarBatida(ctx: Ctx) {
     const total = pe.querySelector<HTMLElement>('.rxb-total')!;
     const pedir = pe.querySelector<HTMLAnchorElement>('.rxb-pedir')!;
     const guardar = pe.querySelector<HTMLButtonElement>('.rxb-guardar')!;
-    const nada = !itens.length && !patio.length;
+    const pe2 = peDoConserto(itens.length, patio.length);
+    const nada = pe2.estado === 'nada';
+    // o botão diz o que o pedido é: o orçamento (com preço) ou a procura no pátio (sem total em dinheiro)
+    const rotulo = pedir.querySelector<HTMLElement>('.rxb-pedir-t');
+    if (rotulo && rotulo.textContent !== pe2.botao) rotulo.textContent = pe2.botao;
+    pedir.dataset.botao = pe2.dataBotao;
+    pedir.querySelector<HTMLElement>('.rxb-pedir-d')?.toggleAttribute('hidden', pe2.estado !== 'conserto');
     const txt = nada ? '<span class="rxb-t-n">Marque as peças que você precisa.</span>'
       : !itens.length ? `<span class="rxb-t-n">${patio.length === 1 ? '1 peça' : `${patio.length} peças`} para a gente procurar no pátio</span>`
       : `<span class="rxb-t-n">${itens.length === 1 ? '1 peça marcada' : `${itens.length} peças marcadas`}${patio.length ? ` + ${patio.length} para procurar` : ''}</span>`
@@ -241,9 +247,18 @@ export function ligarBatida(ctx: Ctx) {
     const tem = kit.filter((l) => l.n);
     const patio = kit.map((l, i) => ({ l, i })).filter((x) => !x.l.n);
     const dc = comCarro() ? ctx.doCarro(carro!.filtro) : '';
+    // sem nenhuma peça anunciada, o painel não termina num vazio: a lista do conserto vira o pedido de pátio
     const sub = tem.length
       ? `${dc ? `${esc(dc)} · ` : ''}${tem.length === 1 ? '1 peça deste conserto' : `${tem.length} peças deste conserto`} ${dc ? 'no estoque agora' : 'no estoque inteiro'}`
-      : `${dc ? `${esc(dc)} · ` : ''}nenhuma peça deste conserto no site agora`;
+      : `${dc ? `${esc(dc)} · ` : ''}sem anúncio agora: a gente procura no pátio`;
+    // pouca peça anunciada para o carro (0 ou 1 linha principal): a lista de pátio vem primeiro
+    const patioPrimeiro = comCarro() && poucoAnunciado(kit);
+    const htmlPatio = patio.length
+      ? `<fieldset class="rxb-patio${patioPrimeiro ? ' rxb-patio-1' : ''}"><legend>A gente procura no pátio</legend>`
+        + `<p>${esc(FRASE_PATIO)}</p><div class="rxb-chips">`
+        + patio.map(({ l, i }) => `<label class="rxb-chip"><input type="checkbox" data-marca="${i}"${e.marcadas.has(i) ? ' checked' : ''}><span>${esc(l.linha.nome)}</span></label>`).join('')
+        + '</div></fieldset>'
+      : '';
     let html = `<div class="rxb-painel">${cabeca(`Batida ${p.em}`, sub)}`;
     if (carro?.aviso) html += `<p class="rx-p-aviso">${esc(carro.aviso)}</p>`;
     if (!comCarro()) {
@@ -254,6 +269,7 @@ export function ligarBatida(ctx: Ctx) {
     // Com carro, todas à vista (estão marcadas e entram no total: nada marcado fica escondido).
     const cabem = comCarro() ? Infinity : NA_FRENTE_SEM_CARRO;
     let vistas = 0;
+    if (patioPrimeiro) html += htmlPatio;
     if (tem.length) {
       // primeiro as peças principais do conserto (com carro, já marcadas); depois as pequenas que costumam ir junto
       const grupo = (extra: boolean) => kit.map((l, i) => (l.n && !!l.linha.extra === extra ? linhaHtml(k, l, i, e, ++vistas > cabem && !e.marcadas.has(i)) : '')).join('');
@@ -263,15 +279,10 @@ export function ligarBatida(ctx: Ctx) {
       if (junto) html += `<p class="rxb-junto${vistas - kit.filter((l) => l.n && l.linha.extra).length >= cabem ? ' rxb-junto-oculto' : ''}">Também costuma ir junto</p><ul class="rxb-linhas" aria-label="Peças que costumam ir junto">${junto}</ul>`;
       if (tem.length > cabem) html += `<button type="button" class="rxb-mais" data-mais aria-expanded="false">Ver as ${tem.length} peças deste conserto</button>`;
     }
-    if (patio.length) {
-      html += `<fieldset class="rxb-patio"><legend>A gente procura no pátio</legend>`
-        + `<p>Sem anúncio no site agora. Marque o que você também precisa: vai no pedido para a gente procurar.</p><div class="rxb-chips">`
-        + patio.map(({ l, i }) => `<label class="rxb-chip"><input type="checkbox" data-marca="${i}"${e.marcadas.has(i) ? ' checked' : ''}><span>${esc(l.linha.nome)}</span></label>`).join('')
-        + '</div></fieldset>';
-    }
+    if (!patioPrimeiro) html += htmlPatio;
     // o total e o botão: filhos diretos do painel (presos ao pé da tela enquanto a lista inteira rola)
     html += `<div class="rxb-fixo"><p class="rxb-total" role="status" aria-live="polite"></p>`
-      + `<a class="botao botao-laranja rxb-pedir" data-botao="raiox-conserto" target="_blank" rel="noopener">${ctx.whats}Pedir o conserto no WhatsApp<span class="sr-only">, com ${DESCONTO_WHATS}% de desconto</span></a></div>`
+      + `<a class="botao botao-laranja rxb-pedir" data-botao="raiox-conserto" target="_blank" rel="noopener">${ctx.whats}<span class="rxb-pedir-t">Pedir o conserto no WhatsApp</span><span class="sr-only rxb-pedir-d">, com ${DESCONTO_WHATS}% de desconto</span></a></div>`
       + `<div class="rxb-pe"><button type="button" class="botao botao-linha rxb-guardar">Guardar na lista</button>`
       + `<p class="rxb-status" role="status" aria-live="polite"></p>`
       + `<p class="rxb-honesto">Peça usada: quando vende, acabou. A gente confere na peça antes de você comprar.</p></div></div>`;

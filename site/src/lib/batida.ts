@@ -282,11 +282,36 @@ export function linhasDoPainel<T extends { linha: Linha; n: number; certa: boole
   });
 }
 
-/** As linhas que nascem marcadas (e somadas): só com o carro dito, só as principais, só com peça e só quando a peça à
- *  mostra É a do título da linha. Sem carro, nada (as peças são de carros diferentes). */
-export function marcadasDeInicio(linhas: readonly { linha: Linha; n: number; certa: boolean }[], comCarro: boolean): Set<number> {
-  return new Set(comCarro ? linhas.flatMap((l, i) => (l.n > 0 && !l.linha.extra && l.certa ? [i] : [])) : []);
+/** As linhas que nascem marcadas: só com o carro dito e só as PRINCIPAIS (a lista do conserto daquele ponto).
+ *  - com peça: marcada e somada, e só quando a peça à mostra É a do título da linha (`pecasValem` = falso quando a lista
+ *    é de outro ano do carro: aí nenhuma peça com preço nasce marcada);
+ *  - sem peça (pátio): marcada como "a gente procura no pátio". O desmanche anuncia muito mais peça pequena que
+ *    lataria: nos 40 carros com mais peças, 35% dos pontos não têm NENHUMA linha principal com peça e 31% têm uma só
+ *    (medido em 11/11/2026), e o que falta é justamente o que define o conserto (para-choque, farol, capô, porta,
+ *    tampa). Com as linhas de pátio já marcadas o pedido sai com o conserto inteiro e a pessoa desmarca o que não
+ *    precisa; o total em dinheiro não muda (pátio não tem preço).
+ *  Sem carro, nada (as peças são de carros diferentes). As que "costumam ir junto" nunca nascem marcadas. */
+export function marcadasDeInicio(linhas: readonly { linha: Linha; n: number; certa: boolean }[], comCarro: boolean, pecasValem = true): Set<number> {
+  return new Set(comCarro ? linhas.flatMap((l, i) => (l.linha.extra ? [] : l.n > 0 ? (l.certa && pecasValem ? [i] : []) : [i])) : []);
 }
+
+/** Pouca peça anunciada para o carro neste ponto: 0 ou 1 linha principal com peça (e alguma para procurar). O painel
+ *  abre pela lista de pátio, com a frase "Nem toda peça está anunciada…", em vez de "nenhuma peça deste conserto". */
+export function poucoAnunciado(linhas: readonly { linha: Linha; n: number }[]): boolean {
+  const principais = linhas.filter((l) => !l.linha.extra);
+  return principais.filter((l) => l.n > 0).length <= 1 && principais.some((l) => !l.n);
+}
+
+/** O pé da lista, pelo que está marcado: peça com preço = o orçamento (total e "Pedir o conserto no WhatsApp"); só
+ *  pedido de pátio = sem total em dinheiro e "Pedir para procurar no pátio" (data-botao próprio); nada = o botão espera. */
+export type PeConserto = { estado: 'conserto' | 'patio' | 'nada'; botao: string; dataBotao: 'raiox-conserto' | 'raiox-patio' };
+export function peDoConserto(comPreco: number, dePatio: number): PeConserto {
+  if (comPreco > 0) return { estado: 'conserto', botao: 'Pedir o conserto no WhatsApp', dataBotao: 'raiox-conserto' };
+  if (dePatio > 0) return { estado: 'patio', botao: 'Pedir para procurar no pátio', dataBotao: 'raiox-patio' };
+  return { estado: 'nada', botao: 'Pedir o conserto no WhatsApp', dataBotao: 'raiox-conserto' };
+}
+/** A frase honesta da lista de pátio (nunca prometer que tem). */
+export const FRASE_PATIO = 'Nem toda peça está anunciada. Marque o que você precisa e a gente procura no pátio.';
 
 /** Um ponto contado: cada linha com o número de peças e a 1ª delas (a que aparece: a mais barata das que são a peça da
  *  linha); o total do ponto é sem repetir. As linhas EXTRA sem peça ficam de fora. */

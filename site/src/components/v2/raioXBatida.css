@@ -145,6 +145,9 @@
 .rxb-patio { min-width: 0; margin: 14px 0 0; padding: 14px 14px 12px; border: 0; border-radius: 16px; background: var(--surface-2); }
 .rxb-patio legend { float: left; width: 100%; padding: 0; font-size: 15px; font-weight: 760; line-height: 1.3; color: var(--ink); }
 .rxb-patio p { clear: both; margin: 0; padding-top: 3px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+/* pouca peça anunciada para o carro: a lista de pátio abre o painel (antes das peças com preço) */
+.rxb-patio-1 { margin: 0 0 4px; }
+.rxb-patio-1 + .rxb-junto { margin-top: 10px; padding-top: 12px; border-top: 0; }
 .rxb-chips { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
 .rxb-chip { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 0 11px; border-radius: 999px; cursor: pointer;
   background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 14.5px; font-weight: 620; line-height: 1.25; color: var(--ink);

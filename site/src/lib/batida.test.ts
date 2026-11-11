@@ -2,7 +2,8 @@
 // o que precisa de peça para existir roda só no ESTOQUE FIXO; as regras (lado, posição, nada em dobro, link = catálogo)
 // rodam no fixo e no estoque do dia, com o carro que o estoque tiver.
 import { describe, it, expect } from 'vitest';
-import { PONTOS, LIGADA, ehDaLinha, itensDaLinha, kitDoPonto, kitsDeTodos, linhasDoPainel, marcadasDeInicio, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha, type Linha } from './batida';
+import { PONTOS, LIGADA, FRASE_PATIO, ehDaLinha, itensDaLinha, kitDoPonto, kitsDeTodos, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha, type Linha } from './batida';
+import { mensagemConserto, somaPrecos } from './whats';
 import { ARTE } from './raioX';
 import { Busca, capaItem } from './busca';
 import { estoques, indiceFixo, carroMaisCheio, carrosDoIndice, indiceDoCarro, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
@@ -158,10 +159,22 @@ describe('a peça da linha: o nome começa pela peça que a linha promete', () =
     expect(so.map((x) => [x.linha.nome, x.n, !!x.linha.extra])).toEqual([['Maçaneta externa', 0, false], [`Maçaneta externa${LIGADA}`, 2, true]]);
     const ex = linhasDoPainel([{ linha: e, n: 1, certa: false }], vazia);
     expect(ex.map((x) => [x.linha.nome, x.n, !!x.linha.extra])).toEqual([[`Suporte do farol${LIGADA}`, 1, true]]);
-    // marcadas de início: só com carro, só principal, só com peça, só a certa
+    // marcadas de início: só com carro e só as principais: a com peça CERTA (somada) e as sem peça (pedido de pátio);
+    // a ligada e a que "costuma ir junto" nunca; lista de outro ano (pecasValem falso): só o pátio
     const linhas = [certa, semPeca, ...so, { linha: e, n: 1, certa: true }];
-    expect([...marcadasDeInicio(linhas, true)]).toEqual([0]);
+    expect([...marcadasDeInicio(linhas, true)]).toEqual([0, 1, 2]);
+    expect([...marcadasDeInicio(linhas, true, false)]).toEqual([1, 2]);
     expect([...marcadasDeInicio(linhas, false)]).toEqual([]);
+    // o pé: com preço = orçamento; só pátio = pedido de pátio (botão e data-botao próprios); nada = espera
+    expect(peDoConserto(2, 3)).toEqual({ estado: 'conserto', botao: 'Pedir o conserto no WhatsApp', dataBotao: 'raiox-conserto' });
+    expect(peDoConserto(0, 3)).toEqual({ estado: 'patio', botao: 'Pedir para procurar no pátio', dataBotao: 'raiox-patio' });
+    expect(peDoConserto(0, 0).estado).toBe('nada');
+    expect(poucoAnunciado([semPeca, semPeca])).toBe(true);
+    expect(poucoAnunciado([certa, semPeca])).toBe(true);
+    expect(poucoAnunciado([certa, certa, semPeca])).toBe(false);
+    expect(poucoAnunciado([certa])).toBe(false);   // nada para procurar
+    expect(FRASE_PATIO).toMatch(/^Nem toda peça está anunciada\./);
+    expect(FRASE_PATIO).not.toMatch(/tem|garant|certeza/i);
   });
 });
 
@@ -258,14 +271,15 @@ describe.each(estoques())('o kit da batida no $nome', ({ ix, fixo }) => {
         const marc = marcadasDeInicio(linhas, true);
         linhas.forEach((l, i) => {
           const onde = `${c.marca} ${c.modelo} [${p.k}] ${l.linha.nome}`;
-          // toda principal com peça nasce marcada (a que só tinha peça ligada virou pátio + "vai junto")
-          if (!l.linha.extra && l.n > 0 && !marc.has(i)) erros.push(`${onde}: principal com peça sem marcar`);
+          // toda principal nasce marcada: a com peça (a que só tinha peça ligada virou pátio + "vai junto") e a de pátio
+          if (!l.linha.extra && !marc.has(i)) erros.push(`${onde}: principal sem marcar`);
           if (!marc.has(i)) return;
-          marcadas++;
-          const peca = l.itens[0];
-          if (l.linha.extra || !peca) erros.push(`${onde}: marcada sem ser principal com peça`);
-          else if (!ehDaLinha(l.linha, peca.n) || !abre(l.linha, peca.n)) erros.push(`${onde}: marcada «${peca.n}»`);
+          if (l.linha.extra) erros.push(`${onde}: marcada sem ser principal`);
           if (l.linha.nome.endsWith(LIGADA)) erros.push(`${onde}: peça ligada marcada`);
+          const peca = l.itens[0];
+          if (!peca) return;   // pedido de pátio: sem peça e sem preço
+          marcadas++;
+          if (!ehDaLinha(l.linha, peca.n) || !abre(l.linha, peca.n)) erros.push(`${onde}: marcada «${peca.n}»`);
         });
         // o título que foi para o pátio e a peça ligada dele: nunca os dois com peça, nunca a ligada como principal
         for (const l of linhas) if (l.linha.nome.endsWith(LIGADA)) {
@@ -276,6 +290,57 @@ describe.each(estoques())('o kit da batida no $nome', ({ ix, fixo }) => {
     expect(erros.slice(0, 12)).toEqual([]);
     expect(carros.length).toBeGreaterThan(0);
     if (fixo) expect(marcadas).toBeGreaterThan(500);   // o estoque congelado tem as linhas; o do dia, o que tiver
+  });
+
+  // O ponto sem (ou quase sem) peça anunciada para o carro não termina num vazio (pedido do coordenador, 11/11): a lista
+  // do conserto vira o PEDIDO de pátio. Em todo carro e em todo ponto: o painel nunca abre com o botão morto, nunca
+  // mostra total sem peça com preço, e sem peça nenhuma o botão é o de pátio, com a mensagem certa.
+  it('em todo carro e em todo ponto: sem peça anunciada, a lista é o pedido de pátio (botão vivo, mensagem certa, nunca R$ 0,00)', () => {
+    const erros: string[] = [];
+    let semPeca = 0;
+    for (const c of carrosDoIndice(ix)) {
+      const bc = new Busca(indiceDoCarro(ix, c.marca, c.modelo));
+      const memo = new Map<string, ReturnType<Busca['procurar']>>();
+      const doCarro = (f: Parameters<Busca['procurar']>[0]) => {
+        const k = JSON.stringify(f);
+        let r = memo.get(k);
+        if (!r) { r = bc.procurar(f); memo.set(k, r); }
+        return r;
+      };
+      const meuCarro = `${c.marca} ${c.modelo}, ano ____`;
+      for (const p of PONTOS) {
+        const onde = `${c.marca} ${c.modelo} [${p.k}]`;
+        const linhas = linhasDoPainel(opcoesDoPonto(p, doCarro, c).map((o) => ({ ...o, n: o.itens.length })), (linha) => ({ linha, itens: [], certa: false, n: 0 }));
+        const marc = marcadasDeInicio(linhas, true);
+        const itens = linhas.filter((l, i) => marc.has(i) && l.n > 0).map((l) => l.itens[0]);
+        const patio = linhas.filter((l, i) => marc.has(i) && !l.n).map((l) => l.linha.nome);
+        const pe = peDoConserto(itens.length, patio.length);
+        // o painel nunca abre com o botão morto: todo ponto tem linhas principais, com peça ou para procurar
+        if (pe.estado === 'nada') erros.push(`${onde}: botão morto`);
+        const msg = mensagemConserto({ ponto: p.em, meuCarro, itens: itens.map((it) => ({ nome: it.n, id: it.id, preco: it.p })), patio });
+        if (!msg.includes(`batida ${p.em}`) || !msg.includes(`Meu carro: ${meuCarro}`)) erros.push(`${onde}: mensagem sem o ponto ou sem o carro`);
+        for (const nome of patio) if (!msg.includes(nome)) erros.push(`${onde}: pátio sem "${nome}" na mensagem`);
+        if (/R\$ 0,00/.test(msg)) erros.push(`${onde}: R$ 0,00 na mensagem`);
+        if (itens.length) {
+          // com preço: o total existe e é maior que zero
+          if (pe.dataBotao !== 'raiox-conserto' || !(somaPrecos(itens.map((it) => ({ preco: it.p }))).whats > 0)) erros.push(`${onde}: orçamento sem total`);
+        } else {
+          semPeca++;
+          // sem nenhuma peça com preço: o pedido de pátio, sem total em dinheiro
+          if (pe.estado !== 'patio' || pe.botao !== 'Pedir para procurar no pátio' || pe.dataBotao !== 'raiox-patio') erros.push(`${onde}: sem peça e o botão não é o de pátio`);
+          if (!patio.length || !msg.includes('Para procurar no pátio: ')) erros.push(`${onde}: sem a lista de pátio`);
+          if (/R\$|Total/.test(msg)) erros.push(`${onde}: pedido de pátio com dinheiro na mensagem`);
+          if (!poucoAnunciado(linhas)) erros.push(`${onde}: sem peça e a lista de pátio não abre o painel`);
+        }
+      }
+    }
+    expect(erros.slice(0, 12)).toEqual([]);
+    if (fixo) expect(semPeca).toBeGreaterThan(0);   // no estoque congelado há ponto sem peça (a frente do Onix, por exemplo)
+    // sem carro, nada nasce marcado (as peças são de carros diferentes)
+    for (const p of PONTOS) {
+      const linhas = linhasDoPainel(opcoesDoPonto(p, procurar).map((o) => ({ ...o, n: o.itens.length })), (linha) => ({ linha, itens: [], certa: false, n: 0 }));
+      expect(marcadasDeInicio(linhas, false).size, p.k).toBe(0);
+    }
   });
 
   it('linha extra sem peça sai da lista; a principal sem peça fica (pátio)', () => {
@@ -360,6 +425,8 @@ describe('a lista do conserto nos exemplos da revisão 15 (estoque fixo)', () =>
     // o WR-V do estoque congelado só tem a "Caixa ar condicionado" no tipo dos condensadores: nada marcado com ela
     const wrv = painel({ marca: 'Honda', modelo: 'WR-V' }, 'frente');
     expect(wrv.filter((l) => l.marcada && /^Caixa/.test(l.peca))).toEqual([]);
-    expect(wrv.find((l) => l.nome === 'Condensador do ar-condicionado')).toMatchObject({ peca: '', marcada: false });
+    // o título da linha vai como pedido de pátio (marcado, sem peça e sem preço); a caixa fica em "vai junto", sem marcar
+    expect(wrv.find((l) => l.nome === 'Condensador do ar-condicionado')).toMatchObject({ peca: '', marcada: true });
+    expect(wrv.find((l) => l.nome === `Condensador do ar-condicionado${LIGADA}`)).toMatchObject({ marcada: false });
   });
 });
