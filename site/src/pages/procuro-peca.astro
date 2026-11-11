@@ -93,7 +93,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
 
         <div class="pc-aviso">
           <p>Quer saber quando chegar peça do seu carro no pátio?</p>
-          <a class="botao botao-linha pc-aviso-botao" href={linkAviso(WHATS, 'carro')} rel="noopener" data-aviso>
+          <a class="botao botao-linha pc-aviso-botao" href={linkAviso(WHATS, 'carro')} rel="noopener" data-botao="procuro-avise" data-aviso>
             <Icone nome="whats" /><span>Me avise quando chegar peça</span>
           </a>
           <p class="pc-aviso-erro" id="pc-aviso-erro" role="status" aria-live="polite" hidden>Preencha a marca e o modelo do carro para a gente saber qual é.</p>
@@ -294,6 +294,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       a.href = url;
       a.target = '_blank';
       a.rel = 'noopener';
+      a.dataset.botao = 'procuro-form';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -303,6 +304,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       link.href = url;
       link.target = '_blank';
       link.rel = 'noopener';
+      link.dataset.botao = 'procuro-form';
       link.textContent = 'abra por aqui';
       status.appendChild(link);
       status.appendChild(document.createTextNode('.'));

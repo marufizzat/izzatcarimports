@@ -19,7 +19,7 @@ const passos = ['Mande a lista com o carro e o ano', 'A gente confere no pátio'
     <ul class="ofi-passos">
       {passos.map((t) => <li><Icone nome="check" /><span>{t}</span></li>)}
     </ul>
-    <a class="botao botao-laranja ofi-botao" href={whatsUrl(msg)} rel="noopener"><Icone nome="whats" />Mandar a lista no WhatsApp</a>
+    <a class="botao botao-laranja ofi-botao" href={whatsUrl(msg)} rel="noopener" data-botao="oficinas"><Icone nome="whats" />Mandar a lista no WhatsApp</a>
   </div>
 </section>
 <style>

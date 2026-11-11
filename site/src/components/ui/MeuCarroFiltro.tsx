@@ -56,7 +56,7 @@ export default function MeuCarroFiltro({ marca, modelo, ano, aoAplicar }: Props)
     linha = (
       <>
         <p className="cat-meu-txt"><span>Sem peças do seu carro no site agora</span><b>{nomeCarro(carro)}</b></p>
-        <a className="botao botao-laranja cat-meu-whats" href={whatsUrl(`Procuro peça para ${nomeCarro(carro)}. Tem no pátio?`)}>
+        <a className="botao botao-laranja cat-meu-whats" data-botao="meu-carro-sem-peca" href={whatsUrl(`Procuro peça para ${nomeCarro(carro)}. Tem no pátio?`)}>
           <Rotulo pc="Procurar no pátio" cel="Procurar" />
         </a>
       </>
