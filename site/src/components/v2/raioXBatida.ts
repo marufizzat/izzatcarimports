@@ -4,7 +4,9 @@
 //   borda visível, com a etiqueta dizendo o lado). Arte larga: etiqueta fixa com linha-guia; arte estreita: pontos
 //   numerados + as fichas embaixo. Tocar acende a parte batida (o mesmo véu laranja das zonas).
 // - No painel: a LISTA DO CONSERTO. Com carro (o salvo ou o da página): as peças do carro em cada linha, a mais barata
-//   das PRINCIPAIS já marcada (as pequenas que "costumam ir junto" ficam para a pessoa marcar); "Outra opção" passa
+//   das PRINCIPAIS já marcada, e só quando ela É a peça do título da linha (lib/batida.ts: `ehDaLinha`; a linha que só
+//   tem peça ligada vai para o pátio e a ligada fica em "Também costuma ir junto", sem marcar: revisão 15, P1-2). As
+//   pequenas que "costumam ir junto" ficam para a pessoa marcar; "Outra opção" passa
 //   pelas outras peças da mesma linha (nunca a palavra "trocar": é de política de loja). Sem carro: o estoque inteiro,
 //   nada marcado (as peças são de carros diferentes) e o convite para dizer o carro. Linha principal sem peça: "a gente
 //   procura no pátio" (entra no pedido como item para procurar, se a pessoa marcar).
@@ -13,15 +15,16 @@
 //   (adicionarNaLista de lib/lista.ts: o cabeçalho ouve o evento).
 // O que NUNCA se diz: que o kit está completo, prazo, frete, troca. Só o estoque de agora.
 import css from './raioXBatida.css?inline';
-import { PONTOS, opcoesDoPonto, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
+import { PONTOS, opcoesDoPonto, linhasDoPainel, marcadasDeInicio, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
 import { ARTE, fotoDoCodigo, type CarroFiltro } from '../../lib/raioX';
 import { mensagemConserto, linkWhats, somaPrecos, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
 import { adicionarNaLista, lerLista, PAGINA_LISTA, MAX_LISTA, type ItemLista } from '../../lib/lista';
 import type { Filtros, Item } from '../../lib/busca';
 
 export const ARQUIVO_BATIDA = '/dados/batida.json';
-/** O JSON do build (pages/dados/batida.json.ts): as peças uma vez só e, por ponto, [quantas, qual peça] de cada linha. */
-export type BatidaJson = { v: number; pecas: Rep[]; pontos: Record<string, [number, number][]> };
+/** O JSON do build (pages/dados/batida.json.ts): as peças uma vez só e, por ponto, [quantas, qual peça] de cada linha
+ *  (com um 3º número, 0, quando a peça à mostra não é a do título da linha). */
+export type BatidaJson = { v: number; pecas: Rep[]; pontos: Record<string, ([number, number] | [number, number, 0])[]> };
 
 type Procurar = (f: Filtros) => Item[];
 export type CarroDaVez = { procurar: Procurar | null; filtro: CarroFiltro; aviso: string; capa: (it: Item) => string };
@@ -55,8 +58,10 @@ function porEstilo() {
   document.head.appendChild(Object.assign(document.createElement('style'), { textContent: css }));
 }
 
-/** Uma linha do painel: a linha do kit, quantas peças e as opções (com carro: todas, da mais barata; sem: a 1ª). */
-type LinhaP = { linha: Linha; n: number; ops: Rep[] };
+/** Uma linha do painel: a linha do kit, quantas peças, as opções (com carro: todas, as que são a peça da linha primeiro
+ *  e a mais barata na frente; sem: a 1ª) e se a 1ª é a peça do título da linha. */
+type LinhaP = { linha: Linha; n: number; ops: Rep[]; certa: boolean };
+const semPeca = (linha: Linha): LinhaP => ({ linha, n: 0, ops: [], certa: false });
 /** Sem carro: quantas linhas com peça aparecem antes do "Ver as N peças deste conserto". */
 const NA_FRENTE_SEM_CARRO = 6;
 type Estado = { op: number[]; marcadas: Set<number> };
@@ -115,15 +120,15 @@ export function ligarBatida(ctx: Ctx) {
   // ---- os dados: a busca do carro (uma linha por vez, sem tarefa longa) ou o JSON do estoque inteiro ----
   function kitComCarro(p: Ponto): LinhaP[] {
     const c = carro!;
-    return opcoesDoPonto(p, c.procurar!, c.filtro).map(({ linha, itens }) => ({ linha, n: itens.length, ops: itens.map((it) => repDe(it, c.capa)) }));
+    return linhasDoPainel(opcoesDoPonto(p, c.procurar!, c.filtro).map(({ linha, itens, certa }): LinhaP => ({ linha, n: itens.length, ops: itens.map((it) => repDe(it, c.capa)), certa })), semPeca);
   }
   async function kitDoEstoque(p: Ponto): Promise<LinhaP[]> {
     json ??= fetch(ARQUIVO_BATIDA).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<BatidaJson>; })
       .catch((e) => { json = null; throw e; });
     const j = await json;
     const linhas = j.pontos[p.k] ?? [];
-    return p.linhas.map((linha, i) => ({ linha, n: linhas[i]?.[0] ?? 0, ops: linhas[i]?.[0] ? [j.pecas[linhas[i][1]]] : [] }))
-      .filter((l) => l.n > 0 || !l.linha.extra);
+    return linhasDoPainel(p.linhas.map((linha, i): LinhaP => ({ linha, n: linhas[i]?.[0] ?? 0, ops: linhas[i]?.[0] ? [j.pecas[linhas[i][1]]] : [], certa: !!linhas[i]?.[0] && linhas[i][2] !== 0 }))
+      .filter((l) => l.n > 0 || !l.linha.extra), semPeca);
   }
   async function kitDe(k: string): Promise<LinhaP[]> {
     const pronto = kits.get(k);
@@ -134,9 +139,11 @@ export function ligarBatida(ctx: Ctx) {
     const kit = comCarro() ? kitComCarro(ponto(k)) : await kitDoEstoque(ponto(k));
     if (minha !== vez) throw new Error('trocou');
     kits.set(k, kit);
-    // com carro: a mais barata de cada linha já marcada; sem carro: nada marcado (as peças são de carros diferentes)
-    // (só as principais: a peça pequena que "costuma ir junto" a pessoa marca se precisar, o total não infla sozinho)
-    if (!estados.has(k)) estados.set(k, { op: kit.map(() => 0), marcadas: new Set(comCarro() ? kit.flatMap((l, i) => (l.n && !l.linha.extra ? [i] : [])) : []) });
+    // com carro: a 1ª de cada linha principal já marcada, e só a que É a peça do título (marcadasDeInicio); sem carro:
+    // nada marcado (as peças são de carros diferentes). A peça pequena que "costuma ir junto" a pessoa marca se
+    // precisar (o total não infla sozinho). Ano salvo sem peça (a lista é do modelo em todos os anos, com o aviso):
+    // nada marcado também, as peças são de outro ano.
+    if (!estados.has(k)) estados.set(k, { op: kit.map(() => 0), marcadas: marcadasDeInicio(kit, comCarro() && !carro?.aviso) });
     return kit;
   }
   /** Ao entrar no modo: o carro e os 8 pontos contados quando o navegador folga (o toque no ponto já acha pronto). */

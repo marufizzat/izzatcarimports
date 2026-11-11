@@ -42,3 +42,30 @@ export function carroMaisCheio(ix: Indice): { marca: string; modelo: string } | 
   const [marca, modelo] = melhor[0].split('|');
   return { marca, modelo };
 }
+
+/** Todos os carros (marca + modelo) de um índice, também os que só aparecem como 2º carro de uma peça (`ms`). */
+export function carrosDoIndice(ix: Indice): { marca: string; modelo: string }[] {
+  const v = new Map<string, { marca: string; modelo: string }>();
+  ix.id.forEach((_, k) => {
+    const marca = ix.marcas[ix.b[k]];
+    for (const modelo of ix.ms?.[String(k)] ?? [ix.m[k]]) if (marca && modelo) v.set(`${marca}|${modelo}`, { marca, modelo });
+  });
+  return [...v.values()];
+}
+/** O índice só com as peças de UM carro, como o /dados/carro/<k>.json que o navegador baixa (pages/dados/carro/[k].json.ts:
+ *  as colunas recortadas nas posições do carro, os mapas esparsos renumerados). A lista do conserto e as vistas do
+ *  Raio-x contam nele, não no índice inteiro. */
+export function indiceDoCarro(ix: Indice, marca: string, modelo: string): Indice {
+  const N = ix.id.length;
+  const ks = ix.id.map((_, k) => k).filter((k) => ix.marcas[ix.b[k]] === marca && (ix.ms?.[String(k)] ?? [ix.m[k]]).includes(modelo));
+  const novo = new Map(ks.map((k, i) => [String(k), String(i)]));
+  const out: Record<string, unknown> = {};
+  for (const [chave, v] of Object.entries(ix)) {
+    if (Array.isArray(v) && v.length === N) out[chave] = ks.map((k) => v[k]);
+    else if (typeof v === 'string' && v.length === N && chave !== 'updated') out[chave] = ks.map((k) => v[k]).join('');
+    else if (v && typeof v === 'object' && !Array.isArray(v) && ['ms', 'ys', 'dif'].includes(chave)) {
+      out[chave] = Object.fromEntries(Object.entries(v as Record<string, unknown>).filter(([k]) => novo.has(k)).map(([k, w]) => [novo.get(k), w]));
+    } else out[chave] = v;
+  }
+  return out as Indice;
+}
