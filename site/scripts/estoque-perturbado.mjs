@@ -95,8 +95,18 @@ async function gerar(produtos) {
   return { ok: true };
 }
 
-/** Os testes que o robô roda: python testes/test_dados.py e a suíte do site. */
+/** Os testes que o robô roda: python testes/test_dados.py e a suíte do site. Se TODO vermelho for tempo esgotado (a
+ *  máquina estava ocupada com outra coisa: não é o estoque), roda a suíte mais uma vez com o MESMO estoque e conta a 2ª
+ *  passada; a tabela diz que houve a 1ª. Vermelho que não é de tempo nunca é repetido. */
 async function testar(semPython = false) {
+  const r = await umaPassada(semPython);
+  const soTempo = (fs) => fs.length > 0 && fs.every((f) => /timed out|STACK_TRACE_ERROR|Timeout calling|tempo esgotado/i.test(f));
+  if (!soTempo(r.falhas)) return r;
+  const r2 = await umaPassada(semPython);
+  return { ...r2, nota: `2ª passada (na 1ª, ${r.falhas.length} teste(s) estouraram o tempo com a máquina ocupada)` };
+}
+
+async function umaPassada(semPython) {
   const falhas = [];
   // (com --novas as peças novas entram só no busca.json: o test_dados.py compara o índice com o pecas.json e não vale)
   if (!semPython) {
@@ -206,9 +216,9 @@ function acrescentarNovas(arqDoAr, ids) {
 const linhas = [];
 const registrar = (nome, pecas, tirados, evento, t0, r) => {
   const seg = Math.round((Date.now() - t0) / 1000);
-  const linha = { nome, pecas, tirados, evento, ok: !r.falhas.length, testes: r.testes, arquivos: r.arquivos, falhas: r.falhas, seg };
+  const linha = { nome, pecas, tirados, evento, ok: !r.falhas.length, testes: r.testes, arquivos: r.arquivos, falhas: r.falhas, seg, nota: r.nota ?? '' };
   linhas.push(linha);
-  console.log(`${String(nome).padEnd(8)} ${String(pecas).padStart(5)} peças (-${tirados})  ${linha.ok ? 'VERDE' : `VERMELHO (${r.falhas.length})`}  ${r.testes} testes  ${seg}s  ${evento}`);
+  console.log(`${String(nome).padEnd(8)} ${String(pecas).padStart(5)} peças (-${tirados})  ${linha.ok ? 'VERDE' : `VERMELHO (${r.falhas.length})`}  ${r.testes} testes  ${seg}s  ${[evento, r.nota].filter(Boolean).join(' | ')}`);
   for (const f of r.falhas) console.log(`    ✗ ${f}`);
   writeFileSync(join(CACHE, 'tabela.json'), JSON.stringify(linhas, null, 1));
 };

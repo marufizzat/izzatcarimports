@@ -21,7 +21,10 @@ import { falhasDe } from './busca.regressao';
 const dia = JSON.parse(readFileSync('public/dados/busca.json', 'utf8'));
 /** O estoque congelado de 09/11/2026: os casos escritos à mão. */
 const ix = JSON.parse(readFileSync('testes/fixtures/estoque-busca.json', 'utf8'));
-const b = () => new Busca(ix);
+// UMA busca para todos os casos (como no navegador: o índice é montado uma vez). Montar o índice de 5 mil peças em cada
+// chamada custava ~45 montagens neste arquivo; com a máquina ocupada um teste passava dos 30 s do robô sem ter falhado.
+const unica = new Busca(ix);
+const b = () => unica;
 const nomes = (q: string) => b().procurar({ q }).map((it) => it.n);
 
 
