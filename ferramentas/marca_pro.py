@@ -207,7 +207,14 @@ def capa_v2(mlb, logo="a", rota=2, cor=None):
         tela = Image.fromarray(np.clip(fundo, 0, 255).astype("uint8")).convert("RGBA")
         peca = rec.crop(caixa).resize((nw, nh), Image.LANCZOS)
         if cor is not None:              # tom azul da luz: só os pixels da peça mudam (fundo, sombra, selo iguais)
-            peca, rc = ce.aplicar_cor(peca, cor, im, rec.split()[3])
+            g_foto, g_alfa = im, rec.split()[3]
+            orig = TRAB / "orig" / f"{mlb}.jpg"   # a guarda (azul nos claros) vale na FOTO do vendedor, não na
+            med = ce.medir_azul(peca)             # maquiada (o ChatGPT realça a cor); só se a peça está azulada
+            if (med["br"] or 0) >= ce.COR["LIMIAR"] and orig.exists():
+                g_foto = Image.open(orig).convert("RGB")
+                g_foto.thumbnail((1200, 1200))
+                g_alfa = ce.recortar_vision(g_foto).split()[3]
+            peca, rc = ce.aplicar_cor(peca, cor, g_foto, g_alfa)
             if rc:
                 info["cor"] = rc
         tela.alpha_composite(peca, (x, y))

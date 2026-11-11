@@ -125,6 +125,11 @@ def test_decisao_em_camadas():
     assert d(azul, preto, None, 45.0, neutra)[0:3:2] == ("manter", True)            # azul forte nos claros: tinta
     assert d(azul, preto, None, 25.0, neutra)[0:3:2] == ("conservadora", True)      # azul nos claros: só o excesso
     assert d(azul, preto, None, 5.0, neutra)[0:3:2] == ("neutra", False)            # fotos mostram neutra
+    com_preto = dict(preto, t="Moldura Painel Jaguar E-pace Preto")                  # o título diz a cor neutra
+    assert d(azul, com_preto, None, 25.0, azul_todas)[0:3:2] == ("neutra", False)
+    assert d(azul, dict(com_preto, n="Portinhola tanque"))[0] == "manter"          # lataria vem antes do "Preto"
+    assert d(azul, com_preto, None, 45.0)[0] == "manter"                             # azul forte nos claros também
+    assert d(azul, dict(preto, ficha=[["Cor", "Preto"]]), None, 5.0, azul_todas)[0] == "conservadora"  # ficha não
     assert d(azul, preto, None, 5.0, azul_todas)[0:3:2] == ("conservadora", True)   # azul em todas: cor a conferir
     assert d(azul, preto, None, 5.0, {"q1": 10.0, "n": 1})[0] == "conservadora"     # 1 foto só não prova
     assert d(azul, preto, None, None, None)[0:3:2] == ("conservadora", True)        # sem fotos para conferir

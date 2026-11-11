@@ -605,11 +605,12 @@ def compor_v2(recorte, checar_cantos=True, original=None, info=None, confiar=Fal
 # portinhola pintada de azul do BMW X3), e a ficha "Cor: Preto" é o padrão do vendedor (90% das peças) — a portinhola
 # azul diz "Preto". Por isso a decisão é em camadas (decidir_cor):
 #   manter ........ ajuste `cor: "manter"`; palavra de azul no título/nome/ficha (trava); peça PINTADA da cor do carro
-#                   (lataria: dobradiça, portinhola, para-lama, retrovisor externo...); ou azul também nos CLAROS da peça
-#                   acima do tom do fundo da própria foto (tinta/plástico azul: Kicks, C3, C4 Picasso, portinhola BMW).
-#                   As três últimas vão para o _revisar.json como "cor a conferir".
-#   neutra ........ ajuste `cor: "neutra"`, ou as OUTRAS fotos do anúncio mostram a peça neutra (1º quartil do B−R das
-#                   partes escuras <= PROVA, em >= PROVA_MIN fotos da peça; classes de fotos-ml-caixas.json).
+#                   (lataria: dobradiça, portinhola, para-lama, retrovisor externo...); ou azul FORTE também nos CLAROS
+#                   da peça acima do tom do fundo da própria foto (tinta/plástico azul: Kicks, portinhola BMW). As duas
+#                   últimas vão para o _revisar.json como "cor a conferir". Azul moderado nos claros: só o excesso.
+#   neutra ........ ajuste `cor: "neutra"`; o TÍTULO diz preto/cinza/grafite/prata/cromado (a ficha não: é o padrão);
+#                   ou as OUTRAS fotos do anúncio mostram a peça neutra (1º quartil do B−R das partes escuras <= PROVA,
+#                   em >= PROVA_MIN fotos da peça; classes de fotos-ml-caixas.json).
 #   conservadora .. azulada sem evidência para nenhum lado: tira só o EXCESSO (deixa as partes escuras em ~ALVO_CONS de
 #                   B−R) e entra no _revisar.json como "cor a conferir".
 # A correção (corrigir_azul) muda só o CROMA e só para o lado do azul: a luminância de cada pixel fica (riscos e
@@ -637,6 +638,9 @@ LUMA = (0.299, 0.587, 0.114)
 # (Fiesta, Gol, Toro: R cai, G fica, B sobe); luminância zero (tirar croma nessa direção não muda o brilho)
 AZUL_LUZ = (-0.39, 0.02, 0.92)
 PALAVRA_AZUL = r"\b(azul|azuis|azulad[oa]s?|marinho|blue|navy|anil|turquesa|celeste|petr[oó]leo)\b"
+# cor NEUTRA escrita pelo vendedor no TÍTULO (a ficha "Cor: Preto" é o padrão dele e não conta): evidência de que a peça
+# não é azul — vale depois das travas (azul escrito, lataria pintada, azul forte nos claros)
+PALAVRA_NEUTRA = r"\b(pret[oa]s?|black|cinza|grafite|prata|prateado|chumbo|cromad[oa]s?)\b"
 # peça PINTADA da cor do carro (lataria): a cor é a do carro de onde saiu — nunca neutralizar sem o olho humano
 PINTADA = (r"^(para-?lama|paralama|porta (dianteira|traseira)|para-?choque (dianteiro|traseiro)$|portinhola|spoiler|"
            r"aerof[oó]lio|cap[oô]\b|tampa (traseira|porta-?malas)$|capa retrovisor externo|"
@@ -813,6 +817,7 @@ def decidir_cor(medida, peca=None, ajuste=None, guarda=None, prova=None, r=COR):
     """Puro (sem imagem): (modo, motivo, conferir). medida = medir_azul() da peça na capa; peca = item do pecas.json
     (t, n, ficha); ajuste = valor de `cor` em capas_ajustes.json ("manter" | "neutra" | None); guarda = guarda_tinta();
     prova = evidencia_cor() das outras fotos (ou None). conferir = vai para o _revisar.json como "cor a conferir"."""
+    import re
     peca = peca or {}
     if ajuste in ("manter", "neutra"):
         return ajuste, f"ajuste manual (cor: {ajuste})", False
@@ -825,6 +830,9 @@ def decidir_cor(medida, peca=None, ajuste=None, guarda=None, prova=None, r=COR):
         return "manter", "peça pintada da cor do carro", True
     if guarda is not None and guarda >= r["GUARDA_FORTE"]:
         return "manter", f"azul forte também nos claros da peça ({guarda:.0f} acima do fundo da foto)", True
+    neutra = re.search(PALAVRA_NEUTRA, str(peca.get("t") or ""), re.I)
+    if neutra:
+        return "neutra", f"o título diz \"{neutra.group(1).lower()}\"", False
     if guarda is not None and guarda >= r["GUARDA"]:
         return "conservadora", f"azul também nos claros da peça ({guarda:.0f} acima do fundo da foto)", True
     if prova and prova.get("n", 0) >= r["PROVA_MIN"] and prova.get("q1") is not None and prova["q1"] <= r["PROVA"]:
