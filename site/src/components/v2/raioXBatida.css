@@ -71,6 +71,11 @@
 .rxb-fichas button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
 .rxb-fichas button.on { background: #ff6a00; color: #1d1d1f; box-shadow: none; }
 .rxb-fichas button.on i { background: #1d1d1f; color: #fff; }
+/* "Girar o carro": o ponto que fica do outro lado nesta vista leva o sinal de girar (escolher gira o carro) */
+.rxb-fichas button.outro::after, .rxb-etiqueta.outro::after { content: ""; flex: none; width: 14px; height: 14px; background: currentColor; opacity: .72;
+  -webkit-mask: var(--rx-giro) center / contain no-repeat; mask: var(--rx-giro) center / contain no-repeat; }
+.rxb-fichas button.outro:not(.on) { background: var(--surface-2); }
+.rxb-etiqueta.outro::after { display: inline-block; margin-left: 6px; vertical-align: -2px; }
 @container rxarte (min-width: 640px) { .rxb-fichas button { padding-left: 14px; } .rxb-fichas i { display: none; } }
 @media (min-width: 768px) { .rxb-fichas { flex-wrap: wrap; overflow: visible; } }
 

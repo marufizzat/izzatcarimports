@@ -43,6 +43,8 @@ export type CtxDentro = {
   sizes: string;
   /** depois de voltar ao carro: o Raio-x repõe o painel da zona */
   aoVoltar(): void;
+  /** "Girar o carro": o ponto da zona na vista que está na tela, em % do palco (null = o da arte da frente) */
+  origem?(zona: string): string | null;
 };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -323,7 +325,7 @@ export function ligarPorDentro(ctx: CtxDentro) {
     const html = document.documentElement;
     // o zoom sai da parte do carro que se abre (o ponto da zona na arte do carro)
     const z = ZONAS.find((x) => x.k === zona);
-    if (z) html.style.setProperty('--rxf-origem', `${pct(z.ancora[0], ARTE.w)} ${pct(z.ancora[1], ARTE.h)}`);
+    if (z) html.style.setProperty('--rxf-origem', ctx.origem?.(zona) ?? `${pct(z.ancora[0], ARTE.w)} ${pct(z.ancora[1], ARTE.h)}`);
     palco.style.setProperty('view-transition-name', 'rx-palco');
     html.classList.add('rxf-troca');
     html.classList.toggle('rxf-volta', !entrando);

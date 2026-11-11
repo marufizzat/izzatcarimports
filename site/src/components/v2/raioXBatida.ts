@@ -13,8 +13,9 @@
 //   (adicionarNaLista de lib/lista.ts: o cabeçalho ouve o evento).
 // O que NUNCA se diz: que o kit está completo, prazo, frete, troca. Só o estoque de agora.
 import css from './raioXBatida.css?inline';
-import { PONTOS, opcoesDoPonto, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
-import { ARTE, fotoDoCodigo, type CarroFiltro } from '../../lib/raioX';
+import { PONTOS, PONTOS_DO_OUTRO_LADO, opcoesDoPonto, repDe, linkDaLinha, type Linha, type Ponto, type Rep } from '../../lib/batida';
+import { ARTE, fotoDoCodigo, type CarroFiltro, type LadoArte } from '../../lib/raioX';
+import type { PontoTras } from '../../lib/raioXTras';
 import { mensagemConserto, linkWhats, somaPrecos, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
 import { adicionarNaLista, lerLista, PAGINA_LISTA, MAX_LISTA, type ItemLista } from '../../lib/lista';
 import type { Filtros, Item } from '../../lib/busca';
@@ -38,6 +39,9 @@ export type Ctx = {
   dizerCarro(): void;
   /** o ícone do WhatsApp (do sprite) */
   whats: string;
+  /** "Girar o carro": a vista que a arte mostra agora e o pedido para girar (o ponto escolhido fica do outro lado) */
+  lado(): LadoArte;
+  girar(): Promise<boolean>;
 };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -72,13 +76,23 @@ export function ligarBatida(ctx: Ctx) {
   camada.setAttribute('aria-label', 'Onde foi a batida');
   const vb = `viewBox="0 0 ${ARTE.w} ${ARTE.h}"`;
   const poli = (p: string) => `M${p.trim().split(/\s+/).join('L')}Z`;
-  camada.innerHTML = `<svg class="rxb-camada rxb-escuros" ${vb} aria-hidden="true">${PONTOS.map((p) => `<path data-b="${p.k}" fill-rule="evenodd" d="M-120,-120H${ARTE.w + 120}V${ARTE.h + 120}H-120Z ${p.realce.map(poli).join(' ')}"/>`).join('')}</svg>`
-    + `<svg class="rxb-camada rxb-realces" ${vb} aria-hidden="true">${PONTOS.map((p) => `<g data-b="${p.k}">${p.realce.map((r) => `<polygon points="${r}"/>`).join('')}</g>`).join('')}</svg>`
-    + `<svg class="rxb-mapa" ${vb} aria-hidden="true"><g class="rxb-guias">${PONTOS.map((p) => `<line data-b="${p.k}" x1="${p.ancora[0]}" y1="${p.ancora[1]}" x2="${p.etiqueta[0]}" y2="${p.etiqueta[1]}"/>`).join('')}</g>`
-    + PONTOS.map((p) => `<g class="rxb-toque" data-toque="${p.k}">${p.toque.map((t) => `<polygon points="${t}"/>`).join('')}</g>`).join('') + '</svg>'
-    + '<span class="rxb-pergunta" aria-hidden="true">Toque onde foi a batida</span>'
-    + PONTOS.map((p, i) => `<button type="button" class="rxb-ponto" data-b="${p.k}" data-ponto="${p.k}" aria-pressed="false" aria-controls="${id}" style="left:${pct(p.ancora[0], ARTE.w)};top:${pct(p.ancora[1], ARTE.h)}"><span class="sr-only">Batida ${esc(p.em)}</span><i class="num" aria-hidden="true">${i + 1}</i></button>`).join('')
-    + PONTOS.map((p) => `<span class="rxb-etiqueta" data-b="${p.k}" data-toque="${p.k}" aria-hidden="true" style="left:${pct(p.etiqueta[0], ARTE.w)};top:${pct(p.etiqueta[1], ARTE.h)}">${esc(p.nome)}</span>`).join('');
+  // os pontos da vista: na da frente, os 8 de lib/batida.ts; na de trás ("Girar o carro"), os 5 que aparecem nela, com a
+  // geometria de lib/raioXTras.ts (o nome, o número e as linhas continuam os do ponto de mesma chave)
+  type Geo = Pick<Ponto, 'k' | 'ancora' | 'etiqueta' | 'toque' | 'realce'>;
+  let ladoB: LadoArte = 'frente';
+  let geoTras: PontoTras[] | null = null;
+  const numero = (k: string) => PONTOS.findIndex((p) => p.k === k) + 1;
+  function htmlCamada(geo: readonly Geo[]): string {
+    const nome = (k: string) => PONTOS.find((p) => p.k === k)!;
+    return `<svg class="rxb-camada rxb-escuros" ${vb} aria-hidden="true">${geo.map((p) => `<path data-b="${p.k}" fill-rule="evenodd" d="M-120,-120H${ARTE.w + 120}V${ARTE.h + 120}H-120Z ${p.realce.map(poli).join(' ')}"/>`).join('')}</svg>`
+      + `<svg class="rxb-camada rxb-realces" ${vb} aria-hidden="true">${geo.map((p) => `<g data-b="${p.k}">${p.realce.map((r) => `<polygon points="${r}"/>`).join('')}</g>`).join('')}</svg>`
+      + `<svg class="rxb-mapa" ${vb} aria-hidden="true"><g class="rxb-guias">${geo.map((p) => `<line data-b="${p.k}" x1="${p.ancora[0]}" y1="${p.ancora[1]}" x2="${p.etiqueta[0]}" y2="${p.etiqueta[1]}"/>`).join('')}</g>`
+      + geo.map((p) => `<g class="rxb-toque" data-toque="${p.k}">${p.toque.map((t) => `<polygon points="${t}"/>`).join('')}</g>`).join('') + '</svg>'
+      + '<span class="rxb-pergunta" aria-hidden="true">Toque onde foi a batida</span>'
+      + geo.map((p) => `<button type="button" class="rxb-ponto" data-b="${p.k}" data-ponto="${p.k}" aria-pressed="false" aria-controls="${id}" style="left:${pct(p.ancora[0], ARTE.w)};top:${pct(p.ancora[1], ARTE.h)}"><span class="sr-only">Batida ${esc(nome(p.k).em)}</span><i class="num" aria-hidden="true">${numero(p.k)}</i></button>`).join('')
+      + geo.map((p) => `<span class="rxb-etiqueta" data-b="${p.k}" data-toque="${p.k}" aria-hidden="true" style="left:${pct(p.etiqueta[0], ARTE.w)};top:${pct(p.etiqueta[1], ARTE.h)}">${esc(nome(p.k).nome)}</span>`).join('');
+  }
+  camada.innerHTML = htmlCamada(PONTOS);
   palco.appendChild(camada);
   // as fichas (um alvo maior para o dedo, com os mesmos números): fora do Tab e do leitor de tela, que têm os pontos
   const fila = document.createElement('div');
@@ -86,8 +100,31 @@ export function ligarBatida(ctx: Ctx) {
   fila.setAttribute('aria-hidden', 'true');
   fila.innerHTML = PONTOS.map((p, i) => `<button type="button" tabindex="-1" data-b="${p.k}" data-toque="${p.k}"><i class="num">${i + 1}</i><span>${esc(p.nome)}</span></button>`).join('');
   fichas.appendChild(fila);
-  const pecasVisuais = [...camada.querySelectorAll<HTMLElement>('[data-b]'), ...fila.querySelectorAll<HTMLElement>('[data-b]')].map((el) => ({ el, k: el.dataset.b! }));
-  const botoes = [...camada.querySelectorAll<HTMLButtonElement>('.rxb-ponto')];
+  let pecasVisuais: { el: HTMLElement; k: string }[] = [];
+  let botoes: HTMLButtonElement[] = [];
+  /** As peças da arte desta vista (refeitas quando o carro gira) e as fichas "do outro lado". */
+  function lerCamada() {
+    pecasVisuais = [...camada.querySelectorAll<HTMLElement>('[data-b]'), ...fila.querySelectorAll<HTMLElement>('[data-b]')].map((el) => ({ el, k: el.dataset.b! }));
+    botoes = [...camada.querySelectorAll<HTMLButtonElement>('.rxb-ponto')];
+    for (const f of fila.querySelectorAll<HTMLElement>('[data-b]')) f.classList.toggle('outro', PONTOS_DO_OUTRO_LADO[ladoB].includes(f.dataset.b!));
+    // na vista da frente, o ponto do lado de lá (na borda visível) também gira o carro: a etiqueta dele avisa
+    for (const e of camada.querySelectorAll<HTMLElement>('.rxb-etiqueta')) e.classList.toggle('outro', PONTOS_DO_OUTRO_LADO[ladoB].includes(e.dataset.b!));
+  }
+  lerCamada();
+  /** "Girar o carro": a geometria da outra vista, baixada antes da troca (a troca em si é síncrona). */
+  async function preparar(l: LadoArte) {
+    if (l === 'tras' && !geoTras) geoTras = (await import('../../lib/raioXTras')).PONTOS_TRAS;
+  }
+  /** O carro girou: os pontos passam para o lugar deles na outra vista (o escolhido continua escolhido). */
+  function virou(l: LadoArte) {
+    if (l === ladoB || (l === 'tras' && !geoTras)) return;
+    const foco = document.activeElement instanceof HTMLElement && camada.contains(document.activeElement) ? document.activeElement.dataset.b : undefined;
+    ladoB = l;
+    camada.innerHTML = htmlCamada(l === 'tras' ? geoTras! : PONTOS);
+    lerCamada();
+    acender();
+    if (foco) camada.querySelector<HTMLElement>(`.rxb-ponto[data-b="${foco}"]`)?.focus({ preventScroll: true });
+  }
 
   // ---- o estado ----
   let ligado = false;
@@ -323,6 +360,8 @@ export function ligarBatida(ctx: Ctx) {
   async function selecionar(k: string, como: { focar?: boolean; rolar?: boolean } = {}) {
     raiz.classList.add('tocado');
     escolhidaEm = performance.now();
+    // o ponto fica do outro lado do carro: o carro gira sozinho (a lista monta enquanto isso)
+    if (PONTOS_DO_OUTRO_LADO[ctx.lado()].includes(k)) void ctx.girar();
     const igual = ativo === k && !!conteudo.querySelector('.rxb-pe');
     ativo = k;
     passando = null;
@@ -507,7 +546,7 @@ export function ligarBatida(ctx: Ctx) {
   }
 
   return {
-    entrar, sair, trocouCarro, selecionar,
+    entrar, sair, trocouCarro, selecionar, preparar, virou,
     /** Esc: limpa o ponto e devolve o foco a ele */
     esc: () => { if (ligado && ativo) { limpar(true); return true; } return false; },
     get erro() { return erro; },
