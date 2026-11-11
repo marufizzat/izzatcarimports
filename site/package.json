@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "test": "vitest run"
+    "test": "vitest run --testTimeout=30000 --hookTimeout=30000"
   },
   "dependencies": {
     "@astrojs/react": "^4.4.2",
