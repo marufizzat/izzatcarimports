@@ -259,6 +259,8 @@ const confianca: [string, string][] = [
   .cat-total-q { font-weight: 600; color: var(--ink); }
   /* "12 peças para “farol” e mais 66 ligadas": o resto da lista (as que citam a palavra), mais leve */
   .cat-total-mais { font-weight: 560; color: var(--ink-3); }
+  /* no celular o título tem uma linha só: o resto fica para o bloco "Outras peças ligadas a…", na própria lista */
+  @media (max-width: 699px) { .cat-total-mais { display: none; } }
   .cat-total .oem { font-size: 14px; font-weight: 600; letter-spacing: .03em; }
   .cat-total-espera { color: var(--ink-3); }
   [data-selo-reputacao] { flex: none; max-width: 100%; }
