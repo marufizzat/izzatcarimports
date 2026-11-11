@@ -1,19 +1,24 @@
 ---
 // "Raio-x do carro" (home, depois das categorias; página do carro, acima da grade): a arte do carro em vista fantasma
-// (public/arte/v2/raio-x.webp) com as ZONAS tocáveis por cima (lib/raioX.ts). Tocar, clicar ou focar (Tab) uma zona
-// acende a parte (laranja translúcido, rótulo laranja com letra grafite) e abre o painel: o nome, quantas peças a zona
-// tem e os tipos dela, cada um um link EXATO do catálogo (tipo + sub + lado/posição + o carro), com a foto da peça mais
-// nova do tipo. A zona inteira não cabe num endereço do catálogo (um tipo e um sub só): por isso o painel lista os tipos
-// e não promete "Ver as N peças da frente" num botão.
-// - home: as contagens do estoque inteiro saem no build (JSON na página). Com carro salvo, o título já nasce com o carro
-//   (script antes da 1ª pintura) e, no 1º toque na seção, /dados/carro/<k>.json (o do "Chegou para o seu carro") vira
-//   as contagens DELE (no ano salvo; ano sem peça: o modelo em todos os anos, com aviso). Zona sem peça: cinza, com
-//   "Me avise quando chegar" (WhatsApp).
-// - página do carro (`carro`): as contagens daquele carro já saem no build, sem baixar nada.
-// Teclado: Tab percorre as zonas na ordem (lib/raioX.ts: ZONAS), Enter abre o painel e leva o foco para ele. Leitor de
-// tela: cada zona é um link com o nome e a contagem; a arte e as fichas de baixo (só um alvo maior para o dedo) ficam de
-// fora. Sem ilha React; o JS é pequeno (a busca do catálogo só desce com carro salvo, no 1º toque).
-import { ZONAS, ARTE, qtdPecas } from '../../lib/raioX';
+// (public/arte/v2/raio-x.webp, aprovada pelo dono) com as ZONAS tocáveis por cima (lib/raioX.ts).
+// - Passar o mouse, focar (Tab) ou tocar uma zona acende a parte: um véu laranja translúcido de bordas esfumadas e o
+//   resto da arte escurece de leve (≤ 180 ms; nada se mexe com prefers-reduced-motion). No celular o toque marca a zona
+//   e ela fica marcada até tocar outra.
+// - Arte larga (640+ px): cada zona tem a etiqueta fixa "Frente 118" no fundo do estúdio, com uma linha-guia fina até o
+//   ponto da parte. Arte estreita: só os pontos NUMERADOS na arte (o escolhido ganha o anel grafite) + a fila de fichas
+//   embaixo com os mesmos números (a escolhida fica laranja).
+// - O painel: o nome e quantas peças a zona tem, os tipos mais comuns dela (cada um um link EXATO do catálogo: tipo +
+//   sub + lado/posição + o carro, com a foto da peça mais nova do tipo) e o botão laranja "Ver as peças da frente", que
+//   mostra as peças mais novas da zona ali mesmo, num trilho de cartões (a zona inteira não cabe num endereço do
+//   catálogo, que entende UM tipo e UM sub). Zona sem peça do carro: cinza, com "Me avise quando chegar" (WhatsApp).
+// - home: as contagens do estoque inteiro saem no build. Com carro salvo, o título já nasce com o carro (script antes da
+//   1ª pintura) e, no 1º toque na seção, /dados/carro/<k>.json (o do "Chegou para o seu carro") vira as contagens DELE
+//   (no ano salvo; ano sem peça: o modelo em todos os anos, com aviso). Trocar o carro atualiza tudo sem recarregar.
+// - página do carro (`carro`): as contagens daquele carro já saem no build.
+// Teclado: Tab percorre as zonas na ordem do carro (ZONAS), Enter abre o painel e leva o foco para ele, Esc limpa.
+// Leitor de tela: cada zona é um link "Frente: 118 peças"; a arte, as etiquetas e as fichas (um alvo maior para o dedo)
+// ficam de fora. Sem ilha React; a busca do catálogo só desce com carro salvo (1º toque) ou no "Ver as peças".
+import { ZONAS, ARTE } from '../../lib/raioX';
 import { dadosRaioX } from '../../lib/raioXDados';
 import { srcArte } from '../../lib/variantes';
 import { CHAVE } from '../../lib/meuCarro';
@@ -23,25 +28,25 @@ import Icone from '../Icone.astro';
 interface Props { carro?: { b: string; m: string }; id?: string; titulo?: string; compacto?: boolean }
 const { carro, id = 'raio-x', compacto = false } = Astro.props;
 const dados = dadosRaioX(carro);
-const nFmt = (k: string) => dados.z.find((d) => d.k === k)?.n ?? 0;
+const nZ = (k: string) => dados.z.find((d) => d.k === k)?.n ?? 0;
+const fmt = (n: number) => n.toLocaleString('pt-BR');
 const nomeCarro = carro ? `${carro.b} ${carro.m}` : '';
 const titulo = Astro.props.titulo ?? (carro ? `Onde fica a peça no ${nomeCarro}?` : 'Não sabe o nome da peça? Aponte no carro.');
-const lead = carro
-  ? `Toque na parte do carro e veja as peças do ${carro.m} que a gente tem dela.`
-  : 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
+const lead = 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
 // a arte ocupa a moldura inteira no celular e no tablet; no PC, a coluna da esquerda (≈ 58% da moldura de até 1240)
 const sizes = '(max-width: 1023px) calc(100vw - 32px), (max-width: 1303px) calc(58vw - 40px), 716px';
 const pct = (v: number, t: number) => `${((v / t) * 100).toFixed(2)}%`;
 const rotulo = (k: string, nome: string) => {
-  const n = nFmt(k);
-  return n ? `${nome}: ${qtdPecas(n)}${carro ? ` do ${carro.m}` : ''}` : `${nome}: nenhuma peça${carro ? ` do ${carro.m}` : ''} agora`;
+  const n = nZ(k);
+  const dc = carro ? ` do ${carro.m}` : '';
+  return n ? `${nome}: ${fmt(n)} ${n === 1 ? 'peça' : 'peças'}${dc}` : `${nome}: nenhuma peça${dc} agora`;
 };
-// antes da 1ª pintura (só na home): com carro salvo, o título e o convite já com o carro (nada se mexe depois)
+// antes da 1ª pintura (só na home): com carro salvo, o título, a linha de apoio e o convite já com o carro
 const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(CHAVE)})||'null');`
   + `if(!c||typeof c.b!=='string'||typeof c.m!=='string'||!c.b||!c.m)return;var r=document.currentScript.parentNode,`
   + `y=typeof c.y==='number'?' '+c.y:'',t=r.querySelector('[data-rx-titulo]'),l=r.querySelector('[data-rx-lead]'),b=r.querySelector('[data-rx-txt]');`
   + `t.textContent='Onde fica a peça no seu '+c.b+' '+c.m+y+'?';l.textContent='Toque na parte do carro e veja as peças do seu '+c.m+' que a gente tem dela.';`
-  + `if(b)b.textContent='Trocar o carro';r.parentNode.setAttribute('data-com-carro','')}catch(e){}})()`;
+  + `if(b)b.textContent='Trocar o carro'}catch(e){}})()`;
 ---
 <div class:list={['rx', { 'rx-compacto': compacto }]} data-rx data-modo={carro ? 'carro' : 'home'} data-b={carro?.b} data-m={carro?.m}>
   <div class="rx-cabeca">
@@ -60,25 +65,41 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       <div class="rx-palco" data-rx-palco>
         <img src={ARTE.src} {...srcArte(ARTE.src, sizes)} alt="" width={ARTE.w} height={ARTE.h} loading="lazy" decoding="async" />
         <svg class="rx-mapa" viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} role="group" aria-labelledby={`${id}-t`}>
-          <g class="rx-realces" aria-hidden="true">
-            {ZONAS.map((z) => <g data-realce={z.k} class:list={[{ vazia: !nFmt(z.k) }]}>{z.realce.map((p) => <polygon points={p} />)}</g>)}
+          <defs>
+            <filter id={`${id}-esf`} x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="10" /></filter>
+            {/* o furo do véu escuro: o resto da arte escurece, a parte acesa não */}
+            <mask id={`${id}-furo`} maskUnits="userSpaceOnUse" x="0" y="0" width={ARTE.w} height={ARTE.h}>
+              <rect width={ARTE.w} height={ARTE.h} fill="#fff" />
+              <g class="rx-furos" filter={`url(#${id}-esf)`}>
+                {ZONAS.map((z) => <g data-furo={z.k}>{z.realce.map((p) => <polygon points={p} />)}</g>)}
+              </g>
+            </mask>
+          </defs>
+          <rect class="rx-sombra" width={ARTE.w} height={ARTE.h} mask={`url(#${id}-furo)`} aria-hidden="true" />
+          <g class="rx-realces" filter={`url(#${id}-esf)`} aria-hidden="true">
+            {ZONAS.map((z) => <g data-realce={z.k} class:list={[{ vazia: !nZ(z.k) }]}>{z.realce.map((p) => <polygon points={p} />)}</g>)}
+          </g>
+          <g class="rx-guias" aria-hidden="true">
+            {ZONAS.map((z) => <line data-guia={z.k} x1={z.ancora[0]} y1={z.ancora[1]} x2={z.etiqueta[0]} y2={z.etiqueta[1]} />)}
           </g>
           {ZONAS.map((z) => (
-            <a href={`#${id}-painel`} data-z={z.k} aria-label={rotulo(z.k, z.nome)} class:list={[{ vazia: !nFmt(z.k) }]}>
+            <a href={`#${id}-painel`} data-z={z.k} aria-label={rotulo(z.k, z.nome)} class:list={[{ vazia: !nZ(z.k) }]}>
               {z.poligonos.map((p) => <polygon class="rx-alvo" points={p} />)}
             </a>
           ))}
         </svg>
-        {ZONAS.map((z) => (
-          <span class:list={['rx-ponto', { vazia: !nFmt(z.k) }]} data-ponto={z.k} style={`left:${pct(z.ancora[0], ARTE.w)};top:${pct(z.ancora[1], ARTE.h)}`} aria-hidden="true"></span>
+        {ZONAS.map((z, i) => (
+          <span class:list={['rx-ponto', { vazia: !nZ(z.k) }]} data-ponto={z.k} style={`left:${pct(z.ancora[0], ARTE.w)};top:${pct(z.ancora[1], ARTE.h)}`} aria-hidden="true"><i class="num">{i + 1}</i></span>
         ))}
-        <span class="rx-rotulo" data-rx-rotulo aria-hidden="true" hidden></span>
-      </div>
-      {/* um alvo maior para o dedo (as mesmas zonas, na mesma ordem): fora do Tab e do leitor de tela, que já têm as zonas */}
-      <div class="rx-fichas" aria-hidden="true" data-rx-fichas>
         {ZONAS.map((z) => (
-          <button type="button" tabindex="-1" data-ficha={z.k} class:list={[{ vazia: !nFmt(z.k) }]}>
-            <span>{z.nome}</span><small class="num" data-ficha-n>{nFmt(z.k) ? nFmt(z.k).toLocaleString('pt-BR') : '0'}</small>
+          <span class:list={['rx-etiqueta', { vazia: !nZ(z.k) }]} data-etiqueta={z.k} style={`left:${pct(z.etiqueta[0], ARTE.w)};top:${pct(z.etiqueta[1], ARTE.h)}`} aria-hidden="true">{z.nome}<b class="num" data-etiqueta-n>{fmt(nZ(z.k))}</b></span>
+        ))}
+      </div>
+      {/* um alvo maior para o dedo (as mesmas zonas, com os mesmos números): fora do Tab e do leitor de tela, que já têm as zonas */}
+      <div class="rx-fichas" aria-hidden="true" data-rx-fichas>
+        {ZONAS.map((z, i) => (
+          <button type="button" tabindex="-1" data-ficha={z.k} class:list={[{ vazia: !nZ(z.k) }]}>
+            <i class="num">{i + 1}</i><span>{z.nome}</span><small class="num" data-ficha-n>{fmt(nZ(z.k))}</small>
           </button>
         ))}
       </div>
@@ -106,13 +127,20 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
 <script>
   import { lerMeuCarro, nomeCarro, linkCatalogo, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
   import { ARQUIVO_CARRO } from '../../lib/chegouCarro';
-  import { ZONAS, NA_FRENTE, linkLinha, qtdPecas, contarZonas, lerRaioX, type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel } from '../../lib/raioX';
+  import {
+    ZONAS, NA_FRENTE, NA_GALERIA, ARQUIVO_GALERIA, linkLinha, qtdPecas, contarZonas, pecasDaZona, lerRaioX,
+    type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel,
+  } from '../../lib/raioX';
   import { linkAvisoParte, linkProcuraParte } from '../../lib/aviso';
+  import type { Filtros, Indice, Item } from '../../lib/busca';
 
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   const nf = (n: number) => n.toLocaleString('pt-BR');
   const calmo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const SETA = '<svg class="rx-l-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  // a foto do cartão no trilho do painel: 168 px no celular, 176 no PC
+  const SIZES_GALERIA = '(max-width: 1023px) 168px, 176px';
+  type Procurar = (f: Filtros) => Item[];
 
   for (const raiz of document.querySelectorAll<HTMLElement>('[data-rx]')) ligar(raiz);
 
@@ -122,42 +150,45 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     const painel = raiz.querySelector<HTMLElement>('[data-rx-painel]')!;
     const conteudo = raiz.querySelector<HTMLElement>('[data-rx-conteudo]')!;
     const dica = raiz.querySelector<HTMLElement>('[data-rx-dica]')!;
-    const rotulo = raiz.querySelector<HTMLElement>('[data-rx-rotulo]')!;
-    const palco = raiz.querySelector<HTMLElement>('[data-rx-palco]')!;
     const zonasA = [...raiz.querySelectorAll<SVGAElement>('a[data-z]')];
     const fichas = [...raiz.querySelectorAll<HTMLButtonElement>('[data-ficha]')];
+    const todos = (sel: string) => [...raiz.querySelectorAll<HTMLElement>(sel)];
+    // as peças de cada parte acesa (realce, furo do véu, linha-guia, etiqueta, ponto, ficha, zona), lidas uma vez
+    const pecasVisuais = todos('[data-realce], [data-furo], [data-guia], [data-etiqueta], [data-ponto], [data-ficha], a[data-z]')
+      .map((el) => ({ el, k: el.dataset.realce ?? el.dataset.furo ?? el.dataset.guia ?? el.dataset.etiqueta ?? el.dataset.ponto ?? el.dataset.ficha ?? el.dataset.z }));
 
     // o que está valendo: as contagens (do estoque inteiro, do carro da página ou do carro salvo) e o filtro dos links
-    let dados = base;
+    let dados: ZonaPainel[] = base;
     let filtro: CarroFiltro = home ? {} : { marca: raiz.dataset.b, modelo: raiz.dataset.m };
     let carro: MeuCarro | null = home ? lerMeuCarro() : null;
     let estado: 'nada' | 'carregando' | 'ok' = 'nada';
     let aviso = '';
     let ativa: string | null = null;
+    let passando: string | null = null;
     let vez = 0;
+    // de onde saem as peças do "Ver as peças": a busca do carro (salvo ou da página) ou o arquivo das mais novas por zona
+    let procurarCarro: Procurar | null = null;
+    let galeria: Promise<{ itens: Item[]; zonas: Record<string, number[]> }> | null = null;
 
     const zona = (k: string) => ZONAS.find((z) => z.k === k)!;
-    const conta = (k: string) => dados.find((d) => d.k === k) ?? { k, n: 0, l: [] };
+    const conta = (k: string): ZonaPainel => dados.find((d) => d.k === k) ?? { k, n: 0, l: [] };
+    const esperando = () => home && !!carro && estado !== 'ok';
     // "do seu XC60 2019" (carro salvo, na home) / "do XC60" (página do carro) / "no estoque"
-    const doCarro = () => (home ? (carro ? `do seu ${carro.m}${filtro.ano ? ` ${filtro.ano}` : ''}` : '') : `do ${raiz.dataset.m}`);
-    const comCarro = () => (home ? !!carro && estado === 'ok' && !!filtro.modelo : true);
+    const doCarro = () => {
+      if (!home) return `do ${raiz.dataset.m}`;
+      return carro && estado === 'ok' && filtro.modelo ? `do seu ${carro.m}${filtro.ano ? ` ${filtro.ano}` : ''}` : 'no estoque';
+    };
 
     function pintarZonas() {
-      for (const a of zonasA) {
-        const k = a.dataset.z!;
-        const z = zona(k);
-        const esperando = home && !!carro && estado !== 'ok';
+      for (const z of ZONAS) {
+        const k = z.k;
         const n = conta(k).n;
-        const vazia = !esperando && n === 0;
-        a.classList.toggle('vazia', vazia);
-        raiz.querySelector(`[data-ponto="${k}"]`)?.classList.toggle('vazia', vazia);
-        raiz.querySelector(`[data-realce="${k}"]`)?.classList.toggle('vazia', vazia);
-        const f = fichas.find((b) => b.dataset.ficha === k);
-        f?.classList.toggle('vazia', vazia);
-        const fn = f?.querySelector('[data-ficha-n]');
-        if (fn) fn.textContent = esperando ? '' : nf(n);
-        const dc = comCarro() ? ` ${doCarro()}` : '';
-        a.setAttribute('aria-label', esperando ? `${z.nome}: ver as peças do seu ${carro!.m}` : n ? `${z.nome}: ${qtdPecas(n)}${dc}` : `${z.nome}: nenhuma peça${dc} agora`);
+        const vazia = !esperando() && n === 0;
+        for (const p of pecasVisuais) if (p.k === k) p.el.classList.toggle('vazia', vazia);
+        for (const el of todos(`[data-etiqueta="${k}"] [data-etiqueta-n], [data-ficha="${k}"] [data-ficha-n]`)) el.textContent = esperando() ? '' : nf(n);
+        const dc = doCarro() === 'no estoque' ? '' : ` ${doCarro()}`;
+        raiz.querySelector(`a[data-z="${k}"]`)!.setAttribute('aria-label', esperando()
+          ? `${z.nome}: ver as peças do seu ${carro!.m}` : n ? `${z.nome}: ${qtdPecas(n)}${dc}` : `${z.nome}: nenhuma peça${dc} agora`);
       }
     }
 
@@ -172,21 +203,22 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         let novos: ZonaPainel[] | null = null;
         let f: CarroFiltro = { marca: c.b, modelo: c.m };
         let msg = '';
+        let p: Procurar | null = null;
         if (r.ok) {
-          const [{ Busca, capaItem }, ix] = await Promise.all([import('../../lib/busca'), r.json()]);
+          const [{ Busca, capaItem }, ix] = await Promise.all([import('../../lib/busca'), r.json() as Promise<Indice>]);
           const b = new Busca(ix);
-          const procurar = (x: Parameters<typeof b.procurar>[0]) => b.procurar(x);
-          let contas = contarZonas(procurar, c.y ? { ...f, ano: c.y } : f);
+          p = (x) => b.procurar(x);
+          let contas = contarZonas(p, c.y ? { ...f, ano: c.y } : f);
           if (c.y && contas.every((z) => z.n === 0)) {
             msg = `Agora não há peça do ${c.m} ${c.y} no site: as contagens são do ${c.m} de todos os anos.`;
-            contas = contarZonas(procurar, f);
+            contas = contarZonas(p, f);
           } else if (c.y) f = { ...f, ano: c.y };
           if (contas.some((z) => z.n > 0)) {
             novos = contas.map((z) => ({ k: z.k, n: z.n, l: z.linhas.map((l, i) => ({ tipo: l.tipo, sub: l.sub, lado: l.lado, pos: l.pos, n: l.n, foto: i < NA_FRENTE ? capaItem(l.it, 'A') : '' })) }));
           }
         } else if (r.status !== 404) throw new Error(String(r.status));
         if (minha !== vez) return;
-        if (novos) { dados = novos; filtro = f; aviso = msg; }
+        if (novos) { dados = novos; filtro = f; aviso = msg; procurarCarro = p; }
         else { dados = base; filtro = {}; aviso = `Agora não há peça do seu ${nomeCarro(c)} no site: as contagens são do estoque inteiro.`; }
       } catch {
         if (minha !== vez) return;
@@ -200,12 +232,11 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
 
     // ---- o painel ----
     function linhaHtml(l: LinhaPainel, rica: boolean) {
-      const { sub, n, foto } = l;
       const href = esc(linkLinha(l, filtro));
-      const qtd = `<span class="rx-l-n num">${nf(n)}<span class="sr-only"> ${n === 1 ? 'peça' : 'peças'}</span></span>`;
-      if (!rica) return `<li><a class="rx-tipo" href="${href}"><span>${esc(sub)}</span>${qtd}</a></li>`;
-      const img = foto ? `<img src="${esc(foto)}" alt="" width="56" height="56" loading="lazy" decoding="async">` : '';
-      return `<li><a class="rx-linha" href="${href}"><span class="rx-l-foto">${img}</span><span class="rx-l-nome">${esc(sub)}</span>${qtd}${SETA}</a></li>`;
+      const qtd = `<span class="rx-l-n num">${nf(l.n)}<span class="sr-only"> ${l.n === 1 ? 'peça' : 'peças'}</span></span>`;
+      if (!rica) return `<li><a class="rx-tipo" href="${href}"><span>${esc(l.sub)}</span>${qtd}</a></li>`;
+      const img = l.foto ? `<img src="${esc(l.foto)}" alt="" width="56" height="56" loading="lazy" decoding="async">` : '';
+      return `<li><a class="rx-linha" href="${href}"><span class="rx-l-foto">${img}</span><span class="rx-l-nome">${esc(l.sub)}</span>${qtd}${SETA}</a></li>`;
     }
 
     function mostrar(k: string, focar: boolean) {
@@ -214,33 +245,34 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       dica.hidden = true;
       conteudo.hidden = false;
       painel.classList.add('aberto');
-      const esperando = home && !!carro && estado !== 'ok';
-      const dc = comCarro() ? doCarro() : 'no estoque';
-      let html = `<div class="rx-p-cabeca"><h3 class="rx-p-titulo" tabindex="-1">${esc(z.nome)}</h3>`;
-      if (esperando) {
-        html += `<p class="rx-p-n">Contando as peças do seu ${esc(carro!.m)}…</p></div>`
+      const dc = doCarro();
+      const cabeca = (n: string, sub: string) => `<div class="rx-p-cabeca"><h3 class="rx-p-titulo" tabindex="-1">${esc(z.nome)}<span class="rx-p-n num">${esc(n)}</span></h3><p class="rx-p-sub">${esc(sub)}</p></div>`;
+      let html = '';
+      if (esperando()) {
+        html = cabeca('', `Contando as peças do seu ${carro!.m}…`)
           + `<ul class="rx-linhas rx-esq" aria-hidden="true">${'<li><span class="rx-linha"><span class="rx-l-foto"></span><span class="rx-l-nome">&nbsp;</span></span></li>'.repeat(4)}</ul>`;
       } else if (!c.n) {
-        const ano = filtro.ano ?? null;
-        html += `<p class="rx-p-n">Nenhuma peça ${esc(dc)} agora</p></div>`
+        const quem = carro ? `${carro.b} ${carro.m}` : `${raiz.dataset.b} ${raiz.dataset.m}`;
+        html = cabeca(' · nenhuma peça agora', dc)
           + (aviso ? `<p class="rx-p-aviso">${esc(aviso)}</p>` : '')
-          + `<p class="rx-p-vazio">Agora não há peça ${esc(z.de)} ${esc(dc)} no site. Peça o aviso no WhatsApp: a mensagem já vai pronta.</p>`
-          + `<div class="rx-p-acoes"><a class="botao botao-linha rx-avise" data-botao="avise-carro" rel="noopener" href="${esc(linkAvisoParte(carro ? `${carro.b} ${carro.m}` : `${raiz.dataset.b} ${raiz.dataset.m}`, ano, z.de))}">`
+          + `<p class="rx-p-vazio">Agora não há peça ${esc(z.de)} ${esc(dc)} no site. Peça o aviso no WhatsApp: a mensagem já vai pronta com o carro e a parte.</p>`
+          + `<div class="rx-p-acoes"><a class="botao botao-linha rx-avise" data-botao="avise-carro" rel="noopener" href="${esc(linkAvisoParte(quem, filtro.ano ?? null, z.de))}">`
           + `${raiz.querySelector('template[data-rx-whats]')?.innerHTML ?? ''}Me avise quando chegar</a>`
-          + (carro || !home ? `<a class="rx-p-outros" href="${esc(home ? linkCatalogo({ b: carro!.b, m: carro!.m, y: filtro.ano }) : linkCatalogo({ b: raiz.dataset.b!, m: raiz.dataset.m! }))}">Ver todas as peças ${esc(dc)}</a>` : '')
-          + '</div>';
+          + `<a class="rx-p-outros" href="${esc(linkCatalogo({ b: filtro.marca || raiz.dataset.b || carro!.b, m: filtro.modelo || raiz.dataset.m || carro!.m, y: filtro.ano }))}">Ver todas as peças ${esc(dc)}</a></div>`;
       } else {
         const ricas = c.l.slice(0, NA_FRENTE);
         const resto = c.l.slice(NA_FRENTE);
-        html += `<p class="rx-p-n"><b class="num">${esc(qtdPecas(c.n))}</b> ${esc(dc)}${c.l.length > 1 ? ` · ${c.l.length} tipos` : ''}</p></div>`
+        html = cabeca(` · ${qtdPecas(c.n)}`, `${dc}${c.l.length > 1 ? ` · ${c.l.length} tipos de peça` : ''}`)
           + (aviso ? `<p class="rx-p-aviso">${esc(aviso)}</p>` : '')
           + `<ul class="rx-linhas">${ricas.map((l) => linhaHtml(l, true)).join('')}</ul>`;
         if (resto.length) {
           html += `<button type="button" class="rx-mais" aria-expanded="false" aria-controls="${painel.id}-resto">Ver os ${c.l.length} tipos ${esc(z.de)}</button>`
             + `<ul class="rx-resto" id="${painel.id}-resto" hidden>${resto.map((l) => linhaHtml(l, false)).join('')}</ul>`;
         }
+        html += `<div class="rx-p-pe"><button type="button" class="botao botao-laranja rx-ver" aria-controls="${painel.id}-pecas">Ver as peças ${esc(z.de)}</button>`
+          + `<div class="rx-galeria" id="${painel.id}-pecas" hidden></div></div>`;
       }
-      if (!esperando) {
+      if (!esperando()) {
         const carroMsg = home ? (carro ? nomeCarro({ ...carro, y: filtro.ano ?? carro.y }) : '') : `${raiz.dataset.b} ${raiz.dataset.m}`;
         html += `<a class="rx-patio" data-botao="raio-x" rel="noopener" href="${esc(linkProcuraParte(carroMsg, z.de, home))}">`
           + `<span>Não achou? <b>A gente procura no pátio</b></span>${SETA}</a>`;
@@ -252,43 +284,68 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         const abrir = resto.hidden;
         resto.hidden = !abrir;
         mais.setAttribute('aria-expanded', String(abrir));
-        mais.textContent = abrir ? 'Ver menos' : `Ver os ${c.l.length} tipos ${z.de}`;
+        mais.textContent = abrir ? 'Ver menos tipos' : `Ver os ${c.l.length} tipos ${z.de}`;
         if (abrir) resto.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
       });
+      conteudo.querySelector<HTMLButtonElement>('.rx-ver')?.addEventListener('click', (e) => void verPecas(k, e.currentTarget as HTMLButtonElement));
       if (focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
     }
 
-    // o rótulo laranja sobre a parte (dentro do palco: centrado no ponto, sem passar da borda)
-    function porRotulo(k: string | null) {
-      if (!k) { rotulo.hidden = true; return; }
-      const z = zona(k);
-      rotulo.textContent = z.nome;
-      rotulo.hidden = false;
-      rotulo.classList.toggle('vazia', conta(k).n === 0 && !(home && carro && estado !== 'ok'));
-      const W = palco.clientWidth;
-      const H = palco.clientHeight;
-      const x = (z.ancora[0] / 1536) * W;
-      const y = (z.ancora[1] / 1024) * H;
-      const w = rotulo.offsetWidth;
-      const cx = Math.min(Math.max(x, w / 2 + 6), W - w / 2 - 6);
-      const embaixo = y < 52;
-      rotulo.style.left = `${cx}px`;
-      rotulo.style.top = `${y}px`;
-      rotulo.classList.toggle('embaixo', embaixo);
-      rotulo.style.setProperty('--seta', `${x - cx}px`);
+    // ---- "Ver as peças da frente": as mais novas da zona num trilho de cartões, ali mesmo ----
+    async function pecasDe(k: string): Promise<Item[]> {
+      if (!procurarCarro && !home) {
+        // página do carro: o arquivo só do carro (o mesmo da grade do ano)
+        const [ix, { Busca }] = await Promise.all([
+          fetch(ARQUIVO_CARRO(raiz.dataset.b!, raiz.dataset.m!)).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Indice>; }),
+          import('../../lib/busca'),
+        ]);
+        const b = new Busca(ix);
+        procurarCarro = (x) => b.procurar(x);
+      }
+      if (procurarCarro && filtro.modelo) return pecasDaZona(procurarCarro, filtro, zona(k));
+      galeria ??= Promise.all([fetch(ARQUIVO_GALERIA).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }), import('../../lib/busca')])
+        .then(([ix, { Busca }]) => ({ itens: new Busca(ix as Indice).itens, zonas: (ix as { zonas: Record<string, number[]> }).zonas }))
+        .catch((e) => { galeria = null; throw e; });
+      const g = await galeria;
+      return (g.zonas[k] ?? []).map((i) => g.itens[i]).filter(Boolean);
     }
 
-    function acender(k: string | null, classe: 'on' | 'hover') {
-      for (const g of raiz.querySelectorAll<SVGGElement>('[data-realce]')) g.classList.toggle(classe, g.dataset.realce === k);
-      if (classe === 'on') {
-        for (const p of raiz.querySelectorAll<HTMLElement>('[data-ponto]')) p.classList.toggle('on', p.dataset.ponto === k);
-        for (const f of fichas) f.classList.toggle('on', f.dataset.ficha === k);
-        for (const a of zonasA) a.classList.toggle('on', a.dataset.z === k);
+    async function verPecas(k: string, botao: HTMLButtonElement) {
+      const caixa = conteudo.querySelector<HTMLElement>('.rx-galeria')!;
+      botao.hidden = true;
+      caixa.hidden = false;
+      const z = zona(k);
+      const total = conta(k).n;
+      const { ESQ_CARTAO, porCartoes } = await import('./trilhoPessoal');
+      caixa.innerHTML = `<p class="rx-g-titulo">As peças ${esc(z.de)}</p><div class="trilho rx-trilho" aria-busy="true">${ESQ_CARTAO.repeat(3)}</div>`;
+      try {
+        const [itens, { cartaoHtml, vigiarFotos }] = await Promise.all([pecasDe(k), import('../../lib/vendidaCartoes')]);
+        if (ativa !== k || !caixa.isConnected) return;
+        const mostra = itens.slice(0, NA_GALERIA);
+        const trilho = caixa.querySelector<HTMLElement>('.rx-trilho')!;
+        caixa.querySelector('.rx-g-titulo')!.textContent = total > mostra.length
+          ? `As ${mostra.length} mais novas ${z.de}, de ${nf(total)}` : total === 1 ? `A peça ${z.de}` : `As ${nf(total)} peças ${z.de}`;
+        vigiarFotos(trilho);
+        porCartoes(trilho, mostra.map((it) => cartaoHtml(it, SIZES_GALERIA)).join(''));
+        if (total > mostra.length) caixa.insertAdjacentHTML('beforeend', '<p class="rx-g-nota">Para ver todas, escolha o tipo da peça logo acima: cada um abre o catálogo já filtrado.</p>');
+        trilho.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+      } catch {
+        if (caixa.isConnected) caixa.innerHTML = '<p class="rx-g-nota">Sem conexão agora. Escolha o tipo da peça logo acima: cada um abre o catálogo já filtrado.</p>';
+      }
+    }
+
+    // ---- a parte acesa (mouse em cima, foco ou a escolhida): véu, furo, linha-guia, etiqueta, ponto, ficha ----
+    function acender() {
+      const luz = passando ?? ativa;
+      raiz.classList.toggle('rx-aceso', !!luz);
+      for (const p of pecasVisuais) {
+        p.el.classList.toggle('aceso', p.k === luz);
+        p.el.classList.toggle('on', p.k === ativa);
       }
     }
 
     // o "passar o mouse" só onde há mouse de verdade, e nunca logo depois de escolher (a rolagem até o painel passa o
-    // conteúdo por baixo do ponteiro parado: o rótulo não pode trocar sozinho)
+    // conteúdo por baixo do ponteiro parado: a parte acesa não pode trocar sozinha)
     const comMouse = matchMedia('(hover: hover) and (pointer: fine)');
     let escolhidaEm = 0;
     const passa = (e: PointerEvent) => e.pointerType === 'mouse' && comMouse.matches && performance.now() - escolhidaEm > 700;
@@ -299,11 +356,11 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       void carregarCarro();
       if (ativa !== k || conteudo.hidden) {
         ativa = k;
-        acender(k, 'on');
-        porRotulo(k);
+        passando = null;
+        acender();
         mostrar(k, !!como.focar);
       } else if (como.focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
-      // a ficha escolhida à vista no trilho (só o scroll da fila)
+      // a ficha escolhida à vista na fila (só o scroll da fila, nunca a página)
       const f = fichas.find((b) => b.dataset.ficha === k);
       const fila = f?.parentElement;
       if (f && fila && fila.scrollWidth > fila.clientWidth) {
@@ -319,6 +376,19 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       }
     }
 
+    // Esc: limpa a escolha (volta o "como funciona") e devolve o foco à zona
+    function limpar() {
+      const k = ativa;
+      ativa = null;
+      passando = null;
+      acender();
+      conteudo.hidden = true;
+      conteudo.innerHTML = '';
+      dica.hidden = false;
+      painel.classList.remove('aberto');
+      if (k && raiz.contains(document.activeElement)) raiz.querySelector<SVGAElement>(`a[data-z="${k}"]`)?.focus({ preventScroll: true });
+    }
+
     // ---- ouvintes ----
     for (const a of zonasA) {
       const k = a.dataset.z!;
@@ -327,29 +397,22 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         // Enter (clique sem ponteiro: detail 0) leva o foco ao painel; o toque só abre
         selecionar(k, { focar: (e as MouseEvent).detail === 0, rolar: true });
       });
+      // Tab: a zona focada já abre (o foco continua nela; Enter leva ao painel)
       a.addEventListener('focus', () => { if (a.matches(':focus-visible')) selecionar(k); });
-      a.addEventListener('pointerenter', (e) => {
-        if (!passa(e)) return;
-        acender(k, 'hover');
-        porRotulo(k);
-      });
-      a.addEventListener('pointerleave', (e) => {
-        if (e.pointerType !== 'mouse') return;
-        acender(null, 'hover');
-        porRotulo(ativa);
-      });
+      a.addEventListener('pointerenter', (e) => { if (passa(e)) { passando = k; acender(); } });
+      a.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && passando === k) { passando = null; acender(); } });
     }
     for (const f of fichas) f.addEventListener('click', () => selecionar(f.dataset.ficha!, { rolar: true }));
+    raiz.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ativa) { e.preventDefault(); limpar(); } });
     // "1º toque" na seção: o carro salvo começa a descer antes do clique (mouse em cima, dedo encostando, Tab)
     const cedo = () => void carregarCarro();
     raiz.addEventListener('pointerenter', cedo, { once: true });
     raiz.addEventListener('touchstart', cedo, { once: true, passive: true });
     raiz.addEventListener('focusin', cedo, { once: true });
-    addEventListener('resize', () => porRotulo(ativa), { passive: true });
 
     if (!home) return;
     raiz.querySelector('[data-rx-trocar]')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent(ABRIR)));
-    // trocou o carro (abertura, cabeçalho): título, convite e contagens acompanham
+    // trocou o carro (abertura, cabeçalho): título, convite, contagens e o painel aberto acompanham, sem recarregar
     window.addEventListener(EVENTO, (e) => {
       carro = (e as CustomEvent<MeuCarro | null>).detail;
       vez++;
@@ -357,13 +420,13 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       dados = base;
       filtro = {};
       aviso = '';
+      procurarCarro = null;
       const t = raiz.querySelector('[data-rx-titulo]')!;
-      const l = raiz.querySelector('[data-rx-lead]')!;
+      const l = raiz.querySelector('[data-rx-lead]');
       const b = raiz.querySelector('[data-rx-txt]');
       t.textContent = carro ? `Onde fica a peça no seu ${nomeCarro(carro)}?` : 'Não sabe o nome da peça? Aponte no carro.';
-      l.textContent = carro ? `Toque na parte do carro e veja as peças do seu ${carro.m} que a gente tem dela.` : 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
+      if (l) l.textContent = carro ? `Toque na parte do carro e veja as peças do seu ${carro.m} que a gente tem dela.` : 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
       if (b) b.textContent = carro ? 'Trocar o carro' : 'Diga o seu carro';
-      raiz.parentElement?.toggleAttribute('data-com-carro', !!carro);
       pintarZonas();
       if (ativa) { mostrar(ativa, false); void carregarCarro(); }
     });
@@ -381,7 +444,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-cabeca { display: grid; gap: 8px; max-width: 64ch; justify-items: start; }
   .rx-cabeca .lead { margin: 0; }
   .rx-cabeca .titulo-secao { margin: 0; text-wrap: balance; }
-  .rx-convite { display: inline-flex; align-items: center; gap: 8px; margin-top: 2px; min-height: 44px; padding: 0 2px;
+  .rx-convite { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 2px; margin-block: -4px;
     background: none; border: 0; color: var(--ink); font: inherit; font-size: 15px; font-weight: 650;
     text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--accent), transparent 30%); text-decoration-thickness: 2px;
     text-underline-offset: 5px; cursor: pointer; }
@@ -389,63 +452,83 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-convite:hover { text-decoration-color: var(--accent); }
 
   .rx-corpo { display: grid; gap: 16px; align-items: start; }
-  @media (min-width: 1024px) { .rx-corpo { grid-template-columns: minmax(0, 1.42fr) minmax(340px, 1fr); gap: 28px; } }
+  @media (min-width: 1024px) { .rx-corpo { grid-template-columns: minmax(0, 1.42fr) minmax(340px, 1fr); gap: 28px; align-items: stretch; } }
 
   /* ---- a arte e as zonas ---- */
-  .rx-arte { display: grid; gap: 12px; min-width: 0; }
+  .rx-arte { display: grid; gap: 12px; min-width: 0; align-content: start; container: rxarte / inline-size; }
   .rx-palco { position: relative; aspect-ratio: 1536 / 1024; border-radius: clamp(18px, 2.2vw, 28px); overflow: hidden;
     background: linear-gradient(180deg, #f4f3f0, #e7e5e1); box-shadow: var(--shadow-1); isolation: isolate; }
   .rx-palco img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .rx-mapa { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+  .rx-mapa { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .rx-mapa a { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
   .rx-alvo { fill: transparent; stroke: none; }
-  .rx-mapa a:focus-visible .rx-alvo { fill: rgb(255 106 0 / .07); stroke: var(--foco); stroke-width: 3; stroke-dasharray: 10 7; vector-effect: non-scaling-stroke; }
-  .rx-realces { pointer-events: none; }
-  .rx-realces g { opacity: 0; transition: opacity .18s ease; }
-  .rx-realces polygon { fill: rgb(255 106 0 / .22); stroke: #ff6a00; stroke-width: 2.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-  .rx-realces g.hover { opacity: .55; }
-  .rx-realces g.on { opacity: 1; }
-  /* zona sem peça para o carro: cinza */
-  .rx-mapa a.vazia { cursor: pointer; }
-  .rx-realces g.vazia polygon { fill: rgb(120 120 128 / .22); stroke: #8a8a90; }
+  /* foco do teclado: o contorno da área inteira da zona, tracejado */
+  .rx-mapa a:focus-visible .rx-alvo { stroke: var(--foco); stroke-width: 2.5; stroke-dasharray: 9 7; vector-effect: non-scaling-stroke; }
 
-  /* o pontinho de cada parte (convida a tocar); a parte escolhida troca o ponto pelo rótulo */
-  .rx-ponto { position: absolute; z-index: 1; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; pointer-events: none;
-    background: #ff6a00; box-shadow: 0 0 0 3px #fff, 0 2px 8px rgb(0 0 0 / .28); transition: opacity .18s ease, transform .18s ease; }
-  .rx-ponto::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid #ff6a00; opacity: 0;
-    animation: rx-pulso 2.6s ease-out infinite; }
+  /* o véu: a parte acesa ganha um laranja translúcido de bordas esfumadas; o resto escurece de leve */
+  .rx-sombra { fill: rgb(22 22 26 / .3); opacity: 0; transition: opacity .16s ease; pointer-events: none; }
+  .rx.rx-aceso .rx-sombra { opacity: 1; }
+  .rx-furos g { fill: #000; opacity: 0; transition: opacity .16s ease; }
+  .rx-furos g.aceso { opacity: 1; }
+  .rx-realces { pointer-events: none; }
+  .rx-realces g { fill: #ff6a00; opacity: 0; transition: opacity .16s ease; }
+  .rx-realces g.aceso { opacity: .42; }
+  .rx-realces g.vazia { fill: #9a9aa0; }
+
+  /* o ponto de cada parte (convida a tocar); com número na arte estreita */
+  .rx-ponto { position: absolute; z-index: 1; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; pointer-events: none;
+    display: grid; place-items: center; background: #ff6a00; color: #1d1d1f; box-shadow: 0 0 0 2.5px #fff, 0 2px 8px rgb(0 0 0 / .3);
+    transition: transform .16s ease, background-color .16s ease; }
+  .rx-ponto i { font-style: normal; font-size: 12.5px; font-weight: 800; line-height: 1; }
+  .rx-ponto::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid #ff6a00; opacity: 0; animation: rx-pulso 2.6s ease-out infinite; }
   .rx-ponto:nth-of-type(2n)::after { animation-delay: .9s; }
   .rx-ponto:nth-of-type(3n)::after { animation-delay: 1.7s; }
   .rx.tocado .rx-ponto::after { animation: none; }
-  .rx-ponto.on { opacity: 0; transform: scale(.4); }
-  .rx-ponto.vazia { background: #9a9aa0; }
-  .rx-ponto.vazia::after { border-color: #9a9aa0; }
-  @keyframes rx-pulso { 0% { transform: scale(.8); opacity: .7; } 70%, 100% { transform: scale(2.4); opacity: 0; } }
-  @media (max-width: 599px) { .rx-ponto { width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; box-shadow: 0 0 0 2.5px #fff, 0 1px 5px rgb(0 0 0 / .28); } }
+  .rx-ponto.aceso { transform: scale(1.18); box-shadow: 0 0 0 2.5px #1d1d1f, 0 2px 8px rgb(0 0 0 / .3); }
+  .rx-ponto.vazia { background: #b4b4ba; }
+  .rx-ponto.vazia::after { border-color: #b4b4ba; }
+  @keyframes rx-pulso { 0% { transform: scale(.85); opacity: .7; } 70%, 100% { transform: scale(2); opacity: 0; } }
+  @media (max-width: 359px) { .rx-ponto { width: 19px; height: 19px; margin: -9.5px 0 0 -9.5px; } .rx-ponto i { font-size: 11px; } }
 
-  .rx-rotulo { --seta: 0px; position: absolute; z-index: 2; transform: translate(-50%, calc(-100% - 12px)); pointer-events: none; white-space: nowrap;
-    padding: 6px 12px; border-radius: 999px; background: #ff6a00; color: #1d1d1f; font-weight: 750; font-size: 14px; font-stretch: 92%; line-height: 1.2;
-    box-shadow: 0 1px 0 rgb(255 255 255 / .4) inset, 0 6px 16px -6px rgb(140 50 0 / .55); }
-  .rx-rotulo::after { content: ""; position: absolute; left: calc(50% + var(--seta)); bottom: -5px; width: 10px; height: 10px; margin-left: -5px;
-    background: #ff6a00; transform: rotate(45deg); border-radius: 2px; }
-  .rx-rotulo.embaixo { transform: translate(-50%, 12px); }
-  .rx-rotulo.embaixo::after { bottom: auto; top: -5px; }
-  .rx-rotulo.vazia, .rx-rotulo.vazia::after { background: #d6d6db; }
-  @media (max-width: 599px) { .rx-rotulo { font-size: 13px; padding: 5px 10px; transform: translate(-50%, calc(-100% - 9px)); } }
+  /* arte larga: as etiquetas fixas com a linha-guia; o ponto fica pequeno e sem número */
+  .rx-etiqueta, .rx-guias { display: none; }
+  .rx-guias line { stroke: #1d1d1f; stroke-opacity: .38; stroke-width: 1; vector-effect: non-scaling-stroke; transition: stroke .16s ease, stroke-opacity .16s ease; }
+  .rx-guias line.aceso { stroke: #ff6a00; stroke-opacity: 1; stroke-width: 2; }
+  .rx-etiqueta { position: absolute; z-index: 2; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap;
+    align-items: baseline; gap: 6px; padding: 5px 10px; border-radius: 999px; background: rgb(255 255 255 / .94);
+    color: #1d1d1f; font-size: 13px; font-weight: 700; font-stretch: 94%; line-height: 1.2; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 4px 12px -6px rgb(0 0 0 / .22);
+    transition: background-color .16s ease, color .16s ease; }
+  .rx-etiqueta b { font-size: 12px; font-weight: 650; color: #5b5b61; }
+  .rx-etiqueta b:empty { display: none; }
+  .rx-etiqueta.aceso { background: #ff6a00; }
+  .rx-etiqueta.aceso b { color: #1d1d1f; }
+  .rx-etiqueta.vazia { color: #75757b; }
+  .rx-etiqueta.vazia.aceso { background: #d6d6db; color: #1d1d1f; }
+  @container rxarte (min-width: 640px) {
+    .rx-etiqueta { display: inline-flex; }
+    .rx-guias { display: inline; }
+    .rx-ponto { width: 14px; height: 14px; margin: -7px 0 0 -7px; box-shadow: 0 0 0 2.5px #fff, 0 2px 8px rgb(0 0 0 / .28); }
+    .rx-ponto i { display: none; }
+  }
 
-  /* fichas: um trilho no celular, todas à vista no PC */
+  /* fichas: uma fila que desliza no celular, todas à vista do tablet em diante */
   .rx-fichas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; margin: 0 -2px; scroll-padding-inline: 16px; }
   .rx-fichas::-webkit-scrollbar { display: none; }
-  .rx-fichas button { flex: none; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px;
+  .rx-fichas button { flex: none; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 14px 0 8px; border: 0; border-radius: 999px;
     background: var(--surface); color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 620; cursor: pointer;
     box-shadow: inset 0 0 0 1.5px var(--line-2); -webkit-tap-highlight-color: transparent; transition: background-color .15s ease, box-shadow .15s ease; }
+  .rx-fichas i { font-style: normal; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: #ff6a00; color: #1d1d1f; font-size: 12.5px; font-weight: 800; }
   .rx-fichas small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
   .rx-fichas small:empty { display: none; }
   .rx-fichas button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
   .rx-fichas button.on { background: #ff6a00; color: #1d1d1f; box-shadow: none; }
+  .rx-fichas button.on i { background: #1d1d1f; color: #fff; }
   .rx-fichas button.on small { color: #1d1d1f; }
   .rx-fichas button.vazia { color: var(--ink-3); background: var(--surface-2); }
+  .rx-fichas button.vazia i { background: #c9c9ce; }
   .rx-fichas button.vazia.on { background: #d6d6db; color: #1d1d1f; }
+  /* arte larga: as etiquetas já ficam na arte; as fichas sem o número */
+  @container rxarte (min-width: 640px) { .rx-fichas button { padding-left: 14px; } .rx-fichas i { display: none; } }
   @media (min-width: 768px) { .rx-fichas { flex-wrap: wrap; overflow: visible; } }
 
   /* ---- o painel ---- */
@@ -453,26 +536,29 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-painel:not(.aberto) { display: none; }
   /* PC: antes da 1ª escolha, o "como funciona" ocupa a altura da arte ao lado (nada de coluna vazia) */
   @media (min-width: 1024px) {
-    .rx-corpo { align-items: stretch; }
     .rx-painel:not(.aberto) { display: grid; }
     .rx-painel.aberto { align-self: start; }
   }
   .rx-dica { display: grid; gap: 10px; justify-items: start; align-content: center; padding: 32px 30px; border-radius: 24px; background: var(--surface);
     box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
-  .rx-passos { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 14px; }
-  .rx-passos li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; font-size: 15.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
-  .rx-passos li span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #ff6a00; color: #1d1d1f; font-size: 14px; font-weight: 800; }
   .rx-dica-icone { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: var(--accent-soft); color: var(--accent-text); margin-bottom: 4px; }
   .rx-dica-icone svg { width: 26px; height: 26px; }
   .rx-dica b { font-stretch: 86%; font-weight: 800; font-size: clamp(21px, 1.8vw, 25px); line-height: 1.2; }
+  .rx-passos { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 14px; }
+  .rx-passos li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; font-size: 15.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+  .rx-passos li span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #ff6a00; color: #1d1d1f; font-size: 14px; font-weight: 800; }
 
-  .rx-conteudo { padding: 20px 18px 8px; border-radius: 24px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  /* a altura do painel fica guardada (6 tipos + os botões): trocar de parte não empurra nada; o pé fica embaixo */
+  .rx-conteudo { --linha: 69px; display: flex; flex-direction: column; min-height: calc(var(--linha) * 6 + 300px); padding: 20px 18px 8px;
+    border-radius: 24px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  .rx-conteudo[hidden] { display: none; }
   @media (min-width: 600px) { .rx-conteudo { padding: 24px 22px 10px; } }
+  @media (max-width: 400px) { .rx-conteudo { --linha: 63px; } }
   .rx-conteudo :global(.rx-p-cabeca) { display: grid; gap: 2px; padding: 0 4px 12px; }
-  .rx-conteudo :global(.rx-p-titulo) { margin: 0; font-stretch: 84%; font-weight: 820; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.1; letter-spacing: -.01em; outline: none; }
+  .rx-conteudo :global(.rx-p-titulo) { margin: 0; font-stretch: 84%; font-weight: 820; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.1; letter-spacing: -.01em; outline: none; text-wrap: balance; }
+  .rx-conteudo :global(.rx-p-titulo .rx-p-n) { color: var(--ink-2); font-weight: 700; }
   .rx-conteudo :global(.rx-p-titulo:focus-visible) { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 3px; text-underline-offset: 6px; }
-  .rx-conteudo :global(.rx-p-n) { margin: 0; font-size: 15px; color: var(--ink-2); }
-  .rx-conteudo :global(.rx-p-n b) { color: var(--ink); font-weight: 700; }
+  .rx-conteudo :global(.rx-p-sub) { margin: 0; font-size: 15px; color: var(--ink-2); }
   .rx-conteudo :global(.rx-p-aviso) { margin: 0 4px 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: 14px; line-height: 1.45; color: var(--ink-2); }
   .rx-conteudo :global(.rx-p-vazio) { margin: 0 4px 14px; font-size: 15px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
   .rx-conteudo :global(.rx-p-acoes) { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 0 4px 14px; }
@@ -486,17 +572,15 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-conteudo :global(a.rx-linha:hover) { background: var(--surface-2); }
   .rx-conteudo :global(.rx-l-foto) { width: 56px; height: 56px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); }
   .rx-conteudo :global(.rx-l-foto img) { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; display: block; }
-  .rx-conteudo :global(.rx-l-nome) { font-weight: 650; font-size: 15.5px; line-height: 1.3; text-wrap: pretty; }
-  /* nome comprido ("Sensores de Estacionamento") quebra com hífen, nunca passa por cima do número */
-  .rx-conteudo :global(.rx-l-nome) { min-width: 0; overflow-wrap: anywhere; hyphens: auto; }
+  .rx-conteudo :global(.rx-l-nome) { min-width: 0; font-weight: 650; font-size: 15.5px; line-height: 1.3; text-wrap: pretty; overflow-wrap: anywhere; hyphens: auto; }
+  .rx-conteudo :global(.rx-l-n) { font-size: 14px; font-weight: 700; color: var(--ink-2); padding: 3px 9px; border-radius: 999px; background: var(--surface-2); }
+  .rx-conteudo :global(.rx-l-seta) { width: 18px; height: 18px; fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   @media (max-width: 400px) {
     .rx-conteudo :global(.rx-linha) { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; min-height: 62px; }
     .rx-conteudo :global(.rx-l-foto) { width: 48px; height: 48px; }
     .rx-conteudo :global(.rx-linha .rx-l-seta) { display: none; }
     .rx-conteudo :global(.rx-l-nome) { font-size: 15px; }
   }
-  .rx-conteudo :global(.rx-l-n) { font-size: 14px; font-weight: 700; color: var(--ink-2); padding: 3px 9px; border-radius: 999px; background: var(--surface-2); }
-  .rx-conteudo :global(.rx-l-seta) { width: 18px; height: 18px; fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .rx-conteudo :global(.rx-esq .rx-l-foto) { animation: rx-brilho 1.2s ease-in-out infinite alternate; }
   .rx-conteudo :global(.rx-esq .rx-l-nome) { height: 14px; width: 60%; border-radius: 6px; background: var(--surface-2); }
   @keyframes rx-brilho { from { opacity: .55; } to { opacity: 1; } }
@@ -510,13 +594,25 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-conteudo :global(.rx-tipo:hover) { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
   .rx-conteudo :global(.rx-tipo .rx-l-n) { font-size: 13px; padding: 2px 8px; }
 
+  /* o pé do painel: o botão laranja (letra grafite) e, depois de tocar nele, as peças num trilho */
+  .rx-conteudo :global(.rx-p-pe) { margin-top: auto; padding-top: 14px; }
+  .rx-conteudo :global(.rx-ver) { width: 100%; }
+  .rx-conteudo :global(.rx-galeria) { display: grid; gap: 10px; }
+  .rx-conteudo :global(.rx-galeria[hidden]), .rx-conteudo :global(.rx-ver[hidden]) { display: none; }
+  .rx-conteudo :global(.rx-g-titulo) { margin: 0 4px; font-size: 15px; font-weight: 700; }
+  .rx-conteudo :global(.rx-trilho) { grid-auto-columns: 168px; gap: 12px; margin-inline: -4px; padding: 2px 4px 14px; scroll-padding-inline: 4px; }
+  @media (min-width: 1024px) { .rx-conteudo :global(.rx-trilho) { grid-auto-columns: 176px; } }
+  .rx-conteudo :global(.rx-g-nota) { margin: -4px 4px 4px; font-size: 14px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+
   .rx-conteudo :global(.rx-patio) { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; margin: 10px -4px 0; padding: 4px 8px;
     border-top: 1px solid var(--line); color: var(--ink-2); font-size: 15px; text-decoration: none; }
   .rx-conteudo :global(.rx-patio b) { color: var(--ink); font-weight: 700; text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--accent), transparent 30%); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 
   @media (prefers-reduced-motion: reduce) {
     .rx-ponto::after, .rx-conteudo :global(.rx-esq .rx-l-foto) { animation: none; }
-    .rx-realces g, .rx-ponto { transition: none; }
+    .rx-sombra, .rx-furos g, .rx-realces g, .rx-guias line, .rx-etiqueta, .rx-ponto { transition: none; }
   }
+  /* aparelho fraco: sem pulso e sem desfoque (o véu fica de borda reta, mais barato) */
   :global(html.leve) .rx-ponto::after { animation: none; }
+  :global(html.leve) .rx-realces, :global(html.leve) .rx-furos { filter: none; }
 </style>

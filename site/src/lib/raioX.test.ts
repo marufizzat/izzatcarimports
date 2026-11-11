@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { ZONAS, ARTE, contarZonas, linkLinha, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
+import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, linkLinha, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
 import { Busca, type Indice } from './busca';
 
 const buscaArq = 'public/dados/busca.json';
@@ -135,5 +135,29 @@ describe('o JSON curto da página', () => {
     const [z] = lerRaioX(j);
     expect(z.l.map((l) => [l.tipo, l.lado, l.pos, l.foto])).toEqual([
       ['Retrovisores', 'E', undefined, '/estudio-400/MLB1.webp'], ['Limpador e Lavador', undefined, 'T', ''], ['Retrovisores', 'D', 'T', '']]);
+  });
+});
+
+describe.skipIf(!existsSync(buscaArq))('"Ver as peças da frente": as peças da zona', () => {
+  const ix = JSON.parse(readFileSync(buscaArq, 'utf-8')) as Indice;
+  const b = new Busca(ix);
+  const procurar = b.procurar.bind(b);
+  it('a lista da zona tem o mesmo tamanho da conta, sem repetir, das mais novas para as mais antigas', () => {
+    const contas = contarZonas(procurar);
+    for (const z of ZONAS) {
+      const l = pecasDaZona(procurar, {}, z);
+      expect(l.length, z.nome).toBe(contas.find((c) => c.k === z.k)!.n);
+      expect(new Set(l.map((it) => it.id)).size).toBe(l.length);
+      for (let i = 1; i < l.length; i++) expect(l[i - 1].id.length > l[i].id.length || (l[i - 1].id.length === l[i].id.length && l[i - 1].id >= l[i].id)).toBe(true);
+    }
+  });
+  it('o arquivo das mais novas (/dados/raio-x.json) tem as 12 primeiras de cada zona, na ordem', async () => {
+    const { GET } = await import('../pages/dados/raio-x.json');
+    const sub = await (GET as unknown as () => Response)().json();
+    const itens = new Busca(sub).itens;
+    for (const z of ZONAS) {
+      const ids = (sub.zonas[z.k] as number[]).map((i) => itens[i].id);
+      expect(ids, z.nome).toEqual(pecasDaZona(procurar, {}, z).slice(0, NA_GALERIA).map((it) => it.id));
+    }
   });
 });
