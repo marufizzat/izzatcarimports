@@ -66,7 +66,7 @@ const confianca: [string, string][] = [
           <h1 class="display" data-cat-titulo>Catálogo de peças</h1>
           {/* título com os filtros do endereço, antes da pintura (a MESMA regra de tituloCatalogo em Catalogo.tsx) */}
           <script is:inline>(function(){var u=new URLSearchParams(location.search),g=function(k){return(u.get(k)||'').trim()},a=Number(g('ano'))||0,t=g('tipo'),sb=g('sub'),carro=[g('marca'),g('modelo')].filter(Boolean).join(' '),q=g('q'),base=sb?sb:t?(t==='Outros'?'Outras peças':/^peças/i.test(t)?t:'Peças de '+t.toLowerCase()):'Peças',h=q&&!carro&&!a&&!t&&!sb?'Resultados para “'+q+'”':carro?base+' para '+carro+(a?' '+a:''):a?base+' para carro ano '+a:t||sb?base:'';if(h){var e=document.querySelector('[data-cat-titulo]');if(e)e.textContent=h;document.title=h+' | Izzat Car Imports'}})();</script>
-          <p class="cat-lead">Peças originais de desmanche legal <span class="cat-nowrap">(CDV Detran-RS nº 01060)</span>.<span class="cat-lead-extra"> Ache pelo nome, pelo carro ou pelo código gravado na peça.</span></p>
+          <p class="cat-lead">Peças originais de desmanche credenciado <span class="cat-nowrap">(CDV Detran-RS nº 01060)</span>.<span class="cat-lead-extra"> Ache pelo nome, pelo carro ou pelo código gravado na peça.</span></p>
           <ul class="cat-confianca" aria-label="Em toda peça" data-rola>
             {confianca.map(([t, d]) => (
               <li><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={d} />{t}</li>

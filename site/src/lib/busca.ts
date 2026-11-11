@@ -721,7 +721,7 @@ export class Busca {
     if (!out.length && ent.familia) {
       const fm = ent.familia;
       const x = this.itens.reduce((s, it) => s + (it.c === fm ? 1 : 0), 0);
-      if (x) out.push({ tipo: 'sistema', rot: fm, sub: `Sistema do carro · ${pecas(x)}`, n: x, href: `/catalogo.html?${new URLSearchParams({ tipo: fm })}` });
+      if (x) out.push({ tipo: 'sistema', rot: fm, sub: `Categoria · ${pecas(x)}`, n: x, href: `/catalogo.html?${new URLSearchParams({ tipo: fm })}` });
     }
     return out.slice(0, 2);
   }

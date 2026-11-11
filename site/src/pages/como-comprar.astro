@@ -20,14 +20,14 @@ const msgConfere = 'Quero que vocês confiram uma peça. Meu carro é ____ (mode
 const msgSite = 'Quero comprar uma peça. Pode me ajudar?';
 const passos = [
   { src: '/arte/v2/passo-1.webp', alt: 'Ache a peça — Pelo nome, pelo carro ou pelo código gravado.' },
-  { src: '/arte/v2/passo-2.webp', alt: 'Confirme o seu carro — Manda o modelo e o ano. A gente confere na peça.' },
+  { src: '/arte/v2/passo-2.webp', alt: 'Confirme o seu carro — Mande o modelo e o ano. A gente confere na peça.' },
   { src: '/arte/v2/passo-3.webp', alt: 'Feche a compra — No Mercado Livre ou direto pelo WhatsApp.' },
   { src: '/arte/v2/passo-4.webp', alt: 'Receba em casa — Com nota fiscal e código de rastreio.' },
 ];
 ---
 <Pagina
   titulo="Como comprar peças originais | Izzat Car Imports"
-  descricao="Em 4 passos: ache a peça, confirme o seu carro, feche a compra pelo Mercado Livre ou pelo WhatsApp e receba em casa com nota fiscal."
+  descricao="Em 4 passos: ache a peça, confirme o seu carro, feche pelo WhatsApp (10% de desconto) ou pelo Mercado Livre e receba com nota fiscal."
   canonical={canonical}
 >
   <TopoArte trilha={[['Início', '/'], ['Como comprar', canonicalPath]]}
@@ -47,15 +47,16 @@ const passos = [
   {/* depois dos passos: o Maruf com o celular, o passo 2 ("confirme o seu carro") com rosto */}
   <div class="moldura">
     <BannerV2 formato="arte" nome="banner-como-comprar" href={whatsUrl(msgConfere)}
-      texto="A gente confere. Manda o modelo e o ano. A gente confere na peça e responde com foto. Chamar no WhatsApp" />
+      texto="A gente confere. Mande o modelo e o ano. A resposta vem pelo WhatsApp. Chamar no WhatsApp" />
   </div>
 
   <div class="moldura">
     <section class="inst-sec inst-duas" id="whatsapp" aria-labelledby="h-whatsapp">
       <div class="inst-texto">
         <h2 class="titulo-secao inst-h2" id="h-whatsapp">Comprar pelo WhatsApp</h2>
-        <p>Mande a peça ou o carro no WhatsApp. A gente confirma se a peça serve no seu carro, passa o valor e combina o frete na hora, pelo seu CEP. A gente envia para todo o Brasil.</p>
+        <p>Mande a peça ou o carro no WhatsApp. A gente confirma se a peça serve, combina o frete pelo seu CEP e dá 10% de desconto em toda peça. Envio para todo o Brasil.</p>
         <p>A mensagem já abre pronta. Você só completa com o que precisa.</p>
+        <p>A forma de pagamento você combina no WhatsApp.</p>
         <div class="inst-acoes">
           <a class="botao botao-laranja inst-botao" href={whatsUrl(msgSite)} rel="noopener">
             <Icone nome="whats" />Chamar no WhatsApp
@@ -69,7 +70,7 @@ const passos = [
       <div class="inst-texto">
         <h2 class="titulo-secao inst-h2" id="h-ml">Comprar pelo Mercado Livre</h2>
         <p>As peças também estão na loja <b class="inst-quebra">IZZAT_CAR_IMPORTS</b> no Mercado Livre, com fotos e ficha técnica. Ali, o frete e o prazo são os calculados no anúncio.</p>
-        <p>A compra segue a proteção do próprio Mercado Livre.</p>
+        <p>A compra tem a proteção do próprio Mercado Livre.</p>
       </div>
       <div class="inst-loja cc-loja">
         <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>

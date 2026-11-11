@@ -130,14 +130,14 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   // Aviso para o leitor de tela, numa região viva que existe SEMPRE (a que nasce junto com a lista costuma ser pulada):
   // quantas sugestões apareceram, ou que não achou nada.
   const nSug = ops.filter((o) => o.tipo === 'item' || o.tipo === 'atalho').length;
-  const anuncio = abertoRecentes ? `${recentes.length === 1 ? '1 busca recente' : `${recentes.length} buscas recentes`}, usa as setas.`
+  const anuncio = abertoRecentes ? `${recentes.length === 1 ? '1 busca recente' : `${recentes.length} buscas recentes`}. Use as setas para escolher.`
     : !aberto ? ''
     : mostraCarregando ? 'Carregando as peças…'
     : erro ? 'Não deu para carregar a busca agora.'
     : semResultado ? `Nada com “${termoTela}” no site.`
     : !res ? ''
-    : res.aproximado ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}, usa as setas.`
-    : `${nSug === 1 ? '1 sugestão' : `${nSug} sugestões`}, usa as setas.`;
+    : res.aproximado ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}. Use as setas para escolher.`
+    : `${nSug === 1 ? '1 sugestão' : `${nSug} sugestões`}. Use as setas para escolher.`;
 
   useEffect(() => {
     setAtivo(-1);

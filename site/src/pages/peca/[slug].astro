@@ -137,7 +137,7 @@ const fotosMl = fotosGaleria(p.fotos);
 // WhatsApp (lib/whats.ts): a peça pelo nome limpo, carro, anos e código (nunca o título cru do anúncio); o carro da
 // pessoa já vem com a marca e o modelo da peça (só o ano em branco), como no botão "Pedir no WhatsApp".
 const pecaMsg = blocoPeca({ linha: linhaPeca, url });
-const meuCarroMsg = !p.b ? 'Meu carro é ____ (modelo) ____ (ano).' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____ ano ____.` : `Meu carro é ${carros} ano ____.`;
+const meuCarroMsg = !p.b ? 'Meu carro é ____ (modelo) ____ (ano).' : modelosDa(p).length > 1 ? `Meu carro é ${p.b} ____, ano ____.` : `Meu carro é ${carros}, ano ____.`;
 
 const ld = {
   '@context': 'https://schema.org',
@@ -202,14 +202,14 @@ const ld = {
   )}
   {!temCarro && daMarca.length > 0 && (
     <DoMesmoCarro titulo={marca ? `Mais peças ${marca.n}` : 'Mais peças'} carro={marca ? marca.n : ''}
-                  sub={marca ? `De outros modelos ${marca.n}: confira o carro e o ano em cada cartão.` : 'Do nosso estoque: confira o carro e o ano em cada cartão.'}
+                  sub={marca ? `De outros modelos ${marca.n}: confira o carro e o ano em cada cartão.` : 'Do pátio: confira o carro e o ano em cada cartão.'}
                   link={marca ? `/marca/${marca.k}.html` : '/catalogo.html'} total={marca ? marca.c : r.total} pecas={daMarca} />
   )}
 
   <section class="secao">
     <div class="moldura">
       <BannerV2 nome="banner-serve" href={whatsUrl(`Quero confirmar se esta peça serve no meu carro:\n\n${pecaMsg}\n\n${meuCarroMsg}`)}
-        texto="Serve no meu carro? Mande o modelo e o ano. A gente confere no pátio e responde com foto. Chamar no WhatsApp" />
+        texto="Serve no meu carro? Mande o modelo e o ano. A gente confere no pátio e responde pelo WhatsApp. Chamar no WhatsApp" />
     </div>
   </section>
 </Pagina>

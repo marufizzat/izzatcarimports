@@ -138,12 +138,12 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
   const k = `categoria:${f.k}`;
 
   const p1 = escolha(`${k}:1`, ehPeca ? [
-    `${S(N)} ${N} ${tema} ${O(N)} no estoque.`,
-    `No estoque há ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
+    `${S(N)} ${N} ${tema} ${O(N)} no pátio.`,
+    `No pátio há ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
     `Esta categoria reúne ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
   ] : [
-    `${S(N)} ${N} ${P(N)} de ${tema} ${O(N)} no estoque.`,
-    `No estoque há ${N} ${P(N)} de ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
+    `${S(N)} ${N} ${P(N)} de ${tema} ${O(N)} no pátio.`,
+    `No pátio há ${N} ${P(N)} de ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
     `Esta categoria reúne ${N} ${P(N)} ${O(N)} de ${tema}, retiradas de carros com baixa legal no Detran-RS.`,
   ]);
   const paragrafos = [p1];
@@ -183,8 +183,8 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
 
   const p1 = escolha(`${k}:1`, [
     `${S(N)} ${N} ${P(N)} ${O(N)} para ${nome}${anos}.`,
-    `No estoque há ${N} ${P(N)} para ${nome}${anos}, de carros com baixa legal no Detran-RS.`,
-    `Para ${nome}${anos}, ${S(N).toLowerCase()} ${N} ${P(N)} ${O(N)} em estoque.`,
+    `No pátio há ${N} ${P(N)} para ${nome}${anos}, de carros com baixa legal no Detran-RS.`,
+    `Para ${nome}${anos}, ${S(N).toLowerCase()} ${N} ${P(N)} ${O(N)} no pátio.`,
   ]);
   const paragrafos = [p1];
   if (fams.length && N < 5) {
@@ -227,9 +227,9 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
   const paragrafos: string[] = [
     modelos ? escolha(`${k}:1`, [
       `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} para ${modelos} ${M(modelos)}.`,
-      `Há ${N} ${P(N)} ${O(N)} de ${m.n} em estoque, para ${modelos} ${M(modelos)}${modelos > 1 ? ' diferentes' : ''}.`,
-      `As peças de ${m.n} no estoque somam ${N}, de ${modelos} ${M(modelos)}.`,
-    ]) : `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} no estoque.`,
+      `Há ${N} ${P(N)} ${O(N)} de ${m.n} no pátio, para ${modelos} ${M(modelos)}${modelos > 1 ? ' diferentes' : ''}.`,
+      `As peças de ${m.n} no pátio somam ${N}, de ${modelos} ${M(modelos)}.`,
+    ]) : `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} no pátio.`,
   ];
   if (nomes.length) {
     paragrafos.push(escolha(`${k}:2`, [
@@ -268,4 +268,4 @@ export const tituloCarro = (b: string, m: string, anos: [number, number] | null)
 export const tituloMarca = (n: string) => `Peças ${n} originais | Izzat Car Imports`;
 
 /** Termos que nunca podem aparecer nos textos (regras da marca: nada nao confirmado). */
-export const PROIBIDOS = ['frete grátis', 'tem aqui', 'mais barato', '100% garantido', 'lacre', 'retirada no local', 'horário', 'endereço', '12x'];
+export const PROIBIDOS = ['frete grátis', 'tem aqui', 'mais barato', '100% garantido', 'lacre', 'retirada no local', '12x', 'troca', 'devolu', 'transportadora', 'único whatsapp', 'parcel', 'seminov'];

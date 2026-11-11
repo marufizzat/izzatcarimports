@@ -21,10 +21,10 @@ const scriptTopo = `try{var d=document.documentElement,m=/[?&]i=([^&]*)/.exec(lo
 // revisão 12 era a frase de 3 linhas virando 2). As MESMAS frases do components/lista/paginaLista.ts.
 // Na sua lista, o esqueleto leva os textos guardados (carro, anos, nome, código) em barras: cada linha quebra igual à de
 // verdade (o nome de 2 linhas no celular também) e nada pula quando ela chega.
-const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=+d.dataset.lstMinha||0,p=function(n){return n+(n===1?' peça':' peças')},h=document.querySelector('[data-lst-h1]'),l=document.querySelector('[data-lst-lead]'),u=document.querySelector('[data-lst-link-sub]');if(d.dataset.lst==='link'){h.textContent='Lista de orçamento';l.textContent='Mandaram esta lista para você: '+p(q)+'. Peça tudo no WhatsApp ou guarde na sua lista.';if(s)u.textContent=' Guardar junta estas peças às '+p(s)+' que já estão na sua lista (nada se perde).'}else if(q){l.textContent=p(q)+' na lista. Peça tudo de uma vez no WhatsApp, com ${DESCONTO_WHATS}% de desconto em cada peça.';var g=(JSON.parse(localStorage.getItem('izzatcar.lista'))||[]).filter(function(i){return i&&/^MLB\\d{6,14}$/.test(i.id)}),t=function(v){return typeof v=='string'?v.replace(/\\s+/g,' ').trim():''},b=function(x,z){var e=document.createElement('span');e.className='esq-t'+(z?' oem':'');e.textContent=x;return e};[].forEach.call(document.querySelectorAll('.lst-esq'),function(r,j){var x=g[j];if(!x)return;var c=t(x.carro).slice(0,80),a=t(x.anos).slice(0,20),o=t(x.cod).slice(0,30),v=r.querySelector('.lst-veic'),n=r.querySelector('.lst-nome'),k=r.querySelector('.lst-cod');n.replaceChildren(b(t(x.nome).slice(0,120)||'Peça'));if(c&&a){v.replaceChildren(b(c));var y=document.createElement('span');y.className='lst-anos';y.append(b(a));v.append(y)}else if(c||a)v.replaceChildren(b(c||a));else v.remove();if(o)k.replaceChildren('Cód. ',b(o,1));else k.remove()})}}catch(e){}`;
+const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=+d.dataset.lstMinha||0,p=function(n){return n+(n===1?' peça':' peças')},h=document.querySelector('[data-lst-h1]'),l=document.querySelector('[data-lst-lead]'),u=document.querySelector('[data-lst-link-sub]');if(d.dataset.lst==='link'){h.textContent='Lista de orçamento';l.textContent='Mandaram esta lista para você: '+p(q)+'. Pedido no WhatsApp ou guarde na sua lista.';if(s)u.textContent=' Guardar junta estas peças às '+p(s)+' que já estão na sua lista (nada se perde).'}else if(q){l.textContent=p(q)+' na lista. Peça tudo de uma vez no WhatsApp, com ${DESCONTO_WHATS}% de desconto em cada peça.';var g=(JSON.parse(localStorage.getItem('izzatcar.lista'))||[]).filter(function(i){return i&&/^MLB\\d{6,14}$/.test(i.id)}),t=function(v){return typeof v=='string'?v.replace(/\\s+/g,' ').trim():''},b=function(x,z){var e=document.createElement('span');e.className='esq-t'+(z?' oem':'');e.textContent=x;return e};[].forEach.call(document.querySelectorAll('.lst-esq'),function(r,j){var x=g[j];if(!x)return;var c=t(x.carro).slice(0,80),a=t(x.anos).slice(0,20),o=t(x.cod).slice(0,30),v=r.querySelector('.lst-veic'),n=r.querySelector('.lst-nome'),k=r.querySelector('.lst-cod');n.replaceChildren(b(t(x.nome).slice(0,120)||'Peça'));if(c&&a){v.replaceChildren(b(c));var y=document.createElement('span');y.className='lst-anos';y.append(b(a));v.append(y)}else if(c||a)v.replaceChildren(b(c||a));else v.remove();if(o)k.replaceChildren('Cód. ',b(o,1));else k.remove()})}}catch(e){}`;
 ---
 <Pagina titulo="Sua lista de orçamento | Izzat Car Imports" noindex
-  descricao="Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com 10% de desconto em cada peça.">
+  descricao="Junte as peças do serviço e faça um pedido só no WhatsApp, com 10% de desconto em cada uma.">
   <script slot="head" is:inline set:html={scriptTopo} />
 
   <div class="moldura lst" data-lst>
@@ -34,7 +34,7 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
 
     <header class="lst-topo">
       <h1 class="lst-h1" data-lst-h1>Sua lista de orçamento</h1>
-      <p class="lst-lead" data-lst-lead>Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada peça.</p>
+      <p class="lst-lead" data-lst-lead>Junte as peças do serviço e faça um pedido só no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada uma.</p>
     </header>
 
     <div class="lst-grade" data-lst-cheia>
@@ -63,7 +63,7 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
 
       <aside class="lst-resumo" aria-labelledby="lst-resumo-t">
         <div class="lst-resumo-cx">
-          <h2 class="lst-resumo-t" id="lst-resumo-t">Resumo do pedido</h2>
+          <h2 class="lst-resumo-t" id="lst-resumo-t">Resumo da lista</h2>
           <dl class="lst-contas">
             <div><dt data-lst-qtd>Preço no site</dt><dd class="num" data-lst-sub>—</dd></div>
             <div class="lst-conta-desc"><dt>Desconto de {DESCONTO_WHATS}% no WhatsApp</dt><dd class="num" data-lst-desc>—</dd></div>
@@ -89,15 +89,15 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
       <div class="lst-vazia-cx">
         <div class="lst-vazia-arte" aria-hidden="true"><span><Icone nome="lista" /></span></div>
         <h2 class="lst-vazia-t" id="lst-vazia-t">Sua lista está vazia</h2>
-        <p class="lst-vazia-txt">Na página de cada peça, toque em <b>Adicionar à lista</b>. Junte as peças do serviço (até {MAX_LISTA}) e peça tudo de uma vez no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada uma.</p>
+        <p class="lst-vazia-txt">Na página de cada peça, toque em <b>Adicionar à lista</b>. Junte as peças do serviço (até {MAX_LISTA}) e faça um pedido só no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada uma.</p>
         <div class="lst-vazia-botoes">
           <a class="botao botao-laranja" href="/catalogo.html"><Icone nome="busca" />Ver o catálogo</a>
           <a class="botao botao-linha" href="/carros.html" data-lst-seu-carro><Icone nome="carro" /><span>Escolher o meu carro</span></a>
         </div>
         <ol class="lst-passos">
           <li><b>Junte as peças</b><span>Em cada peça, “Adicionar à lista”. Ela fica guardada neste aparelho.</span></li>
-          <li><b>Peça tudo no WhatsApp</b><span>Uma mensagem só, com cada peça e o total com {DESCONTO_WHATS}% de desconto.</span></li>
-          <li><b>A gente confere e combina</b><span>Confere as peças no seu carro e combina o frete pelo seu CEP.</span></li>
+          <li><b>Pedido no WhatsApp</b><span>Uma mensagem só, com cada peça e o total com {DESCONTO_WHATS}% de desconto.</span></li>
+          <li><b>A gente confere e combina</b><span>Confere se servem no seu carro e combina o frete pelo CEP.</span></li>
         </ol>
       </div>
     </section>
