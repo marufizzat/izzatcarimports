@@ -240,6 +240,23 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    `filter: blur` do CSS (o filtro do SVG custava 60–110 ms por toque com CPU 6×). Tipo novo no estoque: conferir a zona
    dele em `ZONAS` (o teste avisa nome de bloco/tipo que sumiu).
 
+13. **Página do carro por família (rodada 15, nov/2026; cliente oculto 2, atrito 8)** — `pages/carros/[k].astro` +
+   `lib/carroPagina.ts` + `components/AnosDoCarro.astro`. As **fichas de ano** ficam DENTRO da caixa do carro (na 1ª tela
+   do celular de 360×640); o ano do carro salvo deste modelo já vem aceso e à vista antes da 1ª pintura (script inline,
+   `rolarFila`); tocar num ano filtra a página e **salva o "Meu carro"** ("Salvo como seu carro · Desfazer"; se havia
+   outro carro, "Salvo no lugar do Onix 2015"; o Desfazer devolve o carro e o ano de antes); "Todos" não mexe no carro
+   salvo. No PC as fichas têm largura fixa (a quebra de linha não muda quando a letra chega: era o CLS 0,11 das páginas
+   pequenas, revisão 14). As **peças** saem agrupadas pelos blocos (`agrupar`: mais peças primeiro, "Outros" no fim), com
+   a barra de fichas presa sob o cabeçalho (`.gp-barra`, só as famílias com peça no ano, pela contagem; pula para o grupo
+   com `scroll-margin-top`; a ficha ativa acompanha a rolagem) e, em cada grupo, 8 cartões no HTML (o CSS mostra 4 no
+   celular, 6 no tablet, 8 no PC) + "Ver as N de <família>" (catálogo com `marca`, `modelo`, `tipo` e `ano`). Carro com
+   mais de 48 peças: só os primeiros grupos levam os cartões no HTML (`cartoesNoHtml`, 40 cartões; antes eram 48 soltos) e
+   os outros chegam de `/dados/carro/<k>.json` quando o navegador folga, com o lugar guardado (`data-espera`); a vista do
+   ano é montada do mesmo arquivo, um grupo por tarefa. TODA peça segue com link de verdade na lista "Todas as N peças".
+   Carro com menos de 20 peças (ou de uma família só): a grade simples. **Selo do carro unido** (revisão 14, B7): a peça
+   de UMA versão (`data-v1`/`it.v1`, `versaoUnica` em `catalogo/etiqueta.ts`: "C180" dentro do Classe C, "New Fiesta"
+   dentro do Fiesta) não ganha "Serve no seu…": ganha "Confira a versão".
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
@@ -335,9 +352,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
   de anos com mais peças (na página do carro, num `<script is:inline>` antes da 1ª pintura); o "Todos" fica fixo à
   esquerda (`.ac-fixo`/`.mc-fixo`, sticky). Só o scrollLeft da fila, nunca a página.
-- Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (um por modelo da garagem; só as peças do carro, feito no
-  build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entra em partes (12 cartões, o resto, a lista completa em
-  fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`.
+- Página do carro: a vista do ano e os grupos que não vêm no HTML saem de `/dados/carro/<k>.json` (um por modelo da garagem; só as peças do carro, feito no
+  build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entram um grupo por tarefa (a lista completa em
+  fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`. Ver o item 13.
 - **Troca de página sem tela branca** (nov/2026): transição entre documentos (`@view-transition` no fim do
   `global.css`; Chrome/Edge 126+ e Safari 18.2+, quem não tem navega como antes), até 250 ms, nenhuma com
   `prefers-reduced-motion` e o `html.leve` pula no `pageswap`. O cabeçalho fica parado (grupo `cab`, fundo cheio só

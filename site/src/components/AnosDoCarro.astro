@@ -1,35 +1,35 @@
 ---
 // Fichas de ano da página do carro (cliente oculto, atrito 8): o Onix 2012–2019 e o 2020+ são carros diferentes e a
-// grade misturava os dois (no Onix, 24 das 85 peças servem no 2015, e 7 dos 8 primeiros cartões eram 2020–2025).
-// Os anos em que o modelo tem peça, com a contagem (a faixa de cada peça NESTE carro: lib/meuCarro.ts, anosNoModelo).
-// O toque filtra a grade ali mesmo (sem recarregar) pelos data-a0/a1 (e data-ms/ys) dos cartões a.etiqueta da seção,
-// também os que entram depois (lista completa); com o carro salvo deste modelo, o ano dele já vem escolhido, e o ano
-// tocado vai para o carro salvo (o cabeçalho e o "É o meu carro" acompanham).
+// grade misturava os dois. Os anos em que o modelo tem peça, com a contagem (a faixa de cada peça NESTE carro:
+// lib/meuCarro.ts, anosNoModelo). Rodada 15: ficam no TOPO da página (dentro da caixa do carro, logo abaixo do texto: na
+// 1ª tela do celular de 360×640), o ano salvo já vem aceso e à vista antes da 1ª pintura, e tocar num ano filtra a página
+// e SALVA o "Meu carro" ("Salvo como seu carro · Desfazer"); "Todos" não mexe no carro salvo. A lógica mora em
+// lib/carroPagina.ts (ligada pelo script de pages/carros/[k].astro).
 import type { Peca } from '../lib/dados';
 import { anosNoModelo } from '../lib/meuCarro';
 import { rolarFila } from '../lib/anosFila';
-/** k = a chave do carro: com mais de 48 peças, a grade do ano sai de /dados/carro/<k>.json (só as peças dele) */
-interface Props { lista: Peca[]; b: string; m: string; base: string; k?: string }
-const { lista, b, m, base, k } = Astro.props;
+/** a/as = a arte do carro como a garagem a vê: vai junto quando o toque no ano salva este carro */
+interface Props { lista: Peca[]; b: string; m: string; a?: string; as?: number[] }
+const { lista, b, m, a, as } = Astro.props;
 const conta = new Map<number, number>();
 for (const p of lista) {
   const y = anosNoModelo(p, m);
-  if (y) for (let a = Math.max(1950, y[0]); a <= Math.min(2035, y[1]); a++) conta.set(a, (conta.get(a) ?? 0) + 1);
+  if (y) for (let ano = Math.max(1950, y[0]); ano <= Math.min(2035, y[1]); ano++) conta.set(ano, (conta.get(ano) ?? 0) + 1);
 }
 const anos = [...conta].sort((x, z) => x[0] - z[0]);
 const pecasTxt = (n: number) => `${n.toLocaleString('pt-BR')} ${n === 1 ? 'peça' : 'peças'}`;
 // Antes da 1ª pintura (logo depois das fichas): a fila já abre nos anos com mais peças, ou no ano do carro salvo deste
-// modelo (lib/anosFila.ts, a mesma função do seletor "Seu carro"); o "Todos" fica fixo à esquerda.
+// modelo, que já vem ACESO (lib/anosFila.ts, a mesma função do seletor "Seu carro"); o "Todos" fica fixo à esquerda.
 const abrirFila = `(function(){var r=document.currentScript.previousElementSibling,l=r.querySelector('.ac-lista'),t=l.parentElement,`
   + `cs=[].slice.call(l.querySelectorAll('.ac-ano[data-c]')),alvo=null,n=function(s){return(s||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g,'')};`
   + `try{var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro')||'null');if(c&&c.y&&n(c.b)===n(r.dataset.b)&&n(c.m)===n(r.dataset.m))alvo=l.querySelector('.ac-ano[data-y="'+Number(c.y)+'"]')}catch(e){}`
+  + `if(alvo){alvo.setAttribute('aria-pressed','true');l.querySelector('.ac-ano[data-y=""]').setAttribute('aria-pressed','false')}`
   + `(${rolarFila.toString()})(l,l.querySelector('.ac-ano[data-y=""]'),cs,cs.map(function(x){return+x.dataset.c}),alvo);`
   + `var f=l.scrollWidth-l.clientWidth;if(l.scrollLeft>4)t.setAttribute('data-esq','');if(l.scrollLeft<f-4)t.setAttribute('data-dir','')})()`;
 ---
 {anos.length > 1 && (<>
-  <div class="anos-carro" data-anos-carro data-b={b} data-m={m} data-base={base} data-n={lista.length}
-       data-dados={k && lista.length > 48 ? `/dados/carro/${k}.json` : undefined}>
-    <span class="ac-rot" id="ac-rot">Ano do carro</span>
+  <div class="anos-carro" data-anos-carro data-b={b} data-m={m} data-a={a} data-as={as?.join(',')}>
+    <p class="ac-cab"><span class="ac-rot" id="ac-rot">Ano do seu {m}</span><span class="ac-salvo" role="status" data-ac-salvo></span></p>
     <div class="ac-trilho">
       <div class="ac-lista" role="group" aria-labelledby="ac-rot">
         <span class="ac-fixo"><button type="button" class="ac-ano" data-y="" aria-pressed="true" aria-label={`Todos os anos, ${pecasTxt(lista.length)}`}>Todos</button></span>
@@ -42,223 +42,22 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
   <script is:inline set:html={abrirFila} />
 </>)}
 
-<script>
-  import { lerMeuCarro, salvarMeuCarro, norm, anosNoModelo, serveNoModelo, lerModelos, EVENTO, type MeuCarro } from '../lib/meuCarro';
-  import { rolarFila } from '../lib/anosFila';
-  import type { Item, Indice } from '../lib/busca';
-
-  const raiz = document.querySelector<HTMLElement>('[data-anos-carro]');
-  const secao = raiz?.closest<HTMLElement>('section') ?? null;
-  if (raiz && secao) {
-    const B = raiz.dataset.b || '', M = raiz.dataset.m || '', base = raiz.dataset.base || '/catalogo.html';
-    const lista = raiz.querySelector<HTMLElement>('.ac-lista')!;
-    const trilho = raiz.querySelector<HTMLElement>('.ac-trilho')!;
-    const chips = [...raiz.querySelectorAll<HTMLButtonElement>('.ac-ano')];
-    const todos = chips.find((c) => !c.dataset.y) ?? null;
-    const anosChips = chips.filter((c) => c.dataset.y);
-    const eh = (c: MeuCarro | null): c is MeuCarro => !!c && norm(c.b) === norm(B) && norm(c.m) === norm(M);
-    // o que muda com o ano: a contagem do título da grade e o "Ver as N peças no catálogo" (carro com mais de 48)
-    const num = secao.querySelector<HTMLElement>('.grade-cabeca .num');
-    const numOrig = num?.textContent ?? '';
-    const mais = secao.querySelector<HTMLAnchorElement>('.grade-mais a');
-    const maisOrig = mais ? { href: mais.getAttribute('href') || base, txt: mais.textContent || '' } : null;
-    let ano: number | null = null;
-    // A grade fixa só traz os 48 cartões mais novos: num carro com mais peças, o ano escolhido pode ter peça que não está
-    // nela (o Tracker 2013 tinha 13 peças e nenhum cartão). Aí os cartões do ano são montados do índice da busca (o mesmo
-    // do catálogo, baixado só neste toque), na mesma grade, e a lista "Todas as N peças" passa a mostrar só as do ano.
-    const grade = secao.querySelector<HTMLElement>('.grade-pecas');
-    const total = Number(raiz.dataset.n || 0);
-    let gradeAno: HTMLElement | null = null;
-    let doCarro: Promise<Item[]> | null = null;
-    // UM formatador, criado já (o toLocaleString('pt-BR') monta um a cada chamada: ~1 ms cada no celular lento, 25 grupos)
-    const nf = new Intl.NumberFormat('pt-BR');
-    const fmt = (x: number) => `${nf.format(x)} ${x === 1 ? 'peça' : 'peças'}`;
-    const todas = secao.querySelector<HTMLElement>('.todas-pecas');
-    const sumario = todas?.querySelector('summary') ?? null;
-    const sumarioOrig = sumario?.textContent ?? '';
-
-    // a peça serve no ano escolhido, pela faixa dela NESTE carro (a peça de 2+ carros traz data-ms/ys)
-    const serve = (a: HTMLElement) => {
-      if (ano == null) return true;
-      const d = a.dataset;
-      const y = anosNoModelo({ y: d.a0 ? [Number(d.a0), Number(d.a1)] : null, ...lerModelos(d.ms, d.ys) }, M);
-      return !!y && ano >= y[0] && ano <= y[1];
-    };
-    /** Filtra os cartões da grade fixa e devolve quantos ficaram à vista. */
-    const aplicar = () => {
-      let n = 0;
-      grade?.querySelectorAll<HTMLElement>('a.etiqueta[data-b]').forEach((a) => {
-        const ok = serve(a);
-        if (ok) n++;
-        (a.closest<HTMLElement>('.etiqueta-cx') ?? a).classList.toggle('fora-do-ano', !ok);
-      });
-      return n;
-    };
-    const textos = (y: number | null, n: number) => {
-      if (num) num.textContent = y == null ? numOrig : `${fmt(n)} para o ${M} ${y}`;
-      if (mais && maisOrig) {
-        mais.href = y == null ? maisOrig.href : `${base}&ano=${y}`;
-        mais.textContent = y == null ? maisOrig.txt : n === 1 ? `Ver a peça do ${M} ${y} no catálogo` : `Ver as ${fmt(n)} do ${M} ${y} no catálogo`;
-      }
-    };
-    /** A lista "Todas as N peças": só as do ano (pelo endereço de cada linha); sem ano, volta inteira. Em fatias de ~6 ms
-     *  (515 linhas no XC60: de uma vez era um quadro de 60 ms num celular lento); `vez` = a chamada que ainda vale. */
-    let grupos: { g: HTMLElement; c: HTMLElement | null; linhas: [HTMLElement, string][] }[] | null = null;
-    const filtrarLista = (y: number | null, enderecos: Set<string> | null, vez: number) => {
-      if (!todas) return;
-      grupos ??= [...todas.querySelectorAll<HTMLElement>('.todas-pecas-grupo')].map((g) => ({
-        g, c: g.querySelector<HTMLElement>('.todas-pecas-n'),
-        linhas: [...g.querySelectorAll<HTMLElement>('li')].map((li) => [li, li.querySelector('a')?.getAttribute('href') || ''] as [HTMLElement, string]),
-      }));
-      let i = 0, n = 0;
-      const fatia = () => {
-        if (vez !== vezLista) return;
-        const t0 = performance.now();
-        for (; i < grupos!.length && performance.now() - t0 < 6; i++) {
-          const { g, c, linhas } = grupos![i];
-          let k = 0;
-          for (const [li, h] of linhas) {
-            const ok = !enderecos || enderecos.has(h);
-            if (li.hidden === ok) li.hidden = !ok;
-            if (ok) k++;
-          }
-          if (g.hidden !== (k === 0)) g.hidden = k === 0;
-          if (c) c.textContent = `(${nf.format(k)})`;
-          n += k;
-        }
-        if (i < grupos!.length) { setTimeout(fatia, 0); return; }
-        if (sumario) sumario.textContent = y == null || !enderecos ? sumarioOrig : n === 1 ? `A peça do ${B} ${M} ${y}` : `Todas as ${fmt(n)} do ${B} ${M} ${y}`;
-      };
-      fatia();
-    };
-    // Fluidez (XC60, CPU 6x): o trabalho do toque vai em partes, cada uma no seu quadro (nenhum passa de 50 ms): os cartões
-    // da 1ª tela, o resto da grade do ano 12 por vez e, por último, a lista completa (fica embaixo da grade)
-    const pausa = () => new Promise<void>((r) => setTimeout(r, 0));
-    let vezLista = 0;
-    const listaDepois = (y: number | null, enderecos: Set<string> | null) => {
-      const vez = ++vezLista;
-      setTimeout(() => filtrarLista(y, enderecos, vez), 0);
-    };
-    const semGradeAno = () => {
-      gradeAno?.remove();
-      gradeAno = null;
-      grade?.classList.remove('fora-do-ano');
-    };
-    /** Os cartões do ano inteiro (até 48), do índice da busca. Falhou a rede: ficam os da grade fixa e o botão do catálogo. */
-    async function completar(y: number, aVista: number) {
-      if (!grade) return;
-      // nada do ano na grade fixa: guarda o lugar dos cartões enquanto o índice desce (nunca a grade vazia)
-      if (aVista === 0 && !gradeAno) {
-        gradeAno = grade.cloneNode(false) as HTMLElement;
-        gradeAno.classList.add('grade-ano');
-        gradeAno.setAttribute('aria-busy', 'true');
-        const chip = chips.find((c) => c.dataset.y === String(y));
-        gradeAno.innerHTML = '<div class="ac-espera"></div>'.repeat(Math.min(Number(chip?.dataset.c || 4), 4));
-        grade.after(gradeAno);
-        grade.classList.add('fora-do-ano');
-      }
-      try {
-        doCarro ??= (async () => {
-          // só as peças deste carro (~10% do índice no XC60): o índice inteiro (1,4 MB) travava o 1º toque num celular lento
-          const [{ Busca }, r] = await Promise.all([import('../lib/busca'), fetch(raiz.dataset.dados || '/dados/busca.json')]);
-          if (!r.ok) throw new Error(String(r.status));
-          return new Busca((await r.json()) as Indice).itens
-            .filter((it) => norm(it.b) === norm(B) && serveNoModelo(it, M))
-            .sort((a, z) => (z.id > a.id ? 1 : -1));
-        })();
-        const [itens, { cartaoHtml, vigiarFotos }, { SIZES_CARTAO }] = await Promise.all([doCarro, import('../lib/vendidaCartoes'), import('../lib/busca')]);
-        if (ano !== y) return;   // trocou de ano enquanto o índice descia
-        const doAno = itens.filter((it) => { const f = anosNoModelo(it, M); return !!f && y >= f[0] && y <= f[1]; });
-        if (!doAno.length) { semGradeAno(); return; }
-        if (!gradeAno) {
-          gradeAno = grade.cloneNode(false) as HTMLElement;
-          gradeAno.classList.add('grade-ano');
-          grade.after(gradeAno);
-        }
-        vigiarFotos(gradeAno);
-        await pausa();
-        if (ano !== y || !gradeAno) return;
-        const cartoes = (de: number, ate: number) => doAno.slice(de, ate).map((it) => cartaoHtml(it, SIZES_CARTAO.grade)).join('');
-        gradeAno.removeAttribute('aria-busy');
-        gradeAno.innerHTML = cartoes(0, 12);   // a 1ª tela (6 fileiras no celular, 3 no PC)
-        grade.classList.add('fora-do-ano');
-        textos(y, doAno.length);
-        for (let de = 12; de < Math.min(doAno.length, 48); de += 12) {   // o resto, 12 por vez
-          await pausa();
-          if (ano !== y || !gradeAno) return;
-          gradeAno.insertAdjacentHTML('beforeend', cartoes(de, de + 12));
-        }
-        listaDepois(y, new Set(doAno.map((it) => `/peca/${it.h}.html`)));
-      } catch {
-        doCarro = null;
-        if (ano === y && aVista === 0) semGradeAno();
-      }
-    }
-
-    function escolher(y: number | null, salvar: boolean) {
-      ano = y;
-      const chip = chips.find((c) => (c.dataset.y ? Number(c.dataset.y) : null) === y);
-      chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-      semGradeAno();
-      const aVista = aplicar();
-      const n = chip?.dataset.c ? Number(chip.dataset.c) : 0;
-      textos(y, n);
-      if (y == null) listaDepois(null, null);
-      // o ano tem mais peças que as que estão na grade fixa (só em carro com mais de 48): monta a grade do ano inteira
-      else if (total > 48 && (n > aVista || todas)) void completar(y, aVista);
-      if (salvar && y != null) {
-        const c = lerMeuCarro();
-        // só no carro salvo deste modelo (a arte guardada vai junto)
-        if (eh(c) && c.y !== y) salvarMeuCarro({ ...c, y });
-      }
-    }
-
-    // a fila rola de lado no celular: as bordas esmaecem só do lado que tem mais
-    const bordas = () => {
-      const fim = lista.scrollWidth - lista.clientWidth;
-      trilho.toggleAttribute('data-esq', lista.scrollLeft > 4);
-      trilho.toggleAttribute('data-dir', lista.scrollLeft < fim - 4);
-    };
-    // a ficha escolhida vai para o meio da parte da fila à direita do "Todos" (nunca fica cortada na borda que esmaece)
-    const centrar = (y: number, suave = false) => {
-      const chip = anosChips.find((c) => c.dataset.y === String(y));
-      if (chip) rolarFila(lista, todos, anosChips, anosChips.map((c) => Number(c.dataset.c)), chip, suave);
-    };
-    lista.addEventListener('scroll', bordas, { passive: true });
-    window.addEventListener('resize', bordas, { passive: true });
-
-    lista.addEventListener('click', (e) => {
-      const chip = (e.target as HTMLElement).closest<HTMLButtonElement>('.ac-ano');
-      if (!chip) return;
-      const y = chip.dataset.y ? Number(chip.dataset.y) : null;
-      escolher(y, true);
-      // a fila centra a ficha no quadro seguinte (a leitura das posições não cai no mesmo quadro do filtro)
-      if (y != null) requestAnimationFrame(() => setTimeout(() => { if (ano === y) centrar(y, true); }, 0));
-    });
-
-    // cartões que entram depois (a lista completa do carro): o mesmo filtro
-    let pendente = 0;
-    if (grade) new MutationObserver(() => {
-      if (ano == null || pendente) return;
-      pendente = requestAnimationFrame(() => { pendente = 0; aplicar(); });
-    }).observe(grade, { childList: true, subtree: true });
-
-    // o carro salvo deste modelo, com ano: o ano dele já vem escolhido (e acompanha a troca no cabeçalho)
-    const doSalvo = (c: MeuCarro | null) => {
-      if (eh(c) && c.y && c.y !== ano && chips.some((x) => x.dataset.y === String(c.y))) { centrar(c.y); escolher(c.y, false); }
-    };
-    window.addEventListener(EVENTO, (e) => doSalvo((e as CustomEvent<MeuCarro | null>).detail));
-    doSalvo(lerMeuCarro());
-    bordas();
-  }
-</script>
 
 <style is:global>
   /* presas à raiz do componente; a ficha imita o ano do seletor "Seu carro" (.mc-ano) */
-  .grade-cabeca > .anos-carro { flex-basis: 100%; }
-  .anos-carro { display: flex; align-items: center; gap: 12px; min-width: 0; margin-top: 10px; }
-  .anos-carro .ac-rot { flex: none; font-size: 13.5px; font-weight: 680; color: var(--ink-2); }
-  .anos-carro .ac-trilho { position: relative; flex: 1; min-width: 0; }
+  .anos-carro { display: grid; gap: 8px; min-width: 0; width: 100%; }
+  /* o rótulo e, à direita dele, o aviso do que o toque fez ("Salvo como seu carro · Desfazer"): a linha já tem a altura
+     do aviso (nada pula quando ele chega) */
+  .anos-carro .ac-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; min-height: 24px; margin: 0; font-size: 13.5px; line-height: 1.3; }
+  .anos-carro .ac-rot { flex: none; font-weight: 680; color: var(--ink-2); }
+  .anos-carro .ac-salvo { display: inline-flex; align-items: center; gap: 0; min-width: 0; font-weight: 600; color: var(--serve-ink); white-space: nowrap; }
+  .anos-carro .ac-salvo:empty { display: none; }
+  .anos-carro .ac-salvo > span::before { content: ""; display: inline-block; width: 13px; height: 13px; margin-right: 5px; vertical-align: -2px; border-radius: 50%;
+    background: #1f9d55 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.6 8.4 7 10.6l4.4-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; }
+  .anos-carro .ac-desfazer { margin: -12px -8px; padding: 12px 8px; border: 0; background: none; font: inherit; font-weight: 700; color: var(--ink); text-decoration: underline;
+    text-decoration-color: var(--line-2); text-underline-offset: 3px; cursor: pointer; }
+  @media (hover: hover) { .anos-carro .ac-desfazer:hover { text-decoration-color: currentColor; } }
+  .anos-carro .ac-trilho { position: relative; min-width: 0; }
   .anos-carro .ac-lista { display: flex; gap: 6px; margin: -5px; padding: 5px; overflow-x: auto; overscroll-behavior-x: contain;
     scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .anos-carro .ac-lista::-webkit-scrollbar { display: none; }
@@ -272,7 +71,7 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
      negativa), e com a fila rolada ganha a cor da página: as fichas que passam por trás somem inteiras.
      left: -5px: o sticky conta da borda do conteúdo da fila (dentro da folga), e a folga também fica coberta */
   .anos-carro .ac-fixo { position: sticky; left: -5px; z-index: 1; flex: none; display: flex; margin: -5px; padding: 5px; }
-  .anos-carro .ac-trilho[data-esq] .ac-fixo { background: var(--bg); }
+  .anos-carro .ac-trilho[data-esq] .ac-fixo { background: var(--ac-fundo, var(--bg)); }
   .anos-carro .ac-ano { flex: none; min-width: 60px; height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; margin: 0;
     padding: 0 12px; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink-2);
     box-shadow: inset 0 0 0 1.5px var(--line-2); font-size: 15px; font-weight: 660; font-stretch: 94%; line-height: 1; cursor: pointer;
@@ -282,15 +81,14 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
   .anos-carro .ac-ano[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: 0 6px 14px -8px rgb(0 0 0 / .6); }
   .anos-carro .ac-ano[aria-pressed="true"] small { color: color-mix(in oklab, var(--bg), transparent 30%); }
   .anos-carro .ac-ano:focus-visible { outline-offset: 1px; }
-  /* celular: o rótulo em cima e a fila de anos na largura toda */
-  @media (max-width: 599px) { .anos-carro { display: grid; gap: 8px; } }
-  /* PC: todas as fichas à vista, em mais de uma linha se precisar (a roda do mouse não rola de lado) */
+  /* PC: todas as fichas à vista, em mais de uma linha se precisar (a roda do mouse não rola de lado). Largura FIXA: as
+     linhas são as mesmas com a letra de reserva e com a do site (a troca da letra mudava a quebra e a página pulava:
+     revisão 14, CLS 0,11 nas páginas pequenas) */
   @media (min-width: 900px) and (pointer: fine) {
-    .anos-carro { align-items: flex-start; }
-    .anos-carro .ac-rot { padding-top: 11px; }
     .anos-carro .ac-lista { flex-wrap: wrap; overflow: visible; }
     .anos-carro .ac-trilho .ac-lista { -webkit-mask-image: none; mask-image: none; }
-    .anos-carro .ac-ano { height: 40px; }
+    .anos-carro .ac-ano { height: 40px; width: 84px; min-width: 0; padding: 0; }
+    .anos-carro .ac-fixo .ac-ano { width: 72px; }
   }
   /* a grade: o cartão de outro ano sai (também os da lista completa, que entram depois) */
   #pecas .fora-do-ano { display: none !important; }
