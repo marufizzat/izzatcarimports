@@ -26,7 +26,7 @@ const lead = m.m.length > 0
     <ModelosMarca marca={m} carros={carros} logo={logo} />
     <section class="secao-lista" aria-labelledby="h-novas">
       <div class="grade-cabeca">
-        <h2 class="titulo-secao" id="h-novas">As mais novas de {m.n}</h2>
+        <h2 class="titulo-secao" id="h-novas">As mais novas {m.n}</h2>
         <p class="num">{lista.length > 24 ? `24 de ${lista.length.toLocaleString('pt-BR')} peças` : `${lista.length} ${lista.length === 1 ? 'peça' : 'peças'}`}</p>
       </div>
       <div class="mais-novas"><GradePecas lista={lista.slice(0, 24)} total={lista.length} linkTodas={`/catalogo.html?marca=${encodeURIComponent(m.n)}`} /></div>

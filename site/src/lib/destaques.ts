@@ -111,7 +111,7 @@ export function abasVitrine(n = 8): AbaVitrine[] {
   // 2) Mais procuradas: só peça que já vendeu no Mercado Livre
   const procuradas = base.filter((p) => vend(p) > 0).sort((a, b) =>
     vend(b) - vend(a) || Number(ehPro(b)) - Number(ehPro(a)) || completo(b) - completo(a) || idDesc(a, b));
-  abas.push({ k: 'procuradas', rotulo: 'Mais vendidas', pecas: escolher(procuradas, { n }), ...catalogo });
+  abas.push({ k: 'procuradas', rotulo: 'Mais procuradas', pecas: escolher(procuradas, { n }), ...catalogo });
 
   // 3) Os sistemas que mais vendem (sem venda registrada: os com mais peças)
   const fams = resumo().familias.filter((f) => f.k !== 'outros');

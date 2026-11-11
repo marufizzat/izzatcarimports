@@ -16,7 +16,7 @@ const msg = `Quero conferir se esta peça é igual à minha:\n\n${peca}\n\nVou m
       <div class="gc-foto">
         <img src="/arte/v2/guia-codigo.webp" alt="" width="1000" height="667" loading="lazy" decoding="async" />
         <div class="gc-codigo">
-          <span class="gc-rot">Código gravado</span>
+          <span class="gc-rot">Código desta peça</span>
           <b class="gc-num oem">{cod}</b>
           <p>Se a sua peça velha tem o mesmo código, é a mesma peça.</p>
         </div>
@@ -28,7 +28,7 @@ const msg = `Quero conferir se esta peça é igual à minha:\n\n${peca}\n\nVou m
           <li data-i="lanterna"><span><b>Sem etiqueta?</b> Ele pode estar gravado em relevo no plástico ou estampado no metal. Limpe a sujeira e use a lanterna do celular.</span></li>
           <li data-i="camera"><span><b>Ficou em dúvida?</b> Mande uma foto do código pelo botão abaixo.</span></li>
         </ol>
-        <a class="botao botao-linha gc-botao" href={whatsUrl(msg)} data-botao="foto-codigo"><Icone nome="whats" />Mandar foto do código</a>
+        <a class="botao botao-linha gc-botao" href={whatsUrl(msg)}><Icone nome="whats" />Mandar foto do código</a>
       </div>
     </div>
   </div>

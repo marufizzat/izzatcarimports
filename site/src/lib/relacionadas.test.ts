@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { sobreposicao, mesmaGeracao, doMesmoCarro, MAX_CARRO, MIN_MESMA, vaiJunto, grupoDa, ladoDa, zonaDa, GRUPOS, JUNTO, MAX_JUNTO, FORA_DO_MOTOR, codigosDe } from './relacionadas';
+import { sobreposicao, mesmaGeracao, doMesmoCarro, MAX_CARRO, MIN_MESMA, vaiJunto, grupoDa, ladoDa, zonaDa, GRUPOS, JUNTO, MAX_JUNTO, FORA_DO_MOTOR } from './relacionadas';
 import { serveNoModelo, anosNoModelo } from './meuCarro';
 import type { Peca } from './dados';
 
@@ -210,14 +210,6 @@ describe('"Vai junto": o que costuma ser trocado junto, só do mesmo carro', () 
         if (zona && zx) expect(zx, `${p.n} -> ${x.n}`).toBe(zona);
       }
       expect(new Set(r.pecas.map((x) => x.id)).size).toBe(r.pecas.length);
-      // rodada 14 (cliente oculto, atrito 9): nunca o mesmo código (o da própria peça ou de outro cartão), nem o mesmo nome
-      const usados = new Set<string>(codigosDe(p));
-      const nomes = new Set<string>([p.n.toLowerCase()]);
-      for (const x of r.pecas) {
-        for (const c of codigosDe(x)) { expect(usados.has(c), `${p.id} -> ${x.id} código ${c}`).toBe(false); usados.add(c); }
-        expect(nomes.has(x.n.toLowerCase()), `${p.id} -> ${x.id} nome repetido`).toBe(false);
-        nomes.add(x.n.toLowerCase());
-      }
     }
     console.log(`"Vai junto": ${com} de ${pecas.length} peças com o bloco (${cartoes} cartões)`);
   });

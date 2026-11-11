@@ -1,6 +1,6 @@
 // Descrição (meta description e prévia do link) com até 160 caracteres: o Google corta o resto (auditoria 4, 9.1).
 // A frase mais completa que couber; nunca o título cru do anúncio. A regra de caber fica em lib/textos.ts (pura).
-import { gruposModelos, nomeModelos, nomeModelosVersoes, nomeSoVersoes } from './meuCarro';
+import { nomeModelos } from './meuCarro';
 import { anosDaPeca } from './nomePeca';
 import { caber, encurtar, DESCRICAO_MAX } from './textos';
 export { caber, encurtar, DESCRICAO_MAX };
@@ -11,25 +11,16 @@ type PecaDescricao = { n: string; b?: string | null; m?: string | null; ms?: str
  *  no Detran-RS. R$ 1.200,00, nota fiscal e 90 dias de garantia." — e versões mais curtas quando não cabe.
  *  `codigo` e `preco` já prontos (codigoDaPeca e brl de lib/dados.ts). */
 export function descricaoPeca(p: PecaDescricao, codigo: string, preco: string): string {
-  // é o texto do Google: o carro unido leva as versões do anúncio ("Mercedes-Benz Classe C (C180, C200)")
-  const frase = (carros: string, cod: string) =>
-    `${p.n} original${carros ? ` ${p.m ? 'do' : 'de'} ${carros}` : ''}${anos ? `, ${anos}` : ''}${cod ? `, código ${cod}` : ''}`;
+  const carros = nomeModelos(p);
   const anos = anosDaPeca(p.y ?? null, ' a ');
-  const carros = nomeModelosVersoes(p);
-  const comCod = frase(carros, codigo);
-  const semCod = frase(carros, '');
+  const carro = carros ? ` ${p.m ? 'do' : 'de'} ${carros}` : '';
+  const comCod = `${p.n} original${carro}${anos ? `, ${anos}` : ''}${codigo ? `, código ${codigo}` : ''}`;
+  const semCod = `${p.n} original${carro}${anos ? `, ${anos}` : ''}`;
   const fim = `R$ ${preco}, nota fiscal e 90 dias de garantia.`;
-  // carro unido com código: quando "Classe C (C320)" não cabe, o código fica e o carro encurta: a forma do anúncio
-  // ("Mercedes-Benz C320", a descrição de antes da união) e depois o principal sozinho. Peça sem carro unido: como antes.
-  // Peça de 2+ carros ("Classe C (C180, C200, C320) e C250"): primeiro os carros todos sem as versões ("Classe C e C250":
-  // nenhum carro some), só depois a forma do anúncio.
-  const so = nomeSoVersoes(p);
-  const curtos = codigo && so ? (gruposModelos(p).length > 1 ? [nomeModelos(p), so] : [so, nomeModelos(p)]) : [];
   return caber([
     `${comCod}. Peça usada, de carro com baixa legal no Detran-RS. ${fim}`,
     `${comCod}. Peça usada, de baixa legal no Detran-RS. ${fim}`,
     `${comCod}. Peça usada. ${fim}`,
-    ...curtos.map((c) => `${frase(c, codigo)}. Peça usada. ${fim}`),
     `${semCod}. Peça usada. ${fim}`,
     `${semCod}. ${fim}`,
     // nome enorme: o nome é que encurta (o preço e a garantia ficam)

@@ -1,15 +1,15 @@
 ---
 // Carros do pátio: arte do carro em estúdio (sem emblema) + logo real + nome + anos + nº de peças, vivos.
 // Anos no mesmo formato do cartão da peça ("2013–2026", catalogo/etiqueta.ts).
-import { resumo, logoInfo, arteDoCarro } from '../../lib/dados';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { resumo, logoInfo } from '../../lib/dados';
 import { srcArte, SIZES } from '../../lib/variantes';
 interface Props { limite?: number; todos?: boolean }
 const { limite = 12, todos = false } = Astro.props;
 const marcas = resumo().marcas;
 const kMarca = (b: string) => marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
-// a arte do carro (o principal sem arte própria usa a do apelido: lib/dados.ts)
-const temArte = (k: string) => !!arteDoCarro(k);
-const arte = (k: string) => `/arte/v2/carro-${arteDoCarro(k)}.webp`;
+const temArte = (k: string) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`));
 const carros = todos ? resumo().carros : resumo().carros.filter((c) => temArte(c.k)).slice(0, limite);
 // "T-Cross" não parte no hífen ("T-" numa linha e "Cross" na outra): hífen que não quebra (U+2011)
 // arte em 600/900/1200 (scripts/variantes-imagens.mjs): o cartão de 180 px do celular não baixa a de 1200
@@ -22,7 +22,7 @@ const anosTxt = (a: [number, number]) => (a[0] === a[1] ? `${a[0]}` : `${a[0]}�
   {carros.map((c) => { const l = logoInfo(kMarca(c.b), 40, 26); return (
     <li data-b={c.b}><a class="carro-v2" href={`/carros/${c.k}.html`}>
       {temArte(c.k)
-        ? <span class="carro-v2-arte"><img src={arte(c.k)} {...srcArte(arte(c.k), sizes)} alt="" width="1200" height="800" loading="lazy" decoding="async" /></span>
+        ? <span class="carro-v2-arte"><img src={`/arte/v2/carro-${c.k}.webp`} {...srcArte(`/arte/v2/carro-${c.k}.webp`, sizes)} alt="" width="1200" height="800" loading="lazy" decoding="async" /></span>
         : (() => { const g = logoInfo(kMarca(c.b), 110, 64); return <span class="carro-v2-arte carro-v2-sem">{g && <img src={g.src} alt="" width={g.w} height={g.h} style={`width:${g.w}px;height:${g.h}px`} class={g.png ? 'png' : 'svg'} loading="lazy" />}</span>; })()}
       <span class="carro-v2-info">
         <span class="carro-v2-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} loading="lazy" />}</span>

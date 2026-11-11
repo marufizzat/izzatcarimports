@@ -133,15 +133,15 @@ describe('relevancia: o modelo exato vem primeiro', () => {
     const r = b.procurar({ q: 'farol compass' });
     const exatas = r.filter((x) => serveNoModelo(x, 'Compass') && /farol/.test(normal(x.t)));
     if (exatas.length) return ctx.skip(); // chegou farol do Compass: o caso não vale hoje
-    // rodada 14 (cliente oculto, atrito 6): a parecida é da FAMÍLIA do farol (luzes e faróis), nunca qualquer peça do carro
     expect(b.aproximado).toBe(true);
-    expect(r.length).toBeGreaterThan(0);
-    expect(r.every((x) => /farol|farois|lanterna/.test(`${normal(x.n)} ${normal(x.c)} ${normal(x.s)}`))).toBe(true);
-    const primeiroFora = r.findIndex((x) => !serveNoModelo(x, 'Compass'));
-    if (primeiroFora > 0) expect(r.slice(0, primeiroFora).every((x) => serveNoModelo(x, 'Compass'))).toBe(true);
+    const n = porCarro.get('Jeep|Compass')!.length;
+    expect(b.nDoCarro).toBe(n);
+    expect(r.slice(0, n).every((x) => serveNoModelo(x, 'Compass'))).toBe(true);
     const s = b.sugestoes('farol compass');
     expect(s.aproximado).toBe(true);
     expect(s.total).toBe(r.length);
+    expect(s.itens.length).toBeGreaterThan(0);
+    expect(serveNoModelo(s.itens[0], 'Compass')).toBe(true);
   });
 
   it('o nome da peça que começa pela palavra buscada vem antes ("farol": Farol… antes de Interruptor farol)', (ctx) => {
@@ -429,17 +429,12 @@ describe('sinônimos e plural', () => {
     expect(b.aproximado).toBe(false);
     expect(mola.some((x) => /amortecedor/.test(normal(x.n)))).toBe(true);
   });
-  it('"pisca" acha o pisca-alerta e a chave de seta (o tipo do botão e da alavanca), não o chicote do injetor', (ctx) => {
-    // rodada 14: o tipo manda; "chicote pisca bico injetor" deixou de ser "pisca" (a palavra só está no nome)
-    const antes = b.itens.filter((x) => /^(botao pisca|chave seta)/.test(normal(x.n)));
+  it('sinônimo só acrescenta: a palavra digitada continua valendo ("pisca" acha o pisca-alerta e a chave de seta)', (ctx) => {
+    const antes = b.itens.filter((x) => /\bpisca\b/.test(normal(x.n)));
     if (!antes.length) return ctx.skip();
     const ids = new Set(b.procurar({ q: 'pisca' }).map((x) => x.id));
     expect(antes.every((x) => ids.has(x.id))).toBe(true);
     expect(b.procurar({ q: 'pisca' }).some((x) => /chave seta/.test(normal(x.n)))).toBe(true);
-    // conserto da rodada 14 (revisão: nada some): o chicote cita "pisca" no nome e fica DEPOIS das exatas, em "Outras
-    // peças ligadas a…"; nunca entre as que são a peça
-    const r = b.procurar({ q: 'pisca' });
-    expect(r.slice(0, b.nExatas).some((x) => /chicote/.test(normal(x.n)))).toBe(false);
   });
 });
 
@@ -495,11 +490,8 @@ describe('lado e posição', () => {
     if (!temCarro('Volvo', 'XC60') || !comLado) return ctx.skip();
     const r = b.procurar({ q: 'retrovisor direito xc60' });
     expect(b.ladoDaBusca).toBe('D');
-    // rodada 14: o XC60 não tem retrovisor direito (só a capa): a lista sai vazia e diz o que faltou (o lado E fica de dica)
-    expect(r).toEqual([]);
-    expect(b.faltou?.lado).toBe('D');
-    expect(b.outrosLados.length).toBeGreaterThan(0);
-    expect(b.outrosLados.every((x) => x.l === 'E')).toBe(true);
+    expect(r.length).toBeGreaterThan(0);
+    expect(r.every((x) => x.l === 'D')).toBe(true);
     // "lado do motorista" = esquerdo
     const m = b.procurar({ q: 'retrovisor lado do motorista' });
     expect(b.ladoDaBusca).toBe('E');
@@ -513,7 +505,7 @@ describe('lado e posição', () => {
     expect(normal(r[0].n)).toMatch(/traseiro/);
     expect(r.every((x) => x.pos === 'T' || x.pos === 'A')).toBe(true);
   });
-  it('sem nenhuma peça daquele lado, a busca diz o que faltou (rodada 14: não troca por outro lado em silêncio)', () => {
+  it('sem nenhuma peça daquele lado, a busca volta a valer como texto (nunca pior que antes)', () => {
     // índice de 3 peças: o farol não diz o lado no nome, só no título do anúncio
     const mini = new Busca({
       v: 1, updated: '', marcas: ['Volvo'], familias: ['Faróis e Lanternas'], tipos: ['Faróis'],
@@ -522,25 +514,12 @@ describe('lado e posição', () => {
       b: [0, 0, 0], m: ['XC60', 'XC60', 'XC60'], y: [0, 0, 0], c: [0, 0, 0], s: [0, 0, 0], o: ['', '', ''], l: '0E0', pos: '0TT',
     });
     const r = mini.procurar({ q: 'farol direito' });
-    expect(r).toEqual([]);
-    expect(mini.faltou?.lado).toBe('D');
+    expect(r.map((x) => x.id)).toEqual(['MLB1']);
+    expect(mini.ladoDaBusca).toBeUndefined();
     // com peça do lado, filtra
     expect(mini.procurar({ q: 'lanterna esquerda' }).map((x) => x.id)).toEqual(['MLB2']);
     expect(mini.procurar({ q: 'lanterna traseira' }).map((x) => x.id).sort()).toEqual(['MLB2', 'MLB3']);
     // as duas posições na busca: fica no texto
     expect(mini.procurar({ q: 'lanterna dianteira/traseira' }).length).toBeGreaterThanOrEqual(0);
-  });
-});
-
-describe('carro unido (C180 -> Classe C, decisao do dono 10/11)', () => {
-  it('o apelido sai da lista de modelos; o filtro do principal e o "Meu carro" salvo com o apelido seguem achando as pecas', (ctx) => {
-    if (!(ix.apelidos ?? []).includes('Mercedes-Benz|C180')) return ctx.skip();
-    const f = b.facetas({ marca: 'Mercedes-Benz' } as Parameters<Busca['facetas']>[0]);
-    const nomes = f.modelos.map(([m]) => m);
-    expect(nomes).not.toContain('C180');
-    expect(nomes).toContain('Classe C');
-    const salvo = b.itens.filter((it) => it.b === 'Mercedes-Benz' && serveNoModelo(it, 'C180'));
-    expect(salvo.length).toBeGreaterThan(0);
-    for (const it of salvo) expect(serveNoModelo(it, 'Classe C')).toBe(true);
   });
 });

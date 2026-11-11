@@ -16,10 +16,8 @@ import {
   EVENTO_LISTA, PAGINA_LISTA, MAX_LISTA, listaConferida, marcarConferida, type ItemLista,
 } from '../../lib/lista';
 import { mensagemLista, linkWhats, precoWhats, anosTexto } from '../../lib/whats';
-import { mensagemPatioVendida } from '../../lib/patio';
 import { lerMeuCarro, nomeCarro, nomeModelos, linkCatalogo, EVENTO as EVENTO_CARRO, ABRIR } from '../../lib/meuCarro';
 import { carregarAtivas, type Ativas } from '../../lib/vistos';
-import { ligarCampoCep, cepCompleto, salvarCep } from '../../lib/cep';
 import { codigoPeca, brl } from '../catalogo/etiqueta';
 import { icone } from '../../lib/icones';
 
@@ -59,8 +57,6 @@ export function iniciarLista() {
   const elQtd = q('[data-lst-qtd]'), elSub = q('[data-lst-sub]'), elDesc = q('[data-lst-desc]'), elTotal = q('[data-lst-total]'), elFora = q('[data-lst-fora]');
   const pedir = q<HTMLAnchorElement>('[data-lst-pedir]'), copiar = q<HTMLButtonElement>('[data-lst-copiar]'), caixaCarro = q('[data-lst-carro]');
   const desfazerTudo = q('[data-lst-desfazer-tudo]'), seuCarro = q<HTMLAnchorElement>('[data-lst-seu-carro]'), mais = q<HTMLAnchorElement>('[data-lst-mais]');
-  // o CEP (opcional) entra no pedido; o último CEP completo fica lembrado (lib/cep.ts: izzatcar.cep, o mesmo do frete da peça)
-  const cepCampo = q<HTMLInputElement>('[data-lst-cep]');
   const barra = document.querySelector<HTMLElement>('[data-lst-barra]');
   const barraTotal = barra?.querySelector<HTMLElement>('[data-lst-barra-total]');
   const barraPedir = barra?.querySelector<HTMLAnchorElement>('[data-lst-barra-pedir]');
@@ -85,15 +81,6 @@ export function iniciarLista() {
   let antes: ItemLista[] | null = null;
   /** preço de quando a pessoa guardou, se mudou (mostra "Preço atualizado") */
   const precoAntes = new Map<string, number>();
-  /** as peças que entram no pedido (o último desenho), para trocar só o link quando o CEP muda */
-  let noPedido: ItemLista[] = [];
-  function atualizarPedido() {
-    const c = lerMeuCarro();
-    const msg = linkWhats(mensagemLista(noPedido, c ? nomeCarro(c) : '', undefined, cepCampo.value));
-    for (const a of [pedir, barraPedir]) if (a) a.href = msg;
-  }
-  ligarCampoCep(cepCampo, () => salvarCep(cepCampo.value));
-  cepCampo.addEventListener('input', () => { if (cepCompleto(cepCampo.value)) salvarCep(cepCampo.value); atualizarPedido(); });
 
   const noEstoque = (id: string) => (modo === 'minha' && ativas ? ativas.has(id) : !!frescos?.has(id));
   const existe = (id: string) => estado !== 'ok' || noEstoque(id);
@@ -123,11 +110,7 @@ export function iniciarLista() {
     const carro = x.carro && x.anos ? `${esc(x.carro)}<span class="lst-anos">${esc(x.anos)}</span>` : esc(x.carro || x.anos);
     let precos: string;
     if (vendida) {
-      // sem nome (o link não leva nada além do número do anúncio): a gente procura no pátio, pelo número. Com nome,
-      // a busca do catálogo com o que se sabe (Procurar parecida).
-      precos = `<span class="lst-vendida">Já vendida</span>${x.nome
-        ? `<a class="lst-parecida" href="${esc(procurar(x))}">Procurar parecida</a>`
-        : `<a class="lst-parecida lst-patio" href="${esc(linkWhats(mensagemPatioVendida(x.id)))}" target="_blank" rel="noopener" data-botao="lista-patio">A gente procura no pátio</a>`}`;
+      precos = `<span class="lst-vendida">Já vendida</span>${x.nome ? `<a class="lst-parecida" href="${esc(procurar(x))}">Procurar parecida</a>` : ''}`;
     } else if (x.preco <= 0) {
       // sem preço conferido (nunca "R$ 0,00"): sem o bloco do preço
       precos = '';
@@ -157,7 +140,7 @@ export function iniciarLista() {
     // título e o aviso da lista de um link
     if (modo === 'link') {
       h1.textContent = 'Lista de orçamento';
-      lead.textContent = `Mandaram esta lista para você: ${pecasTxt(idsLink.length)}. Faça o pedido no WhatsApp ou guarde na sua.`;
+      lead.textContent = `Mandaram esta lista para você: ${pecasTxt(idsLink.length)}. Peça tudo no WhatsApp ou guarde na sua lista.`;
       const minha = lerLista().length;
       // o aviso do link já vem no HTML (pages/lista.astro), com o texto certo antes da 1ª pintura
       caixaLink.hidden = false;
@@ -170,8 +153,8 @@ export function iniciarLista() {
     } else {
       h1.textContent = 'Sua lista de orçamento';
       lead.textContent = l.length
-        ? `${pecasTxt(l.length)} na lista. Faça um pedido só no WhatsApp, com 10% de desconto em cada uma.`
-        : 'Junte as peças do serviço e faça um pedido só no WhatsApp, com 10% de desconto em cada uma.';
+        ? `${pecasTxt(l.length)} na lista. Peça tudo de uma vez no WhatsApp, com 10% de desconto em cada peça.`
+        : 'Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com 10% de desconto em cada peça.';
       caixaLink.hidden = true;
     }
 
@@ -208,11 +191,11 @@ export function iniciarLista() {
     const fora = estado === 'ok' ? l.length - disp.length : 0;
     elFora.hidden = !fora;
     elFora.textContent = fora ? `${pecasTxt(fora)} que já ${fora === 1 ? 'foi vendida ficou' : 'foram vendidas ficaram'} fora do total e do pedido.` : '';
-    noPedido = disp;
-    atualizarPedido();
+    const msg = mensagemLista(disp, c ? nomeCarro(c) : '');
     const pode = disp.length > 0;
     for (const a of [pedir, barraPedir]) {
       if (!a) continue;
+      a.href = linkWhats(msg);
       if (pode) a.removeAttribute('aria-disabled'); else a.setAttribute('aria-disabled', 'true');
     }
     pedir.tabIndex = pode ? 0 : -1;
@@ -344,7 +327,7 @@ export function iniciarLista() {
       idsLink = [];
       history.replaceState(null, '', PAGINA_LISTA);
       pintar();
-      avisar(`Pronto: ${pecasTxt(r.novas)} ${r.novas === 1 ? 'guardada' : 'guardadas'} na sua lista${r.fora ? `; ${r.fora} ${r.fora === 1 ? 'não coube' : 'não couberam'} (o máximo é ${MAX_LISTA})` : ''}.`);
+      avisar(`Pronto: ${pecasTxt(r.novas)} ${r.novas === 1 ? 'guardada' : 'guardadas'} na sua lista${r.fora ? `; ${r.fora} não couberam (o máximo é ${MAX_LISTA})` : ''}.`);
       h1.focus();
     } else if (t.hasAttribute('data-lst-trocar')) {
       window.dispatchEvent(new CustomEvent(ABRIR));
@@ -360,17 +343,6 @@ export function iniciarLista() {
     const l = itens();
     const disp = disponiveis(l);
     const url = SITE + linkDaLista((disp.length ? disp : l).map((x) => x.id));
-    // celular (toque): a folha de compartilhar do aparelho (WhatsApp direto); cancelar não faz nada. No PC, copia.
-    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
-      try {
-        await navigator.share({ title: 'Lista de orçamento · Izzat Car Imports', url });
-        avisar('Link da lista pronto para enviar.');
-        return;
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
-        /* sem a folha (navegador antigo): segue para copiar */
-      }
-    }
     try {
       await navigator.clipboard.writeText(url);
       copiar.classList.add('ok');

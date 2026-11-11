@@ -1,6 +1,5 @@
 ---
 import { lojaLd } from '../lib/loja';
-import MigrarCarro from '../components/MigrarCarro.astro';
 import Pagina from '../layouts/Pagina.astro';
 import AberturaV2 from '../components/v2/AberturaV2.astro';
 import SelosV2 from '../components/v2/SelosV2.astro';
@@ -14,7 +13,6 @@ import Coverflow from '../components/v2/Coverflow.astro';
 import VoceViu from '../components/v2/VoceViu.astro';
 import ChegouCarro from '../components/v2/ChegouCarro.astro';
 import Continuar from '../components/v2/Continuar.astro';
-import RaioX from '../components/v2/RaioX.astro';
 import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
 import Icone from '../components/Icone.astro';
@@ -26,12 +24,12 @@ const msgServe = 'Quero saber se uma peça serve no meu carro. Meu carro é: ___
 const msgProcura = 'Não achei a peça no site. Meu carro é ____ (modelo e ano) e procuro: ____';
 
 const perguntas = [
-  ['A peça é original?', 'Sim. Toda peça sai de um carro com baixa legal no Detran-RS e é original de fábrica. A Izzat Car é desmanche credenciado, CDV nº 01060.'],
-  ['Tem garantia?', 'Tem: 90 dias de garantia em toda peça. Se der problema nesse prazo, chame no WhatsApp com o número do anúncio ou a nota fiscal, e fotos da peça.'],
+  ['A peça é original?', 'Sim. Toda peça sai de um carro com baixa legal no Detran-RS e é original de fábrica. Somos desmanche credenciado, CDV nº 01060.'],
+  ['Tem garantia?', 'Tem: 90 dias de garantia em toda peça. Se der problema nesse prazo, fale com a gente pelo WhatsApp com o número do pedido e fotos.'],
   ['Vocês emitem nota fiscal?', 'Sim, em toda venda.'],
   ['Como sei se a peça serve no meu carro?', 'Confira o carro e os anos na página da peça e o código gravado. Na dúvida, mande o modelo e o ano do seu carro no WhatsApp que a gente confere na peça antes de você comprar.'],
-  ['Como faço para comprar?', 'Pelo WhatsApp, com mensagem pronta e 10% de desconto, ou no botão do Mercado Livre da peça. A forma de pagamento você combina no WhatsApp.'],
-  ['Enviam para todo o Brasil?', 'Sim. Pelo WhatsApp, o frete é combinado pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.'],
+  ['Como faço para comprar?', 'Pelo Mercado Livre, no botão de cada peça, ou direto pelo WhatsApp, com a mensagem já pronta.'],
+  ['Enviam para todo o Brasil?', 'Sim. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.'],
   ['Não achei a peça. E agora?', 'Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp que a gente procura no pátio.'],
 ];
 const ld = {
@@ -45,14 +43,13 @@ const ld = {
 ---
 <Pagina titulo="Izzat Car Imports | Peças originais de desmanche legalizado" rodapeSelos={false}
         descricao={`Peças originais de carros com baixa legal no Detran-RS (CDV nº 01060). Nota fiscal e 90 dias de garantia em toda peça. Ache pelo carro ou pelo código gravado.`}>
-  <MigrarCarro slot="head" />
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
   <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio.webp" media="(min-width: 768px)" fetchpriority="high" />
   <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio-celular.webp" media="(max-width: 767px)" fetchpriority="high" />
 
   <AberturaV2 arte="/arte/v2/abertura-estudio.webp" arteCelular="/arte/v2/abertura-estudio-celular.webp">
     <Continuar slot="topo" />
-    <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Ex.: farol Cruze 2019" />
+    <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Ex.: rádio XC60" />
   </AberturaV2>
 
   <section class="selos-faixa" aria-label="Garantias da Izzat Car">
@@ -67,11 +64,11 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-destaques" class="titulo-secao">Destaques do pátio</h2>
-        <p class="lead">Peças originais com nota fiscal e 90 dias de garantia. Abra a peça para ver as fotos e o código gravado.</p>
+        <p class="lead">Peças originais com preço, nota fiscal e 90 dias de garantia. Abra a peça para ver as fotos e o código gravado.</p>
       </div>
       <VitrineDestaques />
       <BannerV2 class="vitrine-serve" nome="banner-serve" href={whatsUrl(msgServe)}
-        texto="Serve no meu carro? Mande o modelo e o ano. A gente confere na peça. Chamar no WhatsApp" />
+        texto="Serve no meu carro? Mande o modelo e o ano. A gente confere e responde com foto. Chamar no WhatsApp" />
     </div>
   </section>
 
@@ -85,17 +82,12 @@ const ld = {
     </div>
   </section>
 
-  {/* quem não sabe o nome da peça aponta onde ela fica (components/v2/RaioX.astro) */}
-  <section class="secao cv rx-secao" aria-labelledby="raio-x-t">
-    <div class="moldura"><RaioX /></div>
-  </section>
-
   <section class="secao faixa cv" aria-labelledby="t-chegou">
     <div class="moldura">
       <div class="cabeca-secao linha">
         <div>
           <h2 id="t-chegou" class="titulo-secao">Chegou no pátio</h2>
-          <p class="lead">As peças que acabaram de chegar.</p>
+          <p class="lead">Os anúncios mais novos, direto do pátio.</p>
         </div>
         <a class="botao botao-linha so-largo" href="/catalogo.html?ordem=novos">Ver todas as novidades</a>
       </div>
@@ -108,7 +100,7 @@ const ld = {
     <div class="moldura">
       <div class="cabeca-secao">
         <h2 id="t-marcas" class="titulo-secao">Escolha pela marca do seu carro</h2>
-        <p class="lead">São {marcasVisiveis().length} marcas: toque na sua para ver só as peças dela.</p>
+        <p class="lead">{marcasVisiveis().length} marcas para escolher. Escolha a sua para ver só as peças dela.</p>
       </div>
       <NuvemMarcas />
     </div>
@@ -117,7 +109,7 @@ const ld = {
   <section class="secao secao-banner">
     <div class="moldura">
       <BannerV2 formato="arte" nome="banner-nao-achou" href={whatsUrl(msgProcura)}
-        texto="Não achou a peça? A gente procura no pátio. Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp. Chamar no WhatsApp" />
+        texto="Não achou a peça? A gente procura no pátio. Nem toda peça está anunciada. Manda o carro e a peça no WhatsApp. Chamar no WhatsApp" />
     </div>
   </section>
 
@@ -142,7 +134,7 @@ const ld = {
           <h2 id="t-como" class="titulo-secao">Como comprar</h2>
           <p class="lead">Do código gravado na peça até a sua porta.</p>
         </div>
-        <a class="botao botao-linha so-largo" href="/como-comprar.html">Ver como comprar</a>
+        <a class="botao botao-linha so-largo" href="/como-comprar.html">Ver os detalhes</a>
       </div>
       {/* no celular a fila desliza de lado: ganha parada no Tab só quando rola (lib/trilhoFoco.ts: paradaSeRolar) */}
       <ol class="passos" aria-label="Como comprar, em 4 passos" data-rola>
@@ -153,7 +145,7 @@ const ld = {
           <li><img src={`/arte/v2/passo-${i + 1}.webp`} alt={`${i + 1}. ${t}`} width="800" height="671" loading="lazy" decoding="async" /><p>{s}</p></li>
         ))}
       </ol>
-      <a class="botao botao-linha so-celular secao-mais" href="/como-comprar.html">Ver como comprar</a>
+      <a class="botao botao-linha so-celular secao-mais" href="/como-comprar.html">Ver os detalhes</a>
     </div>
   </section>
 
@@ -176,7 +168,7 @@ const ld = {
         <div class="faq-ajuda-txt">
           <b>Ficou outra dúvida?</b>
           <span>Mande no WhatsApp. Quem responde é a equipe do pátio.</span>
-          <a class="botao botao-laranja" href={whatsUrl('Tenho uma dúvida:')} data-botao="home-duvida"><Icone nome="whats" />Chamar no WhatsApp</a>
+          <a class="botao botao-laranja" href={whatsUrl('Tenho uma dúvida:')}><Icone nome="whats" />Chamar no WhatsApp</a>
         </div>
       </div>
     </div>

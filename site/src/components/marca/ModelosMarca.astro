@@ -4,15 +4,15 @@
 //  2. Os outros carros com página própria: cartões menores (com a arte quando existir; sem ela, o logo).
 //  3. Modelos sem página (poucas peças): lista de links para o catálogo filtrado.
 // Sem anos no cartão: a faixa de anos ainda vem errada em alguns carros (auditoria, item 3).
-import { arteDoCarro, type Resumo } from '../../lib/dados';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import type { Resumo } from '../../lib/dados';
 import { srcArte, SIZES } from '../../lib/variantes';
 interface Logo { src: string; w: number; h: number; png: boolean }
 interface Props { marca: Resumo['marcas'][number]; carros: Resumo['carros']; logo: Logo | null; }
 const { marca, carros, logo } = Astro.props;
 
-// a arte do carro (o principal sem arte própria usa a do apelido: lib/dados.ts)
-const temArte = (k: string) => !!arteDoCarro(k);
-const arte = (k: string) => `/arte/v2/carro-${arteDoCarro(k)}.webp`;
+const temArte = (k: string) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${k}.webp`));
 const comPagina = [...carros].sort((a, b) => b.c - a.c);
 const paginas = new Set(comPagina.map((c) => c.m));
 const destaque = comPagina.slice(0, 3);
@@ -34,7 +34,7 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
             <a class:list={['mm-dest', { 'sem-arte': !temArte(c.k) }]} href={`/carros/${c.k}.html`}>
               <span class="mm-dest-arte">
                 {temArte(c.k)
-                  ? <img src={arte(c.k)} {...srcArte(arte(c.k), sizesDestaque(i))} alt="" width="1200" height="800" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
+                  ? <img src={`/arte/v2/carro-${c.k}.webp`} {...srcArte(`/arte/v2/carro-${c.k}.webp`, sizesDestaque(i))} alt="" width="1200" height="800" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
                   : logo && <img class:list={['mm-dest-logo-grande', { svg: !logo.png }]} src={logo.src} alt="" width={logo.w} height={logo.h} />}
               </span>
               <span class="mm-dest-info">
@@ -61,7 +61,7 @@ const linkCatalogo = (modelo: string) => `/catalogo.html?marca=${encodeURICompon
             <a class="mm-mod" href={`/carros/${c.k}.html`}>
               <span class:list={['mm-mod-arte', { 'sem-arte': !temArte(c.k) }]}>
                 {temArte(c.k)
-                  ? <img src={arte(c.k)} {...srcArte(arte(c.k), SIZES.marcaGrade)} alt="" width="1200" height="800" loading="lazy" decoding="async" />
+                  ? <img src={`/arte/v2/carro-${c.k}.webp`} {...srcArte(`/arte/v2/carro-${c.k}.webp`, SIZES.marcaGrade)} alt="" width="1200" height="800" loading="lazy" decoding="async" />
                   : logo && <img class:list={[{ svg: !logo.png }]} src={logo.src} alt="" width={logo.w} height={logo.h} loading="lazy" />}
               </span>
               <span class="mm-mod-txt"><b>{c.m}</b><small class="num">{pecasTxt(c.c)}</small></span>

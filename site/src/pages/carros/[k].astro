@@ -1,37 +1,31 @@
 ---
 // Página do carro. Ordem pensada para as peças chegarem cedo na tela:
 //  1. topo: a contagem real e os anos no lead, "Ver as N peças", "É o meu carro" e "Avise-me quando chegar peça";
-//  2. o Raio-x do carro (só em carro com 20+ peças): a arte com as partes tocáveis e as contagens DESTE carro, já no
-//     build (components/v2/RaioX.astro). Ocupa o lugar dos cartões "Peças por categoria": as partes do carro levam aos
-//     tipos de peça com o link exato do catálogo (os blocos continuam no filtro do catálogo e na home);
+//  2. sistemas (só em carro com 20+ peças; sem os de menos de 3 peças e sem "Outros"), em cartões baixos com a
+//     arte de estúdio da família (topo-cat-<k>.webp, sem o nome desenhado);
 //  3. a grade, com título; o texto de apoio vai para o fim.
-import MigrarCarro from '../../components/MigrarCarro.astro';
 import Pagina from '../../layouts/Pagina.astro';
 import TopoArte from '../../components/TopoArte.astro';
 import GradePecas from '../../components/GradePecas.astro';
 import TodasAsPecas from '../../components/categoria/TodasAsPecas.astro';
-import RaioX from '../../components/v2/RaioX.astro';
+import AtalhosVisuais from '../../components/AtalhosVisuais.astro';
 import TextoApoio from '../../components/TextoApoio.astro';
 import AnosDoCarro from '../../components/AnosDoCarro.astro';
 import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS, SITE, arteDoCarro } from '../../lib/dados';
+import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS } from '../../lib/dados';
 import { textosCarro, tituloCarro } from '../../lib/textos';
+import { fotoVitrine } from '../../lib/vitrine';
 import { linkAviso } from '../../lib/aviso';
+import { miniatura } from '../../lib/miniatura';
 import { SIZES } from '../../lib/variantes';
 import { serveNoModelo } from '../../lib/meuCarro';
 import { garagem } from '../../lib/garagem';
-// endereço antigo de carro unido (C180 -> Classe C): a MESMA página do principal, com canonical para ele (não some, não 404)
-export function getStaticPaths() {
-  const r = resumo();
-  return [...r.carros, ...(r.aliases ?? [])].map((c) => ({ params: { k: c.k }, props: { k: c.k } }));
-}
+export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
 const r = resumo();
-const apelido = (r.aliases ?? []).find((x) => x.k === Astro.props.k);
-const c = r.carros.find((x) => x.k === (apelido ? apelido.para : Astro.props.k))!;
-const canonicoCarro = apelido ? `${SITE}/carros/${c.k}.html` : undefined;
+const c = r.carros.find((x) => x.k === Astro.props.k)!;
 // a peça que serve em 2+ carros ("Volvo S60 Xc60") aparece na página de cada um (lib/meuCarro.ts)
 const lista = pecas().filter((p) => p.b === c.b && serveNoModelo(p, c.m)).sort((a, b) => (b.id > a.id ? 1 : -1));
 const N = lista.length;
@@ -41,8 +35,21 @@ const base = `/catalogo.html?marca=${encodeURIComponent(c.b)}&modelo=${encodeURI
 const existe = (arq: string) => existsSync(join(process.cwd(), 'public', arq));
 
 const AVISO_ATE = 20;
-// o Raio-x só no carro com 20+ peças (com menos, quase toda parte do carro sairia cinza)
-const RAIO_X_A_PARTIR_DE = 20;
+// sistemas: arte da família quando existir (a foto de uma peça qualquer nem sempre representa o grupo)
+const SISTEMAS_A_PARTIR_DE = 20;
+const arteFamilia = (n: string) => {
+  const k = r.familias.find((f) => f.n === n)?.k;
+  const a = k ? `/arte/v2/topo-cat-${k}.webp` : '';
+  return a && existe(a) ? a : null;
+};
+const fams = N < SISTEMAS_A_PARTIR_DE ? [] : Object.entries(lista.reduce<Record<string, number>>((o, p) => ((o[p.c] = (o[p.c] || 0) + 1), o), {}))
+  .filter(([n, q]) => q >= 3 && n !== 'Outros')
+  .sort((a, b) => b[1] - a[1])
+  .map(([n, q]) => {
+    const arte = arteFamilia(n);
+    // a miniatura (192 px) no lugar da arte inteira (1254 px): o cartão mostra 64 px
+    return { n, c: q, h: `${base}&tipo=${encodeURIComponent(n)}`, foto: arte ? miniatura(arte) : fotoVitrine(lista, (p) => p.c === n), arte: !!arte };
+  });
 
 const anos = c.anos ? (c.anos[0] === c.anos[1] ? `de ${c.anos[0]}` : `de ${c.anos[0]} a ${c.anos[1]}`) : '';
 const lead = `${fmt(N)} ${N === 1 ? 'peça original' : 'peças originais'} para ${nome}${anos ? ` ${anos}` : ''}, de carros com baixa legal no Detran-RS.`;
@@ -53,15 +60,13 @@ const logo = logoInfo(marca?.k ?? c.b.toLowerCase(), 64, 36);
 const texto = textosCarro(c, lista);
 // a contagem já está no lead: o 1º parágrafo do texto de apoio (que é a contagem) sai, para não repetir
 const apoio = texto.paragrafos.slice(1);
-// a arte do carro; o principal sem arte própria usa a do apelido (Série 3: a do 320i; GLA: a do GLA200), lib/dados.ts
-const arteCarro = `/arte/v2/carro-${arteDoCarro(c.k) ?? c.k}.webp`;
+const arteCarro = `/arte/v2/carro-${c.k}.webp`;
 // prévia do link (WhatsApp, Instagram): a arte de estúdio do carro; sem ela, a foto da 1ª peça
 const og = existe(arteCarro) ? arteCarro : '/identidade/og.jpg';
 // a arte do carro como a garagem a vê (a/as): vai junto quando a pessoa salva este carro (a abertura já nasce com ela)
 const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n === c.m);
 ---
-<Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta} canonical={canonicoCarro}>
-  <MigrarCarro slot="head" />
+<Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta}>
   <TopoArte trilha={[['Início', '/'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
     antes={c.b} antesNoTitulo titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} arteSizes={SIZES.topoCarro} encaixe="meio" lead={lead}>
     <Fragment slot="acoes">
@@ -73,12 +78,14 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
       </div>
       {/* "Avise-me" só no carro com poucas peças (no XC60, com 515, ele só empurrava a grade para baixo) */}
       {N < AVISO_ATE && (
-        <a class="botao botao-linha carro-aviso" href={linkAviso(WHATS, nome)} rel="noopener" data-botao="carro-avise" data-aviso data-whats={WHATS} data-nome={nome} data-b={c.b} data-m={c.m}>
+        <a class="botao botao-linha carro-aviso" href={linkAviso(WHATS, nome)} rel="noopener" data-aviso data-whats={WHATS} data-nome={nome} data-b={c.b} data-m={c.m}>
           <Icone nome="whats" /><span>Me avise quando chegar peça</span>
         </a>
       )}
     </Fragment>
-    {N >= RAIO_X_A_PARTIR_DE && <div class="carro-raiox"><RaioX carro={{ b: c.b, m: c.m }} compacto recolhido /></div>}
+    {fams.length > 0 && (
+      <AtalhosVisuais titulo="Peças por categoria" modo="tipo" itens={fams} limite={9} limitePc={4} minimo={3} id="sistemas" mais={`Ver as ${fams.length} categorias`} />
+    )}
   </TopoArte>
   <div class="moldura">
     <section class="carro-pecas" id="pecas" aria-labelledby="h-pecas">
@@ -97,8 +104,8 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
         "Tem um <carro>?", que dizia quase o mesmo; a mensagem do WhatsApp continua levando o carro. */}
     <section class="carro-banner">
       <BannerV2 formato="arte" nome="banner-carro" arteW={1536} arteH={512}
-        href={whatsUrl(`Tenho um ${nome}, ano ____, e procuro a peça: ____`)}
-        texto="Tem esse carro? A gente confere a peça no pátio. Mande o ano e a peça no WhatsApp. Chamar no WhatsApp" />
+        href={whatsUrl(`Tenho um ${nome} ano ____ e procuro esta peça: ____`)}
+        texto="Tem esse carro? A gente conhece cada peça dele. Manda o ano e a peça no WhatsApp. Chamar no WhatsApp" />
     </section>
   </div>
 </Pagina>
@@ -153,7 +160,6 @@ const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n
     .carro-aviso { justify-content: flex-start; }
   }
 
-  .carro-raiox { margin-top: clamp(8px, 1.6vw, 16px); }
   .carro-pecas { padding-top: clamp(32px, 4.4vw, 52px); }
   .grade-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; margin-bottom: clamp(18px, 2.4vw, 26px); }
   .grade-cabeca h2 { margin: 0; }
