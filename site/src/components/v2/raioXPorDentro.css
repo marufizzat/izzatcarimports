@@ -1,15 +1,15 @@
-/* "A frente por dentro" (components/v2/raioXPorDentro.ts): entra na página só com a vista (import ?inline). Tudo preso
-   a .rxf* e ao data-vista="frente" da raiz do Raio-x (.rx). */
+/* As vistas "por dentro" (components/v2/raioXPorDentro.ts): entra na página só com a vista (import ?inline). Tudo preso
+   a .rxf* e ao data-vista="dentro" da raiz do Raio-x (.rx). */
 
 /* a vista explodida ocupa o MESMO palco da arte do carro (a mesma proporção: nada muda de tamanho) */
 .rxf { position: absolute; inset: 0; z-index: 4; display: none; background: linear-gradient(180deg, #f4f3f0, #e7e5e1); }
-.rx[data-vista="frente"] .rxf { display: block; }
-.rx[data-vista="frente"] .rx-palco > :is(img, svg, span, .rxb) { visibility: hidden; }
-.rx[data-vista="frente"] .rx-fichas, .rx[data-vista="frente"] .rxb-fichas { visibility: hidden; }
+.rx[data-vista="dentro"] .rxf { display: block; }
+.rx[data-vista="dentro"] .rx-palco > :is(img, svg, span, .rxb) { visibility: hidden; }
+.rx[data-vista="dentro"] .rx-fichas, .rx[data-vista="dentro"] .rxb-fichas { visibility: hidden; }
 .rxf-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
 /* PC: a lista das peças é mais comprida que a arte; a arte acompanha a rolagem */
-@media (min-width: 1024px) { .rx[data-vista="frente"] .rx-arte { position: sticky; top: 96px; align-self: start; } }
+@media (min-width: 1024px) { .rx[data-vista="dentro"] .rx-arte { position: sticky; top: 96px; align-self: start; } }
 
 /* cada peça: um link com a forma dela. Apagada, não se vê; acesa (mouse, foco, toque), um véu laranja com o contorno */
 .rxf-mapa { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -55,13 +55,17 @@
 
 /* no lugar das fichas (a mesma altura guardada): a instrução da vista e, na arte estreita, o "Voltar ao carro" */
 .rxf-fila { display: none; align-self: start; align-items: center; gap: 12px; min-height: 48px; padding: 2px 2px 4px; }
-.rx[data-vista="frente"] .rxf-fila { display: flex; }
+.rx[data-vista="dentro"] .rxf-fila { display: flex; }
 .rxf-voltar-fila { position: static; flex: none; background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-2); }
 .rxf-voltar-fila:hover { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ink-3); }
 .rxf-voltar-fila:focus-visible { outline-color: var(--foco); }
 .rxf-legenda { margin: 0; font-size: 14.5px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
 @container rxarte (min-width: 640px) { .rxf-voltar-fila { display: none; } .rxf-fila { padding-inline: 4px; } }
 @container rxarte (max-width: 639px) { .rxf-legenda span { display: none; } }
+/* vista com peça no canto de cima da arte (data-canto: a lateral, a traseira): o "Voltar" por cima taparia a peça; ele
+   fica na fila em qualquer largura */
+.rx[data-canto] .rxf > .rxf-voltar { display: none; }
+.rx[data-canto] .rxf-voltar-fila { display: inline-flex; }
 
 /* ---- o painel: a lista das peças da arte, com os mesmos números ---- */
 .rxf-painel { display: flex; flex-direction: column; flex: 1; min-width: 0; }
@@ -82,14 +86,14 @@
 .rxf-voltar2 { --h: var(--botao-p); width: 100%; gap: 6px; font-size: 15px; }
 .rxf-nota { margin: 0 2px 8px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
 
-/* ---- a troca de arte (View Transition, só durante ela): a arte do carro cresce para a frente dele e some; a vista
+/* ---- a troca de arte (View Transition, só durante ela): a arte do carro cresce para a parte que se abre (--rxf-origem, o ponto da zona) e some; a vista
    explodida chega do mesmo ponto. Na volta, o contrário. O resto da página não se mexe. ---- */
 ::view-transition-group(rx-palco) { animation-duration: .42s; overflow: clip; border-radius: 24px; }
 html.rxf-troca::view-transition-old(root), html.rxf-troca::view-transition-new(root) { animation-duration: .2s; }
-html.rxf-troca::view-transition-old(rx-palco) { animation: rxf-some .42s cubic-bezier(.4, 0, .2, 1) both; transform-origin: 16% 62%; }
-html.rxf-troca::view-transition-new(rx-palco) { animation: rxf-chega .42s cubic-bezier(.2, .8, .2, 1) both; transform-origin: 16% 62%; }
-html.rxf-volta::view-transition-old(rx-palco) { animation-name: rxf-encolhe; transform-origin: 16% 62%; }
-html.rxf-volta::view-transition-new(rx-palco) { animation-name: rxf-assenta; transform-origin: 16% 62%; }
+html.rxf-troca::view-transition-old(rx-palco) { animation: rxf-some .42s cubic-bezier(.4, 0, .2, 1) both; transform-origin: var(--rxf-origem, 16% 62%); }
+html.rxf-troca::view-transition-new(rx-palco) { animation: rxf-chega .42s cubic-bezier(.2, .8, .2, 1) both; transform-origin: var(--rxf-origem, 16% 62%); }
+html.rxf-volta::view-transition-old(rx-palco) { animation-name: rxf-encolhe; transform-origin: var(--rxf-origem, 16% 62%); }
+html.rxf-volta::view-transition-new(rx-palco) { animation-name: rxf-assenta; transform-origin: var(--rxf-origem, 16% 62%); }
 @keyframes rxf-some { to { opacity: 0; transform: scale(2.1); } }
 @keyframes rxf-chega { from { opacity: 0; transform: scale(.7); } }
 @keyframes rxf-encolhe { to { opacity: 0; transform: scale(.7); } }

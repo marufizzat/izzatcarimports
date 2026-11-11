@@ -1,22 +1,36 @@
-// "A frente por dentro": o PILOTO do 2º nível do Raio-x (uma zona que se abre). Do painel da zona Frente, o botão
-// "Ver a frente por dentro" troca a arte do carro pela vista explodida (lib/raioXFrente.ts), no MESMO palco (a mesma
-// proporção: nada muda de tamanho). Baixado só no clique do botão (aquecido quando o dedo/mouse encosta nele).
+// As vistas "por dentro": o 2º nível do Raio-x (uma parte do carro que se abre). Do painel de cada zona, o botão
+// "Ver o motor por dentro" troca a arte do carro pela vista explodida daquela parte, no MESMO palco (a mesma proporção:
+// nada muda de tamanho). Baixado só no clique do botão (aquecido quando o dedo/mouse encosta nele); a arte e a tabela
+// das peças de cada vista (lib/raioXFrente.ts, lib/porDentro/*.ts) descem só quando a vista DELA abre.
 // - Cada peça da arte é um link de verdade, desenhado na forma dela: passar o mouse ou focar acende a forma e mostra o
 //   nome e quantas há (do carro salvo, do carro da página ou do estoque); o clique leva ao catálogo filtrado naquele
 //   tipo/lado. No toque: o 1º toque acende e mostra o rótulo (que é o link); o 2º vai.
-// - Peça sem anúncio (ou o capô, que o estoque não tem como tipo): cinza, e o link é o WhatsApp "a gente procura no
-//   pátio" (data-botao="raio-x", o mesmo do painel das zonas).
+// - Peça sem anúncio (ou a que o estoque não tem como tipo: o capô, a tampa traseira, os bancos): cinza, e o link é o
+//   WhatsApp "a gente procura no pátio" (data-botao="raio-x", o mesmo do painel das zonas).
 // - Os números da arte são os da lista do painel (os mesmos links, um alvo fácil para o dedo).
 // - "Voltar ao carro" (na arte e no painel) e Esc devolvem a arte do carro e o foco ao botão que abriu.
-// A troca usa a View Transition do navegador quando existe (zoom a partir da frente do carro); sem ela, ou com
+// A troca usa a View Transition do navegador quando existe (zoom a partir da parte do carro); sem ela, ou com
 // "reduzir movimento"/aparelho fraco, troca na hora.
 import css from './raioXPorDentro.css?inline';
-import { PONTOS_QUENTES, ARTE_FRENTE, ARTE_FRENTE_900, contarQuentes, type PontoQuente } from '../../lib/raioXFrente';
-import { linkLinha, qtdPecas, type CarroFiltro } from '../../lib/raioX';
+import { contarPontos, type PontoQuente } from '../../lib/porDentro/base';
+import { VISTAS, ARTE_VISTA, ARQUIVO_DENTRO, arteDaVista, type Vista } from '../../lib/raioXVistas';
+import { ZONAS, ARTE, linkLinha, qtdPecas, type CarroFiltro } from '../../lib/raioX';
 import { linkProcuraPeca } from '../../lib/aviso';
 import type { Filtros, Item } from '../../lib/busca';
 
-export const ARQUIVO_FRENTE = '/dados/raio-x-frente.json';
+/** A tabela de cada vista (as peças e a forma de cada uma), pela chave da zona: um pedaço por vista. As duas laterais
+ *  usam a mesma, com o lado de cada uma nos links. */
+const TABELAS: Record<string, () => Promise<PontoQuente[]>> = {
+  frente: () => import('../../lib/raioXFrente').then((m) => m.PONTOS_QUENTES),
+  motor: () => import('../../lib/porDentro/motor').then((m) => m.PONTOS),
+  'lateral-esquerda': () => import('../../lib/porDentro/lateral').then((m) => m.pontosLateral('E')),
+  'lateral-direita': () => import('../../lib/porDentro/lateral').then((m) => m.pontosLateral('D')),
+  interior: () => import('../../lib/porDentro/interior').then((m) => m.PONTOS),
+  teto: () => import('../../lib/porDentro/teto').then((m) => m.PONTOS),
+  traseira: () => import('../../lib/porDentro/traseira').then((m) => m.PONTOS),
+  rodas: () => import('../../lib/porDentro/rodas').then((m) => m.PONTOS),
+  embaixo: () => import('../../lib/porDentro/embaixo').then((m) => m.PONTOS),
+};
 type Procurar = (f: Filtros) => Item[];
 export type CtxDentro = {
   raiz: HTMLElement; palco: HTMLElement; painel: HTMLElement; conteudo: HTMLElement; dica: HTMLElement; fichas: HTMLElement;
@@ -45,32 +59,63 @@ function porEstilo() {
   document.head.appendChild(Object.assign(document.createElement('style'), { textContent: css }));
 }
 
-/** A arte, baixada e decodificada antes da troca (a transição nunca mostra a imagem pela metade). */
-let arte: Promise<HTMLImageElement> | null = null;
-export function aquecerArte(sizes: string): Promise<HTMLImageElement> {
-  arte ??= new Promise<HTMLImageElement>((ok, falha) => {
+/** A arte e a tabela de uma vista, baixadas (a arte já decodificada) antes da troca: a transição nunca mostra a
+ *  imagem pela metade. Uma vez por zona; se falhar, a próxima tentativa começa de novo. */
+type Pronta = { img: HTMLImageElement; pontos: PontoQuente[] };
+const prontas = new Map<string, Promise<Pronta>>();
+function baixarArte(v: Vista, sizes: string): Promise<HTMLImageElement> {
+  return new Promise<HTMLImageElement>((ok, falha) => {
     const img = new Image();
     img.className = 'rxf-img';
     img.alt = '';
-    img.width = ARTE_FRENTE.w;
-    img.height = ARTE_FRENTE.h;
+    img.width = ARTE_VISTA.w;
+    img.height = ARTE_VISTA.h;
     img.decoding = 'async';
     img.sizes = sizes;
-    img.srcset = `${ARTE_FRENTE_900} 900w, ${ARTE_FRENTE.src} ${ARTE_FRENTE.w}w`;
-    img.src = ARTE_FRENTE.src;
+    img.srcset = `${arteDaVista(v, 900)} 900w, ${arteDaVista(v)} ${ARTE_VISTA.w}w`;
+    img.src = arteDaVista(v);
     const pronto = () => (img.decode ? img.decode().then(() => ok(img), () => ok(img)) : ok(img));
     if (img.complete && img.naturalWidth) pronto();
-    else { img.onload = pronto; img.onerror = () => { arte = null; falha(new Error('arte')); }; }
+    else { img.onload = pronto; img.onerror = () => falha(new Error('arte')); }
   });
-  return arte;
 }
+export function aquecerVista(zona: string, sizes: string): Promise<Pronta> {
+  const v = VISTAS[zona];
+  const tabela = TABELAS[zona];
+  if (!v || !tabela) return Promise.reject(new Error('vista'));
+  let p = prontas.get(zona);
+  if (!p) {
+    p = Promise.all([baixarArte(v, sizes), tabela()]).then(([img, pontos]) => ({ img, pontos }));
+    p.catch(() => prontas.delete(zona));
+    prontas.set(zona, p);
+  }
+  return p;
+}
+
+/** O canto da arte que o "Voltar ao carro" cobre quando fica por cima dela (arte de 640+ px), em pixels da arte, com
+ *  folga. Vista com peça ali (o forro da porta na lateral, o tampão na traseira): o botão fica só na fila de baixo. */
+const CANTO = { x: 400, y: 140 };
+
+/** As contas do estoque inteiro (quem não tem carro): um arquivo para todas as vistas, uma vez. */
+let estoque: Promise<Record<string, Record<string, number>>> | null = null;
+const contasDoEstoque = () => (estoque ??= fetch(ARQUIVO_DENTRO)
+  .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<{ z: Record<string, Record<string, number>> }>; })
+  .then((j) => j.z)
+  .catch((e) => { estoque = null; throw e; }));
 
 export function ligarPorDentro(ctx: CtxDentro) {
   porEstilo();
   const { raiz, palco, painel, conteudo, dica, fichas } = ctx;
   let camada: HTMLElement | null = null;
+  let fila: HTMLElement | null = null;
   let rotulo: HTMLAnchorElement | null = null;
   let ligado = false;
+  // a vista aberta: a zona do Raio-x, o que ela diz e as peças da arte dela
+  let zona = '';
+  let vista: Vista = VISTAS.frente;
+  let pontos: PontoQuente[] = [];
+  // a arte tem peça no canto de cima, onde o "Voltar ao carro" fica por cima dela? (aí ele desce para a fila)
+  let cantoOcupado = false;
   let escolhido: string | null = null;
   let passando: string | null = null;
   let ultimoPonteiro = 'mouse';
@@ -81,12 +126,12 @@ export function ligarPorDentro(ctx: CtxDentro) {
   let filtro: CarroFiltro = {};
   let aviso = '';
   let doCarro = '';
-  const quente = (k: string) => PONTOS_QUENTES.find((p) => p.k === k)!;
+  const quente = (k: string) => pontos.find((p) => p.k === k)!;
 
   // ---- o link e o texto de cada ponto ----
   function destino(p: PontoQuente): { href: string; fora: boolean } {
     const n = contas?.[p.k];
-    // sem tipo (o capô) ou sem peça: o WhatsApp "a gente procura no pátio"; contando ainda: o catálogo (sempre vale)
+    // sem tipo (o capô, os bancos) ou sem peça: o WhatsApp "a gente procura no pátio"; contando ainda: o catálogo (sempre vale)
     if (!p.tipo || !p.sub || n === 0) {
       const c = ctx.carroMsg(filtro.ano);
       return { href: linkProcuraPeca(p.procuro, c.nome, c.meu), fora: true };
@@ -111,26 +156,30 @@ export function ligarPorDentro(ctx: CtxDentro) {
   }
 
   function montarCamada(img: HTMLImageElement) {
+    // a camada é da vista: outra zona, outra arte e outras formas (a anterior sai)
+    camada?.remove();
     camada = document.createElement('div');
     camada.className = 'rxf';
     camada.setAttribute('role', 'group');
-    camada.setAttribute('aria-label', 'A frente por dentro: toque numa peça');
+    camada.setAttribute('aria-label', `${vista.titulo}: toque numa peça`);
     camada.innerHTML = `<button type="button" class="rxf-voltar" data-voltar>${VOLTA}Voltar ao carro</button>`
-      + `<svg class="rxf-mapa" viewBox="0 0 ${ARTE_FRENTE.w} ${ARTE_FRENTE.h}">`
-      + PONTOS_QUENTES.map((p) => `<a data-q="${p.k}" aria-label="${esc(p.nome)}">${p.poligonos.map((f) => `<polygon class="rxf-forma" points="${f}"/>`).join('')}</a>`).join('')
+      + `<svg class="rxf-mapa" viewBox="0 0 ${ARTE_VISTA.w} ${ARTE_VISTA.h}">`
+      + pontos.map((p) => `<a data-q="${p.k}" aria-label="${esc(p.nome)}">${p.poligonos.map((f) => `<polygon class="rxf-forma" points="${f}"/>`).join('')}</a>`).join('')
       + '</svg>'
-      + PONTOS_QUENTES.map((p, i) => `<span class="rxf-num num" data-q="${p.k}" aria-hidden="true" style="left:${pct(p.ancora[0], ARTE_FRENTE.w)};top:${pct(p.ancora[1], ARTE_FRENTE.h)}">${i + 1}</span>`).join('')
+      + pontos.map((p, i) => `<span class="rxf-num num" data-q="${p.k}" aria-hidden="true" style="left:${pct(p.ancora[0], ARTE_VISTA.w)};top:${pct(p.ancora[1], ARTE_VISTA.h)}">${i + 1}</span>`).join('')
       + '<a class="rxf-rotulo" tabindex="-1" aria-hidden="true" hidden></a>';
     camada.prepend(img);
     palco.appendChild(camada);
     rotulo = camada.querySelector<HTMLAnchorElement>('.rxf-rotulo');
     // no lugar das fichas: a instrução e, na arte estreita (onde o botão por cima da arte taparia peças), o "Voltar"
-    const fila = document.createElement('div');
-    fila.className = 'rxf-fila';
-    fila.innerHTML = `<button type="button" class="rxf-voltar rxf-voltar-fila" data-voltar>${VOLTA}Voltar ao carro</button>`
-      + '<p class="rxf-legenda">Toque numa peça<span>, na imagem ou na lista: o catálogo abre só com aquele tipo</span>.</p>';
-    fichas.appendChild(fila);
-    fila.addEventListener('click', (e) => { if ((e.target as Element).closest('[data-voltar]')) sair(true); });
+    if (!fila) {
+      fila = document.createElement('div');
+      fila.className = 'rxf-fila';
+      fila.innerHTML = `<button type="button" class="rxf-voltar rxf-voltar-fila" data-voltar>${VOLTA}Voltar ao carro</button>`
+        + '<p class="rxf-legenda">Toque numa peça<span>, na imagem ou na lista: o catálogo abre só com aquele tipo</span>.</p>';
+      fichas.appendChild(fila);
+      fila.addEventListener('click', (e) => { if ((e.target as Element).closest('[data-voltar]')) sair(true); });
+    }
 
     camada.addEventListener('pointerdown', (e) => { ultimoPonteiro = e.pointerType || 'mouse'; }, true);
     camada.addEventListener('click', (e) => {
@@ -171,7 +220,7 @@ export function ligarPorDentro(ctx: CtxDentro) {
     rotulo.hidden = false;
     // em cima do número; perto da borda de cima, embaixo; sem sair pelos lados (medido depois de escrito, num quadro só)
     const W = camada.clientWidth, H = camada.clientHeight;
-    const x = (p.ancora[0] / ARTE_FRENTE.w) * W, y = (p.ancora[1] / ARTE_FRENTE.h) * H;
+    const x = (p.ancora[0] / ARTE_VISTA.w) * W, y = (p.ancora[1] / ARTE_VISTA.h) * H;
     const w = rotulo.offsetWidth, h = rotulo.offsetHeight;
     const esq = Math.max(6, Math.min(W - w - 6, x - w / 2));
     const emCima = y - h - 18 >= 6;
@@ -194,8 +243,8 @@ export function ligarPorDentro(ctx: CtxDentro) {
         doCarro = ctx.doCarro(filtro);
         // uma peça por vez, devolvendo a vez ao navegador (15 buscas de uma vez davam uma tarefa de ~60 ms com CPU 6×)
         const n: Record<string, number> = {};
-        for (const p of PONTOS_QUENTES) {
-          Object.assign(n, contarQuentes(c.procurar, filtro, [p]));
+        for (const p of pontos) {
+          Object.assign(n, contarPontos(c.procurar, filtro, [p]));
           await pausa();
           if (minha !== vez) return;
         }
@@ -203,11 +252,10 @@ export function ligarPorDentro(ctx: CtxDentro) {
       } else {
         filtro = {};
         doCarro = '';
-        const r = await fetch(ARQUIVO_FRENTE);
-        if (!r.ok) throw new Error(String(r.status));
-        const j = await r.json() as { n: Record<string, number> };
+        const z = await contasDoEstoque();
         if (minha !== vez) return;
-        contas = j.n;
+        if (!z[zona]) throw new Error('vista');
+        contas = z[zona];
       }
     } catch {
       if (minha !== vez) return;
@@ -229,10 +277,10 @@ export function ligarPorDentro(ctx: CtxDentro) {
   }
 
   function pintarPainel(focar: boolean) {
-    const tem = contas ? PONTOS_QUENTES.filter((p) => (contas![p.k] ?? 0) > 0).length : 0;
+    const tem = contas ? pontos.filter((p) => (contas![p.k] ?? 0) > 0).length : 0;
     const sub = !contas ? (aviso ? '' : 'Contando as peças…')
-      : `${doCarro ? `${esc(doCarro)}` : 'no estoque inteiro'} · ${tem} de ${PONTOS_QUENTES.length} peças com anúncio agora`;
-    const itens = PONTOS_QUENTES.map((p, i) => {
+      : `${doCarro ? `${esc(doCarro)}` : 'no estoque inteiro'} · ${tem} de ${pontos.length} peças com anúncio agora`;
+    const itens = pontos.map((p, i) => {
       const d = destino(p);
       const n = contas?.[p.k];
       const vazio = n === 0 || !p.tipo;
@@ -243,11 +291,11 @@ export function ligarPorDentro(ctx: CtxDentro) {
     // as contas chegam e a lista é refeita: o foco fica onde estava (o título, a mesma linha ou o "Voltar")
     const ativo = !focar && document.activeElement instanceof HTMLElement && conteudo.contains(document.activeElement) ? document.activeElement : null;
     const foco = ativo ? (ativo.dataset.q ? `[data-q="${ativo.dataset.q}"]` : ativo.matches('.rx-p-titulo') ? '.rx-p-titulo' : '.rxf-voltar2') : '';
-    conteudo.innerHTML = `<div class="rxf-painel"><div class="rx-p-cabeca"><h3 class="rx-p-titulo" tabindex="-1">A frente por dentro</h3><p class="rx-p-sub">${sub || '&nbsp;'}</p></div>`
+    conteudo.innerHTML = `<div class="rxf-painel"><div class="rx-p-cabeca"><h3 class="rx-p-titulo" tabindex="-1">${esc(vista.titulo)}</h3><p class="rx-p-sub">${sub || '&nbsp;'}</p></div>`
       + (aviso ? `<p class="rx-p-aviso">${esc(aviso)}</p>` : '')
       + `<ol class="rxf-lista">${itens}</ol>`
       + `<div class="rxf-pe"><button type="button" class="botao botao-linha rxf-voltar2" data-voltar>${VOLTA}Voltar ao carro</button>`
-      + '<p class="rxf-nota">Arte ilustrativa de um SUV: a forma de cada peça muda de carro para carro.</p></div></div>';
+      + `<p class="rxf-nota">Arte ilustrativa de um SUV: a forma de cada peça muda de carro para carro.${zona === 'lateral-direita' ? ' O desenho mostra as portas do lado esquerdo; os links desta lista são os do lado direito.' : ''}</p></div></div>`;
     dica.hidden = true;
     conteudo.hidden = false;
     painel.classList.add('aberto');
@@ -273,26 +321,42 @@ export function ligarPorDentro(ctx: CtxDentro) {
     const doc = document as Doc;
     if (calmo() || !doc.startViewTransition) { muda(); return; }
     const html = document.documentElement;
+    // o zoom sai da parte do carro que se abre (o ponto da zona na arte do carro)
+    const z = ZONAS.find((x) => x.k === zona);
+    if (z) html.style.setProperty('--rxf-origem', `${pct(z.ancora[0], ARTE.w)} ${pct(z.ancora[1], ARTE.h)}`);
     palco.style.setProperty('view-transition-name', 'rx-palco');
     html.classList.add('rxf-troca');
     html.classList.toggle('rxf-volta', !entrando);
-    const fim = () => { palco.style.removeProperty('view-transition-name'); html.classList.remove('rxf-troca', 'rxf-volta'); };
+    const fim = () => { palco.style.removeProperty('view-transition-name'); html.style.removeProperty('--rxf-origem'); html.classList.remove('rxf-troca', 'rxf-volta'); };
     try { doc.startViewTransition(muda).finished.then(fim, fim); } catch { fim(); muda(); }
   }
 
-  async function abrir(botao: HTMLElement | null) {
-    if (ligado) return;
+  /** Abre a vista por dentro da zona `k` (a que o botão do painel dela pede, ou a do endereço). */
+  async function abrir(k: string, botao: HTMLElement | null) {
+    if (ligado && zona === k) return true;
+    if (!VISTAS[k]) return false;
     quemAbriu = botao;
     botao?.setAttribute('aria-busy', 'true');
-    let img: HTMLImageElement;
-    try { img = await aquecerArte(ctx.sizes); } catch { botao?.removeAttribute('aria-busy'); return false; }
+    let pronta: Pronta;
+    try { pronta = await aquecerVista(k, ctx.sizes); } catch { botao?.removeAttribute('aria-busy'); return false; }
     botao?.removeAttribute('aria-busy');
-    if (!camada) montarCamada(img);
+    // outra vista aberta (o endereço mudou): sai dela na hora, sem repor o painel da zona antiga
+    if (ligado) { ligado = false; vez++; }
+    if (zona !== k || !camada) {
+      zona = k;
+      vista = VISTAS[k];
+      pontos = pronta.pontos;
+      cantoOcupado = pontos.some((p) => p.poligonos.some((f) => f.split(' ').some((xy) => { const [x, y] = xy.split(',').map(Number); return x < CANTO.x && y < CANTO.y; })));
+      contas = null;
+      montarCamada(pronta.img);
+    }
     ligado = true;
     escolhido = null;
     passando = null;
     trocar(true, () => {
-      raiz.dataset.vista = 'frente';
+      raiz.dataset.vista = 'dentro';
+      raiz.dataset.dentro = zona;
+      raiz.toggleAttribute('data-canto', cantoOcupado);
       pintarLinks();
       pintarPainel(true);
       acender();
@@ -310,6 +374,8 @@ export function ligarPorDentro(ctx: CtxDentro) {
     passando = null;
     (naHora ? (_e: boolean, f: () => void) => f() : trocar)(false, () => {
       raiz.dataset.vista = 'achar';
+      delete raiz.dataset.dentro;
+      raiz.removeAttribute('data-canto');
       acender();
       ctx.aoVoltar();
       if (focar) {
@@ -323,6 +389,8 @@ export function ligarPorDentro(ctx: CtxDentro) {
   return {
     abrir, sair,
     get ligado() { return ligado; },
+    /** a zona da vista aberta ('' = nenhuma) */
+    get zona() { return ligado ? zona : ''; },
     /** o carro mudou com a vista aberta: as contas e os links acompanham */
     trocouCarro: () => { if (ligado) { pintarPainel(false); void contar(); } },
   };
