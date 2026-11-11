@@ -175,6 +175,72 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **Tela cheia da peça (celular)**: a conta do toque em `components/ui/zoomToque.ts` (pinça em volta dos dedos, toque
      duplo 2,5×, limite pela foto desenhada, elástico); o mouse continua como era.
 
+12. **O app instalável (rodada 14, nov/2026)** — o site vira app na tela de início (Android/Chrome e iPhone) SEM nunca
+   mostrar preço velho nem peça vendida "à venda". A mudança mais arriscada do site: um service worker errado prende o
+   site numa versão velha e é difícil de desfazer. Por isso ele é conservador.
+   - **Manifesto** (`public/site.webmanifest`): "Izzat Car Imports"/"Izzat Car", `start_url` `/?app=1` (a home; a canônica
+     e o `rastreio.js` não mudam, o GA só vê o `?app=1` no endereço), `display: standalone`, cores claras do site, ícones
+     192/512 + `maskable` (`icone-maskable-*.png`: o desenho original a 75% num fundo igual ao dele, dentro do círculo
+     seguro de 80%), atalhos Catálogo, Meu carro (`/carros.html`), Lista de orçamento e WhatsApp (`/contato.html`: o
+     `wa.me` é de outro domínio e o Chrome descarta atalho fora do site; ícones em `public/app/`). iPhone: o
+     `apple-touch-icon`, `apple-mobile-web-app-title` e a barra de status `default` (clara) no `Base.astro`.
+   - **Registro**: `components/app/app.ts`, um pedaço à parte que o script do cabeçalho (`Cabecalho.astro`, toda página
+     do site) pede só DEPOIS do `load` (um `<script>` no `<head>` do `Base.astro` era mais um pedido disputando a 1ª tela:
+     a LCP da home na 1ª visita piorava ~60 ms). O cabeçalho guarda a janela de instalar do Chrome que chega antes
+     (`window.__izzatInstalar`). O registro só 5 s depois do load, com o navegador folgando (a instalação caía em cima do
+     1º toque da 1ª visita). Página preparada pelo prerender não faz nada até ser aberta. Antes de registrar, confere o
+     botão de pânico. O `/offline.html` não tem cabeçalho nem registro (só aparece sem rede).
+   - **Service worker** (`public/sw.js`; a versão e o casco entram no build por `integracoes/service-worker.mjs`, a ÚLTIMA
+     integração do `astro.config.mjs`):
+
+     | Pedido | Estratégia |
+     |---|---|
+     | Página (navegação) | **Rede primeiro, sempre** (preload de navegação). Rede falhou ou passou de 3 s: a cópia guardada daquela página com a faixa "Você está sem conexão: mostrando a última versão que você viu" (ou "Sua conexão está lenta…") posta no HTML pelo SW (aparece na 1ª pintura, sem pulo) e `html[data-copia]`. Sem cópia: `/offline.html`; se só está lenta, espera a rede. 404/410 passa direto e apaga a cópia (peça vendida). Guarda só 200 + HTML, nunca redirecionado; chave = o caminho sem `?` (60 páginas). |
+     | Prerender/prefetch do Chrome (`Sec-Purpose`) e o fetch do `navegar.js` | Não toca (rede, como sem SW). A página preparada pede a própria cópia depois de aberta (sai do cache HTTP). |
+     | `/dados/*.json` (busca, ativas, carro) | **Rede primeiro**, sem prazo. A cópia só vai para a página que já é cópia (com a faixa); página que veio da rede segue como sem SW (mostra os avisos dela). |
+     | `/_astro/*` (nome com hash) | Cache primeiro, guardado na hora (250 itens). A cópia de uma página também põe na fila o CSS e os scripts dela. |
+     | Capas e artes (`/estudio*/`, `/arte/`, `/marcas/`, `/icones*`, `/identidade/`, fontes) | Só a que JÁ está guardada passa pelo SW (índice na memória): a guardada na hora, e a nova por trás quando ela passa de 1 h (300 itens, no máximo 7 dias). A nova vai direto à rede, com a prioridade do navegador, e é guardada ~1,5 s depois, do cache HTTP (sem baixar de novo). Medido: o SW respondendo toda foto nova da página preparada atrasava o CSS dela (home→carro no PC +350 ms). |
+     | Outro domínio (WhatsApp, Mercado Livre, fotos do ML, GA, Pixel), não-GET, `Range` | Nunca (as fotos do ML, GA e Pixel nem acordam o SW: rotas estáticas do Chrome 123+). |
+
+     Casco (baixado na instalação): só o `/offline.html` com o CSS, os scripts (e imports), o logo, o sprite e a fonte
+     latina (13 arquivos, ~190 KB). **Versão** = hash do `sw.js` + casco: o robô reconstrói a cada 30 min só com dados e a versão NÃO
+     muda (ninguém reinstala nada); muda quando o código do casco muda. Por isso o `offline.html` não pode ter dado do
+     estoque. Os caches de páginas/dados/artes têm a versão do formato (`R = 'v1'` no `sw.js`, trocar à mão se o jeito de
+     guardar mudar); a ativação apaga todo `izzat-*` que não é o atual. `skipWaiting` + `clients.claim`, nunca recarrega a
+     página sozinho (sem laço). O cache HTTP do GitHub Pages (`max-age=600`) continua igual: o SW não acrescenta atraso.
+   - **`/offline.html`** (`pages/offline.astro` + `components/app/paginaOffline.ts`, noindex, fora do sitemap): a
+     mensagem, "Tentar de novo", o WhatsApp, a lista de orçamento com o total e o "Pedir tudo no WhatsApp" e as peças
+     vistas (as guardadas no aparelho com o selo "Abre sem internet"). Voltou a conexão: recarrega sozinha.
+   - **Convite para instalar** (`lib/app.ts`, testado em `app.test.ts`; desenho em `components/app/convite.ts`, só desce
+     quando vai aparecer): no celular, só na 2ª visita, ou com peça na lista, ou depois de 3 peças abertas; uma vez por
+     sessão; o "×" lembra por 30 dias (`localStorage['izzatcar.app']`); nunca no app instalado nem na página com barra
+     fixa (peça, lista). Android/Chrome: guarda o `beforeinstallprompt` (a barra do Chrome não aparece sozinha) e o botão
+     "Instalar" abre a janela. iPhone (Safari/Chrome/Firefox/Edge, nunca o navegador do Instagram/Facebook): a dica
+     "Toque em Compartilhar → Adicionar à Tela de Início". GA4 `app_instalar` (`resultado`: aceito/dispensado, `onde`:
+     chrome/faixa/ios), pelo evento `app-instalar` no `rastreio.js`.
+   - **No app instalado** (`html.app`): link para fora (WhatsApp, Mercado Livre) abre fora do app; a área segura no
+     `global.css` (`@media (display-mode: standalone)`); voltou depois de 30 min ou mais em segundo plano = a página de
+     agora (recarrega, só com rede).
+   - **Medido em 11/11/2026** (Chromium, 4G lento 150 ms/1,6 Mbps com os cabeçalhos do GitHub Pages, CPU 4×; A/B
+     intercalado no MESMO build, "sem" = o proxy dando 404 para o `/sw.js` e o pedaço do app): toque→página pintada (LCP, mediana de 4, sem → com): celular catálogo→peça 916 → 836,
+     carro→peça 829 → 838 (rodada de 5: 897 → 794), home→carro 1.262 → 1.320 (rodadas anteriores: 1.278 → 1.287); PC
+     794 → 700, 723 → 689, 1.526 → 1.394. Carga da página (1ª visita, LCP): home 940 → 920, catálogo 708 → 636, peça
+     868 → 800; CLS igual; volta com o SW controlando: home 148 → 128, catálogo 532 → 572, peça 716 → 780 (o ruído entre
+     rodadas é ±80 ms). Prerender continua (Success, o HTML preparado desce 1 vez), transição entre páginas e bfcache
+     iguais (3/3 com e sem SW); 1 visita = 1 `page_view` (preparada e não aberta = 0). Sem rede: página vista abre em
+     ~40 ms com a faixa, nunca vista → `/offline.html` em ~15 ms; rede lenta (5 s): a cópia "lenta" em 3,1 s (sem SW:
+     10,6 s). Cache depois de 30 páginas: 10,7 MB. Página de peça: +129 bytes (só as 2 metas do iPhone).
+     Teste: o Playwright não deixa o Chrome fazer prerender nem desligar SW parado; use o CDP cru (`cdp-cru.cjs`) e, para
+     http com o domínio de verdade, `--unsafely-treat-insecure-origin-as-secure` no Chrome for Testing (o headless-shell
+     ignora).
+   - **Como DESLIGAR (botão de pânico)**: escrever `1` em `site/public/sw-desligar.txt` e publicar (push no master; o
+     robô publica). Toda página confere esse arquivo na carga (sem cache) e, com "1", desregistra o SW e apaga os caches
+     `izzat-*`; o próprio SW confere na ativação e a cada 6 h (hora gravada no cache `izzat-ctl-v1`). Para religar:
+     voltar para `0` e publicar. Num aparelho só: abrir qualquer página com `?sw=0` no endereço. **Nunca** apagar o
+     `sw.js` nem o registro do `Base.astro` para "desligar": o SW instalado continua no aparelho; o `/sw.js` tem de ficar
+     sempre no MESMO endereço (é por ele que o navegador acha a versão nova). Último recurso: um `sw.js` que só se
+     desregistra (`self.addEventListener('activate', () => self.registration.unregister())`).
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
