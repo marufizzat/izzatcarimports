@@ -94,8 +94,12 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   .com-arte.meio .topo-caixa { min-height: clamp(340px, 32vw, 440px); }
   .com-arte.meio .topo-texto { max-width: 52%; }
 
-  /* com disco: a marca fica ao lado do texto */
-  @media (min-width: 900px) { .com-disco .topo-caixa { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; } }
+  /* com disco: a marca fica ao lado do texto. A coluna do disco tem a largura DELE (a mesma conta do .topo-disco) desde o
+     começo, não "auto": o navegador pinta a página antes de o disco chegar no HTML e, com "auto", o texto ocupava a
+     largura toda; quando o disco chegava, as fichas de ano da página do carro mudavam de linha (CLS 0,02 a 0,05 no PC em
+     toda carga com rede lenta). A regra fica AQUI: a que a página do carro tinha perdia para esta (o escopo do Astro soma
+     um atributo a cada classe). */
+  @media (min-width: 900px) { .com-disco .topo-caixa { grid-template-columns: minmax(0, 1fr) clamp(190px, 24vw, 280px); gap: 40px; } }
   /* celular e tablet (carro ainda sem arte, página da marca): o disco pequeno ao lado do título, não um disco de
      190 px embaixo dos botões empurrando as peças para baixo */
   @media (max-width: 899px) {
