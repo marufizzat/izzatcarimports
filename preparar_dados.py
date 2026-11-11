@@ -3442,7 +3442,7 @@ def main():
             mod = ms[0]   # a faixa do titulo e de outro carro da peca: ele vira o carro principal
         if not a0 and mc:   # titulo e part_number sem ano: a descricao ("Anos compativeis: 2013 ate 2020")
             a0, a1 = anos_da_descricao(p.get("desc"))
-            if a0:
+            if a0 and a1 > a0:   # um ano so ("Anos compativeis: 2010 ate 2010") e do outro carro da descricao: fica sem ano
                 a0, a1 = limitar_anos(a0, a1, mc, mod)
         cat = cats.get(p.get("category_id"))
         n = nome_limpo(TL[p["id"]], mc, mod, ms_titulo)
