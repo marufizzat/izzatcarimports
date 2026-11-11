@@ -9,25 +9,15 @@
 // quem olha são os DIREITOS (passageiro).
 // O estoque não tem o tipo "Capô": o ponto do capô é de pátio (WhatsApp: "a gente procura no pátio").
 // Sem node:fs e sem valores de lib/busca.ts: roda no build, no teste e no navegador.
-import type { Filtros, Lado, Posicao } from './busca';
+import type { Filtros } from './busca';
 
 // a arte e a zona do piloto: lib/raioXPiloto.ts (o Raio-x usa só elas, sem puxar esta tabela)
 export { ARTE_FRENTE, ARTE_FRENTE_320, ARTE_FRENTE_900, ZONA_PILOTO } from './raioXPiloto';
 
-export type PontoQuente = {
-  k: string;
-  /** o nome que aparece ("Farol esquerdo") */
-  nome: string;
-  /** como a mensagem do WhatsApp fala dela, com o artigo ("o farol esquerdo"): a peça sem anúncio, "a gente procura" */
-  procuro: string;
-  /** onde fica o número (arte estreita) e de onde sai o rótulo, em pixels da arte: em cima da peça */
-  ancora: [number, number];
-  /** a forma da peça na arte (uma peça em 2 lugares, como os faróis de milha: 2 polígonos) */
-  poligonos: string[];
-  /** o tipo do catálogo (sem ele: peça de pátio, o estoque não tem esse tipo) */
-  tipo?: string; sub?: string; lado?: Lado; pos?: Posicao;
-
-};
+// o formato de um ponto quente e a conta: lib/porDentro/base.ts (o mesmo de todas as vistas)
+export type { PontoQuente } from './porDentro/base';
+import { contarPontos, filtrosDoQuente, type CarroDoQuente, type PontoQuente } from './porDentro/base';
+export { filtrosDoQuente };
 
 // Na ordem de quem desmonta a frente (e a do Tab): o para-choque, as grades, os faróis, a alma, o painel, os
 // radiadores, o capô e os para-lamas.
@@ -99,12 +89,7 @@ export const PONTOS_QUENTES: PontoQuente[] = [
   },
 ];
 
-/** Os filtros do catálogo de um ponto quente (os do link). */
-export const filtrosDoQuente = (p: PontoQuente, carro: Partial<Pick<Filtros, 'marca' | 'modelo' | 'ano'>> = {}): Filtros =>
-  ({ ...carro, tipo: p.tipo, sub: p.sub, lado: p.lado, pos: p.pos, ordem: 'novos' });
-
 /** Quantas peças cada ponto quente tem, pela busca do catálogo (`procurar` = Busca.procurar): { 'farol-esquerdo': 4 }.
  *  Ponto de pátio (sem tipo): 0. */
-export function contarQuentes(procurar: (f: Filtros) => { id: string }[], carro: Partial<Pick<Filtros, 'marca' | 'modelo' | 'ano'>> = {}, pontos: PontoQuente[] = PONTOS_QUENTES): Record<string, number> {
-  return Object.fromEntries(pontos.map((p) => [p.k, p.tipo ? procurar(filtrosDoQuente(p, carro)).length : 0]));
-}
+export const contarQuentes = (procurar: (f: Filtros) => { id: string }[], carro: CarroDoQuente = {}, pontos: PontoQuente[] = PONTOS_QUENTES): Record<string, number> =>
+  contarPontos(procurar, carro, pontos);

@@ -1,6 +1,8 @@
 // "A frente por dentro" do Raio-x (components/v2/raioXPorDentro.ts) para quem NÃO tem carro salvo: quantas peças o
 // estoque inteiro tem de cada ponto quente da arte (lib/raioXFrente.ts), pela MESMA busca do catálogo (o número é o do
 // link). ~250 bytes, baixado só ao abrir a vista. Com carro, a conta sai do /dados/carro/<k>.json, como o resto.
+// Desde a rodada 16 a vista lê o /dados/raio-x-dentro.json (todas as vistas num arquivo); este continua no ar para
+// quem ainda tem o script da rodada 15 guardado no navegador.
 import type { APIRoute } from 'astro';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

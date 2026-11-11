@@ -16,12 +16,13 @@
 //   (no ano salvo; ano sem peça: o modelo em todos os anos, com aviso). Trocar o carro atualiza tudo sem recarregar.
 // - página do carro (`carro`): as contagens daquele carro já saem no build.
 // - DOIS MODOS (o seletor acima da arte): "Achar uma peça" (as zonas, o de sempre) e "Bati o carro" (os 8 pontos da
-//   batida e a lista do conserto: components/v2/raioXBatida.ts, baixado só perto do seletor). E, da zona Frente, o piloto
-//   "Ver a frente por dentro" (a vista explodida com cada peça clicável: components/v2/raioXPorDentro.ts, só no clique).
+//   batida e a lista do conserto: components/v2/raioXBatida.ts, baixado só perto do seletor). E, do painel de cada zona,
+//   "Ver o motor por dentro" (a vista explodida daquela parte, com cada peça clicável: lib/raioXVistas.ts diz quais
+//   zonas têm vista; o código, a arte e a tabela das peças só no clique: components/v2/raioXPorDentro.ts).
 //   O palco, a fila das fichas e a caixa do painel são os mesmos nos três: trocar não muda o tamanho de nada.
 // - Endereço que já abre uma parte: #raio-x=frente (zona), #raio-x=batida ou #raio-x=batida:frente-esquerda (o modo e
-//   o ponto), #raio-x=por-dentro (a frente por dentro). O "Onde fica" da página da peça usa o 1º. O #raio-x-t (o link
-//   "Aponte no carro" do catálogo vazio) só abre o cartão recolhido.
+//   o ponto), #raio-x=por-dentro:motor (a vista por dentro da zona; sem a zona, a da frente). O "Onde fica" da página
+//   da peça usa o 1º. O #raio-x-t (o link "Aponte no carro" do catálogo vazio) só abre o cartão recolhido.
 // Teclado: Tab percorre as zonas na ordem do carro (ZONAS) e só ACENDE a parte (como o mouse em cima: o painel não troca
 // sozinho); Enter ou Espaço abre o painel e leva o foco para ele, Esc limpa.
 // Leitor de tela: cada zona é um link "Frente: 118 peças"; quando o painel troca sem o foco ir para ele (toque, clique),
@@ -157,7 +158,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel,
   } from '../../lib/raioX';
   import { linkAvisoParte, linkProcuraParte } from '../../lib/aviso';
-  import { ZONA_PILOTO, ARTE_FRENTE_320 } from '../../lib/raioXPiloto';
+  import { VISTAS, arteDaVista } from '../../lib/raioXVistas';
   import type { Filtros, Indice, Item } from '../../lib/busca';
   import type { Batida, CarroDaVez } from './raioXBatida';
   import type { PorDentro } from './raioXPorDentro';
@@ -205,8 +206,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     // a capa da peça (capaItem de lib/busca.ts, que só desce com a busca) e a conta do carro em andamento
     let capa: ((it: Item) => string) | null = null;
     let contando: Promise<void> | null = null;
-    // o que a arte mostra: as zonas ('achar'), os pontos da batida ('batida') ou a frente por dentro ('frente')
-    let vista: 'achar' | 'batida' | 'frente' = 'achar';
+    // o que a arte mostra: as zonas ('achar'), os pontos da batida ('batida') ou uma parte por dentro ('dentro')
+    let vista: 'achar' | 'batida' | 'dentro' = 'achar';
     let batida: Batida | null = null;
     let porDentro: PorDentro | null = null;
     const palco = raiz.querySelector<HTMLElement>('[data-rx-palco]')!;
@@ -296,6 +297,14 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       return `<li><a class="rx-linha" href="${href}"><span class="rx-l-foto">${img}</span><span class="rx-l-nome">${esc(l.sub)}</span>${qtd}${SETA}</a></li>`;
     }
 
+    /** O convite da vista por dentro da zona ("Ver o motor por dentro"), na altura de UMA linha do painel. */
+    function conviteDentro(k: string) {
+      const v = VISTAS[k];
+      if (!v) return '';
+      return `<button type="button" class="rx-dentro" data-rx-dentro="${k}"><img src="${arteDaVista(v, 320)}" alt="" width="84" height="56" loading="lazy" decoding="async">`
+        + `<span><b>${esc(v.botao)}</b><small>${esc(v.resumo)}</small></span>${SETA}</button>`;
+    }
+
     function mostrar(k: string, focar: boolean) {
       const z = zona(k);
       const c = conta(k);
@@ -322,18 +331,19 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
             : `<p class="rx-p-vazio">Agora não há peça ${esc(z.de)} no site. Chame no WhatsApp e diga o seu carro: a gente procura no pátio.</p>`
               + `<div class="rx-p-acoes"><a class="botao botao-linha rx-avise" data-botao="raio-x" rel="noopener" href="${esc(linkProcuraParte('', z.de, true))}">`
               + `${whats}Chamar no WhatsApp</a>`)
-          + `<a class="rx-p-outros" href="${esc(linkDoFiltro(filtro))}">${filtro.modelo ? `Ver todas as peças ${esc(dc)}` : 'Ver o catálogo inteiro'}</a></div>`;
+          + `<a class="rx-p-outros" href="${esc(linkDoFiltro(filtro))}">${filtro.modelo ? `Ver todas as peças ${esc(dc)}` : 'Ver o catálogo inteiro'}</a></div>`
+          // a vista por dentro continua valendo: cada peça dela vira um pedido "a gente procura no pátio"
+          + conviteDentro(k);
       } else {
-        // a zona do piloto (a Frente): o convite "Ver a frente por dentro" ocupa o lugar de UMA linha (a altura do painel
-        // fica a mesma das outras zonas); o tipo que saiu da frente continua no "Ver os N tipos"
-        const piloto = k === ZONA_PILOTO;
-        const naFrente = piloto ? NA_FRENTE - 1 : NA_FRENTE;
+        // zona com vista por dentro: o convite "Ver o motor por dentro" ocupa o lugar de UMA linha (a altura do painel
+        // fica a mesma); o tipo que saiu da frente continua no "Ver os N tipos"
+        const convite = conviteDentro(k);
+        const naFrente = convite ? NA_FRENTE - 1 : NA_FRENTE;
         const ricas = c.l.slice(0, naFrente);
         const resto = c.l.slice(naFrente);
         html = cabeca(` · ${qtdPecas(c.n)}`, `${dc}${c.l.length > 1 ? ` · ${c.l.length} tipos de peça` : ''}`)
           + (aviso ? `<p class="rx-p-aviso">${esc(aviso)}</p>` : '')
-          + (piloto ? `<button type="button" class="rx-dentro" data-rx-dentro><img src="${ARTE_FRENTE_320}" alt="" width="84" height="56" loading="lazy" decoding="async">`
-            + `<span><b>Ver a frente por dentro</b><small>Para-choque, grade, faróis, radiador: cada peça no lugar dela.</small></span>${SETA}</button>` : '')
+          + convite
           + `<ul class="rx-linhas">${ricas.map((l) => linhaHtml(l, true)).join('')}</ul>`;
         if (resto.length) {
           html += `<button type="button" class="rx-mais" aria-expanded="false" aria-controls="${painel.id}-resto">Ver os ${c.l.length} tipos ${esc(z.de)}</button>`
@@ -362,12 +372,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       conteudo.querySelector<HTMLButtonElement>('.rx-ver')?.addEventListener('click', (e) => void verPecas(k, e.currentTarget as HTMLButtonElement));
       const dentro = conteudo.querySelector<HTMLButtonElement>('[data-rx-dentro]');
       if (dentro) {
-        // o dedo ou o mouse encostou: o código e a arte da vista começam a descer antes do clique
-        const cedo = () => void modPorDentro().then((m) => m.aquecerArte(raiz.dataset.sizes ?? '100vw')).catch(() => {});
+        // o dedo ou o mouse encostou: o código, a arte e a tabela da vista começam a descer antes do clique
+        const cedo = () => void modPorDentro().then((m) => m.aquecerVista(k, raiz.dataset.sizes ?? '100vw')).catch(() => {});
         dentro.addEventListener('pointerenter', cedo, { once: true });
         dentro.addEventListener('touchstart', cedo, { once: true, passive: true });
         dentro.addEventListener('focus', cedo, { once: true });
-        dentro.addEventListener('click', () => void abrirPorDentro(dentro));
+        dentro.addEventListener('click', () => void abrirPorDentro(k, dentro));
       }
       if (focar) conteudo.querySelector<HTMLElement>('.rx-p-titulo')?.focus({ preventScroll: true });
       // o painel trocou sem o foco ir para ele (toque, clique, as contas do carro que chegaram): o leitor de tela ouve a
@@ -494,7 +504,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       }
     }
 
-    // ---- os outros modos: "Bati o carro" e "a frente por dentro" (código e estilo baixados sob demanda) ----
+    // ---- os outros modos: "Bati o carro" e as vistas por dentro (código e estilo baixados sob demanda) ----
     const modBatida = () => import('./raioXBatida');
     const modPorDentro = () => import('./raioXPorDentro');
     const doCarroDe = (f: CarroFiltro) => (!f.modelo ? '' : `${home ? 'do seu' : 'do'} ${f.modelo}${f.ano ? ` ${f.ano}` : ''}`);
@@ -507,7 +517,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       return s && s.b === raiz.dataset.b && s.m === raiz.dataset.m && s.y
         ? { nome: nomeCarro(s), meu: true } : { nome: `${raiz.dataset.b} ${raiz.dataset.m}`, meu: false };
     };
-    /** O carro que vale para a lista do conserto e a frente por dentro: o salvo (home, com as mesmas quedas das zonas:
+    /** O carro que vale para a lista do conserto e as vistas por dentro: o salvo (home, com as mesmas quedas das zonas:
      *  ano sem peça = todos os anos; modelo sem peça = o estoque inteiro) ou o da página (no ano do salvo, se é o mesmo). */
     async function carroDaVez(): Promise<CarroDaVez> {
       const semCapa = () => '';
@@ -545,7 +555,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       whats: raiz.querySelector('template[data-rx-whats]')?.innerHTML ?? '',
     }))).catch((e) => { pegando = null; throw e; }));
 
-    async function abrirPorDentro(botao: HTMLElement | null) {
+    async function abrirPorDentro(k: string, botao: HTMLElement | null) {
       try {
         const m = await modPorDentro();
         porDentro ??= m.ligarPorDentro({
@@ -557,13 +567,13 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
             acender();
           },
         });
-        if (await porDentro.abrir(botao)) vista = 'frente';
+        if (await porDentro.abrir(k, botao)) vista = 'dentro';
       } catch { /* sem conexão: o painel da zona continua como está */ }
     }
 
     /** Troca de modo (o seletor, ou o endereço #raio-x=batida). O palco, as fichas e a caixa do painel são os mesmos. */
     async function irPara(novo: 'achar' | 'batida', pontoInicial?: string) {
-      if (vista === 'frente') porDentro?.sair(false, true);
+      if (vista === 'dentro') porDentro?.sair(false, true);
       for (const r of radios) r.checked = r.value === novo;
       if (novo === vista) { if (novo === 'batida' && pontoInicial) void batida?.selecionar(pontoInicial, { rolar: true }); return; }
       abrirRecolhido();
@@ -617,7 +627,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     for (const f of fichas) f.addEventListener('click', () => selecionar(f.dataset.ficha!, { rolar: true }));
     raiz.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
-      if (vista === 'frente') { e.preventDefault(); porDentro?.sair(true); }
+      if (vista === 'dentro') { e.preventDefault(); porDentro?.sair(true); }
       else if (vista === 'batida') { if (batida?.esc()) e.preventDefault(); }
       else if (ativa) { e.preventDefault(); limpar(); }
     });
@@ -675,13 +685,15 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     const tituloId = raiz.querySelector<HTMLElement>('[data-rx-titulo]')?.id;
     if (tituloId && location.hash === `#${tituloId}`) { abrirRecolhido(); zonasA[0]?.focus({ preventScroll: true }); }
 
-    // ---- o endereço que já abre uma parte: #raio-x=frente | #raio-x=batida[:ponto] | #raio-x=por-dentro ----
+    // ---- o endereço que já abre uma parte: #raio-x=frente | #raio-x=batida[:ponto] | #raio-x=por-dentro[:zona] ----
     function doEndereco() {
       const m = /^#raio-x=([a-z-]+)(?::([a-z-]+))?$/.exec(location.hash);
       if (!m) return;
       const [, a, b] = m;
       const zonaDoLink = ZONAS.some((z) => z.k === a);
-      if (a !== 'batida' && a !== 'por-dentro' && !zonaDoLink) return;
+      // a vista por dentro: a da zona do endereço; sem zona (o endereço do piloto), a da frente
+      const dentroDe = a === 'por-dentro' ? b ?? 'frente' : '';
+      if (a === 'por-dentro' ? !VISTAS[dentroDe] : a !== 'batida' && !zonaDoLink) return;
       abrirRecolhido();
       // a página ainda se arruma (fotos, seções acima): chega agora e de novo depois da carga, se a pessoa não rolou
       const chegar = () => raiz.scrollIntoView({ block: 'start' });
@@ -696,8 +708,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       if (a === 'batida') void irPara('batida', b);
       else {
         void irPara('achar').then(() => {
-          selecionar(zonaDoLink ? a : ZONA_PILOTO);
-          if (a === 'por-dentro') void abrirPorDentro(null);
+          selecionar(dentroDe || a);
+          if (dentroDe) void abrirPorDentro(dentroDe, null);
         });
       }
     }
@@ -764,7 +776,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-modos input:focus-visible + span { outline: 3px solid var(--foco); outline-offset: 2px; }
   @media (max-width: 479px) { .rx-modos { display: grid; width: 100%; } .rx-modos span { padding: 0 8px; font-size: 14.5px; gap: 6px; } }
   @media (prefers-reduced-motion: reduce) { .rx-modos span { transition: none; } }
-  /* as filas de fichas (zonas, pontos da batida, a legenda da frente por dentro) ocupam a MESMA caixa */
+  /* as filas de fichas (zonas, pontos da batida, a legenda da vista por dentro) ocupam a MESMA caixa */
   .rx-filas { display: grid; min-width: 0; }
   .rx-filas > :global(*) { grid-area: 1 / 1; min-width: 0; }
 
@@ -900,7 +912,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   .rx-conteudo :global(.rx-avise) { --h: var(--botao-p); padding: 0 18px; font-size: 15px; }
   .rx-conteudo :global(.rx-p-outros) { padding-block: 12px; margin-block: -12px; font-size: 14px; font-weight: 650; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
 
-  /* zona Frente: o convite da vista por dentro, na altura de UMA linha */
+  /* o convite da vista por dentro da zona, na altura de UMA linha */
   .rx-conteudo :global(.rx-dentro) { display: grid; grid-template-columns: 84px minmax(0, 1fr) 18px; align-items: center; gap: 12px; width: 100%; min-height: calc(var(--linha) - 1px);
     padding: 6px 10px 6px 6px; border: 0; border-radius: 14px; background: var(--accent-soft); color: #1d1d1f; font: inherit; text-align: left; cursor: pointer;
     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 70%); -webkit-tap-highlight-color: transparent; transition: box-shadow .15s ease; }

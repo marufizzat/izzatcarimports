@@ -293,7 +293,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    de UMA versão (`data-v1`/`it.v1`, `versaoUnica` em `catalogo/etiqueta.ts`: "C180" dentro do Classe C, "New Fiesta"
    dentro do Fiesta) não ganha "Serve no seu…": ganha "Confira a versão".
 
-15. **Raio-x, 2º nível (rodada 15, nov/2026)** — três coisas em cima do Raio-x; o código e o estilo de cada uma só descem
+15. **Raio-x, 2º nível (rodadas 15 e 16, nov/2026)** — três coisas em cima do Raio-x; o código e o estilo de cada uma só descem
    quando a pessoa usa (`import()` + CSS `?inline`: nada no CSS que trava a 1ª pintura, +0,4 KB no HTML da home).
    - **"Bati o carro"** (o seletor de dois modos acima da arte; `v2/raioXBatida.ts` + `.css`): a arte troca as 9 zonas
      pelos **8 pontos da batida** (`lib/batida.ts`: `PONTOS`, medidos na arte; o lado de lá fica na borda visível, com a
@@ -318,18 +318,31 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      `/carros/<k>.html#raio-x=<zona>` (carro sem Raio-x na página: `/#raio-x=<zona>`). A zona é a do painel
      (`zonasDaPeca` em `lib/raioX.ts`, a mesma regra da busca; `zonaDaPecaId` em `lib/raioXDados.ts`); peça sem zona ou
      em duas zonas (pos `A`) não mostra o bloco. HTML parado; estilo no arquivo com cache.
-   - **"A frente por dentro"** (PILOTO, só a zona Frente; `v2/raioXPorDentro.ts` + `.css`, tabela em `lib/raioXFrente.ts`;
-     o Raio-x só importa `lib/raioXPiloto.ts`, para a tabela não entrar no script de toda visita):
-     o botão no painel da Frente troca a arte pela vista explodida (`public/arte/v2/raio-x-frente.webp`, variantes
-     320/900 pelo `variantes-imagens.mjs`) no MESMO palco, com View Transition onde existe. Cada peça é um link com a
-     FORMA dela (polígonos medidos na arte; o farol e o para-lama à direita de quem olha são os ESQUERDOS do carro), com
-     o nome e quantas há; o número é o do catálogo com os filtros do link (`contarQuentes`; sem carro:
-     `/dados/raio-x-frente.json`). Sem peça (ou o capô, que o estoque não tem como tipo): cinza e o link é o WhatsApp
-     "a gente procura no pátio" (`linkProcuraPeca` em `lib/aviso.ts`, `data-botao="raio-x"`). No toque, o 1º toque acende
-     e mostra o rótulo, o 2º vai. Esc e "Voltar ao carro" devolvem a arte e o foco. Outra zona: uma arte + uma tabela
-     como `PONTOS_QUENTES` (só depois de o dono aprovar o piloto).
-   - **Endereços que já abrem**: `#raio-x=<zona>`, `#raio-x=batida`, `#raio-x=batida:<ponto>`, `#raio-x=por-dentro`
-     (na home e na página do carro; só o `#`, nenhum endereço novo).
+   - **As vistas "por dentro"** (rodada 16: todas as zonas; a Frente foi o piloto da 15): o botão "Ver o motor por
+     dentro" do painel de cada zona troca a arte do carro pela vista explodida daquela parte no MESMO palco, com View
+     Transition onde existe (o zoom sai do ponto da zona). `lib/raioXVistas.ts` (`VISTAS`, pela chave da zona: a arte,
+     o título, o botão, a linha de apoio) é o ÚNICO pedaço que o script do Raio-x importa; o código
+     (`v2/raioXPorDentro.ts` + `.css`), a arte (`public/arte/v2/raio-x-<vista>.webp`, variantes 320/900 pelo
+     `variantes-imagens.mjs`) e a tabela das peças de CADA vista (`lib/raioXFrente.ts` e `lib/porDentro/<vista>.ts`,
+     um pedaço por vista: `TABELAS`) só descem no clique. As duas laterais usam a MESMA arte e a mesma tabela
+     (`pontosLateral(lado)`: o lado vai nos links; o desenho é o do lado esquerdo, e a nota do painel diz).
+     Cada peça é um link com a FORMA dela (`PontoQuente`, `lib/porDentro/base.ts`: contornos tirados da arte), com o
+     nome e quantas há; o número é o do catálogo com os filtros do link (`contarPontos`; sem carro:
+     `/dados/raio-x-dentro.json`, um arquivo para todas as vistas). Sem peça, ou tipo que o estoque não tem (capô,
+     tampa traseira, vidro e quadro do teto solar, forro do teto, longarinas, bancos, disco de freio, protetor de
+     cárter): cinza e o link é o WhatsApp "a gente procura no pátio" (`linkProcuraPeca` em `lib/aviso.ts`,
+     `data-botao="raio-x"`). Zona sem peça do carro também mostra o botão (a vista vira a lista de pedidos de pátio).
+     No toque, o 1º toque acende e mostra o rótulo, o 2º vai. Esc e "Voltar ao carro" devolvem a arte e o foco (o
+     botão por cima da arte desce para a fila quando a arte tem peça naquele canto: `data-canto`). Orientação: na
+     frente, o farol à direita de quem olha é o ESQUERDO do carro; na traseira (vista por trás), a lanterna à esquerda
+     de quem olha é a ESQUERDA. Ponto de outra zona, de propósito: o semieixo na suspensão e os airbags no teto.
+     **Arte nova ou trocada**: gerar no padrão da frente (estúdio claro, peças soltas com vão entre elas, sem marca e
+     sem texto), tirar os contornos da arte, pôr a tabela em `lib/porDentro/`, registrar em `VISTAS`, `TABELAS` e
+     `lib/porDentro/todas.ts`, rodar o `variantes-imagens.mjs`. Teste `lib/porDentro.test.ts` (todas as vistas, com o
+     estoque real: forma dentro da arte, números que não se encostam a 320 px, link = número do catálogo, peça da
+     parte certa do carro); o da frente continua em `raioXFrente.test.ts`.
+   - **Endereços que já abrem**: `#raio-x=<zona>`, `#raio-x=batida`, `#raio-x=batida:<ponto>`,
+     `#raio-x=por-dentro:<zona>` (sem a zona: a frente) (na home e na página do carro; só o `#`, nenhum endereço novo).
 
 16. **Abertura viva: "o estúdio vira o seu carro" (rodada 15, nov/2026)** — `v2/AberturaV2.astro` (marcação e CSS),
    `v2/aberturaPalco.ts` (comportamento, chega depois da 1ª pintura) e `lib/abertura.ts` (contas puras, testadas com o
