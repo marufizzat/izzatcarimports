@@ -102,7 +102,8 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   }, [q]);
 
   const res = useMemo<Sugestoes | null>(
-    () => (busca && termo.trim().length >= 2 ? busca.sugestoes(termo, 6) : null),
+    // o carro salvo ("Meu carro") sobe nas sugestões, como no catálogo
+    () => (busca && termo.trim().length >= 2 ? busca.sugestoes(termo, 6, lerMeuCarro()) : null),
     [busca, termo],
   );
   const aberto = foco && q.trim().length >= 2;
@@ -136,7 +137,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
     : erro ? 'Não deu para carregar a busca agora.'
     : semResultado ? `Nada com “${termoTela}” no site.`
     : !res ? ''
-    : res.aproximado ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}. Use as setas para escolher.`
+    : res.aproximado && nSug > 0 ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}. Use as setas para escolher.`
     : `${nSug === 1 ? '1 sugestão' : `${nSug} sugestões`}. Use as setas para escolher.`;
 
   useEffect(() => {
@@ -318,7 +319,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       <div key="ver" {...comum} className={`sb-op sb-ver${on}`}>
         <span>
           {!res || erro ? `Buscar “${termoTela}” no catálogo`
-            : res.aproximado ? `Ver as ${n2(n)} peças parecidas`
+            : res.aproximado ? (n === 1 ? 'Ver a peça parecida' : `Ver as ${n2(n)} peças parecidas`)
             : n === 1 ? 'Ver o resultado no catálogo' : `Ver todos os ${n2(n)} resultados`}
         </span>
         <IconeSeta />
@@ -417,8 +418,9 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
               <button type="button" className="sb-tentar" onClick={carregar}>Tentar de novo</button>
             </p>
           )}
-          {res?.aproximado && (
-            <p className="sb-status sb-status-aprox">Nada exato com “{termoTela}”. Estas são as parecidas:</p>
+          {/* só com parecida na lista: sem nenhuma, a frase de baixo ("Nada com…") já diz tudo (revisão 14, P2-7) */}
+          {res?.aproximado && !semResultado && itens.length > 0 && (
+            <p className="sb-status sb-status-aprox">Nada exato com “{termoTela}”. {itens.length === 1 ? 'Esta é a parecida:' : 'Estas são as parecidas:'}</p>
           )}
           {semResultado && (
             <p className="sb-status">

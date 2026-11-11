@@ -539,14 +539,15 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
     window.addEventListener(EVENTO_LISTA, ler);
     return () => window.removeEventListener(EVENTO_LISTA, ler);
   }, []);
-  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca, ladoQ, posQ, faltou, outrosLados] = useMemo(() => {
-    if (!busca) return [[] as Item[], false, 0, [] as Carro[], '', undefined, undefined, null, [] as Item[]] as const;
-    const r = busca.procurar(fDiferido);
-    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca, busca.ladoDaBusca, busca.posDaBusca, busca.faltou, busca.outrosLados] as const;
-  }, [busca, fDiferido]);
-  // o lado/posição que a busca pediu e o estoque não tem ("Nenhuma peça direita"): o outro lado, para a dica
-  const falta = faltou ? [faltou.lado === 'D' ? 'direita' : faltou.lado === 'E' ? 'esquerda' : '', faltou.pos === 'D' ? 'dianteira' : faltou.pos === 'T' ? 'traseira' : ''].filter(Boolean).join(' ') : '';
-  const ladoOposto = faltou?.lado ? (faltou.lado === 'D' ? 'E' : 'D') : null;
+  // o carro salvo ("Meu carro") sobe na busca, sem esconder as outras peças (o carro digitado ou do filtro manda mais)
+  const [resultado, aproximado, nDoCarro, carrosBusca, codigoBusca, ladoQ, posQ, faltou, outrosLados, nExatas, citam] = useMemo(() => {
+    if (!busca) return [[] as Item[], false, 0, [] as Carro[], '', undefined, undefined, null, [] as Item[], 0, false] as const;
+    const r = busca.procurar(fDiferido, meuCarro);
+    return [r, busca.aproximado, busca.nDoCarro, busca.carrosDaBusca, busca.codigoDaBusca, busca.ladoDaBusca, busca.posDaBusca, busca.faltou, busca.outrosLados, busca.nExatas, busca.citam] as const;
+  }, [busca, fDiferido, meuCarro]);
+  // o lado/posição que a busca pediu e o estoque não tem: o outro lado (ou a outra posição), para a dica
+  const ladoOposto: Lado | null = faltou?.lado ? (faltou.lado === 'D' ? 'E' : 'D') : null;
+  const posOposta: Posicao | null = faltou && !faltou.lado && faltou.pos ? (faltou.pos === 'D' ? 'T' : 'D') : null;
   const padrao = ehPadrao(f);
   const facetas = useMemo(() => (busca ? busca.facetas(fDiferido) : padrao ? facetasIniciais : null), [busca, fDiferido, padrao, facetasIniciais]);
 
@@ -696,6 +697,24 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   const paraCarro = carroPedido ? `para ${carroPedido}` : ano ? `para carro ano ${ano}` : '';
   const procuro = [oQue, paraCarro].filter(Boolean).join(' ');
   const pedirNoPatio = whatsUrl(`Procuro ${procuro}. Não achei no site, tem no pátio?`);
+  // a peça digitada, sem o carro, o ano, o lado e a posição ("retrovisor direito xc60 2019" -> "retrovisor")
+  const pecaDigitada = (busca ? busca.semLadoPos(digitado) : digitado).replace(/\blado\b/gi, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  // o que falta, com a concordância da peça (o gênero vem do nome das peças do estoque: Busca.faltou.fem):
+  // "Nenhum retrovisor direito", "Nenhuma lanterna traseira direita"; sem o gênero, "Nada de … do lado direito"
+  const fraseFalta = useMemo(() => {
+    if (!faltou) return '';
+    const o = pecaDigitada || 'peça';
+    const fem = pecaDigitada ? faltou.fem : true;
+    const pos = faltou.pos ? (faltou.pos === 'D' ? 'dianteir' : 'traseir') : '';
+    const lado = faltou.lado ? (faltou.lado === 'D' ? 'direit' : 'esquerd') : '';
+    if (fem === undefined) return ['Nada de', o, faltou.pos ? (faltou.pos === 'D' ? 'da dianteira' : 'da traseira') : '', faltou.lado ? (faltou.lado === 'D' ? 'do lado direito' : 'do lado esquerdo') : ''].filter(Boolean).join(' ');
+    const g = fem ? 'a' : 'o';
+    return [fem ? 'Nenhuma' : 'Nenhum', o, pos && pos + g, lado && lado + g].filter(Boolean).join(' ');
+  }, [faltou, pecaDigitada]);
+  // o carro digitado ou do filtro (o salvo não entra na frase: a pessoa não o digitou)
+  const carroDaFrase = f.marca && f.modelo ? `${f.marca} ${f.modelo}` : !f.marca && carroDaBusca ? `${carroDaBusca.b} ${carroDaBusca.m}` : '';
+  // 1 a 3 peças que SÃO o que a pessoa procura (ou o código achou a peça): o pedido não diz "não achei no site"
+  const pedirMaisNoPatio = whatsUrl(`Procuro ${procuro}. Vi ${resultado.length === 1 ? 'uma' : resultado.length} no site. Tem ${resultado.length === 1 ? 'outra' : 'mais'} no pátio?`);
   // o formulário "Não achou a peça?" já preenchido com a busca e o carro
   const urlFormulario = useMemo(() => {
     const u = new URLSearchParams();
@@ -720,12 +739,16 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   // "Aponte no carro": o carro do filtro com página vai ao Raio-x dele; sem página, o da home
   const chaveAponte = f.marca && f.modelo ? chaveCarro(f.marca, f.modelo) : '';
   const aponteUrl = chaveAponte && carrosComPagina.includes(chaveAponte) ? `/carros/${chaveAponte}.html#raio-x-t` : '/#raio-x-t';
-  const botaoPatio = (rotulo: ReactNode) => (
-    <a className="botao botao-laranja" href={pedirNoPatio} target="_blank" rel="noopener" data-botao="procurar-patio"><Whats />{rotulo}</a>
+  const botaoPatio = (rotulo: ReactNode, url = pedirNoPatio) => (
+    <a className="botao botao-laranja" href={url} target="_blank" rel="noopener" data-botao="procurar-patio"><Whats />{rotulo}</a>
   );
   const linkFormulario = <p className="cat-patio-form">Prefere o formulário? <a href={urlFormulario}>Preencher o formulário</a></p>;
 
   const blocos = !!busca && aproximado && (f.ordem || 'rel') === 'rel' && nDoCarro > 0 && nDoCarro < resultado.length && !!carroDaBusca;
+  // as peças que SÃO o que foi digitado primeiro ("farol": os faróis); depois as ligadas ("Suporte farol", "Botão farol")
+  const ligadas = !!busca && !aproximado && !citam && (f.ordem || 'rel') === 'rel' && nExatas > 0 && nExatas < resultado.length ? resultado.length - nExatas : 0;
+  // só a lista pequena que é mesmo o que a pessoa procura pede "mais" (o resto segue "Não achei no site")
+  const achouPouco = !aproximado && !citam && !naoBate && resultado.length > 0 && resultado.length <= 3;
   const grade = lista.slice(0, pintados);
   const semSelo = f.ordem === 'novos';
 
@@ -754,10 +777,12 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             <h2 className="cat-total" id="cat-total" aria-live="polite">
               {erro && !busca ? null
                 : total === null ? <span className="cat-total-espera">Buscando peças…</span>
+                : total === 0 && f.q && fraseFalta ? <>{fraseFalta}{carroDaFrase ? <span className="cat-total-q"> para {carroDaFrase}</span> : null}</>
+                : total === 0 && f.q ? <>Nenhuma peça<span className="cat-total-q"> para “{f.q}”</span></>
                 : aproximado ? <><b className="num">{n2(total)}</b> {total === 1 ? 'parecida' : 'parecidas'}<span className="cat-total-q"> com “{f.q}”</span></>
                 : codigoBusca ? <><b className="num">{n2(total)}</b> {pecas(total)} com o código <span className="cat-total-q oem">{codigoBusca.toUpperCase()}</span></>
-                : total === 0 && f.q && falta ? <>Nenhuma peça {falta}<span className="cat-total-q"> para “{f.q}”</span></>
-                : total === 0 && f.q ? <>Nenhuma peça<span className="cat-total-q"> para “{f.q}”</span></>
+                : citam && f.q ? <><b className="num">{n2(total)}</b> {pecas(total)}<span className="cat-total-q"> {total === 1 ? 'ligada' : 'ligadas'} a “{f.q}”</span></>
+                : ligadas ? <><b className="num">{n2(nExatas)}</b> {pecas(nExatas)}<span className="cat-total-q"> para “{f.q}”</span><span className="cat-total-mais"> e mais {n2(ligadas)} {ligadas === 1 ? 'ligada' : 'ligadas'}</span></>
                 : <><b className="num">{n2(total)}</b> {pecas(total)}{f.zona && zonaDaChave(f.zona) ? <span className="cat-total-q"> {zonaDaChave(f.zona)!.de}</span> : null}{f.q ? <span className="cat-total-q"> para “{f.q}”</span> : null}</>}
             </h2>
             <div data-selo-reputacao>{selo}</div>
@@ -806,18 +831,29 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
             <div className="cat-vazio cat-patio">
               <img src="/arte/v2/vazio-busca.webp" alt="" width={360} height={360} loading="lazy" decoding="async" />
               <h2>Não achou? A gente procura no pátio</h2>
-              <p>Nada {falta ? <>{falta} </> : null}{f.q ? <>com “{f.q}”{f.marca && carroPedido ? ` para ${carroPedido}` : ''}</> : 'com esses filtros'} no site agora. Nem toda peça está anunciada: mande pelo WhatsApp que a gente confere no pátio.</p>
-              {ladoOposto && outrosLados.length > 0 && (
-                <p className="cat-vazio-outro">Do outro lado ({ladoOposto === 'E' ? 'esquerda' : 'direita'}) a gente tem {n2(outrosLados.length)} {pecas(outrosLados.length)} com esse nome.
-                  {' '}<button type="button" className="cat-link-outro" onClick={() => mudaFiltro({ lado: ladoOposto })}>Ver as da {ladoOposto === 'E' ? 'esquerda' : 'direita'}</button></p>
-              )}
+              <div className="cat-vazio-texto">
+                <p>{fraseFalta
+                  ? <>{fraseFalta}{carroDaFrase ? ` para ${carroDaFrase}` : ''} no site agora.</>
+                  : <>Nada {f.q ? <>com “{f.q}”{f.marca && carroPedido ? ` para ${carroPedido}` : ''}</> : 'com esses filtros'} no site agora.</>}
+                  {' '}Nem toda peça está anunciada: mande pelo WhatsApp que a gente confere no pátio.</p>
+                {ladoOposto && outrosLados.length > 0 && (
+                  <p className="cat-vazio-outro">Do lado {ladoOposto === 'E' ? 'esquerdo' : 'direito'} a gente tem {outrosLados.length === 1 ? 'uma peça' : `${n2(outrosLados.length)} peças`} com esse nome.
+                    {' '}<button type="button" className="cat-link-outro" onClick={() => mudaFiltro({ lado: ladoOposto })}>Ver {outrosLados.length === 1 ? 'a' : 'as'} do lado {ladoOposto === 'E' ? 'esquerdo' : 'direito'}</button></p>
+                )}
+                {posOposta && outrosLados.length > 0 && (
+                  <p className="cat-vazio-outro">Na {posOposta === 'D' ? 'dianteira' : 'traseira'} a gente tem {outrosLados.length === 1 ? 'uma peça' : `${n2(outrosLados.length)} peças`} com esse nome.
+                    {' '}<button type="button" className="cat-link-outro" onClick={() => mudaFiltro({ pos: posOposta })}>Ver {outrosLados.length === 1 ? 'a' : 'as'} da {posOposta === 'D' ? 'dianteira' : 'traseira'}</button></p>
+                )}
+              </div>
               <div className="cat-vazio-botoes">
                 {botaoPatio(<span>Procurar no pátio<span className="cat-so-largo"> pelo WhatsApp</span></span>)}
                 {botaoAvise}
                 {(nFiltros > 0 || !!f.q) && <button type="button" className="botao botao-linha" onClick={limpar}>{nFiltros > 0 ? 'Limpar filtros' : 'Limpar a busca'}</button>}
               </div>
-              {linkFormulario}
-              <p className="cat-aponte"><a href={aponteUrl}>Não sabe o nome da peça? Aponte no carro</a></p>
+              <div className="cat-vazio-pe">
+                {linkFormulario}
+                <p className="cat-aponte"><a href={aponteUrl}>Não sabe o nome da peça? Aponte no carro</a></p>
+              </div>
             </div>
           )}
 
@@ -828,10 +864,10 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
               {aproximado
                 ? <span className="cat-patio-texto">Nada exato com “{f.q}”. Nem toda peça está anunciada: a gente confere no pátio. Abaixo, as parecidas{blocos && carroDaBusca ? <>: primeiro as do {carroDaBusca.b} {carroDaBusca.m}</> : null}.</span>
                 : resultado.length <= 3 && !naoBate
-                  ? <span className="cat-patio-texto">Só {resultado.length === 1 ? 'achei uma peça' : `achei ${resultado.length} peças`} com “{f.q}”. Nem toda peça está anunciada: a gente confere no pátio{carroPedido ? <> o que você procura para o <b className="cat-patio-carro">{carroPedido}</b></> : null}.</span>
+                  ? <span className="cat-patio-texto">A gente só achou {resultado.length === 1 ? 'uma peça' : `${resultado.length} peças`} {f.q ? <>com “{f.q}”</> : 'com esses filtros'} no site. Nem toda peça está anunciada: a gente confere no pátio{carroPedido ? <> o que você procura para o <b className="cat-patio-carro">{carroPedido}</b></> : null}.</span>
                 : <span className="cat-patio-texto">Nem toda peça está anunciada. Mande pelo WhatsApp{carroPedido ? <> o que você procura para o <b className="cat-patio-carro">{carroPedido}</b></> : null}: a gente confere no pátio.</span>}
               <div className="cat-aviso-botoes">
-                {botaoPatio('Procurar no pátio')}
+                {botaoPatio('Procurar no pátio', achouPouco ? pedirMaisNoPatio : pedirNoPatio)}
                 {botaoAvise}
               </div>
               {linkFormulario}
@@ -853,6 +889,7 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
                 );
                 if (blocos && carroDaBusca && i === 0) return [<h2 key="bloco-carro" className="cat-bloco">Do {carroDaBusca.b} {carroDaBusca.m} <span>· {n2(nDoCarro)} {pecas(nDoCarro)}</span></h2>, cartao];
                 if (blocos && i === nDoCarro) return [<h2 key="bloco-outras" className="cat-bloco">Outras parecidas <span>· {n2(resultado.length - nDoCarro)} {pecas(resultado.length - nDoCarro)}</span></h2>, cartao];
+                if (ligadas && i === nExatas) return [<h2 key="bloco-ligadas" className="cat-bloco">Outras peças ligadas a “{pecaDigitada || f.q}” <span>· {n2(ligadas)} {pecas(ligadas)}</span></h2>, cartao];
                 return [cartao];
               })}
             </div>
