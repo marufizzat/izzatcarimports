@@ -264,6 +264,18 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      selos têm colunas de largura fixa e a grade do conteúdo é `minmax(0, 1fr)` (a fonte que chega depois não mexe em
      nada: a fonte de espera "Ab Espera" tem as medidas verticais da Archivo). Estados (`data-ab`, `data-ab-vivo`,
      `data-ab-entrada`) ficam no `.ab-palco`, não na seção. JS novo: um arquivo de ~4 KB gzip, sem biblioteca.
+   - **Medido em 11/11/2026** (A/B intercalado com a rodada 14, 7 cargas de cada; Moto G4, 4G lento pelo `proxy-lento.cjs`,
+     CPU 4×): 1ª visita — LCP 648 → 656 ms (o h1 nos dois), CLS 0,0008 → 0,0003, 1,0 tarefa longa por carga nos dois (a
+     da 1ª pintura, que já existia: 80 → 77 ms), 597 → 582 KB na rede; carro salvo — LCP 684 → 648 ms, CLS 0,0006 → 0,0002,
+     970 → 953 KB. PC 1440 sem freio: LCP 56–104 → 80–108 ms, nenhuma tarefa longa. O que a abertura pesa (gzip): HTML
+     +2,3 KB, CSS +3,0 KB, JS +4,5 KB; imagens da 1ª tela: celular 72,5 → 28 KB, PC 109 → 122 KB (tela 1x) ou ~207 KB (2x).
+   - **A arte do carro no palco**: o carro escolhido no seletor traz a chave (`a`/`as`); o salvo por outra página (ou antes
+     de a arte existir) NÃO traz — a chave vem da garagem (`arteDe`, o mesmo `/dados/meu-carro.json` do seletor). Modelo
+     sem arte própria (88 dos 173, 11% das peças): desenho "sem carro" (`data-ab-semarte`: os atalhos maiores, em duas
+     fileiras no meio do palco), nunca um buraco. A abertura segue o seletor também quando ele mostra um carro SEM o
+     evento `meu-carro` (etapa `pronto` no `olharSeletor`: apelido migrado na leitura, outra aba). Antes de mexer:
+     `node scripts/abertura-arte.cjs <url>` (confere `naturalWidth` da arte em todos os caminhos: nascer salvo com e sem a
+     chave, sem arte, escolher, trocar, esquecer, voltar pelo histórico, apelido) e `node scripts/abertura-fluxo.cjs <url>`.
    - **Não quebrar**: o seletor (`ui/meuCarroPicker.ts`) não foi tocado — a abertura só OUVE (`meu-carro`,
      MutationObserver no `[data-mc-conteudo]`, as classes `.mc-corpo[data-etapa]` e `.mc-campo-cheio[data-alvo="marca"]`);
      quem mexer nessas classes confere o título. O slot `topo` ("Continuar") e o slot `busca` continuam iguais.
