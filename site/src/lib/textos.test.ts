@@ -100,9 +100,9 @@ describe('textos: categoria, carro e marca (fixtures)', () => {
   it('poucas peças: nada de "A maioria" (auditoria 4, 7.2: a Lifan tinha 1 peça)', () => {
     const uma = textosMarca({ n: 'Lifan', c: 1, m: [] }, [peca({ b: 'Lifan', m: '', c: 'Faróis e Lanternas', y: [2015, 2018] })]);
     expect(uma.paragrafos.join(' ')).not.toMatch(/maioria/i);
-    expect(uma.paragrafos.join(' ')).toMatch(/A peça é de faróis e lanternas, para carros de 2015 a 2018\./);
+    expect(uma.paragrafos.join(' ')).toMatch(/A peça Lifan é de faróis e lanternas, para carros de 2015 a 2018\./);
     const tres = textosMarca({ n: 'Lifan', c: 3, m: [] }, [1, 2, 3].map((i) => peca({ id: `MLB${i}`, b: 'Lifan', m: '', c: 'Motor' })));
-    expect(tres.paragrafos.join(' ')).toMatch(/São peças de motor/);
+    expect(tres.paragrafos.join(' ')).toMatch(/As peças Lifan são de motor/);
     const carro = textosCarro({ k: 'x', b: 'Lifan', m: 'X60', c: 2, anos: null, fams: [['Motor', 2]] }, [peca({ b: 'Lifan', m: 'X60' }), peca({ id: 'MLB2', b: 'Lifan', m: 'X60' })]);
     expect(carro.paragrafos.join(' ')).not.toMatch(/maioria/i);
   });

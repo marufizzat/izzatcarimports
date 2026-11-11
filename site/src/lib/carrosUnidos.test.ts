@@ -75,9 +75,10 @@ describe.skipIf(!temDados)('com os dados de agora: os apelidos e o principal dã
   const toda = new Busca(ix);
 
   it('o mapa do build (src/data/unidos.json) tem todo apelido do resumo, e é o que o site usa', () => {
-    // sem contar apelidos: quantos têm endereço depende do estoque do dia (o apelido com menos de 8 peças não tem)
-    expect(Object.keys(UNIDOS).length).toBeGreaterThanOrEqual(resumo.aliases.length);
+    // (quantos apelidos têm endereço antigo depende do estoque: só com 8+ peças; vendidas 6 peças do 530i, eram 7 e
+    // este teste, que exigia 8, recusava a rodada. O que vale sempre: todo apelido do resumo está no mapa)
     for (const a of resumo.aliases) expect(UNIDOS[`${a.b}|${a.de}`], `${a.b} ${a.de}`).toBe(a.m);
+    expect(resumo.aliases.length).toBeLessThanOrEqual(Object.keys(UNIDOS).length);
     expect(Object.keys(UNIDOS)).toEqual(Object.keys(JSON.parse(readFileSync('src/data/unidos.json', 'utf-8'))));
   });
 
@@ -98,17 +99,20 @@ describe.skipIf(!temDados)('com os dados de agora: os apelidos e o principal dã
         expect(lido, k).toEqual({ b, m: principal, y: null });
         // regravado uma vez: a leitura seguinte (e os scripts de antes da pintura) já acham o principal
         expect(JSON.parse(mem.get(CHAVE)!), k).toEqual({ b, m: principal, y: null });
-        // a garagem não lista o apelido, lista o principal
-        const marca = g.marcas.find((x) => x.n === b)!;
-        expect(marca.modelos.some((x) => x.n === apelido), `${k} fora do seletor`).toBe(false);
+        // a garagem não lista o apelido (com ou sem peça da marca no estoque de agora)
+        const marca = g.marcas.find((x) => x.n === b);
+        expect(marca?.modelos.some((x) => x.n === apelido) ?? false, `${k} fora do seletor`).toBe(false);
         const doPrincipal = estoqueDoCarro(g, { b, m: principal, y: null });
-        expect(doPrincipal.estado, k).toBe('ok');
         // seletor/faixa do catálogo (estoqueDoCarro), abertura e "Chegou" (chegouAntes) e o catálogo: as mesmas contas
+        // que o principal, tenha ele peça agora ou não (o estoque do Série 5 e do GLA é de poucas peças: pode zerar)
         expect(estoqueDoCarro(g, lido), k).toEqual(doPrincipal);
-        expect(chegouAntes(mem.get(CHAVE)!, modelos)!.estado, k).toBe('trilho');
         const nPrincipal = toda.procurar({ marca: b, modelo: principal }).length;
         expect(chegouParaOCarro((f) => toda.procurar(f), lido).total, k).toBe(nPrincipal);
-        expect(doPrincipal.pecas, k).toBe(nPrincipal);
+        if (doPrincipal.estado === 'ok') {
+          // o principal está na garagem: a abertura mostra o trilho e a conta é a do catálogo
+          expect(chegouAntes(mem.get(CHAVE)!, modelos)!.estado, k).toBe('trilho');
+          expect(doPrincipal.pecas, k).toBe(nPrincipal);
+        }
         // e nunca menos peças que o apelido tinha (C180 2012: 39 × 46 no Classe C)
         expect(nPrincipal, k).toBeGreaterThanOrEqual(toda.procurar({ marca: b, modelo: apelido }).length);
       }

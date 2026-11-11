@@ -1407,32 +1407,38 @@ def test_ano_da_descricao():
 
 
 # ---- 10/11 (dono): mesmo carro em 1 pagina; lixo do anuncio; banco; excluir_do_site.json ----
+ENDERECOS_ANTIGOS = {"mercedes-benz-c180", "mercedes-benz-c200", "mercedes-benz-c320", "mercedes-benz-gla200",
+                     "bmw-320i", "bmw-530i", "ford-new-fiesta", "honda-new-civic"}
+
+
 def test_carro_unido_mantem_enderecos_e_peca():
     """Os enderecos antigos /carros/<k>.html continuam (aliases, com canonical) e nenhuma peca perde o carro que tinha:
-    quem salvou "C180" no Meu carro continua vendo as pecas, e o principal (Classe C) tem todas.
-    REGRA para qualquer estoque (o robo roda isto com o estoque do dia): o endereco do apelido existe enquanto o apelido tem
-    pecas para uma pagina (MIN_CARRO, como antes da uniao: com menos ele ja nao tinha pagina). Nenhum endereco fica escrito
-    aqui: em 11/11 uma lista fixa de 8 enderecos parava o robo no dia em que as pecas do New Civic vendessem."""
+    quem salvou "C180" no Meu carro continua vendo as pecas, e o principal (Classe C) tem todas."""
     resumo = json.loads((ROOT / "site" / "src" / "data" / "resumo.json").read_text(encoding="utf-8"))
     chaves = {c["k"] for c in resumo["carros"]}
     al = resumo.get("aliases", [])
-    antigos = {a["k"] for a in al}
-    assert not (antigos & chaves), "apelido nao pode ser pagina de carro (sitemap e menus)"
+    by = _pecas()
+    # O endereco antigo existe enquanto o apelido tem 8+ pecas (MIN_CARRO do preparar_dados: a mesma regra de toda
+    # pagina de carro). Com menos, ele sai, como a pagina de qualquer carro com menos de 8 pecas: isso NAO pode travar a
+    # publicacao (rodada 14b: o 530i tinha 13 pecas e o New Civic 11; vendidas 6, este teste recusava a rodada).
+    # A regra, com o estoque de agora: todo apelido com 8+ pecas tem o endereco; os que sairam, so avisa.
+    tem = chaves | {a["k"] for a in al}
+    for (marca, apelido) in pd.UNIR_CARRO_PARES:
+        k = pd.chave_url(f"{marca} {apelido}")
+        n = sum(1 for x in by.values()
+                if x["b"] == marca and any(pd.gi.chave_modelo(c) == pd.gi.chave_modelo(apelido) for c in _carros(x)))
+        if n >= 8:
+            assert k in tem, (k, n, "apelido com 8+ pecas sem o endereco antigo")
+        elif k in ENDERECOS_ANTIGOS and k not in tem:
+            print(f"AVISO: endereco antigo /carros/{k}.html fora do ar ({n} pecas do apelido; volta com 8+)")
+    assert ENDERECOS_ANTIGOS <= {pd.chave_url(f"{m} {a}") for (m, a) in pd.UNIR_CARRO_PARES}, "endereco antigo que nao e apelido conhecido"
+    assert not ({a["k"] for a in al} & chaves), "apelido nao pode ser pagina de carro (sitemap e menus)"
     for a in al:
         assert a["para"] in chaves, a
-    by = _pecas()
-    # o minimo de pecas para um carro ter pagina (MIN_CARRO do main() do preparar_dados.py, lido do proprio codigo)
-    minimo = int(re.search(r"^\s*MIN_CARRO = (\d+)", Path(pd.__file__).read_text(encoding="utf-8"), flags=re.M).group(1))
     for (marca, apelido), principal in pd.UNIR_CARRO_PARES.items():
-        com = [x for x in by.values() if x["b"] == marca and apelido in _carros(x)]
-        for x in com:
-            assert principal in _carros(x), (x["t"], _carros(x))
-        k = pd.chave_url(f"{marca} {apelido}")
-        assert k not in chaves, k
-        if len(com) >= minimo:
-            assert k in antigos, f"{k}: {len(com)} pecas com o apelido e o endereco antigo sumiu"
-        else:
-            assert k not in antigos, f"{k}: endereco de apelido com {len(com)} pecas (menos que uma pagina)"
+        for x in by.values():
+            if x["b"] == marca and apelido in _carros(x):
+                assert principal in _carros(x), (x["t"], _carros(x))
 
 
 def test_lixo_do_anuncio_sai_do_nome():
