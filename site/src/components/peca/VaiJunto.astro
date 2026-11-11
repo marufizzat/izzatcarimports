@@ -1,13 +1,14 @@
 ---
 // "Vai junto": até 4 peças do MESMO carro (e da mesma geração) que costumam ser trocadas junto com esta (regra em
 // lib/relacionadas.ts: vaiJunto). Logo depois da compra: é a hora de quem conserta juntar o resto do serviço na
-// Lista de orçamento. Cartão compacto (capa leve, nome, anos e código, preço) e, no canto, o "+ lista" montado pelo
-// script (components/peca/listaPeca.ts), com os dados lidos do próprio cartão: o HTML de cada peça leva só o mínimo.
-// Sem peça que combine, quem chama não põe o bloco (nunca vazio, nunca peça de outro carro).
+// Lista de orçamento. Cartão compacto (capa leve, nome, anos, código inteiro, preço) e o "+ Lista" escrito, montado pelo
+// script (components/peca/listaPeca.ts), com os dados lidos do próprio cartão (o carro DA PEÇA no data-carro): o HTML de
+// cada peça leva só o mínimo. Sem peça que combine, quem chama não põe o bloco (nunca vazio, nunca peça de outro carro).
 // Estilos globais presos a .vj (sem o atributo de escopo em cada tag).
 import type { Peca } from '../../lib/dados';
 import { brl, capa, capaPequena } from '../../lib/dados';
 import { codigoPeca } from '../catalogo/etiqueta';
+import { nomeModelos } from '../../lib/meuCarro';
 interface Props { pecas: Peca[]; carro: string; anos: string; com: string; }
 const { pecas, carro, anos, com } = Astro.props;
 const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}–${y[1]}`) : '');
@@ -20,13 +21,13 @@ const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0
         <p class="vj-sub">Do mesmo {carro}{anos && ` (${anos})`}: peças que costumam ser trocadas com {com}. Junte na sua lista e peça tudo de uma vez.</p>
       </div>
       <ul class="vj-lista" data-vj-raiz>
-        {/* HTML curto (cada byte vai em 4 mil páginas): nome em <b>, os anos num <small> e o código noutro, numa linha só dele
-            e sempre inteiro (é o dado que decide para quem conserta: revisão 12, P2.3) */}
+        {/* HTML curto (cada byte vai em 4 mil páginas): o texto num <span> (nome em <b>, os anos num <small> e o código
+            noutro, numa linha só dele e sempre inteiro: é o dado que decide para quem conserta, revisão 12, P2.3) e o preço */}
         {pecas.map((x) => {
           const cod = codigoPeca(x.o);
           const anosX = anosCartao(x.y);
           return (
-            <li><a href={`/peca/${x.slug}.html`}><img src={capaPequena(capa(x, 'V'))} alt="" width="72" height="72" loading="lazy" /><b>{x.n}</b>{anosX && <small>{anosX}</small>}{cod && <small>Cód. <code>{cod}</code></small>}<span class="num">R$ {brl(x.p)}</span></a></li>
+            <li data-carro={nomeModelos(x)}><a href={`/peca/${x.slug}.html`}><img src={capaPequena(capa(x, 'V'))} alt="" width="72" height="72" loading="lazy" /><span><b>{x.n}</b>{anosX && <small>{anosX}</small>}{cod && <small>Cód. <code>{cod}</code></small>}</span><span class="num">R$ {brl(x.p)}</span></a></li>
           );
         })}
       </ul>
@@ -42,46 +43,67 @@ const anosCartao = (y: Peca['y']) => (y ? (y[0] === y[1] ? String(y[0]) : `${y[0
   .vj .vj-titulo { margin: 0; font-stretch: 84%; font-weight: 800; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.05; }
   .vj .vj-sub { margin: 6px 0 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
   .vj .vj-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  /* cada peça: o cartão (link: capa + nome + anos/código + preço) e o "+ lista" no canto, irmãos (botão dentro de link
-     quebra o HTML) */
-  .vj .vj-lista > li { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 8px; min-height: 96px;
-    padding: 10px 12px 10px 10px; border-radius: 16px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s; }
-  .vj li > a { display: grid; grid-template-columns: 72px minmax(0, 1fr); column-gap: 12px; align-items: start; align-content: center; min-width: 0; }
-  /* o cartão inteiro é o alvo do link (a área de fora do botão) */
+  /* cada peça: o cartão (link: capa + nome + anos + código + preço) e o "+ Lista" no canto de baixo, irmãos (botão dentro
+     de link quebra o HTML). O desenho segue a largura do CARTÃO (container): estreito, o preço e o "+ Lista" numa linha
+     de pé; largo (1 a 3 cartões no PC, ou 1 sozinho no tablet), tudo numa fila só, como a linha da /lista.html. */
+  .vj .vj-lista > li { position: relative; display: flex; flex-direction: column; container-type: inline-size; border-radius: 16px; background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s; }
+  .vj li > a { flex: 1; display: grid; grid-template-columns: 72px minmax(0, 1fr); grid-template-areas: "foto txt" "preco preco"; column-gap: 12px; align-items: start;
+    align-content: space-between; min-width: 0; padding: 10px 10px 8px; }
+  /* o cartão inteiro é o alvo do link (a área de fora do "+ Lista") */
   .vj li > a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
   .vj li > a:focus-visible { outline: none; box-shadow: none; }
   .vj li:has(> a:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
-  .vj li img { grid-row: 1 / 5; width: 72px; height: 72px; border-radius: 12px; object-fit: cover; background: linear-gradient(#f4f3f0, #e7e5e1); }
+  .vj li img { grid-area: foto; width: 72px; height: 72px; border-radius: 12px; object-fit: cover; background: linear-gradient(#f4f3f0, #e7e5e1); }
+  .vj li > a > span:not(.num) { grid-area: txt; display: grid; min-width: 0; }
   .vj li b { margin-top: 1px; font-size: 15px; font-weight: 650; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   /* anos e código: cada um na sua linha; o código nunca é cortado (quebra se for maior que a coluna) */
   .vj li small { margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--ink-3); overflow-wrap: anywhere; }
   .vj li code { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .02em; color: var(--ink-2); }
-  .vj li .num { align-self: end; margin-top: 4px; font-stretch: 86%; font-weight: 820; font-size: 18px; line-height: 1.1; color: var(--ink); }
+  /* o pé: o preço à esquerda e o lugar do "+ Lista" à direita (o botão fica por cima, preso no canto) */
+  .vj li .num { grid-area: preco; display: flex; align-items: center; min-height: 44px; margin-top: 6px; padding-right: 116px;
+    font-stretch: 86%; font-weight: 820; font-size: 18px; line-height: 1.1; color: var(--ink); white-space: nowrap; }
   @media (hover: hover) {
     .vj li:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
     .vj li:hover b { text-decoration: underline; text-underline-offset: 3px; }
   }
-  /* "+ lista": o mesmo ladrilho do botão da compra (laranja claro; verde quando já está na lista), acima do link */
-  .vj .vj-add { position: relative; z-index: 1; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 12px;
-    background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 74%);
-    transition: background-color .2s, color .2s, transform .15s; -webkit-tap-highlight-color: transparent; }
-  .vj .vj-add svg { width: 22px; height: 22px; }
+  /* "+ Lista" (escrito: o ícone sozinho não dizia nada) e, já na lista, o verde "Na lista" que LEVA à lista (tocar no verde
+     nunca tira a peça: revisão 12, P3.1/P3.4). O mesmo ladrilho do botão da compra, acima do link do cartão */
+  .vj :is(.vj-add, .vj-na) { position: absolute; z-index: 1; right: 10px; bottom: 8px; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px 0 11px;
+    border: 0; border-radius: 12px; font-size: 14.5px; font-weight: 750; font-stretch: 94%; line-height: 1; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+    transition: background-color .2s, color .2s, transform .15s; }
+  .vj :is(.vj-add, .vj-na) svg { flex: none; width: 18px; height: 18px; }
+  .vj .vj-add { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 74%); }
   .vj .vj-add:hover { background: color-mix(in oklab, var(--accent-soft), var(--accent) 12%); }
-  .vj .vj-add:active { transform: scale(.94); }
-  .vj .vj-add.na-lista { color: var(--serve-ink); background: var(--serve-bg); box-shadow: inset 0 0 0 1px var(--serve-borda); animation: cl-ok .4s cubic-bezier(.3,1.5,.5,1); }
-  @media (min-width: 600px) { .vj .vj-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .vj .vj-add:active { transform: scale(.95); }
+  .vj .vj-na { color: var(--serve-ink); background: var(--serve-bg); box-shadow: inset 0 0 0 1px var(--serve-borda); animation: cl-ok .4s cubic-bezier(.3,1.5,.5,1); }
+  .vj .vj-na:hover { box-shadow: inset 0 0 0 1.5px var(--serve-ink); }
+  .vj .vj-na[hidden], .vj .vj-add[hidden] { display: none; }
+  /* cartão largo: uma fila só (capa, nome/anos/código, preço à direita e o "+ Lista" no fim, no meio da altura) */
+  @container (min-width: 420px) {
+    .vj li > a { grid-template-columns: 72px minmax(0, 1fr) auto; grid-template-areas: "foto txt preco"; align-items: center; align-content: center; padding: 10px 126px 10px 10px; }
+    .vj li .num { min-height: 0; margin: 0; padding: 0 0 0 16px; }
+    .vj :is(.vj-add, .vj-na) { bottom: auto; top: calc(50% - 22px); }
+  }
+  /* 2 colunas: o último cartão sozinho numa linha ocupa a linha inteira (nada de buraco) */
+  @media (min-width: 600px) {
+    .vj .vj-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .vj .vj-lista > li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  }
   @media (min-width: 960px) {
     .vj { padding-block: 0 56px; }
     .vj .vj-cx { grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 28px; align-items: center; padding: 26px 26px 26px 30px; }
-    .vj .vj-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
-  /* PC largo: as peças numa fila só (até 4) */
+  /* PC largo: com 4, o título em cima e as 4 numa fila; com 1 a 3, o título à esquerda e os cartões dividindo o resto
+     (nunca um cartão perdido numa caixa larga: revisão 12, P3.3) */
   @media (min-width: 1200px) {
-    .vj .vj-cx { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-    .vj .vj-cabeca { display: flex; align-items: baseline; gap: 18px; }
-    .vj .vj-sub { margin: 0; }
-    .vj .vj-lista { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .vj .vj-cx:has(> .vj-lista > li:nth-child(4)) { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+    .vj .vj-cx:has(> .vj-lista > li:nth-child(4)) .vj-cabeca { display: flex; align-items: baseline; gap: 18px; }
+    .vj .vj-cx:has(> .vj-lista > li:nth-child(4)) .vj-sub { margin: 0; }
+    .vj .vj-lista:has(> li:nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .vj .vj-lista:not(:has(> li:nth-child(4))) { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+    .vj .vj-lista > li:last-child:nth-child(odd) { grid-column: auto; }
   }
-  @media (prefers-reduced-motion: reduce) { .vj .vj-add.na-lista { animation: none; } .vj li { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .vj .vj-na { animation: none; } .vj li { transition: none; } }
 </style>

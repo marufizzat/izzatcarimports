@@ -1,8 +1,9 @@
 // "Adicionar à lista de orçamento" na página da peça (o botão discreto abaixo dos dois caminhos de compra) e nos cartões
 // do "Vai junto" (VaiJunto.astro). O HTML de cada peça leva só o botão; os dados da peça são lidos do que a página já
 // tem (o nome do h1, o carro e os anos, o código, o preço do window.IZZAT_PRODUCT e o endereço): nada repetido no HTML.
-// Estado: lib/lista.ts (localStorage + evento 'lista'). Toque = retorno na hora (o botão vira "Na sua lista" com o visto
-// e o link "Ver lista" aparece) e o aviso para o leitor de tela.
+// Estado: lib/lista.ts (localStorage + evento 'lista'). Toque = retorno na hora e o aviso para o leitor de tela. O botão
+// só PÕE; com a peça na lista, o verde é um link que leva à lista (tocar no verde nunca tira a peça sem avisar: revisão
+// 12, P3.1). Tirar: o "Tirar" escrito ao lado (compra) ou na própria /lista.html.
 import { lerLista, tem, adicionarNaLista, salvarLista, remover, pecasTxt, EVENTO_LISTA, MAX_LISTA, PAGINA_LISTA, type ItemLista } from '../../lib/lista';
 import { icone } from '../../lib/icones';
 
@@ -50,33 +51,6 @@ export function itemDaPagina(): ItemLista | null {
     preco: prod?.id === id && typeof prod.price === 'number' ? prod.price : 0,
     capa: foto ? capaPequenaDe(foto.getAttribute('src') || '', id) : '',
   };
-}
-
-/** Liga um botão "pôr na lista" ao item (o da peça e os do "Vai junto"). `pintar(na, n)` desenha o estado. */
-function ligar(botao: HTMLButtonElement, item: () => ItemLista | null, origem: string, pintar: (na: boolean, n: number) => void, depois?: (na: boolean) => void) {
-  const id = () => item()?.id || '';
-  const atual = () => { const l = lerLista(); pintar(tem(l, id()), l.length); };
-  atual();
-  window.addEventListener(EVENTO_LISTA, atual);
-  botao.addEventListener('click', () => {
-    const it = item();
-    if (!it) return;
-    const l = lerLista();
-    if (tem(l, it.id)) {
-      salvarLista(remover(l, it.id), 'remover', it.id, origem);
-      avisarLista(`${it.nome} saiu da sua lista.`);
-      depois?.(false);
-      return;
-    }
-    const r = adicionarNaLista(it, origem);
-    if (r === 'cheia') {
-      avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Peça essas no WhatsApp e comece outra.`);
-      botao.dispatchEvent(new CustomEvent('lista-cheia', { bubbles: true }));
-      return;
-    }
-    avisarLista(`${it.nome} está na sua lista de orçamento: ${pecasTxt(lerLista().length)}.`);
-    depois?.(true);
-  });
 }
 
 /** A caixa de compra: "Adicionar à lista de orçamento" (só põe) e, com a peça na lista, o verde que LEVA à lista
@@ -140,10 +114,14 @@ export function ligarListaPeca() {
   });
 }
 
-/** "Vai junto": cada cartão ganha o "+ lista" no canto (dados lidos do próprio cartão). */
+/** "Vai junto": cada cartão ganha o "+ Lista" (escrito) no canto; com a peça na lista, o verde "Na lista" que leva à
+ *  lista. Os dados vêm do próprio cartão, e o carro é o DA PEÇA (data-carro no <li>: revisão 12, P3.5), não o da página. */
 export function ligarVaiJunto(raiz: HTMLElement) {
-  // o carro é o desta página (o "Vai junto" só mostra peças do mesmo carro)
-  const carro = document.querySelector('.compra-carro b')?.textContent?.trim() || '';
+  // reserva: o carro desta página (HTML antigo sem o data-carro, em cache)
+  const carroPagina = document.querySelector('.compra-carro b')?.textContent?.trim() || '';
+  const MAIS = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  const OK = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   raiz.querySelectorAll<HTMLElement>(':scope > li').forEach((li) => {
     const a = li.querySelector<HTMLAnchorElement>('a');
     if (!a) return;
@@ -153,25 +131,28 @@ export function ligarVaiJunto(raiz: HTMLElement) {
     if (!id || !nome) return;
     const img = li.querySelector('img');
     const item: ItemLista = {
-      id, slug: /\/peca\/([^/]+)\.html$/.exec(href)?.[1] ?? '', nome, carro,
+      id, slug: /\/peca\/([^/]+)\.html$/.exec(href)?.[1] ?? '', nome, carro: li.dataset.carro || carroPagina,
       // <small>2018–2024</small><small>Cód. <code>X</code></small> (o dos anos é o <small> sem o <code>)
       anos: anosDoCartao([...li.querySelectorAll('small')].find((s) => !s.querySelector('code'))?.textContent || ''),
       cod: li.querySelector('code')?.textContent?.trim() || '',
       preco: precoDoTexto(li.querySelector('.num')?.textContent || ''),
       capa: img ? capaPequenaDe(img.getAttribute('src') || '', id) : '',
     };
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'vj-add';
-    b.innerHTML = SVG('lista-mais');
-    // nome fixo e o estado no aria-pressed (o padrão do botão de alternar); o title diz o que o toque faz
-    b.setAttribute('aria-label', `Adicionar à lista de orçamento: ${nome}`);
-    li.append(b);
-    ligar(b, () => item, 'vai-junto', (na) => {
-      b.setAttribute('aria-pressed', String(na));
-      b.classList.toggle('na-lista', na);
-      b.title = na ? 'Na sua lista (tocar tira)' : 'Adicionar à lista de orçamento';
-      b.querySelector('use')?.setAttribute('href', icone(na ? 'lista-ok' : 'lista-mais'));
+    // o nome acessível começa pelo texto que se vê ("Lista", "Na lista") e diz qual peça
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'vj-add' });
+    b.innerHTML = `${MAIS}<span class="sr-only">Adicionar à</span> Lista <span class="sr-only">de orçamento: ${esc(nome)}</span>`;
+    const na = Object.assign(document.createElement('a'), { className: 'vj-na', href: PAGINA_LISTA });
+    na.innerHTML = `${OK}Na lista <span class="sr-only">de orçamento: ${esc(nome)}. Ver a lista</span>`;
+    li.append(b, na);
+    const pintar = () => { const dentro = tem(lerLista(), id); b.hidden = dentro; na.hidden = !dentro; };
+    pintar();
+    window.addEventListener(EVENTO_LISTA, pintar);
+    b.addEventListener('click', () => {
+      const r = adicionarNaLista(item, 'vai-junto');
+      if (r === 'cheia') { avisarLista(`Sua lista já tem ${MAX_LISTA} peças, o máximo. Peça essas no WhatsApp e comece outra.`); return; }
+      pintar();
+      na.focus({ preventScroll: true });
+      avisarLista(`${nome} está na sua lista de orçamento: ${pecasTxt(lerLista().length)}.`);
     });
   });
 }
