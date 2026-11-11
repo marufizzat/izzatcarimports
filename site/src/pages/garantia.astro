@@ -44,7 +44,7 @@ const passos = [
         <h2 class="gar-cert-titulo" id="h-prazo">de garantia em toda peça</h2>
       </div>
       <ul class="gar-cert-fatos">
-        <li><span class="inst-disco"><IconeInst nome="nota" /></span><span><b>Nota fiscal em toda venda</b>Vai junto com a peça, para você guardar.</span></li>
+        <li><span class="inst-disco"><IconeInst nome="nota" /></span><span><b>Nota fiscal em toda venda</b>Toda compra sai com nota fiscal.</span></li>
         <li><span class="inst-disco"><IconeInst nome="carro" /></span><span><b>Peça original</b>Vem de carro com baixa legal, conferida e fotografada no pátio.</span></li>
         <li><span class="inst-disco"><IconeInst nome="escudo" /></span><span><b>Desmanche credenciado</b>Detran-RS, CDV&nbsp;nº&nbsp;01060.
           <a class="gar-detran" href={DETRAN_CDV} target="_blank" rel="noopener">Confira na lista do Detran-RS<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg></a></span></li>
@@ -65,7 +65,7 @@ const passos = [
           <h2 class="titulo-secao inst-h2" id="h-problema">Se a peça der problema</h2>
           <p class="inst-lead-sec">Fale com a gente dentro do prazo. Quanto mais fotos e detalhes você mandar, mais rápido a gente resolve.</p>
         </div>
-        <a class="botao botao-laranja inst-botao" href={whatsUrl(msgGarantia)} rel="noopener">
+        <a class="botao botao-laranja inst-botao" href={whatsUrl(msgGarantia)} rel="noopener" data-botao="garantia-acionar">
           <Icone nome="whats" />Chamar no WhatsApp
         </a>
       </div>

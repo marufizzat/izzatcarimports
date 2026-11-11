@@ -30,7 +30,7 @@ const cod = codigoDaPeca(p.oem);
 // Sem carro salvo vai "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
 const cabeca = cabecaPeca({ nome: p.n, carro, anos, cod, linha: nomeMensagem(p), preco: brl(p.p), url });
 // peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
-const semCarro = linhaMeuCarro(conviteCarro(p.b, p.m, modelosDa(p).length > 1 ? '|' : ''));
+const semCarro = linhaMeuCarro(conviteCarro(p.b, p.m, modelosDa(p).length > 1 ? modelosDa(p).join('|') : ''));
 const cauda = caudaPeca(url);
 // 10% de desconto em toda peça pedida pelo WhatsApp (decisão do dono, 10/11), calculado do preço do anúncio. Desde 11/11
 // o preço GRANDE é o do WhatsApp (o mesmo dos cartões: quem entra vê o preço que viu) e o do anúncio vem riscado, com
@@ -60,24 +60,26 @@ const fotoCod = iCod < 0 ? -1 : iCod + (est ? 1 : 0);
 const linhaCarro = [carro, anos].filter(Boolean).join(' · ');
 const dobra = { 'nome-1l': p.n.length <= 20, 'nome-3l': p.n.length > 50, 'carro-2l': linhaCarro.length > 34, 'preco-2l': q === 1 && precoWhats(p.p) >= 10000 };
 // Objeções da compra, respondidas com o que o site ja diz (inicio, garantia, envios, como comprar). Nada novo.
-// A promessa "a gente confere antes" fica na lista dos botões e no banner do fim (não se repete aqui).
+// "A gente confere antes" fica na lista dos botões, no banner do fim e na 1ª pergunta (é a resposta para "serve?").
 const perguntas = [
   {
     pergunta: 'Como sei que serve no meu carro?',
     resposta: [
       carro ? `Esta peça é ${p.m ? 'do' : 'de'} ${carro}${anos ? `, ${anos}` : ''}.` : '',
       cod ? `Compare o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.`
-          : 'O anúncio não traz o código: para conferir, mande o modelo e o ano do seu carro no WhatsApp.',
+          : 'O anúncio não traz o código.',
+      // o encaixe é assunto de ANTES da compra (o dono confirmou garantia de 90 dias e nenhuma troca: revisão 14, P1-8)
+      'Na dúvida se serve, mande o modelo e o ano: a gente confere na peça antes de você comprar.',
     ].filter(Boolean).join(' '),
     link: cod ? { href: '#como-achar-codigo', texto: 'Onde achar o código' } : undefined,
   },
   {
-    pergunta: 'E se não servir?',
-    // Só o que o site já afirma (a gente confere antes, 90 dias, WhatsApp, a gente avalia e resolve). A regra de troca por
-    // incompatibilidade (prazo, frete, compra errada) ainda não foi definida pelo Maruf: nada de "troca ou devolução"
-    // aqui nem na garantia (auditorias 3, item 1.2, e 4, item 3.2).
-    resposta: 'Na dúvida, mande o modelo e o ano antes de comprar: a gente confere na peça. Depois da compra, são 90 dias '
-      + 'de garantia: chame no WhatsApp com o número do anúncio ou a nota fiscal que a gente avalia e resolve. '
+    pergunta: 'E se a peça der problema?',
+    // Só a GARANTIA (90 dias) e como acionar, igual a /garantia.html. A pergunta nunca é "e se não servir?": o dono
+    // confirmou garantia e NENHUMA troca; peça que não serve é assunto de antes da compra (a pergunta de cima). Nada de
+    // "troca", "devolução" nem "a gente resolve" ligado a encaixe (revisão 14, P1-8).
+    resposta: 'São 90 dias de garantia em toda peça. Para acionar, chame no WhatsApp com o número do anúncio ou a nota '
+      + 'fiscal e diga o que aconteceu com a peça: a gente avalia. '
       + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
     link: { href: '/garantia.html', texto: 'Ver a garantia' },
   },
@@ -154,7 +156,7 @@ const perguntas = [
             altura (a 1ª tela continua com o botão inteiro); no PC, uma linha entre o preço e os botões. */}
         <p class="compra-de-por num"><span class="cdp-wa" aria-hidden="true"><Icone nome="whats" />−{DESCONTO_WHATS}% no WhatsApp</span>
           <span class="cdp-ml"><span class="sr-only">No Mercado Livre: </span><s>R$ {brl(p.p)}</s><span class="cdp-ml-txt" aria-hidden="true"> no Mercado Livre</span></span></p>
-        <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" /><span>Pedir no WhatsApp<span class="botao-preco num"> · R$ {precoW}</span></span></a>
+        <a class="botao botao-laranja" href={linkWhats(msg)} data-botao="pedir-peca" data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" /><span>Pedir no WhatsApp<span class="botao-preco num"> · R$ {precoW}</span></span></a>
         <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra><span><span class="ml-comprar">Comprar no </span>Mercado Livre<span class="botao-preco num"> · R$ {brl(p.p)}</span></span></a>
         {/* Lista de orçamento (components/peca/listaPeca.ts): o 3º caminho, discreto. No HTML só o botão (o lugar já fica
             guardado: nada pula quando o script chega); o "Ver lista (n)" e o estado "Na sua lista" vêm do script */}
@@ -300,8 +302,26 @@ const perguntas = [
       e.preventDefault();
       envio.open = true;
       montar();
-      envio.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-      envio.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+      const campo = envio.querySelector<HTMLInputElement>('input');
+      const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const rolar: ScrollBehavior = calmo ? 'auto' : 'smooth';
+      envio.scrollIntoView({ block: 'center', behavior: rolar });
+      if (!campo) return;
+      // 1) o foco já, dentro do gesto: é o que o iPhone exige para subir o teclado
+      campo.focus({ preventScroll: true });
+      // 2) Chrome (Android e PC): o conteúdo do <details> recém-aberto ainda está com content-visibility: hidden (a
+      //    transição do ::details-content) e o foco é recusado; dois quadros depois ele vale (medido na revisão 14,
+      //    item 24). Por último, o evento toggle, que só sai com a pergunta aberta de verdade.
+      if (document.activeElement !== campo) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          campo.focus({ preventScroll: true });
+          if (document.activeElement !== campo) envio.addEventListener('toggle', () => { if (envio.open) campo.focus({ preventScroll: true }); }, { once: true });
+        }));
+      }
+      // 3) quando a altura acaba de abrir, o CAMPO vai para o meio da tela (antes parava na metade de baixo, onde o
+      //    teclado cobre); só se a pessoa ainda está nele
+      setTimeout(() => { if (envio.open && document.activeElement === campo) campo.scrollIntoView({ block: 'center', behavior: rolar }); },
+        calmo || document.documentElement.classList.contains('leve') ? 60 : 400);
     });
   }
 

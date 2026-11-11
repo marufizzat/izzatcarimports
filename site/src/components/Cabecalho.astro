@@ -93,7 +93,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
 <script>
   import { lerMeuCarro, EVENTO, ABRIR, ESCOLHIDO, type MeuCarro } from '../lib/meuCarro';
   import { nomeCarro } from '../lib/meuCarro';
-  import { whatsUrl, comMeuCarro, carroSalvoTxt, conviteCarro } from '../lib/whats';
+  import { whatsUrl, comMeuCarro, comCarroNaFrase, carroSalvoTxt, conviteCarro } from '../lib/whats';
   import { lerLista, EVENTO_LISTA, ouvirOutrasAbas, pecasTxt } from '../lib/lista';
 
   // WhatsApp do topo e do menu: com carro salvo, a mensagem já leva o carro ("Procuro uma peça para Volvo XC60 2019.")
@@ -122,6 +122,24 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   };
   document.addEventListener('click', comCarroNoCartao, true);
   document.addEventListener('auxclick', comCarroNoCartao, true);
+  // As mensagens de dúvida ("Quero confirmar se esta peça serve no meu carro… Meu carro é Renault ____, ano ____."; os
+  // banners e as chamadas das outras páginas: "Meu carro é: ____ (modelo) ____ (ano)"): com carro salvo, a lacuna vira
+  // o carro da pessoa no clique (revisão 14, item 20: ia "Meu carro é Renault ____" para quem tem um XC60 2019 salvo).
+  const comCarroNaDuvida = (e: Event) => {
+    const a = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a[href*="wa.me/"]');
+    const href = a?.getAttribute('href') || '';
+    const corte = href.indexOf('?text=');
+    if (!a || corte < 0 || a.classList.contains('etiqueta-acao')) return;
+    const c = lerMeuCarro();
+    if (!c) return;
+    try {
+      const msg = decodeURIComponent(href.slice(corte + 6));
+      const nova = comCarroNaFrase(msg, carroSalvoTxt(c));
+      if (nova !== msg) a.setAttribute('href', `${href.slice(0, corte)}?text=${encodeURIComponent(nova)}`);
+    } catch { /* link malformado: segue como está */ }
+  };
+  document.addEventListener('click', comCarroNaDuvida, true);
+  document.addEventListener('auxclick', comCarroNaDuvida, true);
   // no PC a faixa "Pedir no WhatsApp" fica na base da foto: meio-clique ou ctrl/⌘/shift-clique nela abre a PEÇA em aba
   // nova (como num cartão), e o WhatsApp segue só no clique normal (cliente oculto, melhoria 3)
   const pecaNaAba = (e: MouseEvent) => {
