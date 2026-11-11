@@ -12,7 +12,7 @@ import { lojaLd, LOJA_ENDERECO, LOJA_HORARIO, LOJA_MAPA } from '../lib/loja';
 
 const canonical = `${SITE}/contato.html`;
 const canonicalPath = '/contato.html';
-const msg = 'Estou procurando uma peça.';
+const msg = 'Procuro uma peça.';
 const url = whatsUrl(msg);
 const trilha: [string, string][] = [['Início', '/'], ['Contato', canonicalPath]];
 const ld = { '@context': 'https://schema.org', '@graph': [
@@ -42,9 +42,9 @@ const mandar = [
       <div class="con-texto">
         <h1 class="display con-h1" id="h-contato">Fale com a gente</h1>
         <p class="lead con-lead">O jeito mais rápido é o WhatsApp. Mande a peça, o carro ou o código gravado que a gente responde por lá.</p>
-        <a class="con-numero num" href={url} rel="noopener" aria-label="Abrir o WhatsApp (53) 99117-0950">(53) 99117-0950</a>
+        <a class="con-numero num" href={url} rel="noopener" data-botao="contato-numero" aria-label="Abrir o WhatsApp (53) 99117-0950">(53) 99117-0950</a>
         <div class="con-acoes">
-          <a class="botao botao-laranja con-botao" href={url} rel="noopener"><Icone nome="whats" />Chamar no WhatsApp</a>
+          <a class="botao botao-laranja con-botao" href={url} rel="noopener" data-botao="contato"><Icone nome="whats" />Chamar no WhatsApp</a>
           <button class="botao botao-linha con-copiar" type="button" data-copiar="(53) 99117-0950">
             <IconeInst nome="copiar" /><span data-copiar-txt>Copiar o número</span>
           </button>
@@ -80,14 +80,14 @@ const mandar = [
         <div class="con-canal">
           <span class="inst-disco inst-disco-g"><IconeInst nome="pino" /></span>
           <span class="con-canal-txt"><b>Onde a gente está</b>
-            <span>{LOJA_ENDERECO.rua}, {LOJA_ENDERECO.cidade}-{LOJA_ENDERECO.uf}, CEP {LOJA_ENDERECO.cep}, na fronteira com o Uruguai. {LOJA_HORARIO}. Atendimento pelo WhatsApp.</span>
+            <span>{LOJA_ENDERECO.rua}, {LOJA_ENDERECO.cidade}-{LOJA_ENDERECO.uf}, CEP {LOJA_ENDERECO.cep}, na fronteira com o Uruguai. Horário: {LOJA_HORARIO.toLowerCase()}. Atendimento pelo WhatsApp.</span>
             <a class="con-link" href={LOJA_MAPA} target="_blank" rel="noopener">Ver no Google Maps</a>
             <a class="con-link" href="/sobre.html">Conheça o pátio</a>
           </span>
         </div>
         <a class="con-canal" href="/procuro-peca.html">
           <span class="inst-disco inst-disco-g"><IconeInst nome="lupa" /></span>
-          <span class="con-canal-txt"><b>Não achou a peça?</b><span>Conte o carro e a peça que você procura. A gente procura no pátio.</span><em>Abrir o formulário</em></span>
+          <span class="con-canal-txt"><b>Não achou a peça?</b><span>Conte o carro e a peça. A gente procura no pátio.</span><em>Preencher o formulário</em></span>
         </a>
       </div>
     </section>

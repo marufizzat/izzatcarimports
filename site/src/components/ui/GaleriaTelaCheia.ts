@@ -358,7 +358,7 @@ function montar(fotos: string[], minis: (HTMLImageElement | null)[], titulo: str
     titulo: q('.gt-titulo'), contador: q('.gt-contador'), fechar: q('.gt-botao'), palco: q('.gt-palco'), trilho, faixa,
     esq: q('.gt-seta.esq'), dir: q('.gt-seta.dir'), fotos: imgs, minis: botoes,
   };
-  el.fechar.addEventListener('click', fechar);
+  el.fechar.addEventListener('click', () => fechar());
   el.esq.addEventListener('click', () => irPara(i - 1));
   el.dir.addEventListener('click', () => irPara(i + 1));
   el.palco.addEventListener('pointerdown', pDown);
@@ -371,6 +371,13 @@ function montar(fotos: string[], minis: (HTMLImageElement | null)[], titulo: str
   el.palco.addEventListener('gesturestart', (e) => e.preventDefault());
   document.body.append(raiz);
 }
+
+// O "Voltar" do aparelho (Android: o gesto natural para fechar uma foto ampliada) fecha a foto em vez de sair da página
+// da peça: ao abrir entra um estado no histórico e o popstate fecha (revisão 14, item 31). Fechando pelo X, pelo Esc ou
+// pelo toque fora, o estado sai junto (history.back), para o próximo "Voltar" não ficar sem efeito.
+const ESTADO_FOTO = 'izzatFoto';
+const temEstado = () => !!(history.state && (history.state as Record<string, unknown>)[ESTADO_FOTO]);
+function onVoltar() { if (aberta) fechar(true); }
 
 export function abrirGaleria(o: Abrir) {
   if (aberta || !o.fotos.length) return;
@@ -390,15 +397,22 @@ export function abrirGaleria(o: Abrir) {
   miniAVista();
   document.documentElement.style.overflow = 'hidden';
   document.addEventListener('keydown', onKey);
+  try {
+    if (!temEstado()) history.pushState({ ...(history.state as object | null), [ESTADO_FOTO]: 1 }, '');
+    window.addEventListener('popstate', onVoltar);
+  } catch { /* sem histórico (página embutida): fecha só pelo X */ }
   el!.fechar.focus({ preventScroll: true });
   requestAnimationFrame(() => requestAnimationFrame(() => { raiz?.classList.add('on'); setMexendo(false); }));
 }
 
-export function fechar() {
+/** `peloVoltar`: o fechamento veio do "Voltar" do aparelho (o estado da foto já saiu do histórico). */
+export function fechar(peloVoltar = false) {
   if (!aberta || !raiz) return;
   aberta = false;
   raiz.classList.remove('on');
   document.removeEventListener('keydown', onKey);
+  window.removeEventListener('popstate', onVoltar);
+  if (peloVoltar !== true && temEstado()) { try { history.back(); } catch { /* fica o estado: o próximo Voltar não faz nada */ } }
   aoFechar?.(i);
   saida = window.setTimeout(() => {
     if (raiz) raiz.hidden = true;

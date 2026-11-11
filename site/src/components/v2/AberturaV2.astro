@@ -21,8 +21,8 @@ const atalhos = populares(4);
   <div class="moldura abv2-conteudo">
     {/* "Continuar de onde parou" (Continuar.astro): só para quem volta com lista ou busca; sem elas, não ocupa nada */}
     <slot name="topo" />
-    <h1 id="abv2-titulo" class="display abv2-h1">Qual peça o seu carro precisa?</h1>
-    <p class="abv2-lead">Peças originais de carros com baixa legal no Detran-RS.</p>
+    <h1 id="abv2-titulo" class="display abv2-h1">De qual peça o seu carro precisa?</h1>
+    <p class="abv2-lead">Peças originais de baixa legal no <span class="abv2-nq">Detran-RS.</span> 10% de desconto no WhatsApp.</p>
     <div class="abv2-cartao" data-abas>
       <div class="abv2-abas" role="tablist" aria-label="Como achar a peça">
         <button type="button" role="tab" id="abv2-aba-carro" aria-controls="abv2-painel-carro" aria-selected="true" tabindex="0">
@@ -93,6 +93,7 @@ const atalhos = populares(4);
   .abv2-conteudo { position: relative; z-index: 2; display: grid; align-content: start; gap: 14px;
     padding-block: clamp(28px, 9vh, 96px) 72px; pointer-events: none; }
   .abv2-conteudo > * { pointer-events: auto; max-width: min(568px, 44vw); }
+  .abv2-nq { white-space: nowrap; }
   .abv2-h1 { margin: 0; font-size: clamp(40px, calc(4.6vw + 6px), 76px); color: #1d1d1f; }
   .abv2-lead { margin: -2px 0 8px; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.5; color: #4a4a50; max-width: 40ch; text-wrap: pretty; }
   /* PC baixo (1366×768, 1280×800): menos ar em cima para o cartão inteiro (com ou sem carro salvo) caber na 1ª tela */

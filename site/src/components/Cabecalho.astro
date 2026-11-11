@@ -58,7 +58,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   <div class="mc-dlg-topo">
     <div>
       {/* <p> e não <h2>: a caixa fica no HTML de toda página, antes do h1 (o Google lia "Seu carro" como o 1º título) */}
-      <p id="mc-dlg-titulo" class="mc-dlg-titulo">Seu carro</p>
+      <p id="mc-dlg-titulo" class="mc-dlg-titulo">Meu carro</p>
       <p class="mc-dlg-sub">Escolha uma vez: o site passa a mostrar as peças do seu carro.</p>
     </div>
     <button class="mc-dlg-fechar" type="button" aria-label="Fechar" data-fechar-carro>
@@ -79,8 +79,8 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   <div class="menu-corpo">
     <nav class="menu-links" aria-label="Menu principal">
       {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
-      <a href="/garantia.html" aria-current={atual === '/garantia.html' ? 'page' : undefined}>Garantia e trocas</a>
-      <a href="/procuro-peca.html" aria-current={atual === '/procuro-peca.html' ? 'page' : undefined}>Procuro peça</a>
+      <a href="/garantia.html" aria-current={atual === '/garantia.html' ? 'page' : undefined}>Garantia</a>
+      <a href="/procuro-peca.html" aria-current={atual === '/procuro-peca.html' ? 'page' : undefined}>Não achou a peça?</a>
     </nav>
     <p class="menu-rotulo">Carros com mais peças</p>
     <div class="menu-carros">
@@ -93,7 +93,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
 <script>
   import { lerMeuCarro, EVENTO, ABRIR, ESCOLHIDO, type MeuCarro } from '../lib/meuCarro';
   import { nomeCarro } from '../lib/meuCarro';
-  import { whatsUrl, comMeuCarro, carroSalvoTxt, conviteCarro } from '../lib/whats';
+  import { whatsUrl, comMeuCarro, comCarroNaFrase, carroSalvoTxt, conviteCarro } from '../lib/whats';
   import { lerLista, EVENTO_LISTA, ouvirOutrasAbas, pecasTxt } from '../lib/lista';
 
   // WhatsApp do topo e do menu: com carro salvo, a mensagem já leva o carro ("Procuro uma peça para Volvo XC60 2019.")
@@ -122,6 +122,36 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   };
   document.addEventListener('click', comCarroNoCartao, true);
   document.addEventListener('auxclick', comCarroNoCartao, true);
+  // As mensagens de dúvida ("Quero confirmar se esta peça serve no meu carro… Meu carro é Renault ____, ano ____."; os
+  // banners e as chamadas das outras páginas: "Meu carro é: ____ (modelo) ____ (ano)"): com carro salvo, a lacuna vira
+  // o carro da pessoa no clique (revisão 14, item 20: ia "Meu carro é Renault ____" para quem tem um XC60 2019 salvo).
+  const comCarroNaDuvida = (e: Event) => {
+    const a = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a[href*="wa.me/"]');
+    const href = a?.getAttribute('href') || '';
+    const corte = href.indexOf('?text=');
+    if (!a || corte < 0 || a.classList.contains('etiqueta-acao')) return;
+    const c = lerMeuCarro();
+    if (!c) return;
+    try {
+      const msg = decodeURIComponent(href.slice(corte + 6));
+      const nova = comCarroNaFrase(msg, carroSalvoTxt(c));
+      if (nova !== msg) a.setAttribute('href', `${href.slice(0, corte)}?text=${encodeURIComponent(nova)}`);
+    } catch { /* link malformado: segue como está */ }
+  };
+  document.addEventListener('click', comCarroNaDuvida, true);
+  document.addEventListener('auxclick', comCarroNaDuvida, true);
+  // no PC a faixa "Pedir no WhatsApp" fica na base da foto: meio-clique ou ctrl/⌘/shift-clique nela abre a PEÇA em aba
+  // nova (como num cartão), e o WhatsApp segue só no clique normal (cliente oculto, melhoria 3)
+  const pecaNaAba = (e: MouseEvent) => {
+    const a = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a.etiqueta-acao');
+    if (!a || (e.type === 'auxclick' ? e.button !== 1 : !(e.ctrlKey || e.metaKey || e.shiftKey))) return;
+    const peca = a.parentElement?.querySelector<HTMLAnchorElement>('a.etiqueta')?.href;
+    if (!peca) return;
+    e.preventDefault();
+    window.open(peca, '_blank', 'noopener');
+  };
+  document.addEventListener('click', pecaNaAba, true);
+  document.addEventListener('auxclick', pecaNaAba, true);
 
   // chip do cabeçalho: mostra o carro salvo (sem carro: "Meu carro"). O mesmo desenho do script do HTML (logo acima).
   // Modelo e ano em partes separadas: no aperto, o modelo ganha reticências e o ano nunca some.
@@ -140,7 +170,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
         txt.replaceChildren(parte('modelo', parte('marca', c.b + ' '), c.m));
         if (c.y) txt.append(parte('ano', String(c.y)));
         b.classList.add('com-carro');
-        b.setAttribute('aria-label', 'Seu carro: ' + [c.b, c.m, c.y].filter(Boolean).join(' ') + '. Trocar ou tirar');
+        b.setAttribute('aria-label', 'Meu carro: ' + [c.b, c.m, c.y].filter(Boolean).join(' ') + '. Trocar ou tirar');
         b.title = 'Trocar ou tirar o seu carro';
       } else {
         txt.textContent = 'Meu carro';
@@ -203,6 +233,20 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
     setTimeout(() => faixa.classList.remove('enc-destaque'), 1600);
   });
 
+  // a lupa (celular): a página do catálogo demora até 3 s no 4G lento; o toque mostra na hora que algo começou
+  // (classe .indo: a lupa afunda e gira). Vem no pointerdown, antes do clique, e sai se o toque for cancelado (rolagem)
+  // ou se a página voltar do cache. Nada de tela nova aqui: o catálogo continua o mesmo.
+  const lupa = document.querySelector<HTMLAnchorElement>('.cab-lupa');
+  if (lupa) {
+    const sair = () => { lupa.classList.remove('indo'); lupa.removeAttribute('aria-busy'); };
+    lupa.addEventListener('pointerdown', () => lupa.classList.add('indo'));
+    lupa.addEventListener('click', () => lupa.setAttribute('aria-busy', 'true'));
+    lupa.addEventListener('pointercancel', sair);
+    // o toque que não virou clique (soltou fora, rolou) desfaz; o clique vem logo depois do soltar e marca aria-busy
+    lupa.addEventListener('pointerup', () => setTimeout(() => { if (!lupa.hasAttribute('aria-busy')) sair(); }, 400));
+    window.addEventListener('pageshow', sair);
+  }
+
   // busca do cabeçalho (PC): monta as sugestões (React) no 1º contato com o campo (mouse, foco ou toque).
   // O que já foi digitado e o foco passam para o campo novo.
   const cabBuscaRaiz = document.querySelector<HTMLElement>('[data-cab-busca]');
@@ -251,6 +295,14 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   :is(.cab, .menu-movel) .cab-icone { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: inherit; }
   :is(.cab, .menu-movel) .cab-icone:hover { background: color-mix(in oklab, currentColor, transparent 92%); }
   :is(.cab, .menu-movel) .cab-icone svg { width: 23px; height: 23px; }
+  /* a lupa ao toque (script acima): afunda, troca o desenho por um anel girando; a resposta sai no 1º quadro do toque */
+  .cab .cab-lupa { position: relative; transition: transform .08s ease, background-color .12s ease; -webkit-tap-highlight-color: transparent; }
+  .cab .cab-lupa.indo { background: var(--accent-soft); transform: scale(.92); }
+  .cab .cab-lupa.indo svg { opacity: 0; }
+  .cab .cab-lupa.indo::after { content: ""; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+    border: 2.5px solid color-mix(in oklab, var(--accent-text), transparent 72%); border-top-color: var(--accent-text); animation: lupa-gira .7s linear infinite; }
+  @keyframes lupa-gira { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .cab .cab-lupa.indo::after { animation-duration: 2.4s; } }
   .cab .cab-whats { --h: var(--botao-p); flex: none; padding: 0 12px; font-size: 15px; }
   /* Lista de orçamento: só com 1+ peça (html[data-lista]); abaixo de 1100 px no lugar da lupa (mesmo tamanho) */
   .cab .cab-lista { display: none; position: relative; }

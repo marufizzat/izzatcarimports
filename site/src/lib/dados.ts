@@ -32,6 +32,8 @@ export type Resumo = {
   antigas?: { k: string; n: string; para: string }[];
   carros: { k: string; b: string; m: string; c: number; anos: [number, number] | null;
             fams: [string, number][]; capas: string[] }[];
+  /** Endereço antigo de carro unido ao principal (Classe C × C180): mesma página, canonical para <para>. Fora de carros. */
+  aliases?: { k: string; b: string; de: string; m: string; para: string }[];
   chegou: string[]; preco: { min: number; max: number };
   /** Reputacao do Mercado Livre (reputation.json). Ausente = nao mostrar o selo. */
   reputacao?: { nivel: string; n: number; lider?: string; vendas?: number };
@@ -140,6 +142,15 @@ export function temEstudio(id: string): boolean {
 }
 export function capa(p: { id: string; fotos: string[] }, tam: Tam = 'O'): string {
   return capaEstudio(p.id) ?? foto(fotosGaleria(p.fotos)[0], tam);
+}
+/** A chave da arte do carro (public/arte/v2/carro-<chave>.webp): a do próprio carro; sem ela, a de um apelido unido a
+ *  ele (a Série 3 usa a do 320i e o GLA a do GLA200: é o mesmo carro, e a arte já existe). null = sem arte.
+ *  UMA regra para a página do carro, /carros, a marca, a home e a garagem do "Meu carro". */
+export function arteDoCarro(k: string | null | undefined): string | null {
+  if (!k) return null;
+  const tem = (x: string) => existsSync(join(process.cwd(), 'public', 'arte', 'v2', `carro-${x}.webp`));
+  if (tem(k)) return k;
+  return (resumo().aliases ?? []).filter((a) => a.para === k).map((a) => a.k).find(tem) ?? null;
 }
 export function logoMarca(k: string): string | null {
   for (const ext of ['svg', 'png']) if (existsSync(join(process.cwd(), 'public', 'marcas', `${k}.${ext}`))) return `/marcas/${k}.${ext}`;

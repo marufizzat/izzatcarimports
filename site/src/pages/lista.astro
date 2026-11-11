@@ -21,10 +21,10 @@ const scriptTopo = `try{var d=document.documentElement,m=/[?&]i=([^&]*)/.exec(lo
 // revisão 12 era a frase de 3 linhas virando 2). As MESMAS frases do components/lista/paginaLista.ts.
 // Na sua lista, o esqueleto leva os textos guardados (carro, anos, nome, código) em barras: cada linha quebra igual à de
 // verdade (o nome de 2 linhas no celular também) e nada pula quando ela chega.
-const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=+d.dataset.lstMinha||0,p=function(n){return n+(n===1?' peça':' peças')},h=document.querySelector('[data-lst-h1]'),l=document.querySelector('[data-lst-lead]'),u=document.querySelector('[data-lst-link-sub]');if(d.dataset.lst==='link'){h.textContent='Lista de orçamento';l.textContent='Mandaram esta lista para você: '+p(q)+'. Peça tudo no WhatsApp ou guarde na sua lista.';if(s)u.textContent=' Guardar junta estas peças às '+p(s)+' que já estão na sua lista (nada se perde).'}else if(q){l.textContent=p(q)+' na lista. Peça tudo de uma vez no WhatsApp, com ${DESCONTO_WHATS}% de desconto em cada peça.';var g=(JSON.parse(localStorage.getItem('izzatcar.lista'))||[]).filter(function(i){return i&&/^MLB\\d{6,14}$/.test(i.id)}),t=function(v){return typeof v=='string'?v.replace(/\\s+/g,' ').trim():''},b=function(x,z){var e=document.createElement('span');e.className='esq-t'+(z?' oem':'');e.textContent=x;return e};[].forEach.call(document.querySelectorAll('.lst-esq'),function(r,j){var x=g[j];if(!x)return;var c=t(x.carro).slice(0,80),a=t(x.anos).slice(0,20),o=t(x.cod).slice(0,30),v=r.querySelector('.lst-veic'),n=r.querySelector('.lst-nome'),k=r.querySelector('.lst-cod');n.replaceChildren(b(t(x.nome).slice(0,120)||'Peça'));if(c&&a){v.replaceChildren(b(c));var y=document.createElement('span');y.className='lst-anos';y.append(b(a));v.append(y)}else if(c||a)v.replaceChildren(b(c||a));else v.remove();if(o)k.replaceChildren('Cód. ',b(o,1));else k.remove()})}}catch(e){}`;
+const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=+d.dataset.lstMinha||0,p=function(n){return n+(n===1?' peça':' peças')},h=document.querySelector('[data-lst-h1]'),l=document.querySelector('[data-lst-lead]'),u=document.querySelector('[data-lst-link-sub]');if(d.dataset.lst==='link'){h.textContent='Lista de orçamento';l.textContent='Mandaram esta lista para você: '+p(q)+'. Pedido no WhatsApp ou guarde na sua lista.';if(s)u.textContent=' Guardar junta estas peças às '+p(s)+' que já estão na sua lista (nada se perde).'}else if(q){l.textContent=p(q)+' na lista. Peça tudo de uma vez no WhatsApp, com ${DESCONTO_WHATS}% de desconto em cada peça.';var g=(JSON.parse(localStorage.getItem('izzatcar.lista'))||[]).filter(function(i){return i&&/^MLB\\d{6,14}$/.test(i.id)}),t=function(v){return typeof v=='string'?v.replace(/\\s+/g,' ').trim():''},b=function(x,z){var e=document.createElement('span');e.className='esq-t'+(z?' oem':'');e.textContent=x;return e};[].forEach.call(document.querySelectorAll('.lst-esq'),function(r,j){var x=g[j];if(!x)return;var c=t(x.carro).slice(0,80),a=t(x.anos).slice(0,20),o=t(x.cod).slice(0,30),v=r.querySelector('.lst-veic'),n=r.querySelector('.lst-nome'),k=r.querySelector('.lst-cod');n.replaceChildren(b(t(x.nome).slice(0,120)||'Peça'));if(c&&a){v.replaceChildren(b(c));var y=document.createElement('span');y.className='lst-anos';y.append(b(a));v.append(y)}else if(c||a)v.replaceChildren(b(c||a));else v.remove();if(o)k.replaceChildren('Cód. ',b(o,1));else k.remove()})}}catch(e){}`;
 ---
 <Pagina titulo="Sua lista de orçamento | Izzat Car Imports" noindex
-  descricao="Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com 10% de desconto em cada peça.">
+  descricao="Junte as peças do serviço e faça um pedido só no WhatsApp, com 10% de desconto em cada uma.">
   <script slot="head" is:inline set:html={scriptTopo} />
 
   <div class="moldura lst" data-lst>
@@ -34,7 +34,7 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
 
     <header class="lst-topo">
       <h1 class="lst-h1" data-lst-h1>Sua lista de orçamento</h1>
-      <p class="lst-lead" data-lst-lead>Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada peça.</p>
+      <p class="lst-lead" data-lst-lead>Junte as peças do serviço e faça um pedido só no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada uma.</p>
     </header>
 
     <div class="lst-grade" data-lst-cheia>
@@ -63,13 +63,19 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
 
       <aside class="lst-resumo" aria-labelledby="lst-resumo-t">
         <div class="lst-resumo-cx">
-          <h2 class="lst-resumo-t" id="lst-resumo-t">Resumo do pedido</h2>
+          <h2 class="lst-resumo-t" id="lst-resumo-t">Resumo da lista</h2>
           <dl class="lst-contas">
             <div><dt data-lst-qtd>Preço no site</dt><dd class="num" data-lst-sub>—</dd></div>
             <div class="lst-conta-desc"><dt>Desconto de {DESCONTO_WHATS}% no WhatsApp</dt><dd class="num" data-lst-desc>—</dd></div>
             <div class="lst-conta-total"><dt>Total no WhatsApp</dt><dd class="num" data-lst-total>—</dd></div>
           </dl>
           <p class="lst-fora" data-lst-fora hidden></p>
+          {/* o CEP (opcional): entra no pedido ("CEP: 00000-000") e fica lembrado (izzatcar.cep, o mesmo do frete da peça) */}
+          <div class="campo lst-cep">
+            <label for="lst-cep">Seu CEP <small>(opcional, para o frete)</small></label>
+            <input id="lst-cep" name="cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" data-lst-cep aria-describedby="lst-cep-nota" />
+            <p class="lst-cep-nota" id="lst-cep-nota">Entra no pedido do WhatsApp. O frete é combinado com a gente lá, pelo seu CEP.</p>
+          </div>
           <a class="botao botao-laranja lst-pedir" data-lst-pedir data-botao="lista" target="_blank" rel="noopener" href={semScript}><Icone nome="whats" /><span>Pedir tudo no WhatsApp</span></a>
           <button type="button" class="botao botao-linha lst-copiar" data-lst-copiar><Icone nome="copiar" /><span>Copiar o link da lista</span></button>
           <p class="lst-copiar-nota" data-lst-copiar-nota>Quem abrir o link vê esta mesma lista: a oficina manda para o cliente, o cliente manda para a oficina.</p>
@@ -89,15 +95,15 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
       <div class="lst-vazia-cx">
         <div class="lst-vazia-arte" aria-hidden="true"><span><Icone nome="lista" /></span></div>
         <h2 class="lst-vazia-t" id="lst-vazia-t">Sua lista está vazia</h2>
-        <p class="lst-vazia-txt">Na página de cada peça, toque em <b>Adicionar à lista</b>. Junte as peças do serviço (até {MAX_LISTA}) e peça tudo de uma vez no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada uma.</p>
+        <p class="lst-vazia-txt">Na página de cada peça, toque em <b>Adicionar à lista</b>. Junte as peças do serviço (até {MAX_LISTA}) e faça um pedido só no WhatsApp, com {DESCONTO_WHATS}% de desconto em cada uma.</p>
         <div class="lst-vazia-botoes">
           <a class="botao botao-laranja" href="/catalogo.html"><Icone nome="busca" />Ver o catálogo</a>
           <a class="botao botao-linha" href="/carros.html" data-lst-seu-carro><Icone nome="carro" /><span>Escolher o meu carro</span></a>
         </div>
         <ol class="lst-passos">
           <li><b>Junte as peças</b><span>Em cada peça, “Adicionar à lista”. Ela fica guardada neste aparelho.</span></li>
-          <li><b>Peça tudo no WhatsApp</b><span>Uma mensagem só, com cada peça e o total com {DESCONTO_WHATS}% de desconto.</span></li>
-          <li><b>A gente confere e combina</b><span>Confere as peças no seu carro e combina o frete pelo seu CEP.</span></li>
+          <li><b>Pedido no WhatsApp</b><span>Uma mensagem só, com cada peça e o total com {DESCONTO_WHATS}% de desconto.</span></li>
+          <li><b>A gente confere e combina</b><span>Confere se servem no seu carro e combina o frete pelo CEP.</span></li>
         </ol>
       </div>
     </section>
@@ -123,6 +129,12 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
   .lst .lst-trilha a { color: var(--ink-2); padding: 12px 6px; margin: -12px -6px; }
   .lst .lst-trilha a:hover { color: var(--ink); text-decoration: underline; }
   .lst .lst-topo { margin: 8px 0 22px; max-width: 760px; }
+  /* o CEP do pedido: o campo do site (.campo) com o CEP em números grandes; sem preço nem prazo, só o lugar dele */
+  .lst .lst-cep { gap: 6px; margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+  .lst .lst-cep label { font-size: 14.5px; font-weight: 650; color: var(--ink); }
+  .lst .lst-cep label small { font-weight: 500; color: var(--ink-3); }
+  .lst .lst-cep input { height: var(--botao-p); font-size: 17px; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+  .lst .lst-cep-nota { margin: 0; font-size: 13px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .lst .lst-h1 { margin: 0; font-stretch: 84%; font-weight: 820; font-size: clamp(32px, 4.2vw, 48px); line-height: 1.02; letter-spacing: -.01em; text-wrap: balance; }
   .lst .lst-lead { margin: 10px 0 0; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
   html[data-lst="vazia"] .lst .lst-lead { display: none; }

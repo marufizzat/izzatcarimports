@@ -22,7 +22,6 @@ const Titulo = nivel;
 // todos os carros da peça ("Volvo S60 e XC60" quando ela serve nos dois), como no "Serve em" da ficha
 const carro = nomeModelos(p);
 const anos = p.y ? (p.y[0] === p.y[1] ? String(p.y[0]) : `${p.y[0]} a ${p.y[1]}`) : '';
-const [reais, cent] = brl(p.p).split(',');
 const url = `${SITE}/peca/${p.slug}.html`;
 // só código com cara de código (lixo da extração, como "Par", não vira caixa com "Copiar")
 const cod = codigoDaPeca(p.oem);
@@ -31,10 +30,13 @@ const cod = codigoDaPeca(p.oem);
 // Sem carro salvo vai "Meu carro é X ano ____"; com carro salvo o script troca essa linha.
 const cabeca = cabecaPeca({ nome: p.n, carro, anos, cod, linha: nomeMensagem(p), preco: brl(p.p), url });
 // peça de 2+ carros: o modelo fica em branco para a pessoa escrever o dela
-const semCarro = linhaMeuCarro(conviteCarro(p.b, p.m, modelosDa(p).length > 1 ? '|' : ''));
+const semCarro = linhaMeuCarro(conviteCarro(p.b, p.m, modelosDa(p).length > 1 ? modelosDa(p).join('|') : ''));
 const cauda = caudaPeca(url);
-// 10% de desconto em toda peça pedida pelo WhatsApp (decisão do dono, 10/11): "de X por Y", calculado do preço do anúncio
+// 10% de desconto em toda peça pedida pelo WhatsApp (decisão do dono, 10/11), calculado do preço do anúncio. Desde 11/11
+// o preço GRANDE é o do WhatsApp (o mesmo dos cartões: quem entra vê o preço que viu) e o do anúncio vem riscado, com
+// "no Mercado Livre" escrito: R$ Y no WhatsApp (10% de desconto) × R$ X no Mercado Livre. O JSON-LD segue no preço cheio.
 const precoW = brl(precoWhats(p.p));
+const [reais, cent] = precoW.split(',');
 const msg = cabeca + semCarro + cauda;
 // Estoque real do ML: 1 = peca unica (usada: quando vende, acabou); mais de 1 = so a quantidade, sem pressa inventada.
 const q = typeof p.q === 'number' && p.q >= 1 ? p.q : 0;
@@ -53,43 +55,49 @@ const iCod = cod ? fotoDoCodigo(doAnuncio) : -1;
 const fotoCod = iCod < 0 ? -1 : iCod + (est ? 1 : 0);
 // 1ª tela do celular (CSS no fim): a altura que a foto pode ter depende de quantas linhas vêm abaixo dela. Contado no
 // build pelo tamanho do texto (sem script, sem pulo na tela): nome curto = 1 linha (a foto ganha); nome longo = letra
-// menor (cabe em 2); carro de 2+ modelos com nome comprido = anos na 2ª linha; preço de 5 dígitos + "Peça única" quebra
-// no celular de 320.
+// menor (cabe em 2); carro de 2+ modelos com nome comprido = anos na 2ª linha; preço de 5 dígitos (o do WhatsApp, que é
+// o grande) + "Peça única" quebra no celular de 320.
 const linhaCarro = [carro, anos].filter(Boolean).join(' · ');
-const dobra = { 'nome-1l': p.n.length <= 20, 'nome-3l': p.n.length > 50, 'carro-2l': linhaCarro.length > 34, 'preco-2l': q === 1 && p.p >= 10000 };
+const dobra = { 'nome-1l': p.n.length <= 20, 'nome-3l': p.n.length > 50, 'carro-2l': linhaCarro.length > 34, 'preco-2l': q === 1 && precoWhats(p.p) >= 10000 };
 // Objeções da compra, respondidas com o que o site ja diz (inicio, garantia, envios, como comprar). Nada novo.
-// A promessa "a gente confere antes" fica na lista dos botões e no banner do fim (não se repete aqui).
+// "A gente confere antes" fica na lista dos botões, no banner do fim e na 1ª pergunta (é a resposta para "serve?").
 const perguntas = [
   {
     pergunta: 'Como sei que serve no meu carro?',
     resposta: [
       carro ? `Esta peça é ${p.m ? 'do' : 'de'} ${carro}${anos ? `, ${anos}` : ''}.` : '',
       cod ? `Compare o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.`
-          : 'Ela não tem código gravado: para conferir, mande o modelo e o ano do seu carro no WhatsApp.',
+          : 'O anúncio não traz o código.',
+      // o encaixe é assunto de ANTES da compra (o dono confirmou garantia de 90 dias e nenhuma troca: revisão 14, P1-8)
+      'Na dúvida se serve, mande o modelo e o ano: a gente confere na peça antes de você comprar.',
     ].filter(Boolean).join(' '),
     link: cod ? { href: '#como-achar-codigo', texto: 'Onde achar o código' } : undefined,
   },
   {
-    pergunta: 'E se não servir?',
-    // Só o que o site já afirma (a gente confere antes, 90 dias, WhatsApp, a gente avalia e resolve). A regra de troca por
-    // incompatibilidade (prazo, frete, compra errada) ainda não foi definida pelo Maruf: nada de "troca ou devolução"
-    // aqui nem na garantia (auditorias 3, item 1.2, e 4, item 3.2).
-    resposta: 'Na dúvida, mande o modelo e o ano antes de comprar: a gente confere na peça. Depois da compra, são 90 dias '
-      + 'de garantia: fale no WhatsApp com o número do pedido que a gente avalia e resolve. '
+    pergunta: 'E se a peça der problema?',
+    // Só a GARANTIA (90 dias) e como acionar, igual a /garantia.html. A pergunta nunca é "e se não servir?": o dono
+    // confirmou garantia e NENHUMA troca; peça que não serve é assunto de antes da compra (a pergunta de cima). Nada de
+    // "troca", "devolução" nem "a gente resolve" ligado a encaixe (revisão 14, P1-8).
+    resposta: 'São 90 dias de garantia em toda peça. Para acionar, chame no WhatsApp com o número do anúncio ou a nota '
+      + 'fiscal e diga o que aconteceu com a peça: a gente avalia. '
       + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
     link: { href: '/garantia.html', texto: 'Ver a garantia' },
   },
   {
     pergunta: 'Como é o envio?',
     // regra do dono (09/11): frete a combinar pelo site; frete e prazo do ML são os do anúncio (sem prazo próprio)
-    resposta: 'A gente envia para todo o Brasil. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.',
+    resposta: 'A gente envia para todo o Brasil. Pelo WhatsApp, o frete é combinado pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.',
     link: { href: '/envios.html', texto: 'Ver envios' },
     // o campo de CEP ("Cotar o frete no WhatsApp") é montado pelo script, na 1ª vez que a pergunta abre (HTML mínimo)
-    attrs: { 'data-cep': '' },
+    attrs: { 'data-cep': '', id: 'envio-peca' },
   },
   {
     pergunta: 'Tem nota fiscal?',
-    resposta: 'Sim, em toda venda. E a peça é original, de carro com baixa legal no Detran-RS: somos desmanche credenciado, CDV nº 01060.',
+    resposta: 'Sim, em toda venda. A peça é original, de carro com baixa legal no Detran-RS (desmanche credenciado, CDV nº 01060).',
+  },
+  {
+    pergunta: 'Como pago?',
+    resposta: 'A forma de pagamento você combina no WhatsApp.',
   },
 ];
 ---
@@ -137,23 +145,27 @@ const perguntas = [
 
     <div class="compra-caixa">
       <div class="compra-preco-linha">
-        <p class="compra-preco num"><small>R$</small>{reais}<small>,{cent}</small></p>
+        <p class="compra-preco num"><span class="sr-only">No WhatsApp, com {DESCONTO_WHATS}% de desconto: </span><small>R$</small>{reais}<small>,{cent}</small></p>
         {q === 1 && <span class="estoque estoque-unica"><i aria-hidden="true"></i>Peça única</span>}
         {q > 1 && <span class="estoque"><i aria-hidden="true"></i>{q} em estoque</span>}
       </div>
       {q === 1 && <p class="estoque-txt">Peça usada: quando vende, acabou.</p>}
       <div class="compra-botoes" data-compra-botoes>
-        {/* desconto pelo WhatsApp (pedido do dono): selo claro colado no canto do botão laranja, sem ocupar altura
-            (a 1ª tela do celular continua com o botão à vista). Só no WhatsApp, nunca no Mercado Livre. */}
-        <p class="compra-de-por num"><span class="cdp-onde"><Icone nome="etiqueta" />No WhatsApp</span>
-          <span class="cdp-precos"><span class="sr-only">de </span><s>R$ {brl(p.p)}</s> <span class="cdp-por">por</span> <b>R$ {precoW}</b></span>
-          <span class="cdp-selo">−{DESCONTO_WHATS}%</span></p>
-        <a class="botao botao-laranja" href={linkWhats(msg)} data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" /><span>Pedir no WhatsApp<span class="botao-preco num"> · R$ {precoW}</span></span></a>
-        <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra><span>Comprar no Mercado Livre<span class="botao-preco num"> · R$ {brl(p.p)}</span></span></a>
+        {/* de onde vem o preço grande: o selo verde "−10% no WhatsApp" e o preço do anúncio riscado ("no Mercado Livre").
+            No celular e no tablet, um selo claro preso no canto de cima do botão laranja, logo abaixo do preço, SEM ocupar
+            altura (a 1ª tela continua com o botão inteiro); no PC, uma linha entre o preço e os botões. */}
+        <p class="compra-de-por num"><span class="cdp-wa" aria-hidden="true"><Icone nome="whats" />−{DESCONTO_WHATS}% no WhatsApp</span>
+          <span class="cdp-ml"><span class="sr-only">No Mercado Livre: </span><s>R$ {brl(p.p)}</s><span class="cdp-ml-txt" aria-hidden="true"> no Mercado Livre</span></span></p>
+        <a class="botao botao-laranja" href={linkWhats(msg)} data-botao="pedir-peca" data-whats data-cabeca={cabeca} data-sem={semCarro} data-cauda={cauda}><Icone nome="whats" /><span>Pedir no WhatsApp<span class="botao-preco num"> · R$ {precoW}</span></span></a>
+        <a class="botao botao-linha" href={p.ml} rel="nofollow noopener" data-compra><span><span class="ml-comprar">Comprar no </span>Mercado Livre<span class="botao-preco num"> · R$ {brl(p.p)}</span></span></a>
         {/* Lista de orçamento (components/peca/listaPeca.ts): o 3º caminho, discreto. No HTML só o botão (o lugar já fica
             guardado: nada pula quando o script chega); o "Ver lista (n)" e o estado "Na sua lista" vêm do script */}
         <div class="compra-lista"><button type="button"><Icone nome="lista-mais" /><span>Adicionar à lista<span class="cl-longo"> de orçamento</span></span></button></div>
       </div>
+      <p class="compra-confia">Peça original usada · <a href="/garantia.html">Garantia de 90 dias</a> · <a href="/garantia.html">Nota fiscal</a> · <a href="/sobre.html">Desmanche credenciado CDV nº 01060</a></p>
+      {/* o frete pelo CEP, numa linha só, perto da compra: abre o "Como é o envio?" no lugar (o campo do CEP é o mesmo) e
+          foca o campo. Sem script, o link leva à pergunta (a âncora). Não promete valor nem prazo. */}
+      <a class="frete-entrada" href="#envio-peca" data-frete-entrada><Icone nome="carro" /><span>Calcular frete pelo CEP</span><Icone nome="seta" /></a>
       <ul class="compra-facil">
         <li><b>Na dúvida se serve?</b> A gente confere na peça antes de você comprar.</li>
         <li><b>WhatsApp:</b> mensagem pronta com a peça<span data-whats-carro></span>.</li>
@@ -285,6 +297,32 @@ const perguntas = [
     // antes de abrir (o clique no título vem antes da troca): o campo já está lá quando a altura anima
     envio.querySelector('summary')?.addEventListener('click', montar);
     envio.addEventListener('toggle', () => { if (envio.open) montar(); });
+    // "Calcular frete pelo CEP" (perto da compra): abre a pergunta, leva a ela e põe o cursor no campo do CEP
+    document.querySelector<HTMLAnchorElement>('[data-frete-entrada]')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      envio.open = true;
+      montar();
+      const campo = envio.querySelector<HTMLInputElement>('input');
+      const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const rolar: ScrollBehavior = calmo ? 'auto' : 'smooth';
+      envio.scrollIntoView({ block: 'center', behavior: rolar });
+      if (!campo) return;
+      // 1) o foco já, dentro do gesto: é o que o iPhone exige para subir o teclado
+      campo.focus({ preventScroll: true });
+      // 2) Chrome (Android e PC): o conteúdo do <details> recém-aberto ainda está com content-visibility: hidden (a
+      //    transição do ::details-content) e o foco é recusado; dois quadros depois ele vale (medido na revisão 14,
+      //    item 24). Por último, o evento toggle, que só sai com a pergunta aberta de verdade.
+      if (document.activeElement !== campo) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          campo.focus({ preventScroll: true });
+          if (document.activeElement !== campo) envio.addEventListener('toggle', () => { if (envio.open) campo.focus({ preventScroll: true }); }, { once: true });
+        }));
+      }
+      // 3) quando a altura acaba de abrir, o CAMPO vai para o meio da tela (antes parava na metade de baixo, onde o
+      //    teclado cobre); só se a pessoa ainda está nele
+      setTimeout(() => { if (envio.open && document.activeElement === campo) campo.scrollIntoView({ block: 'center', behavior: rolar }); },
+        calmo || document.documentElement.classList.contains('leve') ? 60 : 400);
+    });
   }
 
   // Galeria em tela cheia: módulo pequeno e sem React (ui/GaleriaTelaCheia.ts). Pré-busca quando o navegador folga
@@ -673,43 +711,47 @@ const perguntas = [
   .compra-preco-linha { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
   .compra-preco { margin: 0; font-stretch: 80%; font-weight: 850; font-size: 50px; line-height: 1; letter-spacing: -.01em; }
   .compra-preco small { font-size: 21px; font-weight: 700; color: var(--ink-2); }
-  .compra-preco small:first-child { margin-right: 4px; }
+  .compra-preco small:first-of-type { margin-right: 4px; }
   .estoque { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 11px; border-radius: 999px; white-space: nowrap;
              font-size: 13.5px; font-weight: 700; font-stretch: 94%; color: var(--ink-2); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
   .estoque i { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; flex: none; }
   .estoque-unica { color: var(--accent-text); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
   .estoque-unica i { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 78%); }
   .estoque-txt { margin: -2px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
+  .compra-confia { margin: 2px 0 0; font-size: 13px; line-height: 1.4; color: var(--ink-2); text-wrap: balance; }
+  .compra-confia a { color: var(--ink); font-weight: 650; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; white-space: nowrap; }
   .compra-botoes { position: relative; display: grid; gap: 10px; margin-top: 6px; }
-  /* "No WhatsApp: de R$ X por R$ Y  −10%" (10% em toda peça pelo WhatsApp). Um elemento só, dois desenhos:
-     - celular e tablet (uma coluna): selo claro preso no canto de cima do botão laranja (metade fora dele), SEM ocupar
-       altura: o botão continua na 1ª tela (revisão 11, P1: a faixa empurrava o botão e a barra fixa passava por cima);
-     - PC (duas colunas): faixa clara logo acima do botão, e cada botão diz o preço do seu caminho.
-     Letra grafite sempre; o preço cheio riscado, o do WhatsApp em destaque. Nunca quebra de linha (sem salto quando a
-     fonte chega). */
-  .compra-de-por { position: absolute; z-index: 1; top: 0; right: 12px; transform: translateY(-50%); margin: 0; display: inline-flex; align-items: center; gap: 7px;
-                   height: 28px; padding: 0 11px 0 4px; border-radius: 999px; background: #fff; color: #1d1d1f; font-size: 13px; line-height: 1; white-space: nowrap;
-                   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%), 0 4px 12px -6px rgb(140 50 0 / .45); pointer-events: none; }
-  .compra-de-por .cdp-onde { display: none; align-items: center; gap: 6px; font-weight: 750; font-stretch: 94%; }
-  .compra-de-por .cdp-onde svg { width: 16px; height: 16px; flex: none; color: var(--accent-text); }
-  .compra-de-por s { color: var(--ink-2); text-decoration-thickness: 1.5px; }
-  .compra-de-por .cdp-por { color: var(--ink-2); }
-  .compra-de-por b { font-size: 14.5px; font-weight: 850; font-stretch: 88%; }
-  .compra-de-por .cdp-selo { order: -1; padding: 4px 7px; border-radius: 999px; background: var(--accent-soft); color: #1d1d1f; font-size: 12px; font-weight: 800; }
-  .compra-botoes .botao-preco { display: none; font-weight: 750; white-space: nowrap; }
+  /* De onde vem o preço grande (11/11: o preço grande é o do WhatsApp): "−10% no WhatsApp" em verde + o preço do
+     anúncio riscado. Um elemento só, dois desenhos:
+     - celular e tablet (uma coluna): selo claro preso no canto de cima do botão laranja (metade fora dele), do lado do
+       preço, SEM ocupar altura: o botão continua na 1ª tela (revisão 11, P1: a faixa empurrava o botão);
+     - PC (duas colunas): uma linha entre o preço e os botões, com "no Mercado Livre" escrito; cada botão diz o seu preço.
+     Nunca quebra de linha (sem salto quando a fonte chega). O botão do Mercado Livre leva o preço cheio em toda largura. */
+  .compra-de-por { position: absolute; z-index: 1; top: 0; left: 10px; transform: translateY(-50%); margin: 0; display: inline-flex; align-items: center; gap: 8px;
+                   height: 28px; padding: 0 11px 0 3px; border-radius: 999px; background: #fff; color: #1d1d1f; font-size: 13px; line-height: 1; white-space: nowrap;
+                   box-shadow: inset 0 0 0 1px var(--serve-borda), 0 4px 12px -6px rgb(140 50 0 / .45); pointer-events: none; }
+  .compra-de-por .cdp-wa { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px 0 6px; border-radius: 999px;
+                           background: var(--serve-bg); color: var(--serve-ink); font-weight: 750; font-stretch: 94%; }
+  .compra-de-por .cdp-wa svg { width: 15px; height: 15px; flex: none; color: #1a9e4f; }
+  .compra-de-por s { color: var(--ink-2); text-decoration-thickness: 1px; }
+  .compra-de-por .cdp-ml-txt { display: none; color: var(--ink-2); }
+  .compra-botoes .botao-preco { font-weight: 750; white-space: nowrap; }
+  .compra-botoes .botao-laranja .botao-preco { display: none; }
   .compra-botoes .botao-linha .botao-preco { color: var(--ink-2); }
+  /* celular estreito: o botão do Mercado Livre diz "Mercado Livre · R$ X" (o "Comprar no" segue no nome para o leitor de tela) */
+  @media (max-width: 419px) { .compra-botoes .ml-comprar { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
+  @media (max-width: 339px) { .compra-botoes .botao-linha { font-size: 15.5px; font-stretch: 92%; } }
   @media (min-width: 960px) {
-    .compra-de-por { position: static; transform: none; display: flex; gap: 10px; height: auto; margin: 0 0 -4px; padding: 10px 12px 10px 13px; border-radius: 14px;
-                     background: var(--accent-soft); font-size: 14.5px; pointer-events: auto;
-                     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
-    .compra-de-por .cdp-onde { display: inline-flex; }
-    .compra-de-por b { font-size: 17px; }
-    .compra-de-por .cdp-selo { order: 0; margin-left: auto; background: #fff; font-size: 12.5px; padding: 4px 8px;
-                               box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 62%); }
-    .compra-botoes .botao-preco { display: inline; }
+    .compra-de-por { position: static; transform: none; display: flex; gap: 10px; height: auto; margin: -2px 0 2px; padding: 0; border-radius: 0;
+                     background: none; color: inherit; font-size: 14.5px; pointer-events: auto; box-shadow: none; }
+    .compra-de-por .cdp-wa { height: 26px; padding: 0 11px 0 8px; font-size: 13.5px; box-shadow: inset 0 0 0 1px var(--serve-borda); }
+    .compra-de-por s { color: var(--ink-2); }
+    .compra-de-por .cdp-ml-txt { display: inline; }
+    .compra-botoes .botao-laranja .botao-preco { display: inline; }
+    /* o selo do WhatsApp vem colado ao preço: o "quando vende, acabou" desce para depois dos botões (como no celular) */
+    .estoque-txt { order: 1; margin-top: 0; }
+    .compra-facil { order: 2; }
   }
-  /* PC estreito (coluna de ~400 px): sem o selo, para a faixa caber numa linha também com preço de 5 dígitos */
-  @media (min-width: 960px) and (max-width: 1199px) { .compra-de-por .cdp-selo { display: none; } }
   .compra-botoes .botao { --h: var(--botao-g); font-size: 16.5px; }
   /* Lista de orçamento: o 3º caminho, discreto (sem caixa: um ladrilho com o ícone + o texto), e o "Ver lista (n)" à
      direita. Altura fixa de 44 px (alvo de toque) e numa linha só em toda largura: o link que chega com o script não
@@ -746,6 +788,17 @@ const perguntas = [
   /* celular estreito (320): "Na lista · Ver lista (3)" + "Tirar" numa linha só */
   @media (max-width: 359px) { .compra-lista .cl-sua { display: none; } .compra-lista .cl-na { gap: 8px; } }
   @media (prefers-reduced-motion: reduce) { .compra-lista .cl-na > svg:first-child { animation: none; } }
+  /* "Calcular frete pelo CEP": uma linha, com a cara dos botões de apoio (superfície suave, borda, alvo de 48 px) */
+  .frete-entrada { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px 0 14px; border-radius: 14px; background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font-size: 15px; font-weight: 650; font-stretch: 96%; text-decoration: none;
+    -webkit-tap-highlight-color: transparent; transition: background-color .18s ease, box-shadow .18s ease; }
+  .frete-entrada > svg:first-child { flex: none; width: 19px; height: 19px; color: var(--accent-text); }
+  .frete-entrada > span { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
+  .frete-entrada > svg:last-child { flex: none; width: 16px; height: 16px; color: var(--ink-2); transition: transform .18s ease; }
+  .frete-entrada:hover { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .frete-entrada:hover > svg:last-child { transform: translateX(3px); }
+  .frete-entrada:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .frete-entrada, .frete-entrada > svg:last-child { transition: none; } }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .compra-facil b { font-weight: 650; color: var(--ink-2); }
 
@@ -850,5 +903,14 @@ const perguntas = [
     .estoque-txt { order: 1; margin-top: 0; }
     .compra-facil { order: 2; }
   }
-  @media (max-width: 340px) { .peca-topo.preco-2l { --p2: 38px; } .peca-topo.nome-3l { --n3: 26px; } }
+  /* preço de 5 dígitos no celular de 320: o "Peça única" desce para a linha de baixo, à direita, e o selo do WhatsApp
+     (preso no canto esquerdo do botão) fica só com "−10% no WhatsApp": um não encosta no outro e nada ganha altura (o
+     preço do anúncio está escrito no botão do Mercado Livre, logo abaixo) */
+  @media (max-width: 340px) {
+    .peca-topo.preco-2l { --p2: 38px; }
+    .peca-topo.preco-2l .estoque { margin-left: auto; }
+    .peca-topo.preco-2l .compra-de-por { padding-right: 3px; }
+    .peca-topo.preco-2l .compra-de-por .cdp-ml { display: none; }
+    .peca-topo.nome-3l { --n3: 26px; }
+  }
 </style>

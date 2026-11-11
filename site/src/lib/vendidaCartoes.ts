@@ -4,7 +4,7 @@
 import { Busca, SIZES_CARTAO, foto, fotoCartao, type Indice, type Item } from './busca';
 import { parecidas, type Vendida } from './vendida';
 import {
-  CLASSE_CARTAO, linhaCarro, precoPartes, codigoPeca, dadosCarro, msgWhats, urlPeca, icone, linkWhats,
+  CLASSE_CARTAO, linhaCarro, precoCartao, SELO_WHATS, codigoPeca, dadosCarro, msgWhats, urlPeca, icone, linkWhats,
 } from '../components/catalogo/etiqueta';
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -15,7 +15,7 @@ const atributos = (o: Record<string, string | number | undefined>) =>
  *  no lugar (SIZES_CARTAO); sem ela (ou com o índice do .map), a das parecidas da 404. */
 export function cartaoHtml(it: Item, sizes?: string | number): string {
   const { carro, anos } = linhaCarro(it.b, it.m, it.y, it.ms);
-  const [reais, cent] = precoPartes(it.p);
+  const pc = precoCartao(it.p);
   const cod = codigoPeca(it.o);
   const f = fotoCartao(it, typeof sizes === 'string' ? sizes : SIZES_CARTAO.parecidas);
   const leve = f.srcset ? ` srcset="${esc(f.srcset)}" sizes="${esc(f.sizes ?? '')}"` : '';
@@ -26,9 +26,9 @@ export function cartaoHtml(it: Item, sizes?: string | number): string {
   return `<div class="${CLASSE_CARTAO}"><a class="etiqueta" href="/peca/${esc(it.h)}.html"${atributos(dadosCarro(it.b, it.m, it.y, it.ms, it.ys))}>`
     + `<div class="etiqueta-foto">${img}</div><div class="etiqueta-dados">${linha}<h3 class="etiqueta-nome">${esc(it.n)}</h3>`
     + (cod ? `<span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">${esc(cod)}</span></span>` : '')
-    + `<span class="sr-only">R$ ${reais},${cent}</span><span class="etiqueta-preco num" aria-hidden="true"><small>R$</small>${reais}<small>${cent}</small></span>`
-    + `<span class="etiqueta-confia"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('garantia')}"></use></svg><span><span class="etiqueta-confia-longo">Original · </span>90 dias de garantia</span></span>`
-    + `</div></a><a class="etiqueta-acao" href="${esc(linkWhats(msgWhats(it, urlPeca(it.h))))}" target="_blank" rel="noopener" aria-label="${esc(`Pedir no WhatsApp: ${it.n}`)}">`
+    + `<span class="sr-only">${pc.sr}</span><span class="etiqueta-valor num" aria-hidden="true"><s>R$ ${pc.de}</s><span class="etiqueta-preco"><small>R$</small>${pc.reais}<small>${pc.cent}</small></span><span class="etiqueta-wa">${SELO_WHATS}</span></span>`
+    + `<span class="etiqueta-confia"><span>90 dias de garantia</span>${it.q === 1 ? '<b>Peça única</b>' : ''}</span>`
+    + `</div></a><a class="etiqueta-acao" data-botao="pedir-cartao" href="${esc(linkWhats(msgWhats(it, urlPeca(it.h))))}" target="_blank" rel="noopener" aria-label="${esc(`Pedir no WhatsApp: ${it.n}`)}">`
     + `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('whats')}"></use></svg>Pedir no WhatsApp</a></div>`;
 }
 

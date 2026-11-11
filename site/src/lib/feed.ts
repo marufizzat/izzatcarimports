@@ -32,7 +32,7 @@ export function descricaoFeed(p: Peca): string {
   const partes = limparTexto(p.desc).split(/(?<=\.)\s+/).filter((f) => f && !SAIR.test(f));
   let texto = partes.join(' ').trim();
   if (texto.length < 40) {
-    texto = `${limparTexto(nomeCompleto(p))}. Peça original retirada de carro com baixa legal, conferida e fotografada no nosso pátio.`
+    texto = `${limparTexto(nomeCompleto(p))}. Peça original retirada de carro com baixa legal, conferida e fotografada no pátio da Izzat Car.`
       + (p.oem ? ` Código original: ${limparTexto(p.oem)}.` : '')
       + ' Nota fiscal e 90 dias de garantia.';
   }

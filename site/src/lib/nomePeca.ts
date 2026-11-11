@@ -3,7 +3,7 @@
 // Virtus Polo Up 18/24 06k907811", "Volvo Xc 60", "Gm"): esse fica só na nota de rodapé da ficha (AbasDetalhes).
 // Auditoria 3, itens 4.2 e 9.2. Só no build (puxa lib/dados.ts).
 import { codigoDaPeca, type Peca } from './dados';
-import { modelosDa, nomeModelos } from './meuCarro';
+import { gruposModelos, listaE, nomeModelos, nomeModelosVersoes, nomeSoVersoes } from './meuCarro';
 
 type PecaNome = Pick<Peca, 'n' | 'b' | 'm' | 'y' | 'oem' | 'ms'>;
 
@@ -13,10 +13,11 @@ export function anosDaPeca(y: Peca['y'], sep = '–'): string {
 }
 
 /** "Farol direito Chevrolet Cruze 2017–2021 E131464301": o mesmo do <title> da página da peça.
- *  anos = separador dos anos; cod = rótulo antes do código ("Cód. "); sep = entre as partes. */
+ *  anos = separador dos anos; cod = rótulo antes do código ("Cód. "); sep = entre as partes.
+ *  É o nome que o Google lê (JSON-LD, feed): o carro unido leva as versões do anúncio ("Classe C (C180, C200)"). */
 export function nomeCompleto(p: PecaNome, o: { anos?: string; cod?: string; sep?: string } = {}): string {
   const cod = codigoDaPeca(p.oem);
-  return [p.n, nomeModelos(p), anosDaPeca(p.y, o.anos ?? '–'), cod ? `${o.cod ?? ''}${cod}` : '']
+  return [p.n, nomeModelosVersoes(p), anosDaPeca(p.y, o.anos ?? '–'), cod ? `${o.cod ?? ''}${cod}` : '']
     .filter(Boolean).join(o.sep ?? ' ');
 }
 
@@ -31,11 +32,24 @@ export function nomeMensagem(p: PecaNome): string {
 export const TITULO_MAX = 65;
 export const TITULO_SUFIXO = ' | Izzat Car';
 
-/** "Volkswagen Virtus, Polo e Up" com só os `n` primeiros carros ("Volkswagen Virtus e Polo"; 0 = só a marca). */
-function carroCom(p: PecaNome, n: number): string {
-  const ms = modelosDa(p).slice(0, n);
-  const lista = ms.length <= 1 ? ms.join('') : `${ms.slice(0, -1).join(', ')} e ${ms[ms.length - 1]}`;
-  return [p.b, lista].filter(Boolean).join(' ');
+/** "Volkswagen Virtus, Polo e Up" com só os `n` primeiros carros ("Volkswagen Virtus e Polo"; 0 = só a marca). O carro
+ *  unido leva as versões do anúncio ("Mercedes-Benz Classe C (C180, C200)") quando `versoes`. */
+function carroCom(p: PecaNome, n: number, versoes = true): string {
+  const gs = gruposModelos(p).slice(0, n).map((g) => (versoes && g.v.length ? `${g.m} (${g.v.join(', ')})` : g.m));
+  return [p.b, listaE(gs)].filter(Boolean).join(' ');
+}
+
+/** As formas do carro no <title>, da mais completa para a mais curta, sem repetir: todos os carros (com as versões do
+ *  carro unido), menos carros (saem do fim), e por último só a marca. No carro unido, antes de perder a versão, a forma
+ *  do anúncio ("Mercedes-Benz C320": é o que o cliente digita e o que o título dizia antes da união) e depois o
+ *  principal sozinho ("Mercedes-Benz Classe C"). Peça sem carro unido: igual a antes. */
+function formasDoCarro(p: PecaNome): string[] {
+  const n = gruposModelos(p).length;
+  const formas = [...Array(n).keys()].map((i) => carroCom(p, n - i));
+  const so = nomeSoVersoes(p);
+  if (so) formas.push(so, carroCom(p, 1, false));
+  formas.push(carroCom(p, 0));
+  return formas.filter((c, i, a) => a.indexOf(c) === i);
 }
 
 /** <title> da página da peça: nome limpo + carro(s) + anos (+ código) + " | Izzat Car", em até 65 caracteres.
@@ -51,9 +65,9 @@ export function tituloPeca(p: PecaNome, o: { max?: number; extra?: string; anos?
   const anos = anosDaPeca(p.y);
   const junta = (...xs: (string | undefined)[]) => xs.filter(Boolean).join(' ');
   // "Volvo S60 e XC60", "Volvo S60", "Volvo" (sem repetir; peça sem carro: só "")
-  const carros = [...Array(modelosDa(p).length + 1).keys()].reverse().map((n) => carroCom(p, n))
-    .filter((c, i, a) => a.indexOf(c) === i);
+  const carros = formasDoCarro(p);
   const [carro] = carros;
+  const soMarca = carroCom(p, 0);
   const ex = o.extra || '';
   const opcoes: string[] = [];
   const por = (t: string, sufixo = true) => opcoes.push(sufixo ? t + TITULO_SUFIXO : t);
@@ -63,9 +77,9 @@ export function tituloPeca(p: PecaNome, o: { max?: number; extra?: string; anos?
   por(junta(p.n, carro, ex));
   por(junta(p.n, carro, ex), false);
   // o menor carro que ainda é o carro: marca + 1º modelo (sem modelo, a marca); com `extra`, ele nunca sai
-  const minimo = carroCom(p, 1);
+  const minimo = carroCom(p, 1, false);
   for (const c of carros.slice(1)) {
-    if (ex && c.length < minimo.length) break;
+    if (ex && c === soMarca && c !== minimo) break;
     por(junta(p.n, c, ex)); por(junta(p.n, c, ex), false);
   }
   if (!ex) por(junta(p.n));
@@ -81,7 +95,7 @@ export function titulosPecas<T extends PecaNome & { id: string }>(lista: T[]): M
   const comCodigo = (p: T) => {
     const cod = codigoDaPeca(p.oem);
     const t = cod ? tituloPeca(p, { anos: true, extra: cod }) : '';
-    return t && t.length <= TITULO_MAX && t.includes(nomeModelos(p)) ? t : atual.get(p.id)!;
+    return t && t.length <= TITULO_MAX && (t.includes(nomeModelosVersoes(p)) || t.includes(nomeModelos(p))) ? t : atual.get(p.id)!;
   };
   const etapas: ((p: T) => string)[] = [
     (p) => tituloPeca(p, { anos: true }),

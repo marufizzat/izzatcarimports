@@ -8,8 +8,11 @@
 // Qualquer outro endereço: a 404 de sempre.
 import Pagina from '../layouts/Pagina.astro';
 import Icone from '../components/Icone.astro';
-import { whatsUrl, SITE, pecas } from '../lib/dados';
-import { montarDicionario, RE_VENDIDA } from '../lib/vendida';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { whatsUrl, SITE, pecas, pecaPorId } from '../lib/dados';
+import { montarDicionario, conferirAntes, RE_MLB_PECA, SHARDS } from '../lib/vendida';
+import { scriptCurto } from '../lib/scriptCurto';
 
 const canonical = `${SITE}/404.html`;
 const ld = {
@@ -22,11 +25,23 @@ const ld = {
 };
 // marcas, modelos e a grafia das palavras do estoque (~7 KB; só a 404 leva)
 const dic = JSON.stringify(montarDicionario(pecas())).replace(/</g, '\\u003c');
-// antes do 1º desenho: é peça? (a MESMA regra de lib/vendida.ts) -> html.nf-peca, o título da aba, o MLB para o GA4
-// e o índice da busca já descendo (os cartões parecidos)
-const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)}).exec(location.pathname);if(!m)return;`
-  + `document.documentElement.classList.add('nf-peca');window.IZZAT_VENDIDA=m[2];document.title='Essa peça já foi vendida | Izzat Car Imports';`
-  + `var l=document.createElement('link');l.rel='preload';l.as='fetch';l.href='/dados/busca.json';l.crossOrigin='anonymous';document.head.appendChild(l)})();`;
+// Anúncio tirado do site de propósito (excluir_do_site.json, na raiz: gêmeo de outro, mesmo título, preço e fotos): o
+// endereço dele não é "peça vendida". Com o gêmeo à venda (o MLB que o motivo cita), a 404 leva para ele; sem gêmeo à
+// venda, diz "Essa peça saiu do site" (nunca "já foi vendida": não foi).
+const arqExcluidos = join(process.cwd(), '..', 'excluir_do_site.json');
+const excluidos: Record<string, string> = existsSync(arqExcluidos) ? JSON.parse(readFileSync(arqExcluidos, 'utf-8')) : {};
+const gemeas = Object.fromEntries(Object.entries(excluidos).flatMap(([id, motivo]) => {
+  const outro = (String(motivo).match(/MLB\d{6,14}/g) ?? []).find((x) => x !== id && pecaPorId(x));
+  return outro ? [[id, outro]] : [];
+}));
+const foraDoSite = Object.keys(excluidos).filter((id) => !gemeas[id]);
+// Antes do 1º desenho (lib/vendida.ts: conferirAntes): o endereço tem MLB de peça? Só o <main> fica escondido (o cabeçalho
+// aparece), o arquivo do estoque é pedido daqui mesmo e a peça que segue à venda abre sem esperar o script da página.
+// 400 ms sem resposta: "Abrindo a peça…"; 2,5 s: a página aparece dizendo que ainda confere (nunca "Página não
+// encontrada" antes de saber: com rede lenta eram 4 s de tela branca e depois a 404 por ~2,7 s; revisão 14, item 25).
+const ESPERA_MS = 400;
+const TETO_MS = 2500;
+const topo = scriptCurto(`(${conferirAntes.toString()})(${JSON.stringify(RE_MLB_PECA.source)},${SHARDS},${JSON.stringify(gemeas)},${ESPERA_MS},${TETO_MS})`);
 ---
 <Pagina
   titulo="Página não encontrada | Izzat Car Imports"
@@ -36,21 +51,25 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
 >
   <Fragment slot="head">
     <script is:inline set:html={topo} />
+    <style is:inline set:html=".nf-conferindo main{visibility:hidden}" />
     <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />
   </Fragment>
 
+  {/* a conferência demorou mais de 400 ms (html.nf-abrindo): um aviso calmo no lugar da tela vazia */}
+  <p class="nf-aguarde" role="status"><i aria-hidden="true"></i>Abrindo a peça…</p>
   {/* a trilha no topo à esquerda, como nas outras páginas (antes ficava no meio, embaixo da arte) */}
   <nav class="moldura nf-trilha-wrap" aria-label="Você está em">
     <ol class="nf-trilha">
       <li><a href="/">Início</a></li>
       <li class="nf-geral"><span aria-current="page">Página não encontrada</span></li>
+      <li class="nf-espera"><span aria-current="page">Conferindo a peça</span></li>
       <li class="nf-vendida"><a href="/catalogo.html">Peças</a></li>
       <li class="nf-vendida"><span aria-current="page">Peça vendida</span></li>
     </ol>
   </nav>
   <div class="moldura nf">
     <figure class="nf-arte">
-      <img src="/arte/v2/404.webp" alt="Um parafuso sobre um pedestal de estúdio: essa página não está aqui. Procure a peça ou fale com a gente." width="800" height="800" decoding="async" />
+      <img src="/arte/v2/404.webp" alt="" width="800" height="800" decoding="async" />
     </figure>
 
     <div class="nf-texto nf-geral">
@@ -66,7 +85,21 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
       <div class="nf-links">
         <a class="botao botao-linha nf-botao" href="/catalogo.html">Ver o catálogo</a>
         <a class="botao botao-linha nf-botao" href="/carros.html">Peças por carro</a>
-        <a class="botao botao-laranja nf-botao" href={whatsUrl('Estou procurando uma peça.')} rel="noopener">
+        <a class="botao botao-laranja nf-botao" href={whatsUrl('Procuro uma peça.')} rel="noopener" data-botao="404-procuro">
+          <Icone nome="whats" />Chamar no WhatsApp
+        </a>
+      </div>
+    </div>
+
+    {/* rede lenta (html.nf-lenta, depois de 2,5 s sem resposta do estoque): a página diz que ainda confere, com saídas.
+        Se a peça segue à venda, o botão "Abrir a peça" aparece aqui (nada navega sozinho depois que a pessoa já vê a página) */}
+    <div class="nf-texto nf-espera" data-espera>
+      <h1 class="display nf-h1" data-e-titulo>Conferindo a peça…</h1>
+      <p class="lead nf-lead" role="status" data-e-lead>A conexão está lenta. A gente ainda está conferindo se esta peça continua à venda.</p>
+      <div class="nf-links">
+        <a class="botao botao-laranja nf-botao" href="/catalogo.html" data-e-abrir hidden>Abrir a peça</a>
+        <a class="botao botao-linha nf-botao" href="/catalogo.html">Ver o catálogo</a>
+        <a class="botao botao-linha nf-botao" href={whatsUrl('Procuro uma peça.')} rel="noopener" data-botao="404-conferindo">
           <Icone nome="whats" />Chamar no WhatsApp
         </a>
       </div>
@@ -74,15 +107,15 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
 
     {/* peça vendida: o texto do nome e do carro entra pelo script (lido do endereço) */}
     <div class="nf-texto nf-vendida" data-vendida>
-      <h1 class="display nf-h1">Essa peça já foi vendida</h1>
+      <h1 class="display nf-h1" data-v-h1>Essa peça já foi vendida</h1>
       <div class="nf-v-peca">
-        <span class="nf-v-selo">Vendida</span>
+        <span class="nf-v-selo" data-v-selo>Vendida</span>
         <b class="nf-v-nome" data-v-nome></b>
         <span class="nf-v-carro num" data-v-carro></span>
       </div>
-      <p class="lead nf-lead">Peça usada é única: quando vende, acabou. Veja as parecidas ou peça para a gente avisar se chegar outra.</p>
+      <p class="lead nf-lead" data-v-lead>Peça usada é única: quando vende, acabou. Veja as parecidas ou receba um aviso se chegar outra.</p>
       <div class="nf-links">
-        <a class="botao botao-laranja nf-botao" href={whatsUrl('Uma peça que eu vi no site já vendeu. Me avisa se chegar outra?')} rel="noopener" data-v-avise>
+        <a class="botao botao-laranja nf-botao" href={whatsUrl('Uma peça que eu vi no site já vendeu. Me avisa se chegar outra?')} rel="noopener" data-botao="vendida-avise" data-v-avise>
           <Icone nome="whats" />Me avise se chegar outra
         </a>
         <a class="botao botao-linha nf-botao" href="/catalogo.html" data-v-ver>Ver parecidas</a>
@@ -100,27 +133,58 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
     </div>
   </section>
   <script is:inline type="application/json" id="nf-dic" set:html={dic} />
+  {foraDoSite.length > 0 && <script is:inline type="application/json" id="nf-fora" set:html={JSON.stringify(foraDoSite)} />}
 </Pagina>
 
 <script>
-  import { RE_VENDIDA, lerSlug, mensagemVendida, filtrosIniciais, linkFiltros, anosCurto, type Dicionario } from '../lib/vendida';
-  import { linkWhats } from '../lib/whats';
+  import { RE_VENDIDA, mlbDoEndereco, caminhoLimpo, decidirEndereco, lerSlug, mensagemVendida, filtrosIniciais, linkFiltros, anosCurto, type Dicionario } from '../lib/vendida';
+  import { linkWhats, whatsUrl } from '../lib/whats';
 
-  const m = RE_VENDIDA.exec(location.pathname);
-  const raiz = document.querySelector<HTMLElement>('[data-vendida]');
-  const json = document.getElementById('nf-dic')?.textContent;
-  if (m && raiz && json) {
-    const v = lerSlug(m[1], m[2], JSON.parse(json) as Dicionario);
+  const html = document.documentElement;
+  // o endereço sem a barra do fim e com o MLB em maiúsculas (vendida com "mlb" minúsculo ou "….html/" vale igual)
+  const caminho = caminhoLimpo(location.pathname);
+  // mostra a página (a 404 de sempre, a vendida ou o que já estiver marcado): tira os estados de espera
+  type Conferencia = { id: string; alvo: string; tarde: () => boolean; estoque: Promise<string | null | undefined>; fim: () => void };
+  const w = window as unknown as { IZZAT_VENDIDA?: string; gtag?: (...a: unknown[]) => void; __nf?: Conferencia };
+  // e para os relógios do <head> (senão a página já resolvida voltaria para "Abrindo…"/"Conferindo…")
+  const revelar = () => { w.__nf?.fim(); html.classList.remove('nf-conferindo', 'nf-abrindo', 'nf-lenta'); };
+
+  // a peça que saiu do site (o MLB não está mais no estoque e o endereço é de peça): a página "vendida" de sempre
+  function mostrarVendida(mlb: string) {
+    const raiz = document.querySelector<HTMLElement>('[data-vendida]');
+    const json = document.getElementById('nf-dic')?.textContent;
+    const m = RE_VENDIDA.exec(caminho);
+    if (!raiz || !json || !m) return;
+    html.classList.add('nf-peca');
+    w.IZZAT_VENDIDA = mlb;
+    // o GA4 (rastreio.js) lê IZZAT_VENDIDA quando carrega; se já carregou, manda daqui (uma vez só)
+    if (w.gtag) w.gtag('event', 'peca_vendida', { mlb, pagina: caminho });
+    document.title = 'Essa peça já foi vendida | Izzat Car Imports';
+    const v = lerSlug(m[1].toLowerCase(), mlb, JSON.parse(json) as Dicionario);
     const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s);
+    // anúncio tirado do site de propósito (excluir_do_site.json) e sem um igual à venda: saiu do site, não foi vendido
+    const fora = (JSON.parse(document.getElementById('nf-fora')?.textContent || '[]') as string[]).includes(mlb);
+    if (fora) {
+      document.title = 'Essa peça saiu do site | Izzat Car Imports';
+      const h1 = $('[data-v-h1]'), selo = $('[data-v-selo]'), lead = $('[data-v-lead]');
+      if (h1) h1.textContent = 'Essa peça saiu do site';
+      if (selo) selo.textContent = 'Fora do site';
+      if (lead) lead.textContent = 'Este anúncio não está mais no site. Veja as parecidas ou chame no WhatsApp: a gente procura no pátio.';
+    }
     // o nome e o carro só aparecem quando o carro foi reconhecido (texto inventado no endereço nunca vira texto do site)
     const nome = $('[data-v-nome]'), carro = $('[data-v-carro]');
     if (nome) nome.textContent = v.nome || (v.carro ? 'Peça' : `Anúncio ${v.mlb}`);
     if (carro) carro.textContent = v.carro ? [v.carro, anosCurto(v.anos)].filter(Boolean).join(' · ') : 'Anúncio do Mercado Livre';
-    if (v.nome) document.title = `Vendida: ${[v.nome, v.carro].filter(Boolean).join(' ')} | Izzat Car Imports`;
+    if (v.nome) document.title = `${fora ? 'Fora do site' : 'Vendida'}: ${[v.nome, v.carro].filter(Boolean).join(' ')} | Izzat Car Imports`;
     // a arte é só enfeite aqui (o texto dela fala da página que não existe)
     document.querySelector('.nf-arte img')?.setAttribute('alt', '');
     const avise = $<HTMLAnchorElement>('[data-v-avise]');
-    if (avise) avise.href = linkWhats(mensagemVendida(v));
+    if (avise) {
+      avise.href = fora
+        ? whatsUrl(`${v.nome ? `Procuro ${v.nome}${v.carro ? ` para ${v.carro}` : ''}. ` : ''}Vi o anúncio ${v.mlb}, que saiu do site. Tem no pátio?`)
+        : linkWhats(mensagemVendida(v));
+      if (fora) avise.lastChild!.textContent = 'Procurar no pátio';
+    }
     const ver = $<HTMLAnchorElement>('[data-v-ver]'), todas = $<HTMLAnchorElement>('[data-v-todas]');
     const link = (href: string) => { if (ver) ver.href = href; if (todas) todas.href = href; };
     link(linkFiltros(filtrosIniciais(v)));
@@ -140,11 +204,53 @@ const topo = `(function(){var m=new RegExp(${JSON.stringify(RE_VENDIDA.source)})
       }).catch(() => { grade.classList.add('nf-v-fora'); /* sem o índice: ficam os botões, que já levam ao catálogo */ });
     } else grade?.classList.add('nf-v-fora');
   }
+
+  // O endereço com MLB: o estoque (um arquivo pequeno, pedido pelo script do <head>: window.__nf) diz se a peça segue à
+  // venda. Sem resposta (a conferência falhou), a 404 de sempre: nunca "vendida" sem ter conferido. A peça que segue à
+  // venda já foi aberta pelo <head>; aqui só chega a que respondeu DEPOIS do teto (a pessoa já está vendo a página): o
+  // botão "Abrir a peça" aparece, nada navega sozinho.
+  async function decidir() {
+    const mlb = mlbDoEndereco(caminho);
+    const nf = w.__nf;
+    if (!mlb || !nf) return revelar();
+    document.title = 'Abrindo a peça… | Izzat Car Imports';
+    const h = await nf.estoque;
+    document.title = 'Página não encontrada | Izzat Car Imports';
+    if (h === undefined) return revelar();
+    const d = decidirEndereco(caminho, location.search, location.hash, h);
+    if (d.acao === 'ir') {
+      if (!nf.tarde()) { location.replace(d.destino); return; }
+      const abrir = document.querySelector<HTMLAnchorElement>('[data-e-abrir]');
+      const titulo = document.querySelector('[data-e-titulo]'), lead = document.querySelector('[data-e-lead]');
+      if (!abrir || !titulo || !lead) { location.replace(d.destino); return; }
+      document.title = 'Esta peça continua à venda | Izzat Car Imports';
+      titulo.textContent = nf.alvo === nf.id ? 'Esta peça continua à venda' : 'Tem uma igual à venda';
+      lead.textContent = nf.alvo === nf.id ? 'O endereço dela mudou. Abra a página de hoje:' : 'O anúncio que você abriu saiu do site, mas há um igual à venda:';
+      abrir.href = d.destino;
+      abrir.hidden = false;
+      return;
+    }
+    if (d.acao === 'vendida') mostrarVendida(mlb);
+    revelar();
+  }
+  decidir();
 </script>
 
 <style>
   /* peça vendida x 404 comum: o script do <head> marca html.nf-peca antes do 1º desenho */
   :global(html.nf-peca) .nf-geral, :global(html:not(.nf-peca)) .nf-vendida { display: none !important; }
+  /* rede lenta (html.nf-lenta): no lugar das duas, "Conferindo a peça…" com as saídas */
+  :global(html.nf-lenta) :is(.nf-geral, .nf-vendida), :global(html:not(.nf-lenta)) .nf-espera { display: none !important; }
+  /* "Abrindo a peça…" (html.nf-abrindo, depois de 400 ms escondida): no alto da área da página, com o cabeçalho à vista */
+  .nf-aguarde { display: none; }
+  :global(html.nf-abrindo) .nf-aguarde {
+    visibility: visible; position: absolute; left: 0; right: 0; top: 0; z-index: 1; margin: 0; padding-top: clamp(96px, 22vh, 200px);
+    display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 17px; font-weight: 600; color: var(--ink-2);
+  }
+  :global(html.nf-conferindo main) { position: relative; }
+  .nf-aguarde i { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--line-2); border-top-color: var(--accent); animation: nf-gira .9s linear infinite; }
+  @keyframes nf-gira { to { transform: rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce) { .nf-aguarde i { animation: none; } }
 
   .nf-trilha-wrap { padding-top: 14px; }
   .nf { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(32px, 5vw, 72px); align-items: center; padding-block: clamp(8px, 3vw, 40px) clamp(56px, 8vw, 112px); }

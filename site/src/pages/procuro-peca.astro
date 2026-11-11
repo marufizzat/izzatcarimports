@@ -36,7 +36,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       <form class="pc-form" id="form-procuro" novalidate data-whats={WHATS} data-modelos={JSON.stringify(modelosPorMarca)} aria-describedby="pc-nota">
         <div class="pc-form-topo">
           <img class="pc-rosto" src="/arte/v2/atendimento-rosto.webp" alt="" width="192" height="192" fetchpriority="low" decoding="async" />
-          <p><b>A gente procura no pátio</b><span>e responde pelo WhatsApp, com foto.</span></p>
+          <p><b>A gente procura no pátio</b><span>e responde pelo WhatsApp.</span></p>
         </div>
 
         <p class="pc-salvo" id="pc-salvo" hidden></p>
@@ -86,14 +86,14 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
         <datalist id="lista-modelos"></datalist>
 
         <div class="pc-acao">
-          <button type="submit" class="botao botao-laranja pc-enviar"><Icone nome="whats" />Enviar pelo WhatsApp</button>
+          <button type="submit" class="botao botao-laranja pc-enviar"><Icone nome="whats" />Continuar no WhatsApp</button>
           <p class="pc-nota" id="pc-nota">O WhatsApp abre com tudo preenchido. Você confere e envia por lá.</p>
           <p class="pc-status" role="status" aria-live="polite" id="pc-status"></p>
         </div>
 
         <div class="pc-aviso">
           <p>Quer saber quando chegar peça do seu carro no pátio?</p>
-          <a class="botao botao-linha pc-aviso-botao" href={linkAviso(WHATS, 'carro')} rel="noopener" data-aviso>
+          <a class="botao botao-linha pc-aviso-botao" href={linkAviso(WHATS, 'carro')} rel="noopener" data-botao="procuro-avise" data-aviso>
             <Icone nome="whats" /><span>Me avise quando chegar peça</span>
           </a>
           <p class="pc-aviso-erro" id="pc-aviso-erro" role="status" aria-live="polite" hidden>Preencha a marca e o modelo do carro para a gente saber qual é.</p>
@@ -123,7 +123,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
   const status = document.getElementById('pc-status');
 
   const regras: Record<string, { ok: (v: string) => boolean; msg: string }> = {
-    marca: { ok: (v) => v.trim().length >= 2, msg: 'Informe a marca do carro, por exemplo Volkswagen.' },
+    marca: { ok: (v) => v.trim().length >= 2, msg: 'Informe a marca do carro, por exemplo, Volkswagen.' },
     modelo: { ok: (v) => v.trim().length >= 1, msg: 'Falta o modelo. Por exemplo, Gol ou Polo.' },
     ano: {
       ok: (v) => {
@@ -244,10 +244,10 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
     }
     const nota = document.getElementById('pc-salvo');
     if (nota && (daBusca || carroUrl)) {
-      nota.textContent = `Já preenchemos com a sua busca: ${[daBusca, carroTexto && `para ${carroTexto}`].filter(Boolean).join(' ')}. Se precisar, é só trocar.`;
+      nota.textContent = `Preenchido com a sua busca: ${[daBusca, carroTexto && `para ${carroTexto}`].filter(Boolean).join(' ')}. Se precisar, é só trocar.`;
       nota.hidden = false;
     } else if (nota && doSalvo) {
-      nota.textContent = `Já preenchemos com o seu carro: ${carroTexto}. Se for outro, é só trocar.`;
+      nota.textContent = `Preenchido com o seu carro: ${carroTexto}. Se for outro, é só trocar.`;
       nota.hidden = false;
     }
     pintarAviso();
@@ -294,6 +294,7 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       a.href = url;
       a.target = '_blank';
       a.rel = 'noopener';
+      a.dataset.botao = 'procuro-form';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -303,7 +304,8 @@ const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemLi
       link.href = url;
       link.target = '_blank';
       link.rel = 'noopener';
-      link.textContent = 'toque aqui';
+      link.dataset.botao = 'procuro-form';
+      link.textContent = 'abra por aqui';
       status.appendChild(link);
       status.appendChild(document.createTextNode('.'));
     });

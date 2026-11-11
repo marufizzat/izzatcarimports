@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, mensagemLista, LIMITE_MSG_LISTA, blocoPeca, cabecaPeca, caudaPeca, fichaPeca, blocoDaCabeca, urlDaCauda, linhaMeuCarro, comMeuCarro, carroSalvoTxt, conviteCarro, precoWhats, precoWhatsTxt, mensagemFrete, WHATS } from './whats';
+import { ABERTURA, mensagem, whatsUrl, linkWhats, mensagemPeca, mensagemLista, LIMITE_MSG_LISTA, blocoPeca, cabecaPeca, caudaPeca, fichaPeca, blocoDaCabeca, urlDaCauda, linhaMeuCarro, comMeuCarro, carroSalvoTxt, conviteCarro, precoWhats, precoWhatsTxt, mensagemFrete, WHATS, linhaCep } from './whats';
 import { formatarCep, cepCompleto, digitosCep } from './cep';
 import { msgWhats } from '../components/catalogo/etiqueta';
 
@@ -148,3 +148,28 @@ describe('lista de orçamento: o pedido de várias peças (mensagemLista)', () =
   });
 });
 
+describe('lista de orçamento: o CEP opcional no pedido', () => {
+  const item = { id: 'MLB9', nome: 'Fechadura', preco: 89.9 };
+  it('CEP preenchido entra na mensagem como "CEP: 00000-000", antes do carro e da pergunta', () => {
+    const m = mensagemLista([item], 'Volvo XC60 2019', undefined, '96445000');
+    expect(m).toContain('\n\nSubtotal no site: R$ 89,90\n*Total no WhatsApp (10% de desconto): R$ 80,91*\n\n'
+      + 'CEP: 96445-000\nMeu carro: Volvo XC60 2019\nServe e ainda tem?\n\nhttps://izzatcarimports.com.br/lista.html?i=MLB9');
+    // sem CEP, a mensagem é a mesma de antes (nenhuma linha a mais)
+    expect(mensagemLista([item], 'Volvo XC60 2019')).toBe(m.replace('CEP: 96445-000\n', ''));
+  });
+  it('CEP incompleto ou vazio não entra (nunca "CEP: 9644")', () => {
+    expect(linhaCep('')).toBe('');
+    expect(linhaCep('9644-50')).toBe('');
+    expect(linhaCep('96445-0001')).toBe('');
+    expect(linhaCep('96445-000')).toBe('CEP: 96445-000\n');
+    expect(mensagemLista([item], '', undefined, '9644')).not.toContain('CEP');
+  });
+  it('lista comprida: o CEP continua na mensagem (encurtada até caber) e o total e o link também', () => {
+    const itens = Array.from({ length: 30 }, (_, i) => ({ id: `MLB${7000000000 + i}`, nome: `Módulo conforto BCM carroceria dianteiro esquerdo ${i}`,
+      carro: 'Volkswagen Gol, Fox e Saveiro', anos: '2013 a 2022', cod: `34D937087C${i}`, preco: 318.33 + i }));
+    const m = mensagemLista(itens, 'Volkswagen Gol 2016', undefined, '96445000');
+    expect(m.length).toBeLessThanOrEqual(LIMITE_MSG_LISTA);
+    expect(m).toContain('CEP: 96445-000\nMeu carro: Volkswagen Gol 2016\nServem e ainda têm?');
+    expect(m).toContain('(todas no link)');
+  });
+});
