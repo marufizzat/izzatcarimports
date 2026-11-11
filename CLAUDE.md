@@ -273,6 +273,37 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **Endereços que já abrem**: `#raio-x=<zona>`, `#raio-x=batida`, `#raio-x=batida:<ponto>`,
      `#raio-x=por-dentro:<zona>` (sem a zona: a frente) (na home e na página do carro; só o `#`, nenhum endereço novo).
 
+14. **Raio-x: girar o carro e o Raio-x vivo (rodada 17, nov/2026)**
+   - **Girar o carro**: a 2ª vista do MESMO carro, por trás e pelo lado direito (`public/arte/v2/raio-x-tras.webp`, com as
+     variantes 320/900; gerada com a arte da frente como referência: o mesmo carro girado 180° no mesmo estúdio). O botão
+     redondo "Girar" na arte, deslizar o dedo de lado na arte e as setas ← → (com o foco na arte) trocam a vista; a
+     troca é um cruzamento com um leve aperto na horizontal: cada vista fica numa caixa (`.rxg-lado`, com a arte, os
+     pontos e as etiquetas) e as duas se cruzam pela Web Animations (só opacidade e transform; na hora com "reduzir
+     movimento" ou `html.leve`). View Transition NÃO: ao começar e ao acabar, o Chrome recalcula o estilo da página
+     inteira (54–80 ms de tarefa com CPU 4× na home; medido). O código (`v2/raioXGirar.ts` + `.css`), a arte e os
+     contornos (`lib/raioXTras.ts`: `ZONAS_TRAS`, `PONTOS_TRAS`) só descem no 1º giro; no HTML da home entra só o botão.
+     A camada de trás é feita de CÓPIAS das peças da camada da frente (levam o escopo do CSS: um estilo só para as duas).
+     **Quem fica de que lado**: `DO_OUTRO_LADO` (`lib/raioX.ts`) e `PONTOS_DO_OUTRO_LADO` (`lib/batida.ts`). Na vista de
+     trás têm forma de verdade: traseira, lateral direita, interior, teto, rodas e embaixo; frente e motor aparecem de
+     longe (tocar gira de volta) e a lateral esquerda só na ficha. A parte do outro lado leva o sinal de girar na
+     etiqueta/ficha e ESCOLHER uma gira o carro sozinho (toque, Enter, ficha, `#raio-x=traseira`, o "Onde fica" de uma
+     lanterna); o Tab que só passa por ela abre o painel sem girar. "Bati o carro": na vista de trás, traseira, traseira
+     direita/esquerda, lateral direita e frente direita no lugar de verdade. Trocar a arte ou os contornos: medir sobre a
+     arte, pôr em `lib/raioXTras.ts`, rodar o `variantes-imagens.mjs`; `raioXTras.test.ts` confere (reparte a arte
+     inteira, pontos a 30+ px no celular de 320, etiquetas sem se encostar, o botão não cobre nada).
+   - **Raio-x vivo**: a parte onde CHEGOU peça ganha um anel calmo no ponto e um pontinho na ficha, e o painel dela abre
+     com "Chegou agora: <peça>" (link para a peça; ocupa o lugar de uma linha de tipo). **"Chegou" = a MESMA lista do
+     selo "Chegou agora" dos cartões e do trilho "Chegou no pátio"**: `resumo().chegou`, os 24 anúncios mais novos pelo
+     número do ML (`preparar_dados.py`). NÃO é o `u` (dia da última MUDANÇA do anúncio, o lastmod do sitemap: preço
+     corrigido não é peça nova). `lib/raioXVivo.ts` + `/dados/raio-x-vivo.json` (≤ 24 peças com a zona de cada uma,
+     baixado quando a arte chega perto da tela). Com carro salvo: só as que servem nele, no ano dele, pela conta do
+     filtro do catálogo (`serveNoCarro`); na página do carro, o da página (no ano do salvo, se é o mesmo modelo); sem
+     carro, o estoque ("Chegou no pátio"). Sem peça nova para a parte ou para o carro, nada pulsa (com o arquivo lido,
+     o convite antigo de todos os pontos sai: o anel só diz "chegou"). O anel é só CSS, parado fora da tela
+     (`rx-avista`) e com "reduzir movimento" (fica o halo); a zona que a pessoa abriu sossega. Nunca contagem
+     regressiva nem "últimas unidades". Mudou a regra do selo dos cartões: mudar aqui junto (`raioXVivo.test.ts`
+     confere com o estoque do dia, sem exigir peça, zona ou quantidade).
+
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
 - `/catalogo.html?q=&marca=&modelo=&ano=&tipo=&preco=&frete=&ordem=` — mesmos parâmetros de antes.
