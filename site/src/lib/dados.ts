@@ -32,6 +32,8 @@ export type Resumo = {
   antigas?: { k: string; n: string; para: string }[];
   carros: { k: string; b: string; m: string; c: number; anos: [number, number] | null;
             fams: [string, number][]; capas: string[] }[];
+  /** Endereço antigo de carro unido ao principal (Classe C × C180): mesma página, canonical para <para>. Fora de carros. */
+  aliases?: { k: string; b: string; m: string; para: string }[];
   chegou: string[]; preco: { min: number; max: number };
   /** Reputacao do Mercado Livre (reputation.json). Ausente = nao mostrar o selo. */
   reputacao?: { nivel: string; n: number; lider?: string; vendas?: number };

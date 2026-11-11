@@ -15,7 +15,7 @@ import BannerV2 from '../../components/v2/BannerV2.astro';
 import Icone from '../../components/Icone.astro';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS } from '../../lib/dados';
+import { pecas, resumo, foto, whatsUrl, logoInfo, WHATS, SITE } from '../../lib/dados';
 import { textosCarro, tituloCarro } from '../../lib/textos';
 import { fotoVitrine } from '../../lib/vitrine';
 import { linkAviso } from '../../lib/aviso';
@@ -23,9 +23,15 @@ import { miniatura } from '../../lib/miniatura';
 import { SIZES } from '../../lib/variantes';
 import { serveNoModelo } from '../../lib/meuCarro';
 import { garagem } from '../../lib/garagem';
-export function getStaticPaths() { return resumo().carros.map((c) => ({ params: { k: c.k }, props: { k: c.k } })); }
+// endereço antigo de carro unido (C180 -> Classe C): a MESMA página do principal, com canonical para ele (não some, não 404)
+export function getStaticPaths() {
+  const r = resumo();
+  return [...r.carros, ...(r.aliases ?? [])].map((c) => ({ params: { k: c.k }, props: { k: c.k } }));
+}
 const r = resumo();
-const c = r.carros.find((x) => x.k === Astro.props.k)!;
+const apelido = (r.aliases ?? []).find((x) => x.k === Astro.props.k);
+const c = r.carros.find((x) => x.k === (apelido ? apelido.para : Astro.props.k))!;
+const canonicoCarro = apelido ? `${SITE}/carros/${c.k}.html` : undefined;
 // a peça que serve em 2+ carros ("Volvo S60 Xc60") aparece na página de cada um (lib/meuCarro.ts)
 const lista = pecas().filter((p) => p.b === c.b && serveNoModelo(p, c.m)).sort((a, b) => (b.id > a.id ? 1 : -1));
 const N = lista.length;
@@ -66,7 +72,7 @@ const og = existe(arteCarro) ? arteCarro : '/identidade/og.jpg';
 // a arte do carro como a garagem a vê (a/as): vai junto quando a pessoa salva este carro (a abertura já nasce com ela)
 const arteG = garagem().marcas.find((m) => m.n === c.b)?.modelos.find((x) => x.n === c.m);
 ---
-<Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta}>
+<Pagina titulo={tituloCarro(c.b, c.m, c.anos)} ogImagem={og} descricao={texto.meta} canonical={canonicoCarro}>
   <TopoArte trilha={[['Início', '/'], ['Carros', '/carros.html'], [nome, `/carros/${c.k}.html`]]}
     antes={c.b} antesNoTitulo titulo={c.m} logo={logo} arte={arteCarro} arteW={1200} arteH={800} arteSizes={SIZES.topoCarro} encaixe="meio" lead={lead}>
     <Fragment slot="acoes">
