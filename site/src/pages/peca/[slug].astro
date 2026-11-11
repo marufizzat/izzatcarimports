@@ -84,12 +84,13 @@ const marca = r.marcas.find((m) => m.n === p.b);
 const nivel = (x: Peca) => (x.c === p.c ? (x.s && x.s === p.s ? 0 : 1) : 2);
 const perto = (x: Peca) => Math.abs(Math.log((x.p || 1) / (p.p || 1)));
 // "Vai junto" (lib/relacionadas.ts): até 4 do mesmo carro e geração que costumam ser trocadas com esta. Elas saem do
-// "Do mesmo carro" (a mesma peça duas vezes na página, não), a não ser que ele ficasse vazio.
+// "Do mesmo carro" e do "Mais peças <marca>": a mesma peça nunca aparece duas vezes na página. Quando o "Vai junto" leva
+// todas as outras peças do carro, o "Do mesmo carro" não aparece (antes voltava à lista inteira e repetia: revisão 12, P2.4).
 const junto = p.b && p.m ? vaiJunto(p, porModelo().get(`${p.b}|${p.m}`) ?? []) : { pecas: [], com: '' };
 const idsJunto = new Set(junto.pecas.map((x) => x.id));
 const doModelo = p.b && p.m ? porCarro().get(`${p.b}|${p.m}`) ?? [] : [];
 const semJunto = doModelo.filter((x) => !idsJunto.has(x.id));
-const doCarroBruto = p.b && p.m ? doMesmoCarro(p, semJunto.some((x) => x.id !== p.id) ? semJunto : doModelo, 9999) : { mesma: [], outras: [], semAno: false };
+const doCarroBruto = p.b && p.m ? doMesmoCarro(p, semJunto, 9999) : { mesma: [], outras: [], semAno: false };
 const doCarro = {
   ...doCarroBruto,
   mesma: doCarroBruto.mesma
@@ -99,7 +100,7 @@ const doCarro = {
 };
 const temCarro = doCarro.mesma.length + doCarro.outras.length > 0;
 // sem outra peca do modelo: as da mesma marca (titulo "Mais peças <marca>", sem prometer o carro)
-const daMarca = temCarro ? [] : p.rel.map(pecaPorId).filter((x): x is Peca => !!x).slice(0, 6);
+const daMarca = temCarro ? [] : p.rel.map(pecaPorId).filter((x): x is Peca => !!x && !idsJunto.has(x.id)).slice(0, 6);
 const url = `${SITE}/peca/${p.slug}.html`;
 const nomeCarro = [p.b, p.m].filter(Boolean).join(' ');
 const anosTxt = anosDe(p.y, ' a ');

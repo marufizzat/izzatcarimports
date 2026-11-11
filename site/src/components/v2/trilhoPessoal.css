@@ -1,0 +1,31 @@
+/* Trilhos "da pessoa" na home ("Você viu", "Chegou para o seu carro"): components/v2/VoceViu.astro, ChegouCarro.astro.
+   Escondidos por padrão: só aparecem com a marca no <html> posta ANTES da 1ª pintura pelo script de cada um
+   (data-vistos, data-chegou). Quem não tem histórico não vê nada e nada se mexe. */
+.tp { display: none; padding-block: clamp(36px, 4.6vw, 64px) clamp(4px, 1vw, 12px); }
+.tp-cabeca { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 6px 16px; margin-bottom: 14px; }
+.tp-titulo { margin: 0; font-size: clamp(24px, 2.5vw, 32px); line-height: 1.06; }
+.tp-lead { margin: 6px 0 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+.tp-acoes { display: flex; align-items: center; gap: 10px; }
+/* "Limpar": um texto discreto, com alvo de toque de 44 px */
+.tp-limpar { min-height: 44px; padding: 0 6px; border: 0; background: none; color: var(--ink-2); font: inherit; font-size: 14px; font-weight: 650;
+  text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; cursor: pointer; }
+.tp-limpar:hover { color: var(--ink); text-decoration-color: currentColor; }
+/* setas: só no computador e só quando há mais cartões que a tela */
+.tp-setas { display: none; gap: 8px; }
+@media (hover: hover) and (pointer: fine) and (min-width: 1024px) { .tp[data-rola] .tp-setas { display: flex; } }
+.tp-seta { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: var(--surface); color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--line-2), 0 1px 2px rgb(0 0 0 / .04); cursor: pointer; transition: box-shadow .18s ease, opacity .18s ease; }
+.tp-seta:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 4px 12px -6px rgb(0 0 0 / .18); }
+.tp-seta:disabled { opacity: .35; cursor: default; }
+.tp-seta svg { width: 20px; height: 20px; }
+.tp-seta:focus-visible, .tp-limpar:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 2px; }
+/* o trilho: 208 px no celular (o mesmo do "Do mesmo carro"); 5 por fila de 1024 a 1279 px, 6 depois */
+.tp .tp-trilho { padding-bottom: 20px; scroll-padding-inline: 4px; }
+@media (min-width: 1024px) { .tp .tp-trilho { grid-auto-columns: calc((100% - 4 * 16px) / 5); } }
+@media (min-width: 1280px) { .tp .tp-trilho { grid-auto-columns: calc((100% - 5 * 16px) / 6); } }
+/* celular: o "Ver todas" vai embaixo dos cartões, largo (como as outras seções da home) */
+.tp-mais { display: flex; width: 100%; margin-top: 2px; }
+.tp-mais-pc { display: none; }
+@media (min-width: 768px) { .tp-mais { display: none; } .tp-mais-pc { display: inline-flex; } }
+/* o número de peças muda quando os dados chegam: a largura do botão já fica guardada */
+.tp-mais-pc { min-width: 196px; justify-content: center; }

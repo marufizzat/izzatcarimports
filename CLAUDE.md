@@ -13,7 +13,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    Aqui ficam a leitura de **marca, modelo e ano** pelo título e o **nome limpo** da peça.
    - **Tipo da peça** (`s`, os cartões "Por tipo" da categoria): a árvore do ML vira o nome da loja em `TIPO_LOJA`
      (sinônimos num nome só; grupo do ML que mistura de tudo vira "Outros", sem cartão). Família/tipo errados do ML
-     são corrigidos pelo nome da peça em `REGRAS_NOME` (chave de roda, módulo do câmbio, motor de vidro...).
+     são corrigidos pelo nome da peça em `REGRAS_NOME` (chave de roda, módulo do câmbio, motor de vidro, o "Comando
+     rebatimento tampa" que o ML pôs em Comando de válvulas...). O nome limpo nunca termina em preposição ou "e" soltos
+     ("Coletor admissão de" -> "Coletor admissão": `FIM_SOLTO`; `test_nome_nunca_termina_em_preposicao` confere o estoque).
    - **Bloco** (`c`, as categorias da home e `/categoria/<k>.html`): os 25 `BLOCOS` do jeito que o cliente procura
      (Retrovisores, Faróis e Lanternas, Maçanetas e Fechaduras…; nome, chave e ordem iguais aos da arte), nunca a
      família do ML. Sai do tipo `s` (`_TIPOS_DO_BLOCO`); o nome manda quando o ML errou (`BLOCO_PELO_NOME`) ou quando o
@@ -103,6 +105,10 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      A montagem leva a marca de incerta (aparece inteira, também a foto quadrada). `fotosGaleria()` (lib/quadroFoto.ts) tira `m` e põe `c` no
      fim na galeria, miniaturas, tela cheia, JSON-LD, og:image e feed. Muito texto sozinho não é marketing: é a
      etiqueta da peça (mostra o código). Mudou uma regra: `medir_fotos_ml.py --reclassificar` (sinais em cache local).
+     **Foto do código** (`"#"` no fim da entrada, só em foto `p`/`s`, depois da classe): a foto em que o OCR leu o código
+     que a página mostra (`codigo_da_peca` = `codigoDaPeca`), inteiro e começando num pedaço do texto (`codigo_no_texto`),
+     com 4%+ de texto (`TEXTO_CODIGO`); várias = a de mais texto. `marcar_codigos` roda no fim de toda rodada, só nas fotos
+     com o texto no cache. Na página, a caixa do código ganha "Ver o código na foto" (`fotoDoCodigo`, lib/quadroFoto.ts).
      Testes: `python testes/test_medir_fotos_ml.py` e `site/testes/quadroFoto.test.ts`.
 6. Prévia (noindex): `PREVIA=1 npx astro build` → `site/dist-previa` → `wrangler deploy --config wrangler.previa.jsonc`.
 
@@ -123,7 +129,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    salvo ("Procuro uma peça para Volvo XC60 2019.") via `data-whats-carro`. **Sugestões (nov/2026)**: com o campo vazio,
    as últimas 5 buscas da pessoa (`lib/buscasRecentes.ts`, só no navegador: localStorage `izzatcar.buscas`, sem repetir,
    com "Limpar"; entram no Enter/Buscar, ao escolher uma sugestão e no Buscar do catálogo); a pílula `dif` ("T8") também
-   ao lado do carro na linha da sugestão.
+   ao lado do carro na linha da sugestão. No celular o cabeçalho não tem campo: as MESMAS recentes aparecem no foco do
+   campo do catálogo vazio (`CampoBusca` em `Catalogo.tsx`, o desenho de `ui/sugestoes.css`, na largura da banda;
+   combobox com setas/Enter/Esc; tocar numa busca por ela sem sair da página).
 
 9. **10% no WhatsApp em toda peça (decisão do dono, 10/11)**: `DESCONTO_WHATS`, `precoWhats()` e `precoWhatsTxt()` em
    `site/src/lib/whats.ts` (sempre calculado do preço do anúncio; nunca em arte). Na página da peça, UM elemento
@@ -142,17 +150,55 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    testadas; dinheiro em centavos: o total no WhatsApp é a SOMA das linhas com 10%, `somaPrecos` em `lib/whats.ts`).
    Página da peça: "Adicionar à lista de orçamento" abaixo dos dois botões da compra (só o botão no HTML; os dados vêm do
    h1, da linha do carro, do código e do `IZZAT_PRODUCT`; `components/peca/listaPeca.ts`); na barra fixa do celular NÃO
-   (não cabe sem apertar). Cabeçalho: o ícone com o número só com 1+ peça (script no HTML antes da 1ª pintura marca
-   `html[data-lista]`); abaixo de 1100 px ele ocupa o lugar da lupa. `/lista.html` (noindex, fora do sitemap,
+   (não cabe sem apertar). O botão só PÕE (sem `aria-pressed`); com a peça na lista, o verde é um LINK para a lista ("Na
+   sua lista · Ver lista (n)"; a 320 px "Na lista · …") e o "Tirar" pequeno e escrito ao lado; o foco segue o toque e o
+   aviso sai no `role=status` (revisão 12: tocar no verde tirava a peça sem avisar). Cabeçalho: o ícone com o número só
+   com 1+ peça (script no HTML antes da 1ª pintura marca `html[data-lista]`); só abaixo de 360 px ele ocupa o lugar da
+   lupa (de 360 a 1099 a lupa continua ao lado; medido em 13 larguras). `/lista.html` (noindex, fora do sitemap,
    `pages/lista.astro` + `components/lista/paginaLista.ts`): preço do site e no WhatsApp por peça, tirar com "Desfazer",
    subtotal/desconto/total, "Pedir tudo no WhatsApp" (`mensagemLista`, GA4 `contato_whatsapp` com `data-botao="lista"`),
    "Copiar o link da lista" (`/lista.html?i=MLB1,MLB2`: quem abre vê a mesma lista, só para ver e pedir, e "Guardar na
-   minha lista" junta sem apagar a dele); preço e disponibilidade conferidos no `/dados/busca.json` (peça fora dele =
-   "Já vendida", fora do total; sem rede, ficam os valores guardados com um aviso). GA4 `lista_adicionar` (`rastreio.js`).
+   minha lista" junta sem apagar a dele); preço e disponibilidade conferidos no `/dados/ativas.json` (o leve: id, preço,
+   capa; peça fora dele = "Já vendida", fora do total; sem rede, ou o arquivo vazio, ficam os valores guardados com um
+   aviso: nunca "tudo vendido"). O índice inteiro (`busca.json`, e a busca com o MiniSearch, sob demanda) só na lista de
+   um link (precisa de nome, carro, anos e código), quando falta um dado que o leve não tem (nome, endereço, a foto do ML
+   de peça sem capa de estúdio) ou UMA vez na lista de antes da rodada 13 (`izzatcar.lista.conferida`, marcada ao começar
+   uma lista nova: o nome e o carro guardados já são os de agora). A capa só é pedida depois de saber se a peça existe (a
+   da vendida dava 404). O esqueleto é a linha de verdade (as mesmas classes e alturas de linha, barras no lugar do texto;
+   no celular o preço do site sempre na 2ª linha): nada pula quando as peças chegam. Link sem rede: o esqueleto parado e
+   "Não deu para abrir as peças desta lista agora. Tentar de novo" (nunca "R$ 0,00" nem "Anúncio MLB…" como nome; sem preço
+   conferido, a linha fica sem o bloco do preço; "Guardar" só depois que as peças abriram). GA4 `lista_adicionar`
+   (`rastreio.js`).
    **"Vai junto"** (`components/peca/VaiJunto.astro`, logo depois da compra): até 4 peças do MESMO carro e geração que
    costumam ser trocadas com a vista, pela regra `GRUPOS`/`JUNTO` de `lib/relacionadas.ts` (`vaiJunto`: lado e
    frente/trás pelo nome, nunca o outro lado nem a outra ponta, nunca a mesma peça repetida); sem peça que combine, o
-   bloco não aparece. As peças dele saem do "Do mesmo carro". Teste do estoque real em `relacionadas.test.ts`.
+   bloco não aparece. Nos grupos de motor (`GRUPOS_MOTOR`) nunca entra nome com tampa traseira/porta-malas/rebatimento/
+   banco/porta (`FORA_DO_MOTOR`; "banco 1" do motor fica); a válvula do turbo tem o grupo dela (`turbo-valvula`) e o botão
+   da tampa vai com a tampa (`tampa-botao`). As peças dele saem do "Do mesmo carro" e do "Mais peças <marca>": sem outra
+   peça do carro, o "Do mesmo carro" não aparece (nunca volta à lista inteira e repete). Cartão: o texto num `<span>`
+   (nome, anos, e o "Cód." numa linha só dele, inteiro, quebra sem reticências), o preço e o "+ Lista" ESCRITO (nome
+   acessível "Adicionar à Lista de orçamento: <peça>"); já na lista, o verde "Na lista" leva à lista. O `<li data-carro>`
+   leva o carro DA PEÇA (`nomeModelos`): o "+ Lista" grava esse, não o da página. O desenho segue a largura do cartão
+   (container query): estreito (< 420 px), o preço e o "+ Lista" numa linha de pé; largo, tudo numa fila só. No PC
+   (1200+): com 4, o título em cima e as 4 numa fila; com 1 a 3, o título à esquerda e os cartões dividindo o resto; em 2
+   colunas, o último sozinho ocupa a linha. Teste do estoque real em `relacionadas.test.ts`.
+
+11. **A home que conhece o cliente (rodada 13, nov/2026)** — tudo só no navegador, sem ilha React, e nada aparece (nem se
+   mexe) para quem não tem histórico: cada bloco decide antes da 1ª pintura num script mínimo (função pura testada,
+   copiada por `toString()` e minificada por `lib/scriptCurto.ts`) que marca o `<html>` (`data-continuar`,
+   `data-chegou`, `data-vistos`) e põe o esqueleto dos cartões; os cartões (`cartaoHtml`) chegam depois do load.
+   - **Vistos** (`lib/vistos.ts`, `localStorage['izzatcar.vistos']`, 12 peças): gravados pela peça
+     (`components/peca/vistosPeca.ts`, com o que a página já mostra); "Você viu" na home (2+, `v2/VoceViu.astro`, com
+     "Limpar") e "Você também viu" no fim da peça (até 6, nasce quando o navegador folga, só abaixo da tela). A peça que
+     vendeu sai pelo `/dados/ativas.json` (id, preço, capa: `pages/dados/ativas.json.ts`, ~34 KB comprimido).
+   - **"Chegou para o seu <carro>"** (`v2/ChegouCarro.astro`, `lib/chegouCarro.ts`): as 10 mais novas do carro salvo
+     (ano salvo incluído) pela MESMA busca do catálogo sobre `/dados/carro/<k>.json` (agora um por modelo da garagem;
+     `chaveCarro` = o slugify do Python); sem peça: "Me avise quando chegar peça para o <carro>" (`data-botao="avise-carro"`).
+   - **"Continuar de onde parou"** (`v2/Continuar.astro`, `lib/continuar.ts`): a lista (total no WhatsApp em centavos) ou a
+     última busca (`localStorage['izzatcar.busca']`, gravada pelo `catalogo.astro`, 14 dias); × lembrado em
+     `izzatcar.continuar`.
+   - **Tela cheia da peça (celular)**: a conta do toque em `components/ui/zoomToque.ts` (pinça em volta dos dedos, toque
+     duplo 2,5×, limite pela foto desenhada, elástico); o mouse continua como era.
 
 ## Endereços (não mudar — o Google já conhece)
 - `/peca/<slug>-<MLB>.html` — o `slugify` é o MESMO de `gerar_paginas_individuais.py`.
@@ -199,7 +245,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - `noindex` vira "noindex, follow" (`Base.astro`); páginas de redirecionamento só com canônica + refresh.
 
 ## Peso e fluidez (o Pages aceita até 1 GB; cada byte da página de peça vale 5 mil vezes)
-- Página de peça ≈ 38 KB de HTML (era 87 KB). Antes de pôr algo em todo cartão ou em toda peça, pense nisso.
+- Página de peça ≈ 44 KB de HTML (mediana das 5,3 mil no dist: 43,7 KB, 9,8 KB com gzip, nov/2026; era 87 KB; o "Vai junto"
+  pôs ~2 KB). Antes de pôr algo em todo cartão ou em toda peça, pense nisso.
 - Arte grande em cartão pequeno sempre com `srcset`/`sizes` (`srcArte` de `src/lib/variantes.ts`): o /carros caiu de
   5,9 MB para ~2 MB rolando no iPhone só com as variantes de 600 px.
 - **Capas leves dos cartões** (nov/2026): a capa de estúdio tem 1000 px (~41 KB) e o cartão mostra 125–300 px. O build
@@ -228,13 +275,16 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
   O índice de texto (MiniSearch) é montado aos poucos (`Busca.prepararIndice`); sem texto ele nem é preciso.
   **Jeito de falar do cliente** (nov/2026): `lib/sinonimos.ts`, UMA tabela no navegador (~2 KB no JS com cache; no
   busca.json custaria em toda peça): "sinaleira" = lanterna, "máquina de vidro" = motor/máquina vidro, "pisca" = seta,
-  "farolete" = farol de milha, "frente" = grade/farol/capô/para-choque dianteiro, "central"/"ECU" = módulo, "TBI" = corpo
+  "farolete" = farol de milha, "frente" = grade/churrasqueira/farol/capô/para-choque dianteiro, "central"/"ECU" = módulo, "TBI" = corpo
   de borboleta, "caneta" = bobina, "mola a gás" = amortecedor da tampa/capô, "tapete" = carpete, "estepe"/"roda"... Só
   ACRESCENTA alternativas (a palavra digitada continua valendo e pesa mais: sinônimo × 0,25, nome que diz o digitado
   × 1,5), a frase mais longa primeiro, sem as palavras vazias
   ("de", "da"...); o plural vale sozinho ("faróis" = farol, só a palavra inteira). Cada linha aponta para um nome que
   EXISTE no estoque (`sinonimos.test.ts` confere); tipo novo no estoque = conferir a tabela. O "começa pela palavra" e o
-  `bate()` (bloco "Não achou?") usam as mesmas formas.
+  `bate()` (bloco "Não achou?") usam as mesmas formas. Uma linha pode ter um 3º item, o "fora" (`MAPA_FORA`): a peça cujo
+  nome ou tipo diz aquela palavra não entra pelo sinônimo (AND_NOT do MiniSearch) e as outras formas valem só no nome;
+  "frente" tira painel, console, alto-falante, difusor, traseira e porta-malas ("frente xc60": a grade em 1º, não a
+  "Moldura frontal painel"); quem digita a palavra do "fora" ("frente painel") continua achando.
   **Lado e posição digitados viram filtro** ("retrovisor direito xc60": os DIREITOS do XC60, pela coluna `l`;
   "motorista" = esquerdo; "dianteira", "traseira", "frontal", "esq", "dir", "tras"): saem do texto (`separarLadoPos`),
   filtram e marcam a ficha; a peça cujo nome diz a mesma palavra sobe ("amortecedor traseiro" antes da "tampa
@@ -244,7 +294,7 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
 - Fichas de ano (página do carro e seletor "Seu carro", `lib/anosFila.ts`): sem ano escolhido, a fila já abre na janela
   de anos com mais peças (na página do carro, num `<script is:inline>` antes da 1ª pintura); o "Todos" fica fixo à
   esquerda (`.ac-fixo`/`.mc-fixo`, sticky). Só o scrollLeft da fila, nunca a página.
-- Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (só as peças do carro, feito no
+- Página do carro com mais de 48 peças: a grade do ano sai de `/dados/carro/<k>.json` (um por modelo da garagem; só as peças do carro, feito no
   build do mesmo busca.json; XC60 140 KB em vez de 1,4 MB) e entra em partes (12 cartões, o resto, a lista completa em
   fatias de 6 ms); os grupos da lista "Todas as N peças" têm `content-visibility: auto`.
 - **Troca de página sem tela branca** (nov/2026): transição entre documentos (`@view-transition` no fim do

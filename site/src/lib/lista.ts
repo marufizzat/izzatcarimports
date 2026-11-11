@@ -162,11 +162,23 @@ export function salvarLista(l: readonly ItemLista[], acao: AcaoLista, id?: strin
   const detail: EventoLista = { acao, n: l.length, ...(id ? { id } : {}), ...(origem ? { origem } : {}) };
   window.dispatchEvent(new CustomEvent(EVENTO_LISTA, { detail }));
 }
+/** A lista guardada já tem os dados de agora (nome, carro, código) desde a rodada 13: a /lista.html confere preço e
+ *  disponibilidade só no /dados/ativas.json. Sem a marca (lista de antes, com o carro da página no "Vai junto" e nomes
+ *  velhos), ela confere UMA vez no índice inteiro e marca. Valor: quando (ms). */
+export const CHAVE_CONFERIDA = 'izzatcar.lista.conferida';
+export function marcarConferida() {
+  try { localStorage.setItem(CHAVE_CONFERIDA, String(Date.now())); } catch { /* sem armazenamento */ }
+}
+export function listaConferida(): boolean {
+  try { return !!localStorage.getItem(CHAVE_CONFERIDA); } catch { return false; }
+}
 /** Adiciona e avisa. 'ja' = já estava; 'cheia' = chegou a MAX_LISTA (quem chama diz isso à pessoa, nunca some calado). */
 export function adicionarNaLista(item: ItemLista, origem?: string): 'ok' | 'ja' | 'cheia' {
   const l = lerLista();
   if (tem(l, item.id)) return 'ja';
   if (cheia(l)) return 'cheia';
+  // lista nova: os dados vêm da página de agora (a /lista.html não precisa conferir no índice inteiro)
+  if (!l.length) marcarConferida();
   salvarLista(adicionar(l, item), 'adicionar', item.id, origem);
   return 'ok';
 }

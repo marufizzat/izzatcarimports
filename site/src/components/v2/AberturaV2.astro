@@ -19,6 +19,8 @@ const atalhos = populares(4);
     <img src={arte} alt="" width="1536" height="1024" fetchpriority="high" decoding="async" />
   </picture>
   <div class="moldura abv2-conteudo">
+    {/* "Continuar de onde parou" (Continuar.astro): só para quem volta com lista ou busca; sem elas, não ocupa nada */}
+    <slot name="topo" />
     <h1 id="abv2-titulo" class="display abv2-h1">Qual peça o seu carro precisa?</h1>
     <p class="abv2-lead">Peças originais de carros com baixa legal no Detran-RS.</p>
     <div class="abv2-cartao" data-abas>

@@ -1,0 +1,169 @@
+---
+// "Chegou para o seu <carro>" (home, logo depois da abertura e dos selos): com o carro salvo (lib/meuCarro.ts), as peças
+// mais novas dele (no ano salvo, quando há), de /dados/carro/<k>.json, pela MESMA busca do catálogo (lib/chegouCarro.ts):
+// "Ver todas as N" abre o catálogo filtrado, das mais novas para as mais antigas, e o N bate com ele.
+// ANTES da 1ª pintura (o script logo abaixo, chegouAntes, sem nada de fora): sem carro salvo, nada (nada se mexe);
+// com carro, o título já com o nome dele, os links e o esqueleto dos cartões (html[data-chegou="trilho"]); o modelo que
+// saiu do estoque (a lista de modelos da abertura) já nasce com o convite (html[data-chegou="convite"]).
+// Depois do load, com o navegador folgando: os cartões (os do catálogo, cartaoHtml). Ano sem peça (ou o arquivo do
+// carro não existe mais): o convite "Me avise quando chegar peça para o <carro>" (WhatsApp, data-botao="avise-carro",
+// a mensagem de lib/aviso.ts), com o atalho para os outros anos quando o modelo tem peça. Trocou o carro na abertura:
+// o trilho acompanha.
+import { scriptCurto } from '../../lib/scriptCurto';
+import Icone from '../Icone.astro';
+import { chegouAntes } from '../../lib/chegouCarro';
+import { linkAviso } from '../../lib/aviso';
+import { CHAVE } from '../../lib/meuCarro';
+import { ESQ_CARTAO, SETAS_HTML } from './trilhoPessoal';
+import './trilhoPessoal.css';
+const NOME = '__CARRO__';
+const aviso = linkAviso('', NOME);
+const antes = `(function(){try{var r=document.currentScript.previousElementSibling,t=document.querySelector('template[data-mc-esq]'),`
+  + `x=(${chegouAntes.toString()})(localStorage.getItem(${JSON.stringify(CHAVE)}),t?t.getAttribute('data-modelos'):null);if(!x)return;`
+  + `document.documentElement.setAttribute('data-chegou',x.estado);`
+  + `r.querySelectorAll('[data-tp-nome]').forEach(function(e){e.textContent=x.nome});`
+  + `r.querySelectorAll('[data-tp-ver]').forEach(function(a){a.setAttribute('href',x.link)});`
+  + `var a=r.querySelector('[data-tp-aviso]');a.setAttribute('href',a.getAttribute('href').replace(${JSON.stringify(NOME)},encodeURIComponent(x.nome)));`
+  + `if(x.estado==='trilho')r.querySelector('[data-tp-trilho]').innerHTML=${JSON.stringify(ESQ_CARTAO)}.repeat(7)}catch(e){}})()`;
+---
+<section class="tp tp-carro" data-tp-carro>
+  <div class="moldura">
+    <div class="tp-chegou">
+      <div class="tp-cabeca">
+        <div>
+          <h2 class="titulo-secao tp-titulo">Chegou para o seu <span class="tp-nome" data-tp-nome>carro</span></h2>
+          <p class="tp-lead">As peças mais novas do seu carro no pátio.</p>
+        </div>
+        <div class="tp-acoes">
+          <div class="tp-setas" set:html={SETAS_HTML} />
+          <a class="botao botao-linha tp-mais-pc" data-tp-ver href="/catalogo.html?ordem=novos">Ver todas</a>
+        </div>
+      </div>
+      <div class="trilho tp-trilho" data-tp-trilho aria-busy="true" aria-label="Peças novas do seu carro"></div>
+      <a class="botao botao-linha tp-mais" data-tp-ver href="/catalogo.html?ordem=novos">Ver todas</a>
+    </div>
+    <div class="tp-convite">
+      <span class="tp-convite-icone"><Icone nome="carro" /></span>
+      <h2 class="tp-convite-titulo">Me avise quando chegar peça para o <span class="tp-nome" data-tp-nome>carro</span></h2>
+      <p class="tp-convite-sub" data-tp-sub>Agora não há peça do seu carro no site. Mande no WhatsApp: a mensagem já vai pronta.</p>
+      <div class="tp-convite-acoes">
+        <a class="botao botao-linha" data-tp-aviso data-botao="avise-carro" href={aviso}><Icone nome="whats" />Pedir o aviso no WhatsApp</a>
+        <a class="tp-convite-outros" data-tp-outros hidden href="/catalogo.html"></a>
+      </div>
+    </div>
+  </div>
+</section>
+<script is:inline set:html={scriptCurto(antes)} />
+
+<script>
+  import { lerMeuCarro, linkCatalogo, nomeCarro, EVENTO, type MeuCarro } from '../../lib/meuCarro';
+  import { chegouParaOCarro, ARQUIVO_CARRO, linkChegou, type Chegou } from '../../lib/chegouCarro';
+  import { linkAviso } from '../../lib/aviso';
+  import type { Indice } from '../../lib/busca';
+  import { depoisDaCarga, porCartoes, ligarSetas, SIZES_PESSOAL, ESQ_CARTAO } from './trilhoPessoal';
+
+  const secao = document.querySelector<HTMLElement>('[data-tp-carro]');
+  const raiz = document.documentElement;
+  const nf = new Intl.NumberFormat('pt-BR');
+  if (secao) {
+    const trilho = secao.querySelector<HTMLElement>('[data-tp-trilho]')!;
+    const sub = secao.querySelector<HTMLElement>('[data-tp-sub]')!;
+    const outros = secao.querySelector<HTMLAnchorElement>('[data-tp-outros]')!;
+    const subOrig = sub.textContent || '';
+    let vez = 0;
+    let setas = false;
+
+    // o nome, os links e o aviso do carro (os mesmos do script antes da pintura)
+    const textos = (c: MeuCarro) => {
+      secao.querySelectorAll('[data-tp-nome]').forEach((e) => { e.textContent = nomeCarro(c); });
+      secao.querySelectorAll<HTMLAnchorElement>('[data-tp-ver]').forEach((a) => { a.href = linkChegou(c); a.textContent = 'Ver todas'; });
+      secao.querySelector<HTMLAnchorElement>('[data-tp-aviso]')!.href = linkAviso('', nomeCarro(c));
+    };
+    const convite = (c: MeuCarro, r: Chegou) => {
+      raiz.setAttribute('data-chegou', 'convite');
+      // o modelo tem peça em outros anos: diz isso e dá o atalho (nunca as peças de outro ano como se servissem)
+      const semAno = r.estado === 'sem-ano' && !!c.y;
+      sub.textContent = semAno ? `Agora não há peça do ${c.m} ${c.y} no site. Mande no WhatsApp: a mensagem já vai pronta.` : subOrig;
+      outros.hidden = !semAno;
+      if (semAno) {
+        outros.href = `${linkCatalogo({ b: c.b, m: c.m })}&ordem=novos`;
+        outros.textContent = r.doModelo === 1 ? `Ver a peça do ${c.m} de outro ano` : `Ver as ${nf.format(r.doModelo)} peças do ${c.m} de outros anos`;
+      }
+    };
+
+    async function montar() {
+      const c = lerMeuCarro();
+      const minha = ++vez;
+      if (!c) { raiz.removeAttribute('data-chegou'); return; }
+      try {
+        const resp = await fetch(ARQUIVO_CARRO(c.b, c.m));
+        let r: Chegou;
+        if (resp.status === 404) r = { estado: 'sem-modelo', itens: [], total: 0, doModelo: 0 };
+        else {
+          if (!resp.ok) throw new Error(String(resp.status));
+          const [{ Busca }, ix] = await Promise.all([import('../../lib/busca'), resp.json() as Promise<Indice>]);
+          const busca = new Busca(ix);
+          r = chegouParaOCarro((f) => busca.procurar(f), c);
+        }
+        if (minha !== vez) return;   // trocou de carro enquanto os dados desciam
+        if (r.estado !== 'ok') { convite(c, r); return; }
+        const { cartaoHtml, vigiarFotos } = await import('../../lib/vendidaCartoes');
+        if (minha !== vez) return;
+        vigiarFotos(trilho);
+        raiz.setAttribute('data-chegou', 'trilho');
+        porCartoes(trilho, r.itens.map((it) => cartaoHtml(it, SIZES_PESSOAL)).join(''));
+        const ver = r.total === 1 ? 'Ver a peça' : `Ver todas as ${nf.format(r.total)}`;
+        secao.querySelectorAll<HTMLAnchorElement>('[data-tp-ver]').forEach((a) => { a.textContent = ver; });
+        if (!setas) { setas = true; ligarSetas(secao); }
+        else trilho.scrollTo({ left: 0 });
+      } catch {
+        if (minha === vez) raiz.removeAttribute('data-chegou');   // a rede caiu: a seção sai (nunca o esqueleto parado)
+      }
+    }
+
+    // o convite já nasceu certo antes da pintura (o modelo saiu do estoque): nada a baixar
+    if (raiz.getAttribute('data-chegou') === 'trilho') depoisDaCarga(montar);
+    // trocou o carro (ou o ano) na abertura ou no cabeçalho: o trilho acompanha
+    window.addEventListener(EVENTO, (e) => {
+      const c = (e as CustomEvent<MeuCarro | null>).detail;
+      if (!c) { vez++; raiz.removeAttribute('data-chegou'); return; }
+      textos(c);
+      if (raiz.getAttribute('data-chegou') !== 'trilho' || !trilho.querySelector('.etiqueta-cx')) {
+        raiz.setAttribute('data-chegou', 'trilho');
+        trilho.style.minHeight = '';
+        trilho.setAttribute('aria-busy', 'true');
+        trilho.innerHTML = ESQ_CARTAO.repeat(7);
+      }
+      void montar();
+    });
+  }
+</script>
+
+<style>
+  .tp-chegou, .tp-convite { display: none; }
+  :global(html[data-chegou]) .tp-carro { display: block; }
+  :global(html[data-chegou="trilho"]) .tp-chegou { display: block; }
+  :global(html[data-chegou="convite"]) .tp-convite { display: grid; }
+  /* o convite: um cartão curto, sem esqueleto (o lugar dele já nasce com o tamanho dele) */
+  .tp-convite { grid-template-columns: auto minmax(0, 1fr); gap: 0 16px; align-items: start; max-width: 760px; padding: 18px 20px 20px;
+    border-radius: 22px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1); }
+  .tp-convite-icone { grid-row: 1 / span 3; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; background: var(--accent-soft); color: var(--accent-text); }
+  .tp-convite-icone :global(svg) { width: 24px; height: 24px; }
+  .tp-convite-titulo { grid-column: 2; margin: 2px 0 0; font-stretch: 86%; font-weight: 800; font-size: clamp(19px, 2vw, 23px); line-height: 1.18; text-wrap: balance; }
+  .tp-convite-sub { grid-column: 2; margin: 6px 0 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+  .tp-convite-acoes { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 14px; }
+  .tp-convite-acoes .botao { --h: var(--botao-p); padding: 0 18px; font-size: 15px; }
+  .tp-convite-outros { padding-block: 12px; margin-block: -12px; font-size: 14px; font-weight: 650; color: var(--ink-2);
+    text-decoration: underline; text-underline-offset: 3px; }
+  .tp-convite-outros:hover { color: var(--ink); }
+  /* celular: o ícone menor ao lado do título; o botão na largura toda, embaixo */
+  @media (max-width: 479px) {
+    .tp-convite { column-gap: 12px; padding: 16px 16px 18px; align-items: center; }
+    .tp-convite-icone { grid-row: 1; width: 38px; height: 38px; border-radius: 12px; }
+    .tp-convite-icone :global(svg) { width: 21px; height: 21px; }
+    .tp-convite-titulo { margin-top: 0; }
+    .tp-convite-sub, .tp-convite-acoes { grid-column: 1 / -1; }
+    .tp-convite-sub { margin-top: 10px; }
+    .tp-convite-acoes .botao { width: 100%; }
+  }
+</style>

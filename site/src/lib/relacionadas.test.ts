@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { sobreposicao, mesmaGeracao, doMesmoCarro, MAX_CARRO, MIN_MESMA, vaiJunto, grupoDa, ladoDa, zonaDa, GRUPOS, JUNTO, MAX_JUNTO } from './relacionadas';
+import { sobreposicao, mesmaGeracao, doMesmoCarro, MAX_CARRO, MIN_MESMA, vaiJunto, grupoDa, ladoDa, zonaDa, GRUPOS, JUNTO, MAX_JUNTO, FORA_DO_MOTOR } from './relacionadas';
 import { serveNoModelo, anosNoModelo } from './meuCarro';
 import type { Peca } from './dados';
 
@@ -141,6 +141,43 @@ describe('"Vai junto": o que costuma ser trocado junto, só do mesmo carro', () 
     expect(zonaDa('Para-choque', 'parachoque')).toBe(null);
     expect(grupoDa({ s: 'Amortecedores da Tampa e do Capô', n: 'Amortecedor capô' })).toBe('capo-mola');
     expect(grupoDa({ s: 'Amortecedores da Tampa e do Capô', n: 'Amortecedor tampa traseira' })).toBe('tampa-mola');
+  });
+  it('motor nunca chama peça de tampa, porta-malas, banco ou porta, nem com o tipo errado no estoque (revisão 12, P2.2)', () => {
+    const xc = (id: number, n: string, s: string) => peca({ id: `MLB${id}`, n, s, b: 'Volvo', m: 'XC60', y: [2018, 2024] });
+    const turbo = xc(1, 'Válvula solenoide pressão turbina', 'Válvulas Solenoides');
+    const pcv = xc(2, 'Válvula PCV', 'Válvulas Solenoides');
+    const estoque = [turbo, pcv,
+      xc(3, 'Comando rebatimento tampa', 'Comandos de Válvulas'),   // o tipo errado de antes
+      xc(4, 'Solenoide comando válvulas', 'Válvulas Solenoides'),
+      xc(5, 'Mangueira turbo intercooler', 'Mangueiras do Turbo e Intercooler'),
+      xc(6, 'Coletor admissão', 'Coletores de Admissão'),
+      xc(7, 'Tampa válvulas', 'Tampas de Válvulas'),
+      xc(8, 'Sonda lambda banco 1', 'Sondas Lambda'),
+    ];
+    // a válvula do turbo é do turbo (o subtítulo diz "a válvula do turbo", nunca "peça do cabeçote")
+    expect(grupoDa(turbo)).toBe('turbo-valvula');
+    const r = vaiJunto(turbo, estoque);
+    expect(r.com).toBe('a válvula do turbo');
+    expect(r.pecas.map((x) => x.id)).toEqual(['MLB5', 'MLB6']);
+    // no cabeçote: a tampa de válvulas fica (é do motor); o comando da tampa traseira, não
+    const c = vaiJunto(pcv, estoque).pecas.map((x) => x.n);
+    expect(c).toContain('Tampa válvulas');
+    expect(c).not.toContain('Comando rebatimento tampa');
+    // "banco 1" do motor não é banco do carro
+    expect(FORA_DO_MOTOR.test('sonda lambda banco 1')).toBe(false);
+    expect(FORA_DO_MOTOR.test('comando rebatimento tampa')).toBe(true);
+    expect(FORA_DO_MOTOR.test('tampa valvulas')).toBe(false);
+  });
+  it('botão da tampa traseira vai com a tampa, não com os botões do painel', () => {
+    expect(grupoDa({ s: 'Outros Botões', n: 'Comando rebatimento tampa' })).toBe('tampa-botao');
+    expect(grupoDa({ s: 'Outros Botões', n: 'Botão abertura porta-malas' })).toBe('tampa-botao');
+    expect(grupoDa({ s: 'Outros Botões', n: 'Botão ESP' })).toBe('botoes-painel');
+    const xc = (id: number, n: string, s: string) => peca({ id: `MLB${id}`, n, s, b: 'Volvo', m: 'XC60', y: [2018, 2024] });
+    const botao = xc(1, 'Comando rebatimento tampa', 'Outros Botões');
+    const r = vaiJunto(botao, [botao, xc(2, 'Botão ESP', 'Outros Botões'), xc(3, 'Dobradiça tampa traseira', 'Dobradiças da Tampa Traseira'),
+      xc(4, 'Lanterna tampa traseira esquerda', 'Lanternas Traseiras'), xc(5, 'Farol direito', 'Faróis')]);
+    expect(r.pecas.map((x) => x.id)).toEqual(['MLB3', 'MLB4']);
+    expect(r.com).toBe('o botão da tampa traseira');
   });
   it('todo grupo citado em JUNTO existe', () => {
     for (const [k, v] of Object.entries(JUNTO)) {

@@ -604,6 +604,12 @@ def test_peca_na_familia_certa():
         # grupo misturado do ML ("Outros"): moldura do painel ganha o tipo certo
         (("Moldura lateral esquerda painel", "Peças de Interior", "Outros"),
          ("Peças de Interior", "Acabamentos do Painel")),
+        # revisão 12, P2.2: "Comando rebatimento tampa" no "Comando de válvulas" do ML (pela palavra "comando") é o botão
+        # da tampa traseira; o do banco vai para o banco; o motor do retrovisor que rebate não é botão
+        (("Comando rebatimento tampa", "Motor", "Comandos de Válvulas"), ("Peças de Interior", "Outros Botões")),
+        (("Comando rebatimento banco traseiro", "Motor", "Comandos de Válvulas"), ("Peças de Interior", "Peças de Banco")),
+        (("Motor rebatimento retrovisor", "Motor", "Motores"), ("Motor", "Motores")),
+        (("Solenoide comando válvulas", "Motor", "Comandos de Válvulas"), ("Motor", "Comandos de Válvulas")),
         # o que ja esta certo nao muda
         (("Alavanca freio de mão", "Peças de Interior", "Alavancas do Freio de Mão"),
          ("Peças de Interior", "Alavancas do Freio de Mão")),
@@ -1169,6 +1175,32 @@ def test_mesma_peca_precos_diferentes_dif():
         if com:
             assert {ix["id"][int(k)]: v for k, v in (ix.get("dif") or {}).items()} == com
             assert all(len(v) <= 24 for v in com.values())
+
+
+FIM_PREPOSICAO = {"de", "da", "do", "das", "dos", "com", "para", "em", "e"}
+
+
+def test_nome_nunca_termina_em_preposicao():
+    """Revisão 12, P2.2: "Coletor Admissao De Volvo Xc60..." virava "Coletor admissão de" (o carro sai e a preposição
+    sobrava). Regra geral: o nome limpo nunca termina em de/da/do/das/dos/com/para/em/e (a palavra inteira: "drive-e" e
+    "d/e" ficam)."""
+    import preparar_dados as pd
+    casos = [
+        ("Coletor Admissao De Volvo Xc60 T8 Hybrid 2018/2024 P31441970", "Volvo", "XC60", "Coletor admissão"),
+        ("Sensor Temperatura Interna Volvo Xc60 18/24 32289547 Preto Com Prata", "Volvo", "XC60",
+         "Sensor temperatura interna"),
+        ("Bomba D'água Original Volvo Xc60 2.0 T8 Híbrido Drive-e 2022", "Volvo", "XC60", "Bomba d'água drive-e"),
+        ("Apoio Braco Forro Porta Couro Bmw 530 E60 03/11 1054337 D/e Preto", "BMW", "530i",
+         "Apoio braço forro porta couro d/e"),
+    ]
+    for titulo, marca, modelo, esperado in casos:
+        assert pd.nome_limpo(titulo, marca, modelo) == esperado, (titulo, pd.nome_limpo(titulo, marca, modelo))
+    # o estoque inteiro: a última palavra (separada por espaço) de nenhum nome é uma preposição solta
+    pecas = ROOT / "site" / "src" / "data" / "pecas.json"
+    if pecas.exists():
+        ruins = [(p["id"], p["n"]) for p in json.loads(pecas.read_text(encoding="utf-8"))
+                 if gi_sem(p["n"].split()[-1] if p["n"].split() else "") in FIM_PREPOSICAO]
+        assert not ruins, ruins
 
 
 def test_lado_e_posicao_pelo_nome():

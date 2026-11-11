@@ -13,10 +13,19 @@ import { DESCONTO_WHATS, whatsUrl } from '../lib/whats';
 // sem o script, os botões abrem o WhatsApp com a abertura do site (o script troca pelo pedido com as peças)
 const semScript = whatsUrl('Quero pedir várias peças.');
 import { MAX_LISTA } from '../lib/lista';
+// Antes da 1ª pintura (no <head>): qual parte aparece (com peças, link ou vazia), quantas linhas de esqueleto e a conta
+// das peças (a do link, sem repetir e só os anúncios válidos, como lib/lista.ts: idsDoLink; a guardada, só os itens com
+// anúncio válido, no máximo MAX_LISTA).
+const scriptTopo = `try{var d=document.documentElement,m=/[?&]i=([^&]*)/.exec(location.search),v={},k=0,s=0;if(m)decodeURIComponent(m[1]).split(/[\\s,;]+/).forEach(function(x){x=x.trim().toUpperCase();if(/^MLB\\d{6,14}$/.test(x)&&!v[x]){v[x]=1;k++}});k=Math.min(k,${MAX_LISTA});try{var g=JSON.parse(localStorage.getItem('izzatcar.lista'));s=Array.isArray(g)?Math.min(g.filter(function(i){return i&&/^MLB\\d{6,14}$/.test(i.id)}).length,${MAX_LISTA}):0}catch(e){}var n=k||s;d.dataset.lst=k?'link':n?'cheia':'vazia';d.dataset.lstN=Math.min(n||3,4);d.dataset.lstQ=n;d.dataset.lstMinha=s}catch(e){document.documentElement.dataset.lst='vazia'}`;
+// Logo depois do título: o título, a frase e o aviso do link já com o texto que o script vai pôr (nada pula: o CLS da
+// revisão 12 era a frase de 3 linhas virando 2). As MESMAS frases do components/lista/paginaLista.ts.
+// Na sua lista, o esqueleto leva os textos guardados (carro, anos, nome, código) em barras: cada linha quebra igual à de
+// verdade (o nome de 2 linhas no celular também) e nada pula quando ela chega.
+const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=+d.dataset.lstMinha||0,p=function(n){return n+(n===1?' peça':' peças')},h=document.querySelector('[data-lst-h1]'),l=document.querySelector('[data-lst-lead]'),u=document.querySelector('[data-lst-link-sub]');if(d.dataset.lst==='link'){h.textContent='Lista de orçamento';l.textContent='Mandaram esta lista para você: '+p(q)+'. Peça tudo no WhatsApp ou guarde na sua lista.';if(s)u.textContent=' Guardar junta estas peças às '+p(s)+' que já estão na sua lista (nada se perde).'}else if(q){l.textContent=p(q)+' na lista. Peça tudo de uma vez no WhatsApp, com ${DESCONTO_WHATS}% de desconto em cada peça.';var g=(JSON.parse(localStorage.getItem('izzatcar.lista'))||[]).filter(function(i){return i&&/^MLB\\d{6,14}$/.test(i.id)}),t=function(v){return typeof v=='string'?v.replace(/\\s+/g,' ').trim():''},b=function(x,z){var e=document.createElement('span');e.className='esq-t'+(z?' oem':'');e.textContent=x;return e};[].forEach.call(document.querySelectorAll('.lst-esq'),function(r,j){var x=g[j];if(!x)return;var c=t(x.carro).slice(0,80),a=t(x.anos).slice(0,20),o=t(x.cod).slice(0,30),v=r.querySelector('.lst-veic'),n=r.querySelector('.lst-nome'),k=r.querySelector('.lst-cod');n.replaceChildren(b(t(x.nome).slice(0,120)||'Peça'));if(c&&a){v.replaceChildren(b(c));var y=document.createElement('span');y.className='lst-anos';y.append(b(a));v.append(y)}else if(c||a)v.replaceChildren(b(c||a));else v.remove();if(o)k.replaceChildren('Cód. ',b(o,1));else k.remove()})}}catch(e){}`;
 ---
 <Pagina titulo="Sua lista de orçamento | Izzat Car Imports" noindex
   descricao="Junte as peças do serviço e peça tudo de uma vez no WhatsApp, com 10% de desconto em cada peça.">
-  <script slot="head" is:inline>try{var d=document.documentElement,m=/[?&]i=([^&]*)/.exec(location.search),k=m?decodeURIComponent(m[1]).split(/[\s,;]+/).filter(function(x){return/^MLB\d{6,}$/i.test(x)}).length:0,n=k||(JSON.parse(localStorage.getItem('izzatcar.lista'))||[]).length;d.dataset.lst=k?'link':n?'cheia':'vazia';d.dataset.lstN=Math.min(n||3,4)}catch(e){document.documentElement.dataset.lst='vazia'}</script>
+  <script slot="head" is:inline set:html={scriptTopo} />
 
   <div class="moldura lst" data-lst>
     <nav class="lst-trilha" aria-label="Você está em">
@@ -31,11 +40,20 @@ import { MAX_LISTA } from '../lib/lista';
     <div class="lst-grade" data-lst-cheia>
       <section class="lst-itens" aria-labelledby="lst-itens-t">
         <h2 class="sr-only" id="lst-itens-t">Peças da lista</h2>
-        {/* lista que veio por um link: "Guardar na minha lista" (montado pelo script) */}
-        <div class="lst-link" data-lst-link hidden></div>
+        {/* lista que veio por um link: "Guardar na minha lista" (no HTML, só aparece com html[data-lst="link"]; o botão é
+            ligado pelo script depois que as peças abriram) */}
+        <div class="lst-link" data-lst-link>
+          <p>Esta lista veio por um link.<small data-lst-link-sub> Guardando, ela fica neste aparelho para você pedir depois.</small></p>
+          <button type="button" class="botao botao-linha" data-lst-guardar disabled><Icone nome="lista-mais" />Guardar na minha lista</button>
+        </div>
         <ul class="lst-ul" data-lst-ul aria-busy="true">
-          {[0, 1, 2, 3].map(() => <li class="lst-esq" aria-hidden="true"><i></i><span><b></b><b></b><b></b></span></li>)}
+          {/* o esqueleto tem as MESMAS caixas da linha de verdade (classes e alturas de linha iguais, só as barras no lugar
+              do texto): nada pula quando as peças chegam (CLS da revisão 12: 0,0235) */}
+          {[0, 1, 2, 3].map(() => (
+            <li class="lst-item lst-esq" aria-hidden="true"><span class="lst-foto"></span><div class="lst-dados"><span class="lst-veic"><i></i><span class="lst-anos"><i></i></span></span><span class="lst-nome"><i></i></span><span class="lst-cod"><i></i></span></div><div class="lst-precos"><b class="lst-pw"><i></i> <small><i></i></small></b><span class="lst-ps"><i></i></span></div><span class="lst-tirar"></span></li>
+          ))}
         </ul>
+        <script is:inline set:html={scriptTextos} />
         <p class="lst-nota" data-lst-nota hidden></p>
         <div class="lst-pe" data-lst-pe>
           <a class="lst-mais" href="/catalogo.html" data-lst-mais><Icone nome="lista-mais" /><span>Adicionar mais peças</span></a>
@@ -55,7 +73,8 @@ import { MAX_LISTA } from '../lib/lista';
           <a class="botao botao-laranja lst-pedir" data-lst-pedir data-botao="lista" target="_blank" rel="noopener" href={semScript}><Icone nome="whats" /><span>Pedir tudo no WhatsApp</span></a>
           <button type="button" class="botao botao-linha lst-copiar" data-lst-copiar><Icone nome="copiar" /><span>Copiar o link da lista</span></button>
           <p class="lst-copiar-nota" data-lst-copiar-nota>Quem abrir o link vê esta mesma lista: a oficina manda para o cliente, o cliente manda para a oficina.</p>
-          <div class="lst-carro" data-lst-carro></div>
+          {/* o carro que vai na mensagem: o lugar já fica guardado (o script troca o texto) */}
+          <div class="lst-carro" data-lst-carro><Icone nome="carro" /><span>Diga o seu carro e a gente confere se as peças servem nele.</span><button type="button" data-lst-trocar>Escolher</button></div>
           <ul class="lst-confia">
             <li><Icone nome="check" /><span>Na dúvida se serve, a gente confere na peça antes de você comprar.</span></li>
             <li><Icone nome="check" /><span>O frete é combinado no WhatsApp, pelo seu CEP.</span></li>
@@ -129,12 +148,14 @@ import { MAX_LISTA } from '../lib/lista';
   @media (max-width: 459px) { .lst .lst-anos { display: block; } .lst .lst-anos::before { content: none; } }
   .lst .lst-nome { font-size: 16px; font-weight: 700; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; text-wrap: pretty; }
   .lst a.lst-nome:hover { text-decoration: underline; text-underline-offset: 3px; }
-  .lst .lst-cod { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* o código nunca é cortado ("Cód. 11…" não serve para quem conserta): quebra se não couber */
+  .lst .lst-cod { font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
   .lst .lst-cod .oem { font-size: 12px; color: var(--ink-2); }
   .lst .lst-precos { grid-area: precos; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
   .lst .lst-pw { font-stretch: 86%; font-weight: 850; font-size: 21px; line-height: 1.05; color: var(--ink); }
   .lst .lst-pw small { font-size: 12.5px; font-weight: 650; font-stretch: 94%; color: var(--ink-2); white-space: nowrap; }
-  .lst .lst-ps { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+  /* o preço do site numa linha só dele (no celular a linha tem sempre a mesma altura: o esqueleto também) */
+  .lst .lst-ps { flex-basis: 100%; font-size: 13px; color: var(--ink-3); white-space: nowrap; }
   .lst .lst-ps s { text-decoration-thickness: 1.2px; }
   .lst .lst-mudou { flex-basis: 100%; font-size: 12.5px; font-weight: 600; color: var(--accent-text); }
   .lst .lst-tirar { grid-area: tirar; display: grid; place-items: center; width: 44px; height: 44px; margin-top: -4px; border: 0; border-radius: 12px; background: none; color: var(--ink-3); }
@@ -157,16 +178,28 @@ import { MAX_LISTA } from '../lib/lista';
   .lst :is(.lst-desfeito, .lst-desfazer-tudo) button { --h: var(--botao-p); height: 44px; padding: 0 16px; border-radius: 12px; border: 0; font-weight: 700; font-size: 14.5px;
     background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-2); }
   .lst :is(.lst-desfeito, .lst-desfazer-tudo) button:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
-  /* esqueleto (antes do script): a mesma altura das peças, para nada pular quando elas chegam */
-  .lst .lst-esq { display: grid; grid-template-columns: 76px 1fr; gap: 14px; padding: 12px; border-radius: 18px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  /* esqueleto (antes do script): a linha de verdade (as mesmas caixas e alturas de linha), com barras no lugar do texto */
   .lst .lst-esq:nth-child(n + 5) { display: none; }
   html[data-lst-n="1"] .lst .lst-esq:nth-child(n + 2), html[data-lst-n="2"] .lst .lst-esq:nth-child(n + 3), html[data-lst-n="3"] .lst .lst-esq:nth-child(n + 4) { display: none; }
-  .lst .lst-esq i { width: 76px; height: 76px; border-radius: 13px; background: var(--bg-2); }
-  .lst .lst-esq span { display: grid; gap: 8px; align-content: start; padding-top: 4px; }
-  .lst .lst-esq b { height: 12px; width: 40%; border-radius: 6px; background: var(--bg-2); }
-  .lst .lst-esq b:nth-child(2) { height: 16px; width: 75%; }
-  .lst .lst-esq b:nth-child(3) { height: 20px; width: 30%; margin-top: 6px; }
-  @media (prefers-reduced-motion: no-preference) { .lst .lst-esq :is(i, b) { animation: lst-brilho 1.2s ease-in-out infinite alternate; } }
+  .lst .lst-esq .lst-foto { background: var(--bg-2); }
+  .lst .lst-esq i { display: inline-block; height: .8em; width: 9ch; border-radius: 6px; vertical-align: middle; background: var(--bg-2); }
+  .lst .lst-esq .lst-anos::before { visibility: hidden; }
+  .lst .lst-esq .lst-anos i { width: 7ch; }
+  .lst .lst-esq .lst-nome i { width: min(14ch, 100%); }
+  .lst .lst-esq .lst-cod i { width: 12ch; }
+  .lst .lst-esq .lst-pw i { width: 4.5ch; }
+  .lst .lst-esq .lst-pw small i, .lst .lst-esq .lst-ps i { width: 8ch; }
+  .lst .lst-esq .lst-tirar { visibility: hidden; }
+  /* os textos guardados no esqueleto: as barras quebram nas mesmas linhas do texto de verdade */
+  .lst .lst-esq .esq-t { color: transparent; background: var(--bg-2); border-radius: 6px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .lst .lst-esq .lst-cod { color: transparent; }
+  /* lista de um link: a linha "só para ver" (sem o "x") */
+  html[data-lst="link"] .lst .lst-esq { grid-template-columns: 76px minmax(0, 1fr); grid-template-areas: "foto dados" "foto precos"; padding-right: 14px; }
+  html[data-lst="link"] .lst .lst-esq .lst-tirar { display: none; }
+  /* celular estreito: o nome de quase toda peça quebra em 2 linhas (o link não sabe os nomes antes do índice chegar) */
+  @media (max-width: 359px) { html[data-lst="link"] .lst .lst-esq .lst-nome { min-height: 2.5em; } }
+  @media (min-width: 700px) { html[data-lst="link"] .lst .lst-esq { grid-template-columns: 88px minmax(0, 1fr) auto; grid-template-areas: "foto dados precos"; padding-right: 18px; } }
+  @media (prefers-reduced-motion: no-preference) { .lst .lst-ul:not(.lst-parado) .lst-esq :is(.lst-foto, i, .esq-t) { animation: lst-brilho 1.2s ease-in-out infinite alternate; } }
   @keyframes lst-brilho { to { opacity: .55; } }
   @media (min-width: 700px) {
     .lst .lst-item { grid-template-columns: 88px minmax(0, 1fr) auto 44px; grid-template-areas: "foto dados precos tirar"; align-items: center; padding: 14px 10px 14px 14px; }
@@ -175,7 +208,6 @@ import { MAX_LISTA } from '../lib/lista';
     .lst .lst-pw small { display: block; margin: 2px 0 0; }
     .lst .lst-mudou { flex-basis: auto; }
     .lst .lst-tirar { margin-top: 0; }
-    .lst .lst-esq { grid-template-columns: 88px 1fr; } .lst .lst-esq i { width: 88px; height: 88px; }
   }
 
   .lst .lst-nota { margin: 12px 2px 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
@@ -192,11 +224,12 @@ import { MAX_LISTA } from '../lib/lista';
   /* lista de um link: o aviso com "Guardar na minha lista" */
   .lst .lst-link { display: grid; gap: 12px; margin-bottom: 12px; padding: 16px; border-radius: 18px; background: var(--accent-soft);
     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
-  .lst .lst-link[hidden] { display: none; }
+  .lst .lst-link[hidden], html:not([data-lst="link"]) .lst .lst-link { display: none; }
   .lst .lst-link p { margin: 0; font-size: 15px; line-height: 1.45; color: #1d1d1f; text-wrap: pretty; }
   .lst .lst-link p small { display: block; margin-top: 2px; font-size: 13.5px; color: var(--ink-2); }
   .lst .lst-link .botao { --h: var(--botao-p); justify-self: start; gap: 8px; }
   .lst .lst-link .botao svg { width: 19px; height: 19px; }
+  .lst .lst-link .botao:disabled { opacity: .5; pointer-events: none; }
   @media (min-width: 700px) { .lst .lst-link { grid-template-columns: minmax(0, 1fr) auto; align-items: center; } }
 
   /* ---- o resumo ---- */

@@ -95,7 +95,12 @@ const confianca: [string, string][] = [
 
 <script>
   import { paradaSeRolar } from '../lib/trilhoFoco';
+  import { lembrarBusca } from '../lib/continuar';
   paradaSeRolar('[data-rola]');
+  // "Continuar a busca" da home (lib/continuar.ts): a busca com texto em que a pessoa estava. O catálogo troca o endereço
+  // a cada filtro (replaceState): guarda ao chegar e de novo ao sair da página (o endereço de quando ela saiu)
+  lembrarBusca(location.search);
+  window.addEventListener('pagehide', () => lembrarBusca(location.search));
 </script>
 
 <style is:global>
@@ -143,6 +148,15 @@ const confianca: [string, string][] = [
     .cat-banda.presa { box-shadow: 0 1px 0 var(--line), 0 12px 20px -18px rgb(0 0 0 / .55); }
   }
   @media (min-width: 768px) and (max-width: 1023px) { .cat-banda { margin-inline: -32px; padding-inline: 32px; } }
+  /* o campo e a caixa das buscas recentes (presa embaixo do campo, por cima da grade) */
+  .cat-busca-cx { position: relative; flex: 1; min-width: 0; display: flex; }
+  .cat-busca-cx .cat-recentes { z-index: 45; }
+  /* celular e tablet: a caixa na largura da banda inteira (campo + Filtros), não só na do campo (a 320 cortava as buscas) */
+  @media (max-width: 1023px) {
+    .cat-busca-cx { position: static; }
+    .cat-busca-cx .cat-recentes { left: 16px; right: 16px; top: calc(100% - 2px); }
+  }
+  @media (min-width: 768px) and (max-width: 1023px) { .cat-busca-cx .cat-recentes { left: 32px; right: 32px; } }
   .cat-busca { flex: 1; min-width: 0; height: 54px; padding: 0 6px 0 16px; border-radius: 14px; }
   .cat-busca input { font-size: 16px; }
   /* só o "×" do site (o do navegador some) */

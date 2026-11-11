@@ -123,6 +123,8 @@ export const GRUPOS: Record<string, Grupo> = {
   coxim: { tipos: ['Coxins do Motor', 'Coxins do Câmbio'], com: 'o coxim' },
   correia: { tipos: ['Tensores de Correia'], com: 'o tensor da correia' },
   distribuicao: { tipos: ['Peças da Distribuição', 'Tampas da Distribuição', 'Tensores de Corrente', 'Comandos de Válvulas'], com: 'esta peça da distribuição' },
+  // a válvula solenoide do turbo (pressão da turbina, wastegate) é do turbo, não do cabeçote (revisão 12, P2.2)
+  'turbo-valvula': { tipos: ['Válvulas Solenoides'], nome: /turb|waste\s?gate/i, com: 'a válvula do turbo' },
   cabecote: { tipos: ['Cabeçotes', 'Tampas de Válvulas', 'Parafusos do Cabeçote', 'Válvulas Solenoides', 'Tampas de Óleo'], com: 'esta peça do cabeçote' },
   'motor-baixo': { tipos: ['Blocos do Motor', 'Bielas', 'Bronzinas', 'Pistões', 'Virabrequins', 'Cárteres', 'Bombas de Óleo', 'Retentores', 'Radiadores de Óleo', 'Suportes do Filtro de Óleo', 'Sensores de Pressão do Óleo'], com: 'esta peça do motor' },
   admissao: { tipos: ['Coletores de Admissão', 'Corpos de Borboleta', 'Mangueiras de Admissão', 'Caixas do Filtro de Ar', 'Sensores MAF', 'Sensores MAP'], com: 'esta peça da admissão' },
@@ -158,6 +160,8 @@ export const GRUPOS: Record<string, Grupo> = {
   console: { tipos: ['Consoles', 'Porta-copos'], com: 'o console' },
   'capa-coluna': { tipos: ['Capas da Coluna de Direção'], com: 'a capa da coluna' },
   'chave-seta': { tipos: ['Chaves de Seta e Luz', 'Chaves do Limpador'], com: 'a chave de seta' },
+  // botão da tampa traseira ("Botão abertura porta-malas", "Comando rebatimento tampa"): vai com a tampa, não com o painel
+  'tampa-botao': { tipos: ['Outros Botões'], nome: /tampa traseira|porta-?malas|bagageiro|rebatimento\s+(d[ao]\s+)?tampa/i, zona: 'tras', com: 'o botão da tampa traseira' },
   'botoes-painel': { tipos: ['Botões do Pisca-alerta', 'Botões do Desembaçador', 'Outros Botões'], com: 'o botão' },
   volante: { tipos: ['Volantes', 'Botões do Volante'], com: 'o volante' },
   airbag: { tipos: ['Airbags, Módulos e Sensores', 'Cintos de Segurança'], com: 'esta peça do airbag' },
@@ -191,8 +195,9 @@ export const JUNTO: Record<string, string[]> = {
   brake: ['tampa', 'tampa-mola', 'lanterna', 'placa'],
   placa: ['tampa', 'placa', 'lanterna', 'camera-re', 'parachoque'],
   refletor: ['parachoque', 'lanterna', 'refletor'],
-  tampa: ['tampa', 'tampa-mola', 'lanterna', 'placa', 'brake', 'camera-re'],
-  'tampa-mola': ['tampa', 'tampa-mola', 'lanterna', 'placa'],
+  tampa: ['tampa', 'tampa-mola', 'lanterna', 'placa', 'brake', 'camera-re', 'tampa-botao'],
+  'tampa-mola': ['tampa', 'tampa-mola', 'lanterna', 'placa', 'tampa-botao'],
+  'tampa-botao': ['tampa', 'tampa-mola', 'tampa-botao', 'lanterna', 'placa'],
   'camera-re': ['placa', 'estacionamento', 'multimidia', 'tampa'],
   estacionamento: ['parachoque', 'estacionamento', 'camera-re', 'modulo'],
   retrovisor: ['retrovisor-peca'],
@@ -219,7 +224,8 @@ export const JUNTO: Record<string, string[]> = {
   injecao: ['injecao', 'admissao', 'combustivel'],
   combustivel: ['combustivel', 'injecao'],
   'sensor-motor': ['sensor-motor', 'modulo-injecao', 'escape'],
-  turbo: ['turbo', 'admissao', 'escape'],
+  turbo: ['turbo', 'turbo-valvula', 'admissao', 'escape'],
+  'turbo-valvula': ['turbo', 'admissao', 'sensor-motor', 'turbo-valvula'],
   escape: ['escape', 'sensor-motor', 'turbo'],
   bobina: ['bobina', 'cabecote', 'modulo-injecao'],
   alternador: ['alternador', 'correia', 'bateria'],
@@ -288,6 +294,13 @@ export function zonaDa(nome: string, grupo: string | null): Zona | null {
   return (grupo && GRUPOS[grupo]?.zona) || null;
 }
 const primeira = (n: string) => sem(n).split(/\s+/)[0] || '';
+/** Os grupos de motor (admissão, injeção, turbo, cabeçote...). */
+export const GRUPOS_MOTOR = new Set(['coxim', 'correia', 'distribuicao', 'turbo-valvula', 'cabecote', 'motor-baixo', 'admissao', 'injecao',
+  'combustivel', 'sensor-motor', 'turbo', 'escape', 'bobina', 'alternador', 'arranque', 'arrefecimento', 'modulo-injecao']);
+/** Nome que não é de motor (tampa traseira, porta-malas, rebatimento, banco, porta): nunca entra num grupo de motor, nem
+ *  com tipo errado no estoque (o "Comando rebatimento tampa" já foi "Comandos de Válvulas": revisão 12, P2.2). O banco
+ *  do motor ("Sonda lambda banco 1") fica. */
+export const FORA_DO_MOTOR = /tampa traseira|porta-?malas|rebatimento|\bbancos?\b(?!\s*\d)|\bportas?\b/;
 
 /** As peças que vão junto com `p`: só do MESMO carro (marca + o modelo de `p`, também as de 2+ carros que servem nele) e
  *  da MESMA geração (anos que se sobrepõem, mesmaGeracao); nunca outro lado nem a outra ponta do carro; nunca a mesma
@@ -307,6 +320,7 @@ export function vaiJunto(p: PecaJunto, doCarro: readonly PecaJunto[], max = MAX_
     if (!mesmaGeracao(anos, anosNoModelo(x, p.m))) continue;
     const gx = grupoDa(x);
     if (!gx || !filas.has(gx)) continue;
+    if ((GRUPOS_MOTOR.has(g) || GRUPOS_MOTOR.has(gx)) && FORA_DO_MOTOR.test(sem(x.n))) continue;
     if (cod && (x.o || '').trim().toLowerCase() === cod) continue;
     if (x.s === p.s && primeira(x.n) === primeira(p.n)) continue;
     const lx = ladoDa(x.n), zx = zonaDa(x.n, gx);

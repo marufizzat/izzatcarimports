@@ -1025,8 +1025,10 @@ def expandir_nome(palavras_cruas, tirar_carro=True):
 UNIDADE_NO_NOME = re.compile(r"\d+([.,]\d+)?(mm|cm|w|v|a|ah|cc|km|kg|cv|hp|i|din)", re.I)
 # Palavra que é nome de peça e também de carro: fica no nome ("Sensor polo negativo", "Motor aspirado").
 CARRO_QUE_E_PECA = {"polo", "aspirado"}
-# Sobra solta no fim ("... sensor de estacionamento cor" de "Cor Preto"; "std" = standard)
-FIM_SOLTO = {"cor"}
+# Sobra solta no fim ("... sensor de estacionamento cor" de "Cor Preto"; "std" = standard). Preposição e "e" soltos no
+# fim também saem: "Coletor Admissao De Volvo Xc60..." -> "Coletor admissão" (nunca "Coletor admissão de"); "Preto Com
+# Prata" -> sem o "com" (revisão 12, P2.2). Só a palavra inteira: "drive-e" e "d/e" ficam.
+FIM_SOLTO = {"cor", "de", "da", "do", "das", "dos", "com", "para", "em", "e"}
 # Fabricante da peça escrito em minúsculas no anúncio: com a grafia dele ("bosch" -> "Bosch")
 MARCA_DA_PECA = {"bosch": "Bosch", "valeo": "Valeo", "hella": "Hella", "magneti": "Magneti", "marelli": "Marelli",
                  "delphi": "Delphi", "denso": "Denso", "continental": "Continental", "siemens": "Siemens",
@@ -1931,6 +1933,11 @@ def tipo_loja(s, familia=""):
 REGRAS_NOME = [
     # macaco e chave de roda: o kit do carro, junto do "Kit macaco chave roda triângulo" que o ML ja poe em Segurança
     (r"^(kit macaco|chave (de )?roda|isopor estepe|macaco)\b", None, "Segurança", "Macacos e Chaves de Roda"),
+    # "Comando rebatimento tampa" (o botão da tampa traseira que também rebate o banco) caía no "Comando de válvulas" do
+    # ML pela palavra "comando" (revisão 12, P2.2): pelo nome, o botão do banco ou o botão da tampa. Só o que veio do
+    # Motor (o motor do retrovisor que rebate continua no retrovisor)
+    (r"\brebatimento\b(?!.*\bretrovisor)(?=.*\b(banco|bancos|encosto)\b)", {"Motor"}, "Peças de Interior", "Peças de Banco"),
+    (r"\brebatimento\b(?!.*\bretrovisor)", {"Motor"}, "Peças de Interior", "Outros Botões"),
     (r"^(motor|maquina) (de )?vidro\b(?!.*\bmanual)", {"Motor"}, "Janelas e Vedações",
      "Máquinas e Motores de Vidro Elétrico"),
     (r"^modulo (do )?(cambio|tracao)\b", None, "Transmissão", "Módulos do Câmbio e da Tração"),
