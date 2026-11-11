@@ -287,6 +287,16 @@ export function opcoesDoPonto(p: Ponto, procurar: (f: Filtros) => Item[], carro:
   }).filter((x) => x.itens.length > 0 || !x.linha.extra);
 }
 
+/** Ponto do CENTRO (frente, traseira: sem lado) com a peça à mostra de UM lado só: o que o nome da linha ganha, para
+ *  quem bateu no meio não receber só o guia direito sem aviso (revisão 16, P3-5): " (lado direito)". Lido do nome da
+ *  peça, como a tela o mostra; o nome que diz os dois lados, ou nenhum, e o ponto que já tem lado: ''. */
+export function ladoNaLinha(p: Ponto, nomeDaPeca: string): string {
+  if (p.lado) return '';
+  const n = nomeDaPeca.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const e = /\b(esquerd[oa]s?|motorista)\b/.test(n), d = /\b(direit[oa]s?|passageiro)\b/.test(n);
+  return e === d ? '' : ` (lado ${e ? 'esquerdo' : 'direito'})`;
+}
+
 /** O que o nome da linha ganha quando a peça à mostra não é a do título (fica à vista, com o nome de verdade embaixo). */
 export const LIGADA = ' (peça ligada)';
 

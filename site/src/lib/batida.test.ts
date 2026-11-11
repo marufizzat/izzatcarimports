@@ -2,7 +2,7 @@
 // o que precisa de peça para existir roda só no ESTOQUE FIXO; as regras (lado, posição, nada em dobro, link = catálogo)
 // rodam no fixo e no estoque do dia, com o carro que o estoque tiver.
 import { describe, it, expect } from 'vitest';
-import { PONTOS, LIGADA, FRASE_PATIO, ehDaLinha, itensDaLinha, listaDaLinha, batidaJson, linhaDoJson, kitDoPonto, kitsDeTodos, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha, type Linha } from './batida';
+import { PONTOS, LIGADA, FRASE_PATIO, ehDaLinha, itensDaLinha, listaDaLinha, batidaJson, linhaDoJson, ladoNaLinha, kitDoPonto, kitsDeTodos, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, opcoesDoPonto, pedidoDe, linkDaLinha, filtrosDaLinha, type Linha } from './batida';
 import { mensagemConserto, somaPrecos } from './whats';
 import { ARTE } from './raioX';
 import { Busca, capaItem } from './busca';
@@ -176,6 +176,22 @@ describe('a peça da linha: o nome começa pela peça que a linha promete', () =
     expect(poucoAnunciado([certa])).toBe(false);   // nada para procurar
     expect(FRASE_PATIO).toMatch(/^Nem toda peça está anunciada\./);
     expect(FRASE_PATIO).not.toMatch(/tem|garant|certeza/i);
+  });
+});
+
+describe('ponto do centro com peça de um lado só: o nome da linha diz o lado', () => {
+  const ponto = (k: string) => PONTOS.find((p) => p.k === k)!;
+  it.each([
+    ['traseira', 'Guia suporte para-choque traseiro direito', ' (lado direito)'],
+    ['traseira', 'Guia para-choque traseira esquerda', ' (lado esquerdo)'],
+    ['frente', 'Grade churrasqueira direito', ' (lado direito)'],
+    ['frente', 'Alma para-choque', ''],
+    ['frente', 'Par suportes farol esquerdo direito', ''],
+    // o ponto que já tem lado não repete (a linha dele já é a do lado)
+    ['traseira-direita', 'Guia suporte para-choque traseiro direito', ''],
+    ['frente-esquerda', 'Farol esquerdo', ''],
+  ])('%s × "%s" = "%s"', (k, nome, esperado) => {
+    expect(ladoNaLinha(ponto(k), nome)).toBe(esperado);
   });
 });
 
