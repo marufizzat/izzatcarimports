@@ -205,6 +205,14 @@ export const PONTOS: Ponto[] = [
   },
 ];
 
+/** "Girar o carro": os pontos que, em cada vista da arte, ficam do OUTRO lado (escolher um deles gira o carro sozinho).
+ *  Na vista de trás (lib/raioXTras.ts: PONTOS_TRAS) a traseira, a traseira direita e a lateral direita caem no lugar de
+ *  verdade; a frente direita e a traseira esquerda aparecem nas duas vistas. */
+export const PONTOS_DO_OUTRO_LADO: Record<'frente' | 'tras', readonly string[]> = {
+  frente: ['lateral-direita', 'traseira', 'traseira-direita'],
+  tras: ['frente', 'frente-esquerda', 'lateral-esquerda'],
+};
+
 /** O item do catálogo como a lista precisa: o nome limpo, o carro, os anos, o código, o preço e o endereço. */
 export function repDe(it: Item, fotoDe: (it: Item) => string): Rep {
   return {

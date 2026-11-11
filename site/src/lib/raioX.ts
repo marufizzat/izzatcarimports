@@ -174,6 +174,18 @@ export const ZONAS: Zona[] = [
   },
 ];
 
+/** As duas vistas do carro ("Girar o carro"): a da frente (pelo lado esquerdo, a arte de sempre) e a de trás (pelo lado
+ *  direito: lib/raioXTras.ts, que só desce quando a pessoa gira). */
+export type LadoArte = 'frente' | 'tras';
+/** As zonas que, em cada vista, ficam do OUTRO lado do carro: escolher uma delas gira o carro sozinho. As que não estão
+ *  em nenhuma das duas listas (interior, teto, rodas, embaixo) aparecem de verdade nas duas vistas. */
+export const DO_OUTRO_LADO: Record<LadoArte, readonly string[]> = {
+  frente: ['lateral-direita', 'traseira'],
+  tras: ['frente', 'motor', 'lateral-esquerda'],
+};
+/** A outra vista. */
+export const outroLado = (l: LadoArte): LadoArte => (l === 'frente' ? 'tras' : 'frente');
+
 /** O carro das contagens (as do catálogo: marca, modelo e, se houver, o ano). */
 export type CarroFiltro = { marca?: string; modelo?: string; ano?: number };
 /** Uma linha do painel: um tipo da zona, com o filtro exato do catálogo e a peça mais nova dele (a foto). */
