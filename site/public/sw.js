@@ -87,8 +87,9 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (req.mode === 'navigate') {
     // o Chrome preparando a próxima página (regras de especulação): rede, sem cópia e sem prazo
-    if (/prefetch|prerender/i.test(req.headers.get('sec-purpose') || req.headers.get('purpose') || '')) return;
+    if (/prefetch|prerender/i.test(req.headers.get('sec-purpose') || req.headers.get('purpose') || '')) { quietoAte = Date.now() + 3000; return; }
     event.waitUntil(checarDesligar(false));
+    quietoAte = Date.now() + 3000; // a fila de guardar espera a página nova chegar
     event.respondWith(navegar(event, url));
     return;
   }
@@ -218,14 +219,18 @@ async function artes(event, chave) {
   try { return await rede; } catch (e) { if (c) return c; throw e; }
 }
 
-// o que foi direto à rede é guardado depois (do cache HTTP: o navegador acabou de baixar), em fila, sem pressa
+// o que foi direto à rede é guardado depois (do cache HTTP: o navegador acabou de baixar), em fila, sem pressa: só
+// quando a página para de pedir fotos (2 s sem pedido novo) e nunca junto de uma troca de página
 const fila = new Map();
-let andando = null;
+let andando = null, ultimoPedido = 0, quietoAte = 0;
+const calmo = async () => { while (Date.now() - ultimoPedido < 2000 || Date.now() < quietoAte) await esperar(400); };
 function guardarDepois(nome, chave, limite) {
   if (desligado) return Promise.resolve();
   fila.set(chave, [nome, limite]);
-  andando = andando || esperar(1500).then(async () => {
+  ultimoPedido = Date.now();
+  andando = andando || calmo().then(async () => {
     while (fila.size && !desligado) {
+      if (Date.now() < quietoAte) await calmo();
       // o CSS primeiro (é o que a cópia precisa para abrir desenhada)
       const [u, [n, l]] = [...fila.entries()].find(([x]) => x.endsWith('.css')) || fila.entries().next().value;
       fila.delete(u);
