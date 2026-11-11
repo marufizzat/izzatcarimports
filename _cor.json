@@ -736,21 +736,16 @@
 "t": 1.641
 },
 "MLB4583095627": {
-"br": 55.47,
-"br_depois": 16.01,
-"conferir": true,
-"fora_max": 0,
-"forca": 0.717,
+"br": 56.11,
+"br_depois": 0.45,
+"conferir": false,
+"forca": 1.0,
 "foto": "793310-MLB110019659813_042026",
-"guarda": 2.33,
-"modo": "conservadora",
-"motivo": "azul em todas as fotos (1º quartil 46 em 5 fotos)",
-"mudou": 0.991,
-"prova": {
-"n": 5,
-"q1": 46.4
-},
-"t": 1.661
+"guarda": 2.88,
+"modo": "neutra",
+"motivo": "ajuste manual (cor: neutra)",
+"mudou": 0.993,
+"t": 0.092
 },
 "MLB4583130961": {
 "br": 41.8,
@@ -1906,21 +1901,16 @@
 "t": 1.106
 },
 "MLB4648094821": {
-"br": 86.81,
-"br_depois": 16.04,
-"conferir": true,
-"fora_max": 0,
-"forca": 0.817,
+"br": 86.79,
+"br_depois": 0.18,
+"conferir": false,
+"forca": 1.0,
 "foto": "889307-MLB110199695514_052026",
-"guarda": 13.87,
-"modo": "conservadora",
-"motivo": "azul em todas as fotos (1º quartil 68 em 7 fotos)",
-"mudou": 0.985,
-"prova": {
-"n": 7,
-"q1": 68.5
-},
-"t": 1.74
+"guarda": 13.86,
+"modo": "neutra",
+"motivo": "ajuste manual (cor: neutra)",
+"mudou": 0.98,
+"t": 0.086
 },
 "MLB4648095735": {
 "br": 59.86,
@@ -1940,21 +1930,16 @@
 "t": 4.667
 },
 "MLB4649160347": {
-"br": 80.8,
-"br_depois": 15.99,
-"conferir": true,
-"fora_max": 0,
-"forca": 0.806,
+"br": 87.96,
+"br_depois": 0.6,
+"conferir": false,
+"forca": 1.0,
 "foto": "967664-MLB111120047123_052026",
-"guarda": 0.82,
-"modo": "conservadora",
-"motivo": "azul em todas as fotos (1º quartil 54 em 8 fotos; o título diz \"preto\")",
-"mudou": 0.907,
-"prova": {
-"n": 8,
-"q1": 53.9
-},
-"t": 2.566
+"guarda": 2.04,
+"modo": "neutra",
+"motivo": "ajuste manual (cor: neutra)",
+"mudou": 0.98,
+"t": 0.107
 },
 "MLB4677824907": {
 "br": 34.93,
@@ -10204,21 +10189,13 @@
 "t": 2.751
 },
 "MLB5210676995": {
-"br": 30.22,
-"br_depois": 2.26,
+"br": 31.28,
 "conferir": false,
-"fora_max": 0,
-"forca": 1.0,
 "foto": "803632-MLB115959496346_092026",
-"guarda": 18.41,
-"modo": "neutra",
-"motivo": "as outras fotos mostram a peça neutra (1º quartil 16 em 5 fotos)",
-"mudou": 0.801,
-"prova": {
-"n": 5,
-"q1": 15.7
-},
-"t": 0.731
+"guarda": 18.38,
+"modo": "manter",
+"motivo": "ajuste manual (cor: manter)",
+"t": 0.057
 },
 "MLB5210676997": {
 "br": 20.4,
@@ -11895,21 +11872,16 @@
 "t": 1.461
 },
 "MLB6582678182": {
-"br": 37.72,
-"br_depois": 16.01,
-"conferir": true,
-"fora_max": 0,
-"forca": 0.581,
+"br": 44.6,
+"br_depois": 0.41,
+"conferir": false,
+"forca": 1.0,
 "foto": "834461-MLB109275122936_042026",
-"guarda": 4.05,
-"modo": "conservadora",
-"motivo": "azul em todas as fotos (1º quartil 33 em 3 fotos)",
+"guarda": 3.98,
+"modo": "neutra",
+"motivo": "ajuste manual (cor: neutra)",
 "mudou": 0.884,
-"prova": {
-"n": 3,
-"q1": 33.2
-},
-"t": 2.669
+"t": 0.087
 },
 "MLB6582695410": {
 "br": 19.92,
@@ -18048,17 +18020,16 @@
 "t": 1.664
 },
 "MLB7045412214": {
-"br": 34.67,
-"br_depois": 16.0,
-"conferir": true,
-"fora_max": 0,
-"forca": 0.552,
+"br": 34.86,
+"br_depois": 0.81,
+"conferir": false,
+"forca": 1.0,
 "foto": "706783-MLB112996845086_072026",
-"guarda": 23.54,
-"modo": "conservadora",
-"motivo": "azul também nos claros da peça (24 acima do fundo da foto)",
-"mudou": 0.775,
-"t": 0.357
+"guarda": 23.57,
+"modo": "neutra",
+"motivo": "ajuste manual (cor: neutra)",
+"mudou": 0.778,
+"t": 0.07
 },
 "MLB7045916442": {
 "br": 41.96,
