@@ -1398,6 +1398,29 @@ def test_ano_da_descricao():
 
 
 
+# ---- 10/11 (dono): mesmo carro em 1 pagina; lixo do anuncio; banco; excluir_do_site.json ----
+ENDERECOS_ANTIGOS = {"mercedes-benz-c180", "mercedes-benz-c200", "mercedes-benz-c320", "mercedes-benz-gla200",
+                     "bmw-320i", "bmw-530i", "ford-new-fiesta", "honda-new-civic"}
+
+
+def test_carro_unido_mantem_enderecos_e_peca():
+    """Os enderecos antigos /carros/<k>.html continuam (aliases, com canonical) e nenhuma peca perde o carro que tinha:
+    quem salvou "C180" no Meu carro continua vendo as pecas, e o principal (Classe C) tem todas."""
+    resumo = json.loads((ROOT / "site" / "src" / "data" / "resumo.json").read_text(encoding="utf-8"))
+    chaves = {c["k"] for c in resumo["carros"]}
+    al = resumo.get("aliases", [])
+    assert ENDERECOS_ANTIGOS <= (chaves | {a["k"] for a in al}), ENDERECOS_ANTIGOS - (chaves | {a["k"] for a in al})
+    assert not ({a["k"] for a in al} & chaves), "apelido nao pode ser pagina de carro (sitemap e menus)"
+    for a in al:
+        assert a["para"] in chaves, a
+    by = _pecas()
+    for (marca, apelido), principal in pd.UNIR_CARRO_PARES.items():
+        for x in by.values():
+            if x["b"] == marca and apelido in _carros(x):
+                assert principal in _carros(x), (x["t"], _carros(x))
+
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

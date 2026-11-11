@@ -3244,6 +3244,45 @@ def modelos_do_titulo(marca, ws, principal, validos):
     return lista
 
 
+# ---- Mesmo carro em 2 paginas (decisao do dono, 10/11): motor/geracao vira o carro principal ----
+# A peca ganha o carro principal em "ms" (pagina, filtro e garagem o acham) e o nome antigo continua em "ms": quem salvou
+# "C180" no Meu carro nao perde peca. O endereco /carros/<apelido>.html continua (resumo["aliases"]): a mesma pagina do
+# principal, com canonical para ele; fora de "carros" (menus, cartoes, sitemap).
+UNIR_CARRO_PARES = {
+    ("Mercedes-Benz", "C180"): "Classe C", ("Mercedes-Benz", "C200"): "Classe C", ("Mercedes-Benz", "C320"): "Classe C",
+    ("BMW", "320i"): "Série 3", ("BMW", "330i"): "Série 3", ("BMW", "530i"): "Série 5",
+    ("Mercedes-Benz", "GLA200"): "GLA", ("Ford", "New Fiesta"): "Fiesta", ("Honda", "New Civic"): "Civic",
+}
+UNIR_CARRO = {(m, gi.chave_modelo(a)): P for (m, a), P in UNIR_CARRO_PARES.items()}
+_UNIAO = Counter()   # (marca, apelido, principal) -> pecas que tinham o apelido (o endereco antigo so existe com 8+)
+
+
+def unir_carro(marca, mod, ms, ys, faixa):
+    """(mod, ms, ys) da peca com o carro principal no lugar do apelido (UNIR_CARRO). Sem apelido, nada muda."""
+    carros = list(ms) if ms else ([mod] if mod else [])
+    alvo = {c: UNIR_CARRO.get((marca, gi.chave_modelo(c))) for c in carros}
+    if not any(alvo.values()):
+        return mod, ms, ys
+    for c, P in alvo.items():
+        if P:
+            _UNIAO[(marca, c, P)] += 1
+    faixas = list(ys) if ys else [faixa] * len(carros)
+    principais = []                                    # principal novo (o que nao estava na peca), com a faixa dos apelidos
+    for P in dict.fromkeys(v for v in alvo.values() if v):
+        if any(gi.chave_modelo(c) == gi.chave_modelo(P) for c in carros):
+            continue
+        fs = [f for c, f in zip(carros, faixas) if alvo[c] == P and f]
+        principais.append((P, [min(f[0] for f in fs), max(f[1] for f in fs)] if fs else faixa))
+    nomes = [P for P, _ in principais] + carros
+    anos = [f for _, f in principais] + faixas
+    if mod and alvo.get(mod):
+        mod = alvo[mod]
+    if mod in nomes:                                   # o carro da peca vem primeiro (o "m")
+        i = nomes.index(mod)
+        nomes, anos = [nomes[i]] + nomes[:i] + nomes[i + 1:], [anos[i]] + anos[:i] + anos[i + 1:]
+    return mod, nomes, (anos if ys else None)
+
+
 def anos_por_modelo(ms, marca, a0, a1):
     """(carros, anos de cada um) da peca de 2+ carros. A faixa do titulo vale para todos, cortada no
     periodo de venda de cada carro ("Fit Wr-v 15/21": WR-V so a partir de 2017). Carro cuja faixa fica
@@ -3407,6 +3446,7 @@ def main():
 
     # 3) Uma entrada por peca.
     _DIM_PADRAO.clear()
+    _UNIAO.clear()
     _DIM_PADRAO.update(dimensoes_padrao(p.get("desc") for p in prods))
     pecas = []
     for p, (mc, ws) in zip(prods, cru):
@@ -3440,6 +3480,7 @@ def main():
         ms, ys = anos_por_modelo(ms_titulo, mc, c0, c1) if (c0 and a0) else anos_por_modelo(ms_titulo, mc, a0, a1)
         if len(ms) > 1 and ms[0] != mod:
             mod = ms[0]   # a faixa do titulo e de outro carro da peca: ele vira o carro principal
+        mod, ms, ys = unir_carro(mc, mod, ms, ys, [a0, a1] if a0 else None)   # mesmo carro, outra pagina (UNIR_CARRO)
         if not a0 and mc:   # titulo e part_number sem ano: a descricao ("Anos compativeis: 2013 ate 2020")
             a0, a1 = anos_da_descricao(p.get("desc"))
             if a0 and a1 > a0:   # um ano so ("Anos compativeis: 2010 ate 2010") e do outro carro da descricao: fica sem ano
@@ -3508,8 +3549,9 @@ def main():
 
     MIN_CARRO = 8
     carros = []
+    apelidos = {(mc_, c_) for (mc_, c_, _P) in _UNIAO}      # o apelido nao e pagina propria: vai como alias do principal
     for (mc, mod), lst in sorted(por_carro.items(), key=lambda kv: -len(kv[1])):
-        if len(lst) < MIN_CARRO:
+        if len(lst) < MIN_CARRO or (mc, mod) in apelidos:
             continue
         # mosaico do carro: 2a foto original de pecas variadas (familias diferentes)
         cands, fams_vistas = [], set()
@@ -3580,6 +3622,9 @@ def main():
         # endereco antigo (familia do ML) -> bloco: paginas de redirecionamento e o ?tipo= antigo do catalogo
         "antigas": [{"k": k, "n": n, "para": para} for k, (n, para) in FAMILIAS_ANTIGAS.items()],
         "carros": carros,
+        # enderecos antigos de carro unido (mesmo carro, outra pagina): /carros/<k>.html com canonical para <para>
+        "aliases": [{"k": chave_url(f"{mc_} {c_}"), "b": mc_, "m": P_, "para": chave_url(f"{mc_} {P_}")}
+                    for (mc_, c_, P_), n_ in sorted(_UNIAO.items()) if n_ >= MIN_CARRO],
         "chegou": chegou,
         "preco": {"min": precos[0], "max": precos[-1]},
     }
