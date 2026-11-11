@@ -1,28 +1,89 @@
 ---
-// Abertura v2: arte de estúdio à direita (no celular, embaixo) e UMA ação principal, no padrão das grandes
-// lojas de autopeças: o cartão de busca com duas abas.
-//   "Pelo carro" (aberta): marca com logo -> modelo -> ano -> "Ver as N peças" (SeletorCarro).
-//   "Pelo nome ou código": a busca com sugestões + até 4 atalhos de tipos de peça, todos diferentes.
-// Os selos (CDV, nota fiscal, 90 dias) ficam na faixa logo abaixo: aqui não se repetem.
-// Até 1023 px (celular, iPad em pé, janela média) tudo empilha: o cartão na largura certa e a arte embaixo, nunca
-// atrás do cartão. A partir de 1024, a arte à direita. A troca da ARTE continua em 767 px (a mesma media do preload).
+// Abertura da home (rodada 15): "o estúdio vira o seu carro".
+// Coluna do conteúdo: [Continuar] -> olho "Peças originais usadas" -> título com a PALAVRA VIVA ("carro" -> a marca ->
+// o modelo e o ano, sobre o traço de pincel laranja) -> dois selos desenhados (desmanche legal · CDV; 10% no WhatsApp)
+// -> o cartão de busca com duas abas ("Pelo carro": SeletorCarro; "Pelo nome ou código": a busca com sugestões).
+// Palco (à direita a partir de 1024 px; abaixo do cartão no celular e no tablet): fundo de estúdio em CSS e as peças
+// recortadas em camadas (public/arte/v2/abertura/, ferramentas/camada_abertura.py). Cada peça é um LINK para o bloco
+// dela; com o carro escolhido, a arte do carro entra e as peças viram os atalhos DELE com a contagem do catálogo
+// (lib/abertura.ts; comportamento em aberturaPalco.ts, que chega depois da 1ª pintura).
+// Quem volta com carro salvo: o script no fim da seção (antes da 1ª pintura) já escreve o título e põe a arte do carro.
+// Orçamento (CLAUDE.md, "Abertura viva"): no celular a única imagem da 1ª tela é o farolzinho (20 KB) e o LCP continua
+// sendo o título; no PC o LCP é o farol recortado (pré-carregado pelo index.astro). Nada aqui muda de lugar depois de
+// pintado: o que entra é absoluto ou tem a caixa reservada; movimento só em transform/opacity.
 import SeletorCarro from '../SeletorCarro.astro';
 import Icone from '../Icone.astro';
 import { populares } from '../../lib/populares';
-interface Props { arte: string; arteCelular?: string; }
-const { arte, arteCelular } = Astro.props;
+import { resumo, whatsUrl } from '../../lib/dados';
+import { scriptCurto } from '../../lib/scriptCurto';
+import { PECAS_PALCO, palavraViva, SIZES_AUTO, SIZES_HEROI } from '../../lib/abertura';
+import medidas from '../../data/abertura-pecas.json';
+
 const atalhos = populares(4);
+const blocos = new Map(resumo().familias.map((f) => [f.n, f]));
+const info = medidas as Record<string, { w: number; h: number; v: number[] }>;
+const ARTE = '/arte/v2/abertura';
+// a caixa de cada peça como atalho do carro (em % do lado menor do palco): todas com o mesmo peso visual
+const CAIXA = { w: 18.5, h: 13.5 };
+const pecas = PECAS_PALCO.filter((p) => blocos.has(p.bloco) && info[p.k]).map((p, i) => {
+  const m = info[p.k];
+  const ar = m.w / m.h;
+  const w = p.cena?.w ?? CAIXA.w;
+  const sc = Math.min(CAIXA.w / w, CAIXA.h / (w / ar));
+  const bloco = blocos.get(p.bloco)!;
+  const srcset = m.v.map((x) => `${ARTE}/${p.k}-${x}.webp ${x}w`).join(', ');
+  // PC: o lado menor do palco tem até ~860 px; celular: o palco tem a largura da tela
+  const sizes = i === 0 ? SIZES_HEROI : `(max-width: 1023px) ${Math.round(w)}vw, ${Math.round(w * 8.2)}px`;
+  return { ...p, i, ar, w, sc, srcset, sizes, src: `${ARTE}/${p.k}-${m.v[0]}.webp`, alt: Math.round(1000 / ar),
+    href: `/categoria/${bloco.k}.html`, rotulo: `${p.bloco}: ver as peças` };
+});
+const heroi = pecas[0];
+const msgDesconto = 'Quero comprar pelo WhatsApp com os 10% de desconto.';
+
+// Antes da 1ª pintura: (1) as peças que não são a heroína esperam a entrada (com hora para desistir: sem o script
+// principal elas aparecem sozinhas); (2) quem tem carro salvo E com peça (o SeletorCarro marcou data-salvo) já nasce
+// com o título dele e a arte do carro no palco.
+const antes = `(function(){try{var s=document.currentScript.parentNode,d=document.documentElement;`
+  + `if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!d.classList.contains('leve')){s.setAttribute('data-ab-entrada','');setTimeout(function(){s.removeAttribute('data-ab-entrada')},4500)}`
+  + `var r=s.querySelector('[data-mc-raiz]');if(!r||!r.hasAttribute('data-salvo'))return;`
+  + `var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro'));var p=(${palavraViva.toString()})(c.m,c.y,c.b);`
+  + `s.querySelector('[data-ab-palavra]').textContent=p.t;s.querySelector('[data-ab-h1]').style.setProperty('--ab-f',p.f);s.setAttribute('data-ab','carro');`
+  // as peças da cena de abertura não vão aparecer agora: as imagens delas só descem se virarem atalho do carro
+  + `[].forEach.call(s.querySelectorAll('.ab-p img[srcset]'),function(i){i.setAttribute('data-srcset',i.getAttribute('srcset'));i.setAttribute('data-src',i.getAttribute('src'));i.removeAttribute('srcset');i.removeAttribute('src')});`
+  + `var a=s.querySelector('[data-ab-auto]');if(typeof c.a==='string'&&/^[a-z0-9-]{1,80}$/.test(c.a)){var u='/arte/v2/carro-'+c.a+'.webp',w=Array.isArray(c.as)?c.as.filter(function(x){return x===(x|0)&&x>0&&x<=4000}):[];`
+  + `if(matchMedia('(min-width: 1024px)').matches){a.loading='eager';a.setAttribute('fetchpriority','high')}`
+  + `if(w.length)a.setAttribute('srcset',w.map(function(x,i){return(i===w.length-1?u:u.replace(/\\.webp$/,'-'+x+'.webp'))+' '+x+'w'}).join(', '));a.setAttribute('src',u);a.setAttribute('data-on','')}`
+  + `}catch(e){}})()`;
 ---
-<section class="abv2 tema-estudio" aria-labelledby="abv2-titulo">
-  <picture class="abv2-arte" aria-hidden="true">
-    <source media="(max-width: 767px)" srcset={arteCelular ?? arte} />
-    <img src={arte} alt="" width="1536" height="1024" fetchpriority="high" decoding="async" />
-  </picture>
+<section class="abv2 tema-estudio" aria-labelledby="abv2-titulo" data-ab-raiz>
+  <div class="ab-fundo" aria-hidden="true"></div>
   <div class="moldura abv2-conteudo">
     {/* "Continuar de onde parou" (Continuar.astro): só para quem volta com lista ou busca; sem elas, não ocupa nada */}
     <slot name="topo" />
-    <h1 id="abv2-titulo" class="display abv2-h1">De qual peça o seu carro precisa?</h1>
-    <p class="abv2-lead">Peças originais de baixa legal no <span class="abv2-nq">Detran-RS.</span> 10% de desconto no WhatsApp.</p>
+    <div class="ab-topo">
+      <p class="ab-olho">Peças originais usadas</p>
+      {/* celular e tablet: o farol aceso espia da direita (no PC ele está no palco; lá esta imagem nem é baixada) */}
+      <span class="ab-espia" aria-hidden="true">
+        <picture>
+          <source media="(min-width: 1024px)" srcset="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" />
+          <img src={`${ARTE}/farol-400.webp`} alt="" width="400" height={Math.round(400 / heroi.ar)} decoding="async" />
+        </picture>
+        <span class="ab-drl"><i></i></span>
+      </span>
+    </div>
+    <h1 id="abv2-titulo" class="display abv2-h1" data-ab-h1><span class="ab-l1">De qual peça o seu</span> <span class="ab-l2"><span class="ab-carro"><span data-ab-palavra>carro</span><svg class="ab-pincel" viewBox="0 0 240 18" preserveAspectRatio="none" aria-hidden="true"><path d="M2 12C40 5 100 2 160 3c28 .5 54 2 78 4.500 1.200.1 1.200 1.800 0 1.900-25 1-52 1-80 1.800C108 12.500 54 15 7 17.500 2.500 17.800-.5 13 2 12Z"/></svg></span> <span class="ab-resto" data-ab-resto>precisa?</span></span></h1>
+    <ul class="ab-selos" aria-label="Quem é a Izzat Car">
+      <li class="ab-selo ab-selo-cdv">
+        <span class="ab-selo-i"><Icone nome="garantia" /></span>
+        <span class="ab-selo-t"><b>Desmanche legal</b><small>CDV <span class="ab-so-largo">Detran-RS </span>nº&nbsp;01060</small></span>
+      </li>
+      <li>
+        <a class="ab-selo ab-selo-whats" href={whatsUrl(msgDesconto)} data-botao="abertura-desconto" data-ab-whats target="_blank" rel="noopener">
+          <span class="ab-selo-i"><Icone nome="whats" /></span>
+          <span class="ab-selo-t"><b>10% de desconto</b><small>comprando pelo WhatsApp</small></span>
+        </a>
+      </li>
+    </ul>
     <div class="abv2-cartao" data-abas>
       <div class="abv2-abas" role="tablist" aria-label="Como achar a peça">
         <button type="button" role="tab" id="abv2-aba-carro" aria-controls="abv2-painel-carro" aria-selected="true" tabindex="0">
@@ -46,9 +107,39 @@ const atalhos = populares(4);
       </div>
     </div>
   </div>
+
+  <div class="ab-palco" data-ab-palco>
+    <div class="ab-cena">
+      <div class="ab-chao" aria-hidden="true"></div>
+      {/* a arte do carro escolhido (as 93 têm a mesma pose e o mesmo estúdio): duas, para uma dissolver na outra */}
+      <img class="ab-auto" data-ab-auto alt="" width="1200" height="800" decoding="async" loading="lazy" sizes={SIZES_AUTO} />
+      <img class="ab-auto" data-ab-auto alt="" width="1200" height="800" decoding="async" loading="lazy" sizes={SIZES_AUTO} />
+      <p class="ab-legenda" data-ab-legenda aria-hidden="true"></p>
+      <ul class="ab-pecas" data-ab-pecas aria-label="Atalhos: peças por parte do carro">
+        {pecas.map((p) => (
+          <li class:list={['ab-p', { 'ab-heroi': p.i === 0 }]} data-k={p.k} data-cena={p.cena ? '' : undefined}
+              style={`--w:${p.w};--ar:${p.ar.toFixed(3)};--sc:${p.sc.toFixed(3)};--i:${p.i};` + (p.cena ? `--cx:${p.cena.x};--cy:${p.cena.y};--d:${p.cena.d}` : '--d:16')}>
+            <a href={p.href} data-base={p.href} data-rotulo={p.rotulo} aria-label={p.rotulo}>
+              <span class="ab-f">
+                {p.cena
+                  ? <img class="ab-img" src={p.src} srcset={p.srcset} sizes={p.sizes} alt="" width="1000" height={p.alt} loading="lazy" decoding="async" />
+                  : <img class="ab-img" data-src={p.src} data-srcset={p.srcset} sizes={p.sizes} alt="" width="1000" height={p.alt} decoding="async" />}
+                {p.i === 0 && <span class="ab-drl"><i></i></span>}
+                {p.i === 0 && <img class="ab-ref" src={p.src} srcset={p.srcset} sizes={p.sizes} alt="" width="1000" height={p.alt} loading="lazy" decoding="async" />}
+              </span>
+              <span class="ab-rot"><span data-ab-nome data-rot={p.rot} data-curto={p.curto}>{p.rot}</span><b class="num" data-ab-n hidden></b></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+  <p class="ab-sr" aria-live="polite" data-ab-voz></p>
+  <script is:inline set:html={scriptCurto(antes)} />
 </section>
 
 <script>
+  import { montarAbertura } from './aberturaPalco';
   // Abas do cartão (padrão WAI-ARIA): clique ou setas. Ao abrir "Pelo nome ou código" pelo clique,
   // o cursor já vai para o campo.
   document.querySelectorAll<HTMLElement>('[data-abas]').forEach((caixa) => {
@@ -79,99 +170,265 @@ const atalhos = populares(4);
       });
     });
   });
+  const sec = document.querySelector<HTMLElement>('[data-ab-raiz]');
+  if (sec) montarAbertura(sec);
 </script>
 
-<style>
-  .abv2 { position: relative; background: #f1f0ed; min-height: clamp(600px, calc(100svh - 84px), 860px); display: grid; align-content: start; }
-  /* PC: a arte ocupa só a parte direita e some suave para o fundo do estúdio; recortada só ela
-     (a seção não corta nada, para a lista de sugestões da busca poder passar por cima da faixa de selos) */
-  .abv2-arte { position: absolute; inset: 0 0 0 auto; width: var(--abv2-larg, 62%); overflow: hidden;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 26%); mask-image: linear-gradient(90deg, transparent 0, #000 26%); }
-  .abv2-arte img { width: 100%; height: 100%; object-fit: cover; object-position: 85% 45%; }
+<style is:global>
+  /* ====== Abertura viva (tudo preso a .abv2) ====== */
+  /* fonte de espera do título: estreita como a Archivo condensada (a linha não quebra enquanto a fonte não chega) */
+  @font-face { font-family: "Ab Espera"; src: local("Arial Narrow"), local("Roboto Condensed"), local("Helvetica Neue"), local("Roboto"), local("Arial"); size-adjust: 84%; font-weight: 100 900; }
 
-  /* acima da arte e da faixa de selos (z-index 1); a caixa em si não pega clique, só o que tem dentro */
-  .abv2-conteudo { position: relative; z-index: 2; display: grid; align-content: start; gap: 14px;
-    padding-block: clamp(28px, 9vh, 96px) 72px; pointer-events: none; }
-  .abv2-conteudo > * { pointer-events: auto; max-width: min(568px, 44vw); }
-  .abv2-nq { white-space: nowrap; }
-  .abv2-h1 { margin: 0; font-size: clamp(40px, calc(4.6vw + 6px), 76px); color: #1d1d1f; }
-  .abv2-lead { margin: -2px 0 8px; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.5; color: #4a4a50; max-width: 40ch; text-wrap: pretty; }
-  /* PC baixo (1366×768, 1280×800): menos ar em cima para o cartão inteiro (com ou sem carro salvo) caber na 1ª tela */
-  @media (min-width: 1024px) and (max-height: 820px) {
-    .abv2-conteudo { padding-top: clamp(28px, 5.5vh, 96px); }
-  }
+  .abv2 { position: relative; background: #f1f0ed; min-height: clamp(600px, calc(100svh - 84px), 860px); display: grid; align-content: start;
+    /* onde o palco começa no PC: a margem da moldura + a coluna do conteúdo + um respiro */
+    --ab-esq: calc((100% - min(100% - 64px, 1240px)) / 2 + min(568px, 44vw) + 20px); --ab-horizonte: 75cqh; }
+  .abv2 .ab-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-  /* o cartão: abas no topo, a escolha embaixo */
-  .abv2-cartao { border-radius: 24px; background: #fff; box-shadow: 0 2px 6px rgb(16 16 20 / .06), 0 28px 56px -22px rgb(16 16 20 / .28), 0 0 0 1px rgb(16 16 20 / .04); }
-  .abv2-abas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); padding: 0 10px; border-bottom: 1px solid var(--line); }
-  .abv2-abas [role="tab"] { position: relative; min-width: 0; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  /* a parede do estúdio (os tons das artes dos carros), sumindo para o fundo da página à esquerda */
+  .abv2 .ab-fundo { position: absolute; inset: 0 0 0 auto; width: 66%; pointer-events: none;
+    background: radial-gradient(120% 90% at 78% 30%, rgb(255 255 255 / .55) 0, rgb(255 255 255 / 0) 60%), linear-gradient(98deg, #efe8e2 0%, #e4d9d3 48%, #d6c8c1 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 34%); mask-image: linear-gradient(90deg, transparent 0, #000 34%); }
+
+  /* acima do palco e da faixa de selos (z-index 1); a caixa em si não pega clique, só o que tem dentro */
+  .abv2 .abv2-conteudo { position: relative; z-index: 2; display: grid; align-content: start; gap: 14px;
+    padding-block: clamp(22px, 7vh, 80px) 72px; pointer-events: none; }
+  .abv2 .abv2-conteudo > * { pointer-events: auto; max-width: min(568px, 44vw); }
+
+  /* ---- olho + farolzinho ---- */
+  .abv2 .ab-topo { position: relative; display: flex; align-items: center; min-height: 20px; margin-bottom: -4px; }
+  .abv2 .ab-olho { margin: 0; display: inline-flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 720; letter-spacing: .085em; text-transform: uppercase; color: #4a4a50; white-space: nowrap; }
+  .abv2 .ab-olho::before { content: ""; width: 22px; height: 3px; border-radius: 3px; background: var(--accent); }
+  .abv2 .ab-espia { display: none; }
+
+  /* ---- título ---- */
+  .abv2 .abv2-h1 { --ab-fs: clamp(40px, calc(4.6vw + 6px), 76px); margin: 0; min-height: calc(var(--ab-fs) * 1.84); color: #1d1d1f;
+    font-family: "Archivo Variable", "Ab Espera", system-ui, sans-serif; font-size: calc(var(--ab-fs) * var(--ab-f, 1)); text-wrap: nowrap; white-space: nowrap;
+    transition: font-size .22s cubic-bezier(.2, .8, .2, 1); }
+  .abv2 .ab-l1, .abv2 .ab-l2 { display: block; }
+  .abv2 .ab-carro { position: relative; display: inline-block; isolation: isolate; }
+  .abv2 [data-ab-palavra], .abv2 .ab-resto { display: inline-block; will-change: transform; }
+  .abv2 .ab-pincel { position: absolute; z-index: -1; left: -3%; bottom: -.03em; width: 106%; height: .2em; fill: var(--accent); transform-origin: 0 50%; overflow: visible; }
+  .abv2 .ab-pincel.ab-traca { animation: ab-traca .5s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes ab-traca { from { transform: scaleX(0); } to { transform: none; } }
+
+  /* ---- selos ---- */
+  .abv2 .ab-selos { list-style: none; margin: 2px 0 6px; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .abv2 .ab-selos > li { display: flex; min-width: 0; }
+  .abv2 .ab-selo { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 50px; padding: 7px 16px 7px 8px; border-radius: 16px; color: #1d1d1f;
+    background: linear-gradient(180deg, #fff, #fbfaf8); box-shadow: 0 0 0 1px rgb(16 16 20 / .07), 0 1px 1px rgb(16 16 20 / .04), 0 10px 22px -16px rgb(16 16 20 / .4), inset 0 1px 0 #fff; }
+  .abv2 .ab-selo-i { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; }
+  .abv2 .ab-selo-i svg { width: 21px; height: 21px; }
+  .abv2 .ab-selo-t { display: grid; gap: 1px; min-width: 0; }
+  .abv2 .ab-selo-t b { font-size: 15px; font-weight: 780; font-stretch: 92%; line-height: 1.15; letter-spacing: -.005em; white-space: nowrap; }
+  .abv2 .ab-selo-t small { font-size: 12.5px; font-weight: 520; line-height: 1.2; color: #5b5b61; white-space: nowrap; }
+  .abv2 .ab-selo-cdv .ab-selo-i { color: #fff; background: linear-gradient(160deg, #3a3a3f, #1d1d1f 70%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .18), 0 2px 5px -2px rgb(16 16 20 / .5); }
+  .abv2 .ab-selo-whats { background: linear-gradient(180deg, #f1fbf5, #e6f6ec); box-shadow: 0 0 0 1px rgb(23 131 74 / .2), 0 10px 22px -16px rgb(15 98 53 / .55), inset 0 1px 0 #fff;
+    transition: transform .16s cubic-bezier(.2, .8, .2, 1), box-shadow .16s ease; }
+  .abv2 .ab-selo-whats .ab-selo-i { color: #fff; background: linear-gradient(160deg, #2ad06b, #17a24f 75%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), 0 2px 5px -2px rgb(15 98 53 / .6); }
+  .abv2 .ab-selo-whats b { color: #0c5a30; }
+  .abv2 .ab-selo-whats small { color: #1f6b41; }
+  .abv2 .ab-selo-whats:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgb(23 131 74 / .34), 0 14px 26px -16px rgb(15 98 53 / .7), inset 0 1px 0 #fff; }
+  .abv2 .ab-selo-whats:active { transform: translateY(0) scale(.985); }
+  .abv2 .ab-selo-whats:focus-visible { outline: 3px solid #0f6235; outline-offset: 2px; }
+
+  /* ---- o cartão: abas no topo, a escolha embaixo ---- */
+  .abv2 .abv2-cartao { border-radius: 24px; background: #fff; box-shadow: 0 2px 6px rgb(16 16 20 / .06), 0 28px 56px -22px rgb(16 16 20 / .28), 0 0 0 1px rgb(16 16 20 / .04); }
+  .abv2 .abv2-abas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); padding: 0 10px; border-bottom: 1px solid var(--line); }
+  .abv2 .abv2-abas [role="tab"] { position: relative; min-width: 0; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
     padding: 0 8px; border: 0; background: none; color: var(--ink-3); font-size: 15.5px; font-weight: 680; font-stretch: 94%; white-space: nowrap;
     transition: color .18s ease; }
-  .abv2-abas [role="tab"] :global(svg) { width: 21px; height: 21px; flex: none; }
-  .abv2-abas [role="tab"]:hover { color: var(--ink); }
-  .abv2-abas [role="tab"][aria-selected="true"] { color: var(--ink); }
-  .abv2-abas [role="tab"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0;
+  .abv2 .abv2-abas [role="tab"] svg { width: 21px; height: 21px; flex: none; }
+  .abv2 .abv2-abas [role="tab"]:hover { color: var(--ink); }
+  .abv2 .abv2-abas [role="tab"][aria-selected="true"] { color: var(--ink); }
+  .abv2 .abv2-abas [role="tab"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0;
     background: var(--accent); transform: scaleX(0); transition: transform .22s cubic-bezier(.2, .7, .2, 1); }
-  .abv2-abas [role="tab"][aria-selected="true"]::after { transform: none; }
-  .abv2-abas [role="tab"]:focus-visible { outline-offset: -4px; border-radius: 14px; }
-  .abv2-painel { padding: 18px 20px 20px; }
-  .abv2-painel[hidden] { display: none; }
-  .abv2-painel-busca { display: grid; gap: 14px; }
-
-  .abv2-atalhos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
-  .abv2-atalhos > span { font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
-  .abv2-atalhos ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-  .abv2-atalhos a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 13px; border-radius: 99px; background: var(--surface-2);
+  .abv2 .abv2-abas [role="tab"][aria-selected="true"]::after { transform: none; }
+  .abv2 .abv2-abas [role="tab"]:focus-visible { outline-offset: -4px; border-radius: 14px; }
+  .abv2 .abv2-painel { padding: 18px 20px 20px; }
+  .abv2 .abv2-painel[hidden] { display: none; }
+  .abv2 .abv2-painel-busca { display: grid; gap: 14px; }
+  .abv2 .abv2-atalhos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .abv2 .abv2-atalhos > span { font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
+  .abv2 .abv2-atalhos ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .abv2 .abv2-atalhos a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 13px; border-radius: 99px; background: var(--surface-2);
     box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; font-weight: 620; color: var(--ink-2); transition: box-shadow .18s ease, color .18s ease; }
-  .abv2-atalhos a:hover { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .abv2 .abv2-atalhos a:hover { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink-3); }
 
-  /* celular e tablet: conteúdo em cima, a arte inteira EMBAIXO (nunca atrás do cartão) */
-  @media (max-width: 1023px) {
-    .abv2 { display: flex; flex-direction: column; min-height: 0; background: #f2f1ee; }
-    .abv2-conteudo { order: 1; padding-block: 20px 6px; gap: 12px; }
-    .abv2-conteudo > * { max-width: none; }
-    .abv2-lead { margin: -4px 0 4px; }
-    .abv2-cartao { border-radius: 22px; }
-    .abv2-abas { padding: 0 4px; }
-    .abv2-abas [role="tab"] { min-height: 52px; font-size: 15px; gap: 7px; }
-    .abv2-painel { padding: 14px 14px 16px; }
-    .abv2-arte { order: 2; position: relative; inset: auto; width: auto; margin-top: -34px; -webkit-mask-image: none; mask-image: none; }
-    .abv2-arte img { height: auto; aspect-ratio: 1 / 1; object-position: 50% 50%; }
-    .abv2-arte::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, #f2f1ee 0%, rgb(242 241 238 / 0) 30%); }
+  /* ====== o palco ====== */
+  .abv2 .ab-palco { position: absolute; z-index: 1; top: 0; bottom: 0; left: var(--ab-esq); width: min(100% - var(--ab-esq), 1060px); overflow: clip; }
+  .abv2 .ab-cena { position: absolute; inset: 0; container-type: size; --px: 0; --py: 0; }
+  /* o piso: a linha de luz laranja no horizonte (a mesma das artes dos carros) e o brilho do chão */
+  .abv2 .ab-chao { position: absolute; left: 0; right: 0; top: var(--ab-horizonte); bottom: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgb(203 186 177 / .5) 0, rgb(222 211 204 / .28) 46%, rgb(241 240 237 / 0) 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%); mask-image: linear-gradient(90deg, transparent 0, #000 22%);
+    transition: opacity .5s ease; }
+  .abv2 .ab-chao::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, rgb(255 106 0 / 0) 0, rgb(255 138 61 / .75) 30%, rgb(255 170 110 / .5) 62%, rgb(255 106 0 / 0) 100%); box-shadow: 0 0 22px 3px rgb(255 122 30 / .22); }
+
+  /* ---- a arte do carro: larga como o palco, com o horizonte dela em cima do horizonte do palco ---- */
+  .abv2 .ab-auto { position: absolute; left: 50%; top: calc(var(--ab-horizonte) - .4433 * var(--ab-aw)); width: var(--ab-aw); max-width: none; height: auto; aspect-ratio: 3 / 2; --ab-aw: 100cqw;
+    transform: translate3d(calc(-50% + 1cqw + var(--px) * -5px), 0, 0) scale(1.035); transform-origin: 50% 66%; opacity: 0; pointer-events: none;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 15%, #000 88%, transparent 100%), linear-gradient(90deg, transparent 2%, #000 16%, #000 95%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 15%, #000 88%, transparent 100%), linear-gradient(90deg, transparent 2%, #000 16%, #000 95%, transparent 100%);
+    -webkit-mask-composite: source-in; mask-composite: intersect;
+    transition: opacity .55s ease, transform .9s cubic-bezier(.2, .8, .2, 1); }
+  .abv2 .ab-auto:not([src]) { visibility: hidden; }
+  .abv2[data-ab="carro"] .ab-auto[data-on] { opacity: 1; transform: translate3d(calc(-50% + 1cqw + var(--px) * -5px), 0, 0); }
+  .abv2[data-ab="carro"] .ab-chao { opacity: .35; }
+
+  /* ---- as peças ---- */
+  .abv2 .ab-pecas { list-style: none; margin: 0; padding: 0; }
+  .abv2 .ab-p { position: absolute; left: 0; top: 0; width: calc(var(--w) * 1cqmin); aspect-ratio: var(--ar); --se: 1; --x: var(--cx, 50); --y: var(--cy, 40);
+    transform: translate3d(calc(var(--x) * 1cqw - 50%), calc(var(--y) * 1cqh - 50%), 0) scale(var(--se));
+    transition: transform .8s cubic-bezier(.3, .9, .25, 1) var(--at, 0ms), opacity .4s ease var(--at, 0ms), visibility 0s linear var(--at, 0ms); }
+  .abv2 .ab-p > a { position: absolute; inset: 0; display: block; color: #1d1d1f; border-radius: 18px; -webkit-tap-highlight-color: transparent;
+    transform: translate3d(calc(var(--px) * var(--d) * -1px), calc(var(--py) * var(--d) * -.6px), 0); }
+  .abv2 .ab-p > a:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 6px; }
+  .abv2 .ab-f { position: absolute; inset: 0; display: block; }
+  .abv2 .ab-img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: contain;
+    filter: drop-shadow(0 calc(var(--w) * .05cqmin) calc(var(--w) * .06cqmin) rgb(60 40 30 / .2));
+    transition: transform .22s cubic-bezier(.2, .9, .25, 1.15); }
+  .abv2 .ab-p:not([data-cena]):not([data-slot]), .abv2[data-ab="carro"] .ab-p:not([data-slot]) { opacity: 0; visibility: hidden; pointer-events: none; }
+  /* a entrada: as peças (menos a heroína, que é a 1ª pintura) esperam a imagem e descem 14 px, uma a uma */
+  .abv2[data-ab-entrada] .ab-p:not(.ab-heroi):not(.ab-on), .abv2 .ab-p[data-slot]:not(.ab-on) { opacity: 0; }
+  .abv2[data-ab-entrada] .ab-p:not(.ab-heroi):not(.ab-on) .ab-f, .abv2 .ab-p[data-slot]:not(.ab-on) .ab-f { translate: 0 -14px; }
+  .abv2 .ab-f { transition: translate .7s cubic-bezier(.2, .9, .25, 1.1) var(--at, 0ms); }
+
+  /* o rótulo: sempre do mesmo tamanho (a peça encolhe em volta do carro, o texto não) */
+  .abv2 .ab-rot { position: absolute; left: 50%; top: calc(100% + 7px / var(--se)); display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 99px;
+    background: rgb(255 255 255 / .94); box-shadow: 0 0 0 1px rgb(16 16 20 / .07), 0 8px 18px -10px rgb(16 16 20 / .45);
+    font-size: 13px; font-weight: 680; font-stretch: 94%; line-height: 1.15; white-space: nowrap;
+    transform: translateX(-50%) scale(calc(1 / var(--se))); transform-origin: 50% 0;
+    transition: background-color .16s ease, color .16s ease, box-shadow .16s ease; }
+  .abv2 .ab-rot b { min-width: 22px; height: 22px; margin-right: -5px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 11px; background: #1d1d1f; color: #fff; font-size: 12px; font-weight: 760; }
+  .abv2 .ab-rot b[hidden] { display: none; }
+  @media (hover: hover) {
+    .abv2 .ab-p > a:hover .ab-img { transform: translateY(-5px) scale(1.045); }
+    .abv2 .ab-p > a:hover .ab-rot { background: #1d1d1f; color: #fff; box-shadow: 0 10px 22px -10px rgb(16 16 20 / .6); }
+    .abv2 .ab-p > a:hover .ab-rot b { background: var(--accent); color: #1d1d1f; }
   }
-  /* tablet: o cartão com largura de cartão (não de tela), a arte larga do PC recortada nas peças */
+  .abv2 .ab-p > a:active .ab-img { transform: scale(.97); }
+
+  /* a heroína no piso: sombra de contato e reflexo (a mesma imagem, virada) */
+  .abv2 .ab-heroi .ab-f::before { content: ""; position: absolute; left: 6%; right: 4%; bottom: -3%; height: 16%; border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(40 26 18 / .42), rgb(40 26 18 / 0)); transition: opacity .3s ease; }
+  .abv2 .ab-heroi .ab-rot { top: calc(100% + 16px / var(--se)); }
+  .abv2 .ab-ref { position: absolute; left: 0; top: 96%; width: 100%; height: 100%; max-width: none; transform: scaleY(-1); opacity: .2; pointer-events: none;
+    -webkit-mask-image: linear-gradient(0deg, #000 0, transparent 42%); mask-image: linear-gradient(0deg, #000 0, transparent 42%); transition: opacity .3s ease; }
+  .abv2 .ab-p { z-index: 2; }
+  .abv2 .ab-heroi { z-index: 1; }
+  .abv2[data-ab="carro"] .ab-heroi { z-index: 2; }
+
+  /* com o carro: as peças viram atalhos em arco em cima dele, todas do mesmo peso */
+  .abv2[data-ab="carro"] .ab-p[data-slot] { --se: var(--sc); --u: calc(var(--slot) - (var(--n) - 1) / 2);
+    --x: calc(50 + var(--u) * 19); --y: calc(17 + var(--u) * var(--u) * 2.6); }
+  .abv2[data-ab="carro"] .ab-heroi .ab-f::before, .abv2[data-ab="carro"] .ab-ref { opacity: 0; }
+  .abv2[data-ab="carro"] .ab-heroi .ab-rot { top: calc(100% + 7px / var(--se)); }
+  .abv2[data-ab="carro"] .ab-img { filter: drop-shadow(0 calc(var(--w) * .06cqmin) calc(var(--w) * .07cqmin) rgb(60 40 30 / .26)); }
+
+  /* a legenda dos atalhos: "Para o seu Onix 2019" (só com o carro e os atalhos na tela) */
+  .abv2 .ab-legenda { position: absolute; left: 0; right: 0; top: 3.4cqh; margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 12.5px; font-weight: 720; letter-spacing: .085em; text-transform: uppercase; color: #4a4a50; white-space: nowrap;
+    opacity: 0; transform: translateY(-6px); transition: opacity .35s ease, transform .5s cubic-bezier(.2, .8, .2, 1); pointer-events: none; }
+  .abv2 .ab-legenda::before, .abv2 .ab-legenda::after { content: ""; width: 22px; height: 3px; border-radius: 3px; background: var(--accent); }
+  .abv2[data-ab="carro"] .ab-legenda[data-on] { opacity: 1; transform: none; }
+
+  /* a luz que corre pelo DRL do farol (a máscara são só as luzes acesas) */
+  .abv2 .ab-drl { position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+    -webkit-mask: url(/arte/v2/abertura/farol-drl.webp) center / 100% 100% no-repeat; mask: url(/arte/v2/abertura/farol-drl.webp) center / 100% 100% no-repeat; }
+  .abv2 .ab-drl i { position: absolute; inset: 0; opacity: 0; background: linear-gradient(100deg, rgb(255 255 255 / 0) 30%, #fff 47%, #fff 53%, rgb(255 255 255 / 0) 70%); transform: translateX(-80%); }
+  .abv2 .ab-drl.ab-corre i { animation: ab-corre 1.15s cubic-bezier(.4, 0, .2, 1) both; }
+  .abv2 .ab-drl.ab-pisca i { background: #fff; transform: none; animation: ab-pisca .62s linear both; }
+  @keyframes ab-corre { 0% { opacity: 0; transform: translateX(-80%); } 12% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(80%); } }
+  @keyframes ab-pisca { 0%, 100% { opacity: 0; } 12%, 30% { opacity: .95; } 45% { opacity: 0; } 58%, 76% { opacity: .95; } }
+
+  /* a vida: deriva lenta (só transform), só com o palco na tela e a aba à vista */
+  .abv2 .ab-p:not(.ab-heroi) .ab-f, .abv2[data-ab="carro"] .ab-heroi .ab-f { animation: ab-deriva calc(7s + var(--i) * .9s) ease-in-out calc(var(--i) * -1.3s) infinite alternate paused; }
+  .abv2[data-ab-vivo] .ab-p .ab-f { animation-play-state: running; }
+  @keyframes ab-deriva { from { transform: translate3d(0, -5px, 0) rotate(-1.1deg); } to { transform: translate3d(0, 6px, 0) rotate(1.1deg); } }
+  /* rolagem: as camadas saem em velocidades diferentes (onde o navegador tem linha do tempo de rolagem) */
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
+      .abv2 .ab-cena { animation: ab-rola linear both; animation-timeline: scroll(root block); animation-range: 0 80vh; }
+      .abv2 .ab-pecas { animation: ab-rola-pecas linear both; animation-timeline: scroll(root block); animation-range: 0 80vh; }
+    }
+  }
+  @keyframes ab-rola { to { transform: translate3d(0, 26px, 0); } }
+  @keyframes ab-rola-pecas { to { transform: translate3d(0, -38px, 0); } }
+
+  /* ====== celular e tablet: conteúdo em cima, o palco EMBAIXO do cartão ====== */
+  @media (max-width: 1023px) {
+    .abv2 { display: flex; flex-direction: column; min-height: 0; background: #f2f1ee; overflow-x: clip; }
+    .abv2 .ab-fundo { inset: auto 0 0 0; width: auto; height: min(125vw, 560px); -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 30%); mask-image: linear-gradient(180deg, transparent 0, #000 30%); }
+    .abv2 .abv2-conteudo { order: 1; padding-block: 14px 6px; gap: 12px; }
+    .abv2 .abv2-conteudo > * { max-width: none; }
+    .abv2 .ab-topo { min-height: 50px; margin-bottom: -10px; }
+    .abv2 .ab-espia { display: block; position: absolute; right: -44px; top: 50%; width: 140px; aspect-ratio: 400 / 197; transform: translateY(-57%); pointer-events: none; }
+    .abv2 .ab-espia img { width: 100%; height: 100%; filter: drop-shadow(0 5px 5px rgb(60 40 30 / .16)); }
+    .abv2 .ab-selos { gap: 8px; margin: 0 0 2px; flex-wrap: nowrap; }
+    .abv2 .ab-selos > li { flex: 1 1 auto; }
+    .abv2 .ab-selo { flex: 1; gap: 7px; min-height: 48px; padding: 6px 9px 6px 7px; border-radius: 15px; }
+    .abv2 .ab-selo-i { width: 30px; height: 30px; border-radius: 10px; }
+    .abv2 .ab-selo-i svg { width: 18px; height: 18px; }
+    .abv2 .ab-selo-t b { font-size: 13.5px; }
+    .abv2 .ab-selo-t small { font-size: 11.5px; }
+    .abv2 .ab-selo-whats small { font-size: 0; }
+    .abv2 .ab-selo-whats small::after { content: "no WhatsApp"; font-size: 11.5px; }
+    .abv2 .ab-so-largo { display: none; }
+    .abv2 .abv2-cartao { border-radius: 22px; }
+    .abv2 .abv2-abas { padding: 0 4px; }
+    .abv2 .abv2-abas [role="tab"] { min-height: 52px; font-size: 15px; gap: 7px; }
+    .abv2 .abv2-painel { padding: 14px 14px 16px; }
+    .abv2 .ab-palco { order: 2; position: relative; left: auto; top: auto; bottom: auto; width: 100%; aspect-ratio: 4 / 5; max-height: 560px; margin-top: 6px; --ab-horizonte: 78cqh; }
+    .abv2 .ab-rot { font-size: 12.5px; padding: 6px 10px; }
+    /* com o carro: duas fileiras desencontradas (os rótulos não se encostam) */
+    .abv2[data-ab="carro"] .ab-p[data-slot] { --x: var(--mx); --y: var(--my); }
+  }
+  /* tablet: o cartão com largura de cartão (não de tela), o palco largo */
   @media (min-width: 768px) and (max-width: 1023px) {
-    .abv2-conteudo { padding-block: 40px 8px; gap: 14px; }
-    .abv2-lead { margin: -2px 0 8px; }
-    .abv2-cartao { width: min(100%, 640px); border-radius: 24px; }
-    .abv2-abas { padding: 0 10px; }
-    .abv2-painel { padding: 18px 20px 20px; }
-    .abv2-arte { margin-top: -56px; }
-    .abv2-arte img { aspect-ratio: 2 / 1; object-position: 78% 52%; }
-    .abv2-arte::after { background: linear-gradient(180deg, #f2f1ee 0%, rgb(242 241 238 / 0) 34%); }
+    .abv2 .abv2-conteudo { padding-block: 28px 8px; gap: 14px; }
+    .abv2 .ab-topo, .abv2 .ab-selos, .abv2 .abv2-cartao { width: min(100%, 640px); }
+    .abv2 .ab-selos > li { flex: 0 1 auto; }
+    .abv2 .ab-selo-whats small { font-size: 12.5px; }
+    .abv2 .ab-selo-whats small::after { content: none; }
+    .abv2 .ab-so-largo { display: inline; }
+    .abv2 .ab-espia { width: 230px; right: -30px; }
+    .abv2 .abv2-cartao { border-radius: 24px; }
+    .abv2 .abv2-abas { padding: 0 10px; }
+    .abv2 .abv2-painel { padding: 18px 20px 20px; }
+    .abv2 .ab-palco { aspect-ratio: 16 / 11; max-height: none; margin-bottom: 34px; }
+    .abv2 .ab-fundo { height: 70vw; }
+    .abv2[data-ab="carro"] .ab-p[data-slot] { --x: calc(50 + var(--u) * 19); --y: calc(16 + var(--u) * var(--u) * 1.2); }
+    .abv2 .ab-auto { --ab-aw: 96cqw; }
   }
   @media (max-width: 400px) {
-    .abv2-abas [role="tab"] { font-size: 14.5px; }
-    .abv2-abas [role="tab"] :global(svg) { display: none; }
+    .abv2 .abv2-abas [role="tab"] { font-size: 14.5px; }
+    .abv2 .abv2-abas [role="tab"] svg { display: none; }
   }
   /* 320 px: "Pelo nome ou código" encostava na borda do cartão (auditoria 4, 2.4) */
   @media (max-width: 359px) {
-    .abv2-abas { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); }
-    .abv2-abas [role="tab"] { font-size: 14px; letter-spacing: -.01em; padding-inline: 4px; }
+    .abv2 .abv2-abas { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); }
+    .abv2 .abv2-abas [role="tab"] { font-size: 14px; letter-spacing: -.01em; padding-inline: 4px; }
+    .abv2 .abv2-h1 { --ab-fs: 37px; }
+    /* os dois selos não cabem lado a lado: um em cima do outro, baixos, com o texto numa linha só */
+    .abv2 .ab-selos { flex-wrap: wrap; gap: 6px; }
+    .abv2 .ab-selos > li { flex: 1 1 100%; }
+    .abv2 .ab-selo { min-height: 40px; padding: 4px 10px 4px 5px; border-radius: 13px; }
+    .abv2 .ab-selo-t { display: flex; align-items: baseline; gap: 7px; }
+    .abv2 .ab-espia { width: 104px; right: -34px; }
   }
-  
+  /* PC baixo (1366×768, 1280×800, 1024×768): menos ar para o cartão inteiro (com ou sem carro salvo) caber na 1ª tela */
+  @media (min-width: 1024px) and (max-height: 820px) {
+    .abv2 .abv2-conteudo { padding-top: clamp(16px, 3vh, 40px); gap: 12px; }
+    .abv2 .ab-selo { min-height: 46px; }
+  }
 
-  /* o único movimento da abertura: a arte "respira" de leve conforme a pessoa rola (CSS, sem JS).
-     Desligado em prefers-reduced-motion; só onde o navegador suporta linha do tempo de rolagem. */
-  @supports (animation-timeline: scroll()) {
-    @media (prefers-reduced-motion: no-preference) {
-      .abv2-arte img { animation: abv-respira linear both; animation-timeline: scroll(root block); animation-range: 0px 70vh; }
-    }
+  /* sem movimento (prefers-reduced-motion) e aparelho fraco (html.leve): a mesma cena, parada; trocas secas */
+  @media (prefers-reduced-motion: reduce) {
+    .abv2 .ab-p, .abv2 .ab-f, .abv2 .ab-img, .abv2 .ab-auto, .abv2 .ab-legenda, .abv2 .abv2-h1, .abv2 .ab-selo-whats, .abv2 .ab-chao { transition: none !important; animation: none !important; }
+    .abv2 .ab-pincel { animation: none !important; }
   }
-  /* aparelho fraco: arte parada (como no "reduzir movimento") */
-  :global(html.leve) .abv2-arte img { animation: none; }
-  @keyframes abv-respira {
-    from { transform: translate3d(0, -14px, 0) scale(1.08); }
-    to { transform: translate3d(0, 12px, 0) scale(1.08); }
-  }
+  html.leve .abv2 .ab-p, html.leve .abv2 .ab-f, html.leve .abv2 .ab-auto { transition: none; animation: none; }
+  html.leve .abv2 .ab-img { filter: none; }
+  html.leve .abv2 .ab-cena, html.leve .abv2 .ab-pecas { animation: none; }
 </style>

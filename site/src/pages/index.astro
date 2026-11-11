@@ -18,6 +18,9 @@ import SugestoesBusca from '../components/ui/SugestoesBusca';
 import Acordeao from '../components/ui/Acordeao.astro';
 import Icone from '../components/Icone.astro';
 import { pecaPorId, resumo, marcasVisiveis, whatsUrl, temEstudio, SITE } from '../lib/dados';
+import { scriptCurto } from '../lib/scriptCurto';
+import { SIZES_AUTO, SIZES_HEROI } from '../lib/abertura';
+import abPecas from '../data/abertura-pecas.json';
 
 const r = resumo();
 const chegou = r.chegou.map(pecaPorId).filter((p): p is NonNullable<typeof p> => !!p && temEstudio(p.id)).slice(0, 14);
@@ -33,6 +36,14 @@ const perguntas = [
   ['Enviam para todo o Brasil?', 'Sim. Pelo WhatsApp, o frete é combinado pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.'],
   ['Não achei a peça. E agora?', 'Nem toda peça está anunciada. Mande o carro e a peça no WhatsApp que a gente procura no pátio.'],
 ];
+// pré-carga da abertura (PC): ver o comentário no <script slot="head"> abaixo
+const farol = (abPecas as Record<string, { v: number[] }>).farol.v;
+const preAbertura = scriptCurto(`(function(){try{if(!matchMedia('(min-width: 1024px)').matches)return;var c=null;try{c=JSON.parse(localStorage.getItem('izzatcar.meuCarro'))}catch(e){}`
+  + `var l=document.createElement('link');l.rel='preload';l.as='image';l.setAttribute('fetchpriority','high');`
+  + `if(c&&typeof c.b==='string'&&typeof c.m==='string'&&typeof c.a==='string'&&/^[a-z0-9-]{1,80}$/.test(c.a)){var u='/arte/v2/carro-'+c.a+'.webp',w=Array.isArray(c.as)?c.as.filter(function(x){return x===(x|0)&&x>0&&x<=4000}):[];`
+  + `if(w.length){l.setAttribute('imagesrcset',w.map(function(x,i){return(i===w.length-1?u:u.replace(/\\.webp$/,'-'+x+'.webp'))+' '+x+'w'}).join(', '));l.setAttribute('imagesizes',${JSON.stringify(SIZES_AUTO)})}l.href=u}`
+  + `else{l.setAttribute('imagesrcset',${JSON.stringify(farol.map((x) => `/arte/v2/abertura/farol-${x}.webp ${x}w`).join(', '))});l.setAttribute('imagesizes',${JSON.stringify(SIZES_HEROI)});l.href='/arte/v2/abertura/farol-${farol[Math.min(1, farol.length - 1)]}.webp'}`
+  + `document.head.appendChild(l)}catch(e){}})()`);
 const ld = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -45,10 +56,11 @@ const ld = {
 <Pagina titulo="Izzat Car Imports | Peças originais de desmanche legalizado" rodapeSelos={false}
         descricao={`Peças originais de carros com baixa legal no Detran-RS (CDV nº 01060). Nota fiscal e 90 dias de garantia em toda peça. Ache pelo carro ou pelo código gravado.`}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(ld)} />
-  <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio.webp" media="(min-width: 768px)" fetchpriority="high" />
-  <link slot="head" rel="preload" as="image" href="/arte/v2/abertura-estudio-celular.webp" media="(max-width: 767px)" fetchpriority="high" />
+  {/* a maior imagem da 1ª tela do PC, pedida já no <head>: o farol do palco ou, para quem volta com carro salvo, a arte
+      do carro dele (o mesmo srcset/sizes do <img> de AberturaV2.astro). No celular a 1ª tela não tem imagem grande. */}
+  <script slot="head" is:inline set:html={preAbertura} />
 
-  <AberturaV2 arte="/arte/v2/abertura-estudio.webp" arteCelular="/arte/v2/abertura-estudio-celular.webp">
+  <AberturaV2>
     <Continuar slot="topo" />
     <SugestoesBusca slot="busca" client:idle tamanho="grande" placeholder="Ex.: farol Cruze 2019" />
   </AberturaV2>
