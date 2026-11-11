@@ -7,8 +7,12 @@
 // espera de cada consulta sai, por regra, do estoque que está sendo testado.
 //
 // Gabarito de cada consulta (tipo T, carro C opcional, lado S opcional):
-//  - "existe" = há peça do tipo T, do carro C e do lado S no estoque;
-//  - existe: a 1ª peça é do tipo, do carro e do lado (acerto);
+//  - "existe" = há peça do tipo T, do carro C e do lado S no estoque. O tipo é a 1ª palavra do nome, a palavra mesmo ou o
+//    plural dela ("Tampa", "Faróis"). Nome só PARECIDO com o tipo ("Tampão", "Farolete", "Modulador") é dúvida: o
+//    gabarito não decide por ele;
+//  - existe: a 1ª peça é do tipo (ou de nome parecido), do carro e do lado (acerto);
+//  - só existe peça de nome parecido: lista vazia, ou a 1ª é ela ou é da família (a busca pode tratá-la como a peça ou
+//    como parecida);
 //  - não existe: não há lista (0 peças, o pátio) OU a lista vem com o aviso (parecidas, ou "peças ligadas a…") e a 1ª é
 //    do tipo ou da família dele (o nome, o tipo "s" ou o bloco "c" dizem a palavra): nunca como achado, nunca outra coisa.
 //    Só quando o estoque INTEIRO não diz a palavra em nenhum nome, tipo ou bloco a 1ª pode ser o que o anúncio cita (com
@@ -25,6 +29,8 @@ export type Caso = {
   tipo?: ((n: string) => boolean) | ((it: Item) => boolean);
   /** a palavra do tipo (regex na palavra): a FAMÍLIA dele é a peça com essa palavra no nome, no tipo "s" ou no bloco "c" */
   tk?: RegExp;
+  /** o nome é PARECIDO com o tipo (pode ser a peça, pode não ser: "Tampão" para tampa, "Farolete" para farol) */
+  quase?: (n: string) => boolean;
   carro?: { b: string; m: string };
   lado?: 'E' | 'D';
   codigo?: string;
@@ -49,44 +55,67 @@ export function itensDo(ix: any): Item[] {
 
 // O tipo da peça pelo nome (o gabarito): a 1ª palavra do nome. A revisão da rodada 14 (P2-2) derrubou a regra antiga em
 // que a 2ª palavra valia sob um cabeçalho genérico: o "Suporte alternador" NÃO é o alternador e o "Acabamento retrovisor
-// esquerdo" não é o retrovisor esquerdo (quem procura a peça principal precisa ler que ela não está). Fica só a "Grade
-// churrasqueira", que é a churrasqueira (só nela: a "Grade para-choque" não é o para-choque, e vendidos os dois
-// para-choques do estoque o gabarito dizia que era). O jeito de falar tem a regra dele: o pisca é a "Chave seta" (a
-// tabela de lib/sinonimos.ts); o "Botão pisca-alerta" e o "Conjunto chave seta limpador" são da família, não a peça.
-const GEN = new Set(['grade']);
+// esquerdo" não é o retrovisor esquerdo (quem procura a peça principal precisa ler que ela não está). Rodada 14b: a
+// palavra do tipo é a palavra inteira ou o plural, não o começo dela (a regex "^painel" dizia que o "Painel-forro" era o
+// painel, "^farol" que o "Farolete" era o farol e "^motor" que "motorista" era motor: com o estoque de 09/11 não fazia
+// diferença, com outro estoque travava o robô).
 const palavrasDo = (n: string) => n.split(' ').map((x) => x.replace(/[^a-z0-9]/g, '')).filter(Boolean);
-const cab = (re: RegExp, generico = false) => (n: string) => {
-  const [h = '', d = ''] = palavrasDo(n);
-  return re.test(h) || (generico && GEN.has(h) && re.test(d));
-};
-/** o pisca: o nome começa por seta ou pisca, ou é uma "Chave … seta" */
-const pisca = (n: string) => { const w = palavrasDo(n); return /^(seta|pisca)/.test(w[0] ?? '') || (w[0] === 'chave' && w.some((x) => /^setas?$/.test(x))); };
-// tk = o tipo como palavra (regex na palavra); cab = o tipo como 1ª palavra (ou 2ª, sob cabeçalho genérico)
-const TIPOS: { t: string; tk: RegExp; re: (n: string) => boolean; lado?: boolean; typed: string[] }[] = [
-  // (a peça que se chama como foi digitado é sempre a peça: se um anúncio vier como "Sinaleira…", é a lanterna)
-  { t: 'lanterna', tk: /^(lanterna|sinaleira)/, re: cab(/^(lanterna|sinaleira)/), lado: true, typed: ['lanterna', 'sinaleira'] },
-  { t: 'farol', tk: /^(farol|farois)/, re: cab(/^(farol|farois)/), lado: true, typed: ['farol'] },
-  { t: 'paralama', tk: /^paralama/, re: cab(/^paralama/), lado: true, typed: ['paralama'] },
-  { t: 'parachoque', tk: /^parachoque/, re: cab(/^parachoque/), typed: ['parachoque', 'para-choque'] },
-  { t: 'retrovisor', tk: /^retrovisor/, re: cab(/^retrovisor/), lado: true, typed: ['retrovisor'] },
-  { t: 'macaneta', tk: /^macaneta/, re: cab(/^macaneta/), lado: true, typed: ['maçaneta'] },
-  { t: 'bobina', tk: /^bobina/, re: cab(/^bobina/), typed: ['bobina'] },
-  { t: 'sensor', tk: /^sensor/, re: cab(/^sensor/), typed: ['sensor'] },
-  { t: 'amortecedor', tk: /^amortecedor/, re: cab(/^amortecedor/), lado: true, typed: ['amortecedor'] },
-  { t: 'tampa', tk: /^tampa/, re: cab(/^tampa/), typed: ['tampa'] },
-  { t: 'grade', tk: /^grade/, re: cab(/^grade/), typed: ['grade'] },
-  { t: 'churrasqueira', tk: /^churrasqueira/, re: cab(/^churrasqueira/, true), typed: ['churrasqueira'] },
-  { t: 'motor', tk: /^motor/, re: cab(/^motor/), typed: ['motor'] },
-  { t: 'modulo', tk: /^modulo/, re: cab(/^modulo/), typed: ['modulo'] },
-  { t: 'pisca', tk: /^(seta|pisca)/, re: pisca, typed: ['pisca'] },
+const cabeca = (n: string) => palavrasDo(n)[0] ?? '';
+/** a palavra e os plurais dela ("farol": farol, farois; "motor": motores; "painel": paineis) */
+const formasDe = (b: string) => [b, `${b}s`, `${b}es`, b.replace(/l$/, 'is'), b.replace(/ao$/, 'oes')];
+/** a palavra É uma das bases (ela mesma ou o plural) */
+const eh = (w: string, bases: string[]) => bases.some((b) => formasDe(b).includes(w));
+/** a palavra PARECE uma das bases: o mesmo começo (4+ letras) e tamanho perto ("tampao"/"tampa", "farolete"/"farol",
+ *  "modulador"/"modulo"); "painelforro" e "motorista" não parecem */
+const parece = (w: string, bases: string[]) => bases.some((b) => { let n = 0; while (n < w.length && n < b.length && w[n] === b[n]) n++; return n >= 4 && Math.abs(w.length - b.length) <= 3; });
+
+// O tipo de cada consulta: bases = a palavra do tipo (e as outras formas do jeito de falar que a busca aceita: quem
+// digita "sinaleira" acha a "Lanterna…", e se um anúncio vier como "Sinaleira…", também); re = a peça É o tipo (padrão:
+// a 1ª palavra do nome é uma base); quase = o nome parece (padrão: a 1ª palavra parece uma base); tk = a família.
+type Tipo = { t: string; bases: string[]; typed: string[]; lado?: boolean; tk?: RegExp; re?: (n: string) => boolean; quase?: (n: string) => boolean };
+const FRENTE = ['frente', 'grade', 'churrasqueira', 'farol', 'capo', 'parachoque', 'paralama', 'frontal'];
+const TIPOS_BASE: Tipo[] = [
+  { t: 'lanterna', bases: ['lanterna'], lado: true, typed: ['lanterna'] },
+  { t: 'sinaleira', bases: ['lanterna', 'sinaleira'], lado: true, typed: ['sinaleira'] },
+  { t: 'farol', bases: ['farol'], tk: /^(farol|farois)/, lado: true, typed: ['farol'] },
+  { t: 'paralama', bases: ['paralama'], lado: true, typed: ['paralama'] },
+  { t: 'parachoque', bases: ['parachoque'], typed: ['parachoque', 'para-choque'] },
+  { t: 'retrovisor', bases: ['retrovisor'], lado: true, typed: ['retrovisor'] },
+  { t: 'macaneta', bases: ['macaneta'], lado: true, typed: ['maçaneta'] },
+  { t: 'bobina', bases: ['bobina'], typed: ['bobina'] },
+  { t: 'sensor', bases: ['sensor'], typed: ['sensor'] },
+  { t: 'amortecedor', bases: ['amortecedor'], lado: true, typed: ['amortecedor'] },
+  { t: 'tampa', bases: ['tampa'], typed: ['tampa'] },
+  { t: 'grade', bases: ['grade'], typed: ['grade'] },
+  // a "Grade churrasqueira" é a churrasqueira (só nela a 2ª palavra vale: a "Grade para-choque" não é o para-choque)
+  { t: 'churrasqueira', bases: ['churrasqueira'], typed: ['churrasqueira'],
+    re: (n) => { const [h = '', d = ''] = palavrasDo(n); return eh(h, ['churrasqueira']) || (eh(h, ['grade']) && eh(d, ['churrasqueira'])); },
+    quase: (n) => palavrasDo(n).some((x) => parece(x, ['churrasqueira'])) },
+  { t: 'motor', bases: ['motor'], typed: ['motor'] },
+  { t: 'modulo', bases: ['modulo'], typed: ['modulo'] },
+  // o pisca é a "Chave seta" (lib/sinonimos.ts): o nome começa por seta ou pisca, ou é uma "Chave … seta"; o "Botão
+  // pisca-alerta" e o "Conjunto chave seta limpador" são dúvida
+  { t: 'pisca', bases: ['seta', 'pisca'], typed: ['pisca'],
+    re: (n) => { const w = palavrasDo(n); return eh(w[0] ?? '', ['seta', 'pisca']) || (eh(w[0] ?? '', ['chave']) && w.some((x) => eh(x, ['seta']))); },
+    quase: (n) => palavrasDo(n).some((x) => /^(seta|pisca)/.test(x)) },
   // "frente" = a forma do sinônimo no nome de qualquer peça (o "fora" tira a moldura do painel e a chave de farol)
-  { t: 'frente', tk: /^(frente|grade|churrasqueira|farol|farois|capo|parachoque|paralama|frontal)/, re: (n) => { const w = palavrasDo(n); const frente = w.some((x) => /^(frente|grade|churrasqueira|farol|capo|frontal)/.test(x)) || (w.some((x) => /^(parachoque|paralama)/.test(x)) && w.some((x) => /^dianteir/.test(x))); return frente && !w.some((x) => /^(painel|console|falante|tweeter|difusor|tras|porta|chave|botao|interruptor)/.test(x)); }, typed: ['frente'] },
-  { t: 'tapete', tk: /^(tapete|carpete)/, re: cab(/^(tapete|carpete)/), typed: ['tapete'] },
-  { t: 'bomba', tk: /^bomba/, re: cab(/^bomba/), typed: ['bomba'] },
-  { t: 'painel', tk: /^painel/, re: cab(/^painel/), typed: ['painel'] },
-  { t: 'coluna', tk: /^coluna/, re: cab(/^coluna/), typed: ['coluna'] },
-  { t: 'maquina-vidro', tk: /^(motor|maquina)/, re: (n) => /^(motor|maquina)/.test(palavrasDo(n)[0] ?? '') && /vidro/.test(n), typed: ['motor vidro', 'maquina vidro'] },
+  { t: 'frente', bases: FRENTE, tk: /^(frente|grade|churrasqueira|farol|farois|capo|parachoque|paralama|frontal)/, typed: ['frente'],
+    re: (n) => { const w = palavrasDo(n); const frente = w.some((x) => /^(frente|grade|churrasqueira|farol|capo|frontal)/.test(x)) || (w.some((x) => /^(parachoque|paralama)/.test(x)) && w.some((x) => /^dianteir/.test(x))); return frente && !w.some((x) => /^(painel|console|falante|tweeter|difusor|tras|porta|chave|botao|interruptor)/.test(x)); },
+    quase: (n) => palavrasDo(n).some((x) => parece(x, FRENTE) || /^farois/.test(x)) },
+  { t: 'tapete', bases: ['tapete', 'carpete'], typed: ['tapete'] },
+  { t: 'bomba', bases: ['bomba'], typed: ['bomba'] },
+  { t: 'painel', bases: ['painel'], typed: ['painel'] },
+  { t: 'coluna', bases: ['coluna'], typed: ['coluna'] },
+  { t: 'maquina-vidro', bases: ['motor', 'maquina'], typed: ['motor vidro', 'maquina vidro'],
+    re: (n) => eh(cabeca(n), ['motor', 'maquina']) && palavrasDo(n).some((x) => eh(x, ['vidro'])),
+    quase: (n) => (parece(cabeca(n), ['motor', 'maquina']) || palavrasDo(n).some((x) => parece(x, ['maquina']))) && /vidro/.test(n) },
 ];
+const TIPOS = TIPOS_BASE.map((T) => ({
+  ...T,
+  tk: T.tk ?? new RegExp(`^(${T.bases.join('|')})`),
+  re: T.re ?? ((n: string) => eh(cabeca(n), T.bases)),
+  quase: T.quase ?? ((n: string) => parece(cabeca(n), T.bases)),
+}));
 const LADOS: [string, 'E' | 'D'][] = [['esquerda', 'E'], ['direita', 'D']];
 const CARROS: { typed: string[]; b: string; m: string }[] = [
   { typed: ['xc60'], b: 'volvo', m: 'XC60' },
@@ -111,13 +140,13 @@ export function casos(ix: any): Caso[] {
   const carros = CARROS.filter((C) => itens.some(porCarro(C)));
   for (const T of TIPOS) {
     for (const t of T.typed) {
-      out.push({ q: t, grupo: 'tipo', tipo: T.re, tk: T.tk });
+      out.push({ q: t, grupo: 'tipo', tipo: T.re, tk: T.tk, quase: T.quase });
       for (const C of carros) {
         const c = C.typed[0];
-        out.push({ q: `${t} ${c}`, grupo: 'carro', tipo: T.re, tk: T.tk, carro: C });
-        out.push({ q: `${t} do ${C.typed[C.typed.length - 1]}`, grupo: 'carro', tipo: T.re, tk: T.tk, carro: C });
-        out.push({ q: `${c} ${t}`, grupo: 'carro', tipo: T.re, tk: T.tk, carro: C });
-        if (T.lado) for (const [pal, lado] of LADOS) out.push({ q: `${t} ${pal} ${c}`, grupo: 'lado', tipo: T.re, tk: T.tk, carro: C, lado });
+        out.push({ q: `${t} ${c}`, grupo: 'carro', tipo: T.re, tk: T.tk, quase: T.quase, carro: C });
+        out.push({ q: `${t} do ${C.typed[C.typed.length - 1]}`, grupo: 'carro', tipo: T.re, tk: T.tk, quase: T.quase, carro: C });
+        out.push({ q: `${c} ${t}`, grupo: 'carro', tipo: T.re, tk: T.tk, quase: T.quase, carro: C });
+        if (T.lado) for (const [pal, lado] of LADOS) out.push({ q: `${t} ${pal} ${c}`, grupo: 'lado', tipo: T.re, tk: T.tk, quase: T.quase, carro: C, lado });
       }
     }
   }
@@ -148,9 +177,11 @@ function citaCarro(it: Item, m: string): boolean {
 }
 
 /** O que a peça é para o gabarito (tipo, carro e lado do caso). */
-function casa(it: Item, c: Caso): boolean {
+function casa(it: Item, c: Caso, parecido = false): boolean {
   if (c.codigo) return it.o.split(' ').includes(c.codigo);
-  if (c.tipo && !(c.grupo === 'familia' ? (c.tipo as (it: Item) => boolean)(it) : (c.tipo as (n: string) => boolean)(it.n))) return false;
+  // parecido: o nome parece o tipo (ou é ele); sem "quase" no caso, é a mesma conta
+  const tipo = parecido && c.quase ? (n: string) => c.quase!(n) || (c.tipo as (n: string) => boolean)(n) : c.tipo;
+  if (tipo && !(c.grupo === 'familia' ? (tipo as (it: Item) => boolean)(it) : (tipo as (n: string) => boolean)(it.n))) return false;
   if (c.carro && !(it.b === norm(c.carro.b) && it.ms.some((m) => norm(m) === norm(c.carro!.m))) && !citaCarro(it, c.carro.m)) return false;
   if (c.lado && it.l !== c.lado) return false;
   return true;
@@ -181,6 +212,8 @@ export function avaliar(Busca: new (ix: any) => any, ix: any, lista: Caso[]): { 
   const familiaNoEstoque = (tk: RegExp) => classe(tk).includes(1);
   for (const c of lista) {
     const existe = itens.some((it) => casa(it, c));
+    // só há peça de nome PARECIDO com o tipo (para o carro e o lado pedidos)
+    const talvez = !existe && !c.codigo && !!c.quase && itens.some((it) => casa(it, c, true));
     const res: any[] = b.procurar({ q: c.q });
     const top = res[0];
     const top1 = top ? `${top.n} | ${top.b} ${top.m}` : '';
@@ -191,8 +224,15 @@ export function avaliar(Busca: new (ix: any) => any, ix: any, lista: Caso[]): { 
       ok = !!top && itens[top.k].o.split(' ').includes(c.codigo);
       motivo = ok ? 'acerto' : (res.length ? 'código não é o 1º' : 'sem resultado');
     } else if (existe) {
-      ok = !!top && casa(topItem!, c);
+      // (a 1ª é a peça, ou uma de nome parecido com o tipo, do carro e do lado: "Tampão" ao lado de "Tampa")
+      ok = !!top && casa(topItem!, c, true);
       motivo = ok ? 'acerto' : (!res.length ? 'vazio, mas a peça existe' : 'a 1ª não é a peça pedida');
+    } else if (talvez) {
+      // o gabarito não decide se "Farolete" é o farol: a busca pode mostrá-lo como a peça ou como parecida; a 1ª é ele
+      // (ou outro de nome parecido) ou é da família do tipo, nunca outra coisa
+      const tipoSo = { ...c, carro: undefined, lado: undefined };
+      ok = !res.length || casa(topItem!, tipoSo, true) || (!!c.tk && classe(c.tk)[top.k] === 1);
+      motivo = ok ? 'só nome parecido (aceito)' : 'a 1ª não é do tipo nem da família';
     } else {
       // não há a peça: não pode aparecer como achado; a parecida do tipo é aceita, com o aviso (aproximado ou citam: a
       // tela diz "parecidas" ou "peças ligadas a…", nunca "peças para…")

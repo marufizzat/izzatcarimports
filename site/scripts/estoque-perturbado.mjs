@@ -14,8 +14,9 @@
 //   node scripts/estoque-perturbado.mjs --sementes 5 --de 12   as sementes 12 a 16
 //   node scripts/estoque-perturbado.mjs --hoje             só o estoque de agora (tira o que saiu do /dados/ativas.json
 //                                                          do site no ar; --ativas arquivo.json para um arquivo salvo)
-//   node scripts/estoque-perturbado.mjs --hoje --novas busca-do-ar.json   e acrescenta ao busca.json as peças novas do
-//                                                          índice do ar (só o índice: o resto da suíte não as vê)
+//   node scripts/estoque-perturbado.mjs --hoje --novas busca-do-ar.json --so busca   e acrescenta ao busca.json as peças
+//                                                          novas do índice do ar (só o índice: vale para os testes da
+//                                                          busca; o pecas.json não as tem e o test_dados.py é pulado)
 //   node scripts/estoque-perturbado.mjs --arquivo outro-products.json   outro estoque inteiro (um products.json antigo
 //                                                          do git, por exemplo: peças que hoje não existem mais)
 //   --so "busca"        só os arquivos de teste com esse texto no caminho (mais rápido; a prova completa é sem isto)
@@ -95,10 +96,13 @@ async function gerar(produtos) {
 }
 
 /** Os testes que o robô roda: python testes/test_dados.py e a suíte do site. */
-async function testar() {
+async function testar(semPython = false) {
   const falhas = [];
-  const py = await rodar(PYTHON, ['-u', 'testes/test_dados.py'], { env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
-  if (!py.ok) falhas.push(`test_dados.py: ${py.saida.trim().split('\n').slice(-3).join(' / ')}`);
+  // (com --novas as peças novas entram só no busca.json: o test_dados.py compara o índice com o pecas.json e não vale)
+  if (!semPython) {
+    const py = await rodar(PYTHON, ['-u', 'testes/test_dados.py'], { env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
+    if (!py.ok) falhas.push(`test_dados.py: ${py.saida.trim().split('\n').slice(-3).join(' / ')}`);
+  }
   const rel = join(CACHE, 'vitest.json');
   rmSync(rel, { force: true });
   // o mesmo comando do `npm test` (package.json), com o relatório em JSON
@@ -232,7 +236,7 @@ try {
       let extra = '';
       const doAr = op('novas', '');
       if (doAr) extra = `; +${acrescentarNovas(doAr, h.novas)} novas do índice do ar (só no busca.json)`;
-      registrar('hoje', h.produtos.products.length, h.tirados, `ativas de ${h.de}; ${h.novas.length} novas que o products.json local não tem${extra}`, t0, await testar());
+      registrar('hoje', h.produtos.products.length, h.tirados, `ativas de ${h.de}; ${h.novas.length} novas que o products.json local não tem${extra}`, t0, await testar(!!doAr));
     }
   } else {
     for (let s = DE; s < DE + N; s++) {
