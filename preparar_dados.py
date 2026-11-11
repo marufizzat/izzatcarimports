@@ -260,6 +260,7 @@ def exibir(nome):
 
 
 SIGLAS = {"abs", "bcm", "bsi", "led", "cd", "dvd", "gps", "usb", "ecu", "tcu", "egr",
+          "ipm", "pdm", "lcm", "ecm", "pwm", "peps", "gnv", "sam", "sim", "tft", "slm", "ccu", "mmi", "bms", "pcu",
           "pcv", "tpms", "srs", "esp", "4x4", "cvt", "tsi", "tdi", "lcd", "mp3", "dsg",
           "abs/esp", "maf", "map", "ac", "a/c", "obd", "drl", "suv",
           "tbi", "bsm", "pdc", "uch", "tcm", "vcm", "epb", "ibs", "sos", "vvt", "dme", "eps",
@@ -1091,10 +1092,32 @@ def palavra_cortada(w):
 _NAO_JUNTA = set(ABREV_ADJETIVO) | set(ABREV_FIXA) | set(ABREV_INVARIAVEL) | {"aro"}
 
 
+# Lixo do anuncio e abreviacao do ML no nome (auditoria 04, 10/11). Palavra inteira; "air" sozinho fica (air bag).
+_LIXO_PARES = re.compile(r"\b(fell pack|feel live|feel pack|fell live|air cross)\b", re.I)
+_LIXO_PALAVRAS = re.compile(r"\b(recharge|rr|ex|lx|lxl|lr|red|snjrrl|snjfrl|panda|ver|way|track|avant|sigma|duratc|etorq"
+                            r"|assy|ata|fire|firefly|cross|fell|feel|live|pack)\b", re.I)
+_ABREV_NOME = {"automatic": "automático", "senso": "sensor", "dia": "dianteiro", "aux": "auxiliar", "pre": "pré"}
+_LADO_SIGLA = {"rh": "direita", "lh": "esquerda"}
+
+
+def limpar_lixo_anuncio(titulo):
+    t = _LIXO_PARES.sub(" ", titulo)
+    t = _LIXO_PALAVRAS.sub(" ", t)
+    lado = re.search(r"\b(direit[oa]s?|esquerd[oa]s?)\b", t, re.I)
+    def lado_fn(m):
+        return "" if lado else _LADO_SIGLA[m.group(0).lower()]
+    t = re.sub(r"\b(rh|lh)\b", lado_fn, t, flags=re.I)
+    t = re.sub(r"\b(automatic|senso|dia|aux|pre)\b", lambda m: _ABREV_NOME[m.group(0).lower()], t, flags=re.I)
+    t = re.sub(r"\bgrade dianteiro\b", "grade dianteira", t, flags=re.I)
+    t = re.sub(r"\bacabamento interna\b", "acabamento interno", t, flags=re.I)
+    return re.sub(r"\s{2,}", " ", t).strip()
+
+
 def nome_limpo(titulo, marca, modelo, outros=()):
     """'Lanterna Esquerda Tampa Traseira Volvo Xc 60 18/24 A045591'
     -> 'Lanterna esquerda tampa traseira'. Carro, ano e codigo aparecem a parte.
     outros = os outros carros em que a peca serve ("ms"): saem do nome como o modelo."""
+    titulo = limpar_lixo_anuncio(titulo)
     ws = titulo.split()
     if len(titulo) >= TITULO_CHEIO and len(ws) > 1 and palavra_cortada(ws[-1]) is not None:
         titulo = " ".join(ws[:-1] + [palavra_cortada(ws[-1])]).strip()      # "... 15/21 Die" -> "... 15/21 diesel"
@@ -1946,6 +1969,11 @@ def tipo_loja(s, familia=""):
 # Familia nova None = fica na mesma. A 1a regra que casa vale. O BLOCO sai do tipo novo (o "Faróis" com esguicho
 # e modulo, a "Luz teto" no Faróis e Lanternas, o "Motor limpador" no Vidro: auditoria 3, item 3.1/3.2).
 REGRAS_NOME = [
+    # auditoria 03c (10/11): o nome manda (fechadura do banco nao e fechadura da porta; sensor do banco nao e caixa de fusiveis)
+    (r"^fechadura (trava )?(do )?banco\b", None, None, "Peças de Banco"),
+    (r"^modulo sensor banco\b", None, "Outros Sensores", "Outros Sensores"),
+    (r"^painel controle suspensao\b", None, "Botões e Chaves de Seta", "Outros Botões"),
+    (r"^suporte amortecedor\b", None, None, "Coxins do Amortecedor"),
     # auditoria de dados 10/11: rele nao e chave/botao nem motor de vidro
     (r"^(modulo )?rele\b(?!.*\b(ventoinha|ar condicionado|bomba)\b)", {"Chaves do Limpador", "Botões do Pisca-alerta", "Interruptores de Para-brisas", "Interruptores de Piscas-alertas", "Máquinas e Motores de Vidro Elétrico"}, "Sistema Elétrico", "Relés"),
     # moldura do painel na categoria "Relogios > Colunas e Copos" (vira Acabamentos de Coluna)
@@ -3188,6 +3216,28 @@ NIVEIS_REPUTACAO = {"1_red": ("vermelho", 1), "2_orange": ("laranja", 2), "3_yel
 LIDERES_REPUTACAO = {"silver": "prata", "gold": "ouro", "platinum": "platina"}
 
 
+TETO_EXCLUIDOS = 40
+
+
+def excluidos_do_site(prods):
+    """Anuncio que NAO vai para o site: so o que esta em excluir_do_site.json ({"MLB...": "motivo"}), lista curta e
+    auditavel (teto TETO_EXCLUIDOS). Sai do site, nao do ML. A pagina dele cai no 404 (a "vendida")."""
+    f = ROOT / "excluir_do_site.json"
+    if not f.exists():
+        return set()
+    d = json.loads(f.read_text(encoding="utf-8"))
+    if len(d) > TETO_EXCLUIDOS:
+        raise SystemExit(f"excluir_do_site.json: {len(d)} anuncios (teto {TETO_EXCLUIDOS}); lista so o que e claro")
+    sem_motivo = [k for k, v in d.items() if not str(v).strip()]
+    if sem_motivo:
+        raise SystemExit(f"excluir_do_site.json: sem motivo: {sem_motivo}")
+    ids = {p["id"] for p in prods}
+    sumidos = [k for k in d if k not in ids]
+    if sumidos:
+        print(f"excluir_do_site.json: fora do estoque de hoje (ignorado): {sumidos}")
+    return set(d) & ids
+
+
 def ler_reputacao(caminho=None):
     """reputation.json -> {nivel, n, lider?, vendas?} ou None. So leva o que o ML informou:
     sem nivel conhecido nao ha termometro; sem lider ou sem vendas, some so essa linha."""
@@ -3326,6 +3376,10 @@ def main():
 
     bruto = json.loads((ROOT / "products.json").read_text(encoding="utf-8"))
     prods = bruto["products"]
+    excl = excluidos_do_site(prods)
+    if excl:
+        print(f"fora do site (excluir_do_site.json): {sorted(excl)}")
+        prods = [p for p in prods if p["id"] not in excl]
     cats = gi.load_categorias(prods)
     print(f"produtos: {len(prods)} | categorias: {len(cats)}")
 

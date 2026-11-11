@@ -1420,6 +1420,38 @@ def test_carro_unido_mantem_enderecos_e_peca():
                 assert principal in _carros(x), (x["t"], _carros(x))
 
 
+def test_lixo_do_anuncio_sai_do_nome():
+    assert pd.limpar_lixo_anuncio("Bomba Agua Aux Recharge Ford 12/15") == "Bomba Agua auxiliar Ford 12/15"
+    assert pd.limpar_lixo_anuncio("Motor Limpador Para-brisa Dia Fiat") == "Motor Limpador Para-brisa dianteiro Fiat"
+    assert pd.limpar_lixo_anuncio("Caixa Filtro Ar Ex Lx Lxl Honda") == "Caixa Filtro Ar Honda"
+    assert pd.limpar_lixo_anuncio("Fell Pack Moldura Coluna Direita Citroen") == "Moldura Coluna Direita Citroen"
+    assert pd.limpar_lixo_anuncio("Acabamento coluna direito rh Volvo") == "Acabamento coluna direito Volvo"
+    assert pd.limpar_lixo_anuncio("Fechadura Porta Lh Volvo") == "Fechadura Porta esquerda Volvo"
+    assert pd.limpar_lixo_anuncio("Grade Dianteiro Ford") == "grade dianteira Ford"
+    assert pd.limpar_lixo_anuncio("Bolsa Air Bag Volante Ford") == "Bolsa Air Bag Volante Ford"
+
+
+def test_siglas_em_caixa_alta():
+    assert pd.nome_limpo("Modulo Ipm Ford Ka 15/18 1234567", "Ford", "Ka") == "Módulo IPM"
+    assert pd.nome_limpo("Modulo Ventoinha Pwm Ford Ka 15/18 1234567", "Ford", "Ka") == "Módulo ventoinha PWM"
+
+
+def test_fechadura_do_banco_nao_e_da_porta():
+    f, t = pd.classificar("Fechadura banco traseiro", "Maçanetas e Fechaduras", "Outros")
+    assert t == "Peças de Banco", (f, t)
+    f, t = pd.classificar("Fechadura porta traseira esquerda", "Maçanetas e Fechaduras", "Fechaduras das Portas")
+    assert t == "Fechaduras das Portas", (f, t)
+
+
+def test_excluidos_do_site_sao_poucos_e_com_motivo():
+    import preparar_dados as _pd
+    excl = json.loads((ROOT / "excluir_do_site.json").read_text(encoding="utf-8")) if (ROOT / "excluir_do_site.json").exists() else {}
+    assert len(excl) <= _pd.TETO_EXCLUIDOS
+    assert all(str(v).strip() for v in excl.values())
+    by = _pecas()
+    assert not [k for k in excl if k in by], "anuncio excluido ainda esta no pecas.json"
+
+
 
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
