@@ -80,12 +80,17 @@ export function iniciarLista() {
     const href = x.slug && !vendida ? `/peca/${encodeURI(x.slug)}.html` : '';
     // a vendida fica sem foto (a capa dela já saiu do site)
     const img = x.capa && !vendida ? `<img src="${esc(x.capa)}" alt="" width="88" height="88" loading="lazy" decoding="async">` : '';
-    const nome = x.nome || `Anúncio ${x.id}`;
+    // a peça do link que saiu do site antes de alguém abrir: sem nome (o índice não tem mais), nunca "Anúncio MLB…" como
+    // nome; o número do anúncio fica na linha de baixo (a oficina pode perguntar por ele)
+    const nome = x.nome || 'Peça que saiu do site';
     // carro e anos: no celular estreito os anos descem para a linha de baixo (sem o "·" sobrando no começo)
     const carro = x.carro && x.anos ? `${esc(x.carro)}<span class="lst-anos">${esc(x.anos)}</span>` : esc(x.carro || x.anos);
     let precos: string;
     if (vendida) {
       precos = `<span class="lst-vendida">Já vendida</span>${x.nome ? `<a class="lst-parecida" href="${esc(procurar(x))}">Procurar parecida</a>` : ''}`;
+    } else if (x.preco <= 0) {
+      // sem preço conferido (nunca "R$ 0,00"): sem o bloco do preço
+      precos = '';
     } else {
       const era = precoAntes.get(x.id);
       // R$ e o número nunca se separam (\u00a0)
@@ -97,8 +102,8 @@ export function iniciarLista() {
       + (href ? `<a class="lst-foto" href="${href}" tabindex="-1" aria-hidden="true">${img}</a>` : `<span class="lst-foto">${img}</span>`)
       + `<div class="lst-dados">${carro ? `<span class="lst-veic">${carro}</span>` : ''}`
       + (href ? `<a class="lst-nome" href="${href}">${esc(nome)}</a>` : `<span class="lst-nome">${esc(nome)}</span>`)
-      + (x.cod ? `<span class="lst-cod">Cód. <span class="oem">${esc(x.cod)}</span></span>` : '') + `</div>`
-      + `<div class="lst-precos">${precos}</div>`
+      + (x.cod ? `<span class="lst-cod">Cód. <span class="oem">${esc(x.cod)}</span></span>` : x.nome ? '' : `<span class="lst-cod">Anúncio ${x.id}</span>`) + `</div>`
+      + (precos ? `<div class="lst-precos">${precos}</div>` : '')
       + (ler ? '' : `<button type="button" class="lst-tirar" data-tirar="${x.id}" aria-label="Tirar ${esc(nome)} da lista" title="Tirar da lista">${svg('tirar')}</button>`)
       + `</li>`;
   }
@@ -120,6 +125,9 @@ export function iniciarLista() {
         caixaLink.innerHTML = `<p>Esta lista veio por um link.<small data-lst-link-sub></small></p>`
           + `<button type="button" class="botao botao-linha" data-lst-guardar>${svg('lista-mais')}Guardar na minha lista</button>`;
       }
+      // "Guardar" só depois que as peças do link abriram (sem rede, guardar nada e perder o link, não)
+      const guardar = caixaLink.querySelector<HTMLButtonElement>('[data-lst-guardar]')!;
+      guardar.disabled = estado !== 'ok';
       caixaLink.querySelector('[data-lst-link-sub]')!.textContent = minha
         ? ` Guardar junta estas peças às ${pecasTxt(minha)} que já estão na sua lista (nada se perde).`
         : ' Guardando, ela fica neste aparelho para você pedir depois.';
@@ -131,8 +139,12 @@ export function iniciarLista() {
       caixaLink.hidden = true;
     }
 
-    // as peças (no link, enquanto o busca.json não chega, fica o esqueleto)
-    if (!(modo === 'link' && estado === 'carregando')) {
+    // as peças (no link, enquanto o busca.json não chega, fica o esqueleto; sem rede, o esqueleto parado e o aviso com
+    // "Tentar de novo": nunca uma peça sem nome nem "R$ 0,00")
+    const esperaLink = modo === 'link' && estado !== 'ok';
+    ul.classList.toggle('lst-parado', esperaLink && estado === 'erro');
+    if (esperaLink) ul.setAttribute('aria-busy', String(estado === 'carregando'));
+    else {
       const linhas = l.map((x) => linha(x, modo === 'link'));
       if (tirada && modo === 'minha') {
         const desf = `<li class="lst-desfeito"><span><b>${esc(tirada.item.nome)}</b> saiu da lista.</span><button type="button" data-desfazer>Desfazer</button></li>`;
@@ -266,8 +278,12 @@ export function iniciarLista() {
       desfazerTudo.querySelector<HTMLElement>('button')?.focus();
     } else if (t.hasAttribute('data-lst-tentar')) {
       nota.hidden = true;
+      // o esqueleto volta a "respirar" enquanto tenta
+      ul.classList.remove('lst-parado');
+      if (modo === 'link') ul.setAttribute('aria-busy', 'true');
       carregar();
     } else if (t.hasAttribute('data-lst-guardar')) {
+      if (estado !== 'ok') return;
       const doLink = itens().filter((x) => estado === 'ok' && frescos!.has(x.id));
       const r = juntar(lerLista(), doLink);
       salvarLista(r.lista, 'guardar');
