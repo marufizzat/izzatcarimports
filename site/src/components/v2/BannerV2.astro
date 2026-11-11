@@ -19,7 +19,7 @@ const Caixa = href ? 'a' : 'figure';
 // a conversa de exemplo de cada assunto: [cliente, loja]. Sem prazo, sem promessa de resposta, sem "com foto", sem "tem aqui".
 const naPeca = Astro.url.pathname.startsWith('/peca/');
 const CONVERSA: Record<string, [string, string]> = {
-  'banner-serve': [naPeca ? 'Essa peça serve no meu carro?' : 'Serve no meu Onix 2019?', 'Mande o modelo e o ano. A gente confere na peça.'],
+  'banner-serve': [naPeca ? 'Essa peça serve no meu carro?' : 'Serve no meu Onix 2019?', 'A gente confere na peça antes de você comprar.'],
   'banner-nao-achou': ['Não achei meu carro: é um Tiggo 5x 2020.', 'A gente procura no pátio.'],
 };
 // recorte do Maruf com o celular (public/arte/v2/maruf-celular*.webp, com alfa): tamanho do arquivo maior
