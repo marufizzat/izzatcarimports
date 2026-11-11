@@ -74,7 +74,8 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   <div class="rx-corpo" id={`${id}-corpo`}>
     <div class="rx-arte">
       <div class="rx-palco" data-rx-palco>
-        <img src={ARTE.src} {...srcArte(ARTE.src, sizes)} alt="" width={ARTE.w} height={ARTE.h} loading="lazy" decoding="async" />
+        {/* prioridade baixa: na página do carro (PC) a arte cai na 1ª tela e disputava a rede com a arte do topo (o LCP) */}
+        <img src={ARTE.src} {...srcArte(ARTE.src, sizes)} alt="" width={ARTE.w} height={ARTE.h} loading="lazy" decoding="async" fetchpriority="low" />
         {/* o véu escuro (o retângulo todo menos a parte acesa) e o véu laranja da parte: duas camadas só de desenho, com o
             desfoque do CSS (feito pela placa de vídeo; o filtro do SVG era redesenhado pela CPU a cada troca) */}
         <svg class="rx-camada rx-escuros" viewBox={`0 0 ${ARTE.w} ${ARTE.h}`} aria-hidden="true">
@@ -393,6 +394,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
     }
 
     // Esc: limpa a escolha (volta o "como funciona") e devolve o foco à zona
+    let semAbrir = false;
     function limpar() {
       const k = ativa;
       // o foco estava no painel (que vai ser esvaziado) ou numa zona: volta para a zona que estava escolhida
@@ -404,7 +406,12 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
       conteudo.innerHTML = '';
       dica.hidden = false;
       painel.classList.remove('aberto');
-      if (k && dentro) raiz.querySelector<SVGAElement>(`a[data-z="${k}"]`)?.focus({ preventScroll: true });
+      if (k && dentro) {
+        // o foco volta à zona sem abrir de novo (o foco pelo teclado abre a zona: aqui não)
+        semAbrir = true;
+        raiz.querySelector<SVGAElement>(`a[data-z="${k}"]`)?.focus({ preventScroll: true });
+        semAbrir = false;
+      }
     }
 
     // ---- ouvintes ----
@@ -416,7 +423,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         selecionar(k, { focar: (e as MouseEvent).detail === 0, rolar: true });
       });
       // Tab: a zona focada já abre (o foco continua nela; Enter leva ao painel)
-      a.addEventListener('focus', () => { if (a.matches(':focus-visible')) selecionar(k); });
+      a.addEventListener('focus', () => { if (!semAbrir && a.matches(':focus-visible')) selecionar(k); });
       a.addEventListener('pointerenter', (e) => { if (passa(e)) { passando = k; acender(); } });
       a.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && passando === k) { passando = null; acender(); } });
     }
