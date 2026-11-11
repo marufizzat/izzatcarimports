@@ -9103,22 +9103,23 @@
   "foto": "877795-MLB112507049101_052026"
  },
  "MLB6845039662": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Rádio bluetooth moldura central",
   "carro": "Ford Ka",
   "foto": "620246-MLB111251010284_052026"
  },
  "MLB6845039478": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado",
   "carro": "Honda New Civic",
   "foto": "987824-MLB112275430531_052026"
  },
  "MLB6844918134": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Circuito lanterna traseira esquerda",
   "carro": "Audi A4",
-  "foto": "607442-MLB112506728937_052026"
+  "foto": "607442-MLB112506728937_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6844914274": {
   "status": "pulada",
@@ -9128,28 +9129,31 @@
   "foto": "827621-MLB111453912628_052026"
  },
  "MLB6844901108": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Motor ventilador",
   "carro": "Iveco Daily",
-  "foto": "640426-MLB112507195903_052026"
+  "foto": "640426-MLB112507195903_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6844901024": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Comando ar condicionado",
   "carro": "Toyota Camry",
   "foto": "853193-MLB111453912718_052026"
  },
  "MLB6844900560": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Difusor ar central traseiro",
   "carro": "Hyundai Genesis",
-  "foto": "639714-MLB112506758781_052026"
+  "foto": "639714-MLB112506758781_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB4713086239": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Mangueira ar quente",
   "carro": "Fiat Toro",
-  "foto": "928751-MLB112274627895_052026"
+  "foto": "928751-MLB112274627895_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB4713085861": {
   "status": "pulada",
@@ -9159,10 +9163,11 @@
   "foto": "667544-MLB112274685253_052026"
  },
  "MLB6858469646": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Lanterna traseira esquerda",
   "carro": "Citroën C3",
-  "foto": "663609-MLB111363864960_052026"
+  "foto": "663609-MLB111363864960_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6858469492": {
   "status": "pulada",
@@ -9186,10 +9191,11 @@
   "foto": "873908-MLB112507195351_052026"
  },
  "MLB6858426994": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Alternador Denso",
   "carro": "Chevrolet Cruze",
-  "foto": "854600-MLB112507137675_052026"
+  "foto": "854600-MLB112507137675_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6858426890": {
   "status": "pulada",
@@ -9227,10 +9233,11 @@
   "foto": "668317-MLB112506758215_052026"
  },
  "MLB4719954549": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Motor partida arranque",
   "carro": "Chevrolet Cruze",
-  "foto": "690007-MLB112506758349_052026"
+  "foto": "690007-MLB112506758349_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB4719943597": {
   "status": "pulada",
@@ -9414,10 +9421,11 @@
   "motivo": "nenhuma foto com a peça inteira e limpa"
  },
  "MLB6865094716": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Mangueira água",
   "carro": "Volvo XC60",
-  "foto": "607803-MLB111413312316_052026"
+  "foto": "607803-MLB111413312316_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6865094004": {
   "status": "pulada",
@@ -9581,10 +9589,11 @@
   "foto": "757030-MLB111453431778_052026"
  },
  "MLB6865028194": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Mangueira retorno reservatório",
   "carro": "Fiat Toro",
-  "foto": "863733-MLB112459591003_052026"
+  "foto": "863733-MLB112459591003_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6865012818": {
   "status": "pulada",
@@ -9594,16 +9603,18 @@
   "foto": "889042-MLB111453955116_052026"
  },
  "MLB6865012610": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão comando luz painel",
   "carro": "Renault Megane",
-  "foto": "887579-MLB112506717257_052026"
+  "foto": "887579-MLB112506717257_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6865005620": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Botão pisca-alerta",
   "carro": "Chevrolet Cruze",
-  "foto": "869667-MLB112457684927_052026"
+  "foto": "869667-MLB112457684927_052026",
+  "motivo": "ChatGPT mudou ângulo/forma/código"
  },
  "MLB6865005164": {
   "status": "pulada",
@@ -9634,7 +9645,7 @@
   "foto": "786352-MLB111454214966_052026"
  },
  "MLB6865000616": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura altura farol",
   "carro": "Renault Megane",
   "foto": "661798-MLB111453900654_052026"
@@ -9661,10 +9672,11 @@
   "foto": "862549-MLB111453900582_052026"
  },
  "MLB6864982182": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Chicote bateria",
   "carro": "Volvo S60",
-  "foto": "945949-MLB111453900714_052026"
+  "foto": "945949-MLB111453900714_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6864979952": {
   "status": "pulada",
@@ -9702,7 +9714,7 @@
   "foto": "645642-MLB112506659347_052026"
  },
  "MLB6864895606": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Maçaneta interna direita",
   "carro": "Fiat Strada",
   "foto": "683710-MLB112457550923_052026"
@@ -9715,7 +9727,7 @@
   "foto": "723221-MLB112506659433_052026"
  },
  "MLB6864860276": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Lanterna traseira esquerda",
   "carro": "Audi A4",
   "foto": "610186-MLB112457553325_052026"
@@ -9742,7 +9754,7 @@
   "foto": "868885-MLB112506748531_052026"
  },
  "MLB6864704172": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Lanterna traseira direita",
   "carro": "Audi A4",
   "foto": "901844-MLB112454791975_052026"
@@ -9790,7 +9802,7 @@
   "foto": "800878-MLB111453901842_052026"
  },
  "MLB6864651930": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Moldura para-lama lateral traseira",
   "carro": "Chevrolet Cruze",
   "foto": "935562-MLB112506659875_052026"
@@ -9845,22 +9857,25 @@
   "foto": "847628-MLB111454228338_052026"
  },
  "MLB6864475708": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Calço coxim direito",
   "carro": "Jeep Compass",
-  "foto": "925315-MLB111453968658_052026"
+  "foto": "925315-MLB111453968658_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6864461186": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Coxim motor esquerdo",
   "carro": "Fiat Argo",
-  "foto": "824333-MLB111453793854_052026"
+  "foto": "824333-MLB111453793854_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6864458078": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Bomba água",
   "carro": "Chery Arrizo",
-  "foto": "754116-MLB112506756771_052026"
+  "foto": "754116-MLB112506756771_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6864457796": {
   "status": "pulada",
@@ -9877,7 +9892,7 @@
   "foto": "728928-MLB112452617013_052026"
  },
  "MLB6864283872": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Suporte coxim câmbio",
   "carro": "Fiat Argo",
   "foto": "650169-MLB111405578476_052026"
@@ -9904,13 +9919,14 @@
   "foto": "823211-MLB111453794362_052026"
  },
  "MLB6864271694": {
-  "status": "pronta",
+  "status": "reprovada",
   "n": "Suporte coxim câmbio",
   "carro": "Fiat Palio",
-  "foto": "794722-MLB112506727463_052026"
+  "foto": "794722-MLB112506727463_052026",
+  "motivo": "triagem: etiqueta/código pequeno ou peça cortada, não enviar ao ChatGPT"
  },
  "MLB6864261608": {
-  "status": "pronta",
+  "status": "ok",
   "n": "Lanterna traseira esquerda tampa",
   "carro": "BMW X6",
   "foto": "757975-MLB111406371850_052026"
