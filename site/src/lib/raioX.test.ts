@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, linkLinha, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
+import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, linkLinha, linkZona, linkDoFiltro, falaDaZona, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
 import { Busca, type Indice } from './busca';
 
 const buscaArq = 'public/dados/busca.json';
@@ -59,6 +59,26 @@ describe('linkLinha: o endereço que o catálogo entende', () => {
   });
 });
 
+// Revisão 14, P1-1: sem carro salvo (a maioria dos visitantes) o painel da home quebrava ao montar o "Ver todas no
+// catálogo" (lia a marca de um carro que não existe). O link sai do filtro em uso: sem carro, só a zona.
+describe('linkZona: "Ver todas no catálogo" do painel', () => {
+  it('home SEM carro: /catalogo.html?zona=<k> (nada de marca nem modelo)', () => {
+    for (const z of ZONAS) expect(linkZona(z.k)).toBe(`/catalogo.html?zona=${z.k}`);
+    expect(linkZona('frente', {})).toBe('/catalogo.html?zona=frente');
+    expect(linkDoFiltro()).toBe('/catalogo.html');
+  });
+  it('com o carro das contagens: o carro antes, a zona no fim (os mesmos parâmetros do catálogo)', () => {
+    expect(linkZona('motor', { marca: 'Volvo', modelo: 'XC60', ano: 2019 })).toBe('/catalogo.html?marca=Volvo&modelo=XC60&ano=2019&zona=motor');
+    expect(linkZona('teto', { marca: 'Mercedes-Benz', modelo: 'Classe C' })).toBe('/catalogo.html?marca=Mercedes-Benz&modelo=Classe+C&zona=teto');
+    expect(linkDoFiltro({ marca: 'Volvo', modelo: 'XC60', ano: 2019 })).toBe('/catalogo.html?marca=Volvo&modelo=XC60&ano=2019');
+  });
+  it('o que o leitor de tela ouve quando o painel troca', () => {
+    expect(falaDaZona('Frente', 119, 19)).toBe('Frente: 119 peças, 19 tipos de peça.');
+    expect(falaDaZona('Motor', 1, 1, 'do seu XC60 2019')).toBe('Motor: 1 peça do seu XC60 2019.');
+    expect(falaDaZona('Teto', 0, 0, 'do seu XC60 2019')).toBe('Teto: nenhuma peça do seu XC60 2019 agora.');
+  });
+});
+
 // O mapa contra o estoque: muda a cada rodada (30 min). Nunca exige um tipo com peça (os de 1 peça zeram), só que o
 // nome exista no índice, que toda zona tenha peça e que o número de cada linha seja o do catálogo.
 describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () => {
@@ -97,6 +117,20 @@ describe.skipIf(!existsSync(buscaArq))('o mapa contra o estoque de agora', () =>
       resumo.push(`${z.nome} ${c.n}: ${c.linhas.slice(0, 4).map((l) => `${l.sub} ${l.n}`).join(', ')}`);
     }
     console.info(`raio-x, estoque inteiro:\n  ${resumo.join('\n  ')}`);
+  });
+
+  it('home sem carro: o catálogo aberto por ?zona=<k> mostra o MESMO número que o painel conta, nas 9 zonas', () => {
+    for (const c of contas) {
+      const u = new URL(linkZona(c.k), 'https://x');
+      expect([...u.searchParams.keys()]).toEqual(['zona']);
+      expect(toda.procurar({ zona: u.searchParams.get('zona')! }).length, c.k).toBe(c.n);
+    }
+  });
+
+  it('carro salvo sem peça ou sem rede (as contagens caem para o estoque inteiro, filtro vazio): o link também é do estoque inteiro', () => {
+    // o painel usa o MESMO filtro para as contagens e para o link: com filtro vazio, nunca o carro salvo por fora
+    const filtro = {};
+    for (const c of contas) expect(toda.procurar({ zona: new URL(linkZona(c.k, filtro), 'https://x').searchParams.get('zona')! }).length).toBe(c.n);
   });
 
   it('as laterais só têm peças do lado delas', () => {
