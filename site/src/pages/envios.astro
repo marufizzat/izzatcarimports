@@ -16,20 +16,20 @@ const canonicalPath = '/envios.html';
 // Regra do dono (09/11): pelo site o frete é a combinar (WhatsApp, pelo CEP); no Mercado Livre, frete e prazo são os
 // calculados lá. Sem prazo próprio, sem transportadora e sem "postagem em X dias" em lugar nenhum.
 const jeitos = [
-  { i: 'conversa', t: 'Pelo WhatsApp', s: 'O frete é combinado na hora, pelo seu CEP.' },
+  { i: 'conversa', t: 'Pelo WhatsApp', s: 'O frete é combinado pelo seu CEP.' },
   { i: 'loja', t: 'Pelo Mercado Livre', s: 'O frete e o prazo são os calculados lá, no anúncio, antes de você fechar a compra.' },
   { i: 'caminhao', t: 'Peças grandes', s: 'Motor, câmbio e outras peças grandes têm o envio combinado pelo WhatsApp, caso a caso.' },
 ];
 const caminho = [
-  { i: 'lupa', t: 'Conferida no pátio', s: 'A peça sai de carro com baixa legal e é conferida e fotografada antes de ir.' },
+  { i: 'lupa', t: 'Conferida no pátio', s: 'A peça vem de carro com baixa legal e é conferida e fotografada antes de ir.' },
   { i: 'caixa', t: 'Embalada com cuidado', s: 'Cada peça é embalada com cuidado antes de sair do pátio.' },
   { i: 'nota', t: 'Com nota fiscal', s: 'Toda venda sai com nota fiscal, para você guardar.' },
-  { i: 'rota', t: 'Código de rastreio', s: 'Com o código de rastreio, você acompanha a entrega. Peça grande: o envio é combinado caso a caso.' },
+  { i: 'rota', t: 'Código de rastreio', s: 'Com o código de rastreio, você acompanha a entrega, também nas compras pelo WhatsApp.' },
 ];
 ---
 <Pagina
   titulo="Envios para todo o Brasil | Izzat Car Imports"
-  descricao="A gente envia peças para todo o Brasil. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Pelo Mercado Livre, o frete e o prazo são os calculados no anúncio."
+  descricao="A gente envia para todo o Brasil. Pelo WhatsApp, o frete é combinado pelo seu CEP; no Mercado Livre, frete e prazo são os do anúncio."
   canonical={canonical}
 >
   <TopoArte trilha={[['Início', '/'], ['Envios', canonicalPath]]}
@@ -73,7 +73,7 @@ const caminho = [
           <li><span class="inst-disco inst-disco-g"><IconeInst nome={p.i} /></span><b>{p.t}</b><p>{p.s}</p></li>
         ))}
       </ol>
-      <p class="env-garantia"><IconeInst nome="escudo" /><span>A garantia e as trocas estão em <a href="/garantia.html">Garantia e trocas</a>.</span></p>
+      <p class="env-garantia"><IconeInst nome="escudo" /><span>Como acionar a garantia: veja em <a href="/garantia.html">Garantia</a>.</span></p>
     </section>
   </div>
 

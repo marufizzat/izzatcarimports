@@ -58,7 +58,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   <div class="mc-dlg-topo">
     <div>
       {/* <p> e não <h2>: a caixa fica no HTML de toda página, antes do h1 (o Google lia "Seu carro" como o 1º título) */}
-      <p id="mc-dlg-titulo" class="mc-dlg-titulo">Seu carro</p>
+      <p id="mc-dlg-titulo" class="mc-dlg-titulo">Meu carro</p>
       <p class="mc-dlg-sub">Escolha uma vez: o site passa a mostrar as peças do seu carro.</p>
     </div>
     <button class="mc-dlg-fechar" type="button" aria-label="Fechar" data-fechar-carro>
@@ -79,8 +79,8 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
   <div class="menu-corpo">
     <nav class="menu-links" aria-label="Menu principal">
       {links.map(([t, h]) => <a href={h} aria-current={ativo(h) ? 'page' : undefined}>{t}</a>)}
-      <a href="/garantia.html" aria-current={atual === '/garantia.html' ? 'page' : undefined}>Garantia e trocas</a>
-      <a href="/procuro-peca.html" aria-current={atual === '/procuro-peca.html' ? 'page' : undefined}>Procuro peça</a>
+      <a href="/garantia.html" aria-current={atual === '/garantia.html' ? 'page' : undefined}>Garantia</a>
+      <a href="/procuro-peca.html" aria-current={atual === '/procuro-peca.html' ? 'page' : undefined}>Não achou a peça?</a>
     </nav>
     <p class="menu-rotulo">Carros com mais peças</p>
     <div class="menu-carros">
@@ -140,7 +140,7 @@ const buscaNoTopo = !atual.startsWith('/catalogo');
         txt.replaceChildren(parte('modelo', parte('marca', c.b + ' '), c.m));
         if (c.y) txt.append(parte('ano', String(c.y)));
         b.classList.add('com-carro');
-        b.setAttribute('aria-label', 'Seu carro: ' + [c.b, c.m, c.y].filter(Boolean).join(' ') + '. Trocar ou tirar');
+        b.setAttribute('aria-label', 'Meu carro: ' + [c.b, c.m, c.y].filter(Boolean).join(' ') + '. Trocar ou tirar');
         b.title = 'Trocar ou tirar o seu carro';
       } else {
         txt.textContent = 'Meu carro';

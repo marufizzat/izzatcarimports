@@ -19,20 +19,20 @@ import { whatsUrl, SITE, DETRAN_CDV } from '../lib/dados';
 const canonical = `${SITE}/garantia.html`;
 const canonicalPath = '/garantia.html';
 const msgBanner = 'Quero uma peça original com nota fiscal e garantia. Meu carro é ____ (modelo e ano) e a peça é: ____';
-const msgGarantia = 'Comprei uma peça e preciso de ajuda com a garantia. Número do pedido: ';
+const msgGarantia = 'Comprei uma peça e preciso de ajuda com a garantia. Anúncio ou nota fiscal: ';
 const passos = [
-  { i: 'conversa', t: 'Chame no WhatsApp', s: 'Dentro do prazo de garantia. Informe o número do pedido e o que aconteceu com a peça.' },
+  { i: 'conversa', t: 'Chame no WhatsApp', s: 'Dentro do prazo de garantia. Informe o número do anúncio ou a nota fiscal e o que aconteceu com a peça.' },
   { i: 'camera', t: 'Mande fotos', s: 'Fotos da peça, mostrando o problema. Se tiver, inclua também a etiqueta ou o código gravado.' },
-  { i: 'troca', t: 'A gente resolve', s: 'Em 90 dias, fale no WhatsApp com o número do pedido que a gente avalia e resolve.' },
+  { i: 'escudo', t: 'A gente resolve', s: 'Com as fotos, a gente avalia a peça e combina a solução com você.' },
 ];
 ---
 <Pagina
-  titulo="Garantia e trocas | Izzat Car Imports"
-  descricao="90 dias de garantia em toda peça e nota fiscal em toda venda. Se algo der errado, fale pelo WhatsApp com o número do pedido que a gente avalia e resolve."
+  titulo="Garantia de 90 dias | Izzat Car Imports"
+  descricao="90 dias de garantia em toda peça e nota fiscal em toda venda. Se algo der errado, chame no WhatsApp com o número do anúncio ou a nota fiscal que a gente avalia e resolve."
   canonical={canonical}
 >
-  <TopoArte trilha={[['Início', '/'], ['Garantia e trocas', canonicalPath]]}
-    titulo="Garantia e trocas"
+  <TopoArte trilha={[['Início', '/'], ['Garantia', canonicalPath]]}
+    titulo="Garantia"
     lead="O que vale para toda peça que sai do pátio e o que fazer se ela der problema."
     arte="/arte/v2/topo-garantia.webp" />
 
@@ -44,12 +44,12 @@ const passos = [
         <h2 class="gar-cert-titulo" id="h-prazo">de garantia em toda peça</h2>
       </div>
       <ul class="gar-cert-fatos">
-        <li><span class="inst-disco"><IconeInst nome="nota" /></span><span><b>Nota fiscal em toda venda</b>Toda compra sai com nota fiscal, para você guardar.</span></li>
+        <li><span class="inst-disco"><IconeInst nome="nota" /></span><span><b>Nota fiscal em toda venda</b>Vai junto com a peça, para você guardar.</span></li>
         <li><span class="inst-disco"><IconeInst nome="carro" /></span><span><b>Peça original</b>Vem de carro com baixa legal, conferida e fotografada no pátio.</span></li>
         <li><span class="inst-disco"><IconeInst nome="escudo" /></span><span><b>Desmanche credenciado</b>Detran-RS, CDV&nbsp;nº&nbsp;01060.
           <a class="gar-detran" href={DETRAN_CDV} target="_blank" rel="noopener">Confira na lista do Detran-RS<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg></a></span></li>
         {/* contra golpe com o nome do desmanche (o Detran-RS alerta): o número do site é o mesmo da lista oficial */}
-        <li><span class="inst-disco"><IconeInst nome="conversa" /></span><span><b>WhatsApp oficial</b>O nosso é o <span class="num gar-fone">(53) 99117-0950</span>, o mesmo do cadastro no Detran-RS.</span></li>
+        <li><span class="inst-disco"><IconeInst nome="conversa" /></span><span><b>WhatsApp oficial</b>É o <span class="num gar-fone">(53) 99117-0950</span>, o mesmo do cadastro no Detran-RS.</span></li>
       </ul>
     </section>
 
@@ -81,7 +81,7 @@ const passos = [
         <h2 class="titulo-secao inst-h2" id="h-evitar">Evite a peça errada</h2>
         <p>Antes de fechar a compra, confira estes pontos. Assim a peça chega certa na primeira vez.</p>
         <ul class="inst-lista">
-          <li><Icone nome="check" /><span>Confirme o <b>modelo, o ano e o motor</b> do seu carro antes de comprar.</span></li>
+          <li><Icone nome="check" /><span>Confirme o <b>modelo, o ano e o motor</b> do seu carro.</span></li>
           <li><Icone nome="check" /><span>Compare o <b>código gravado</b> da sua peça velha com o código da página da peça.</span></li>
           <li><Icone nome="check" /><span>Veja as fotos e a ficha técnica na página da peça.</span></li>
         </ul>
@@ -93,7 +93,7 @@ const passos = [
       <span class="inst-disco inst-disco-g"><IconeInst nome="loja" /></span>
       <div class="gar-ml-texto">
         <h2 class="gar-ml-titulo" id="h-ml">Comprou pelo Mercado Livre?</h2>
-        <p>Quem comprou pelo Mercado Livre também tem a proteção de compra do próprio Mercado Livre, pelas regras da plataforma.</p>
+        <p>Você também tem a proteção de compra da plataforma, pelas regras dela.</p>
       </div>
       <div class="gar-ml-lado">
         <div class="gar-ml-selo"><SeloReputacao variante="compacto" /></div>
