@@ -70,6 +70,12 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
             <div class="lst-conta-total"><dt>Total no WhatsApp</dt><dd class="num" data-lst-total>—</dd></div>
           </dl>
           <p class="lst-fora" data-lst-fora hidden></p>
+          {/* o CEP (opcional): entra no pedido ("CEP: 00000-000") e fica lembrado (izzatcar.cep, o mesmo do frete da peça) */}
+          <div class="campo lst-cep">
+            <label for="lst-cep">Seu CEP <small>(opcional, para o frete)</small></label>
+            <input id="lst-cep" name="cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" data-lst-cep aria-describedby="lst-cep-nota" />
+            <p class="lst-cep-nota" id="lst-cep-nota">Entra no pedido do WhatsApp. O frete é combinado com a gente lá, pelo seu CEP.</p>
+          </div>
           <a class="botao botao-laranja lst-pedir" data-lst-pedir data-botao="lista" target="_blank" rel="noopener" href={semScript}><Icone nome="whats" /><span>Pedir tudo no WhatsApp</span></a>
           <button type="button" class="botao botao-linha lst-copiar" data-lst-copiar><Icone nome="copiar" /><span>Copiar o link da lista</span></button>
           <p class="lst-copiar-nota" data-lst-copiar-nota>Quem abrir o link vê esta mesma lista: a oficina manda para o cliente, o cliente manda para a oficina.</p>
@@ -123,6 +129,12 @@ const scriptTextos = `try{var d=document.documentElement,q=+d.dataset.lstQ||0,s=
   .lst .lst-trilha a { color: var(--ink-2); padding: 12px 6px; margin: -12px -6px; }
   .lst .lst-trilha a:hover { color: var(--ink); text-decoration: underline; }
   .lst .lst-topo { margin: 8px 0 22px; max-width: 760px; }
+  /* o CEP do pedido: o campo do site (.campo) com o CEP em números grandes; sem preço nem prazo, só o lugar dele */
+  .lst .lst-cep { gap: 6px; margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+  .lst .lst-cep label { font-size: 14.5px; font-weight: 650; color: var(--ink); }
+  .lst .lst-cep label small { font-weight: 500; color: var(--ink-3); }
+  .lst .lst-cep input { height: var(--botao-p); font-size: 17px; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+  .lst .lst-cep-nota { margin: 0; font-size: 13px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .lst .lst-h1 { margin: 0; font-stretch: 84%; font-weight: 820; font-size: clamp(32px, 4.2vw, 48px); line-height: 1.02; letter-spacing: -.01em; text-wrap: balance; }
   .lst .lst-lead { margin: 10px 0 0; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
   html[data-lst="vazia"] .lst .lst-lead { display: none; }

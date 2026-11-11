@@ -169,7 +169,12 @@ export function somaPrecos(l: readonly { preco: number }[]): { site: number; wha
 export type ItemMsg = { id: string; nome: string; carro?: string; anos?: string; cod?: string; preco: number };
 export const LINK_LISTA = 'https://izzatcarimports.com.br/lista.html';
 export const LIMITE_MSG_LISTA = 1800;
-export function mensagemLista(itens: readonly ItemMsg[], meuCarro = '', limite = LIMITE_MSG_LISTA): string {
+/** "CEP: 96445-000" na lista (opcional: CEP incompleto ou vazio não entra; o frete é combinado no WhatsApp). */
+export function linhaCep(cep: string): string {
+  const d = cep.replace(/\D/g, '');
+  return d.length === 8 ? `CEP: ${d.slice(0, 5)}-${d.slice(5)}\n` : '';
+}
+export function mensagemLista(itens: readonly ItemMsg[], meuCarro = '', limite = LIMITE_MSG_LISTA, cep = ''): string {
   const n = itens.length;
   const um = n === 1;
   const { site, whats } = somaPrecos(itens);
@@ -184,7 +189,7 @@ export function mensagemLista(itens: readonly ItemMsg[], meuCarro = '', limite =
     [`*${i + 1}. ${x.nome}*`, comCod && x.cod && `Cód. ${x.cod}`, `R$ ${paraBrl(x.preco)}`].filter(Boolean).join(' · ');
   const fim = [
     `Subtotal no site: R$ ${paraBrl(site)}\n*Total no WhatsApp (${DESCONTO_WHATS}% de desconto): R$ ${paraBrl(whats)}*`,
-    `${linhaMeuCarro(meuCarro)}${um ? CAUDA_PECA : 'Servem e ainda têm?'}`,
+    `${linhaCep(cep)}${linhaMeuCarro(meuCarro)}${um ? CAUDA_PECA : 'Servem e ainda têm?'}`,
     `${LINK_LISTA}?i=${itens.map((x) => x.id).join(',')}`,
   ].join('\n\n');
   const montar = (corpo: string) => mensagem(`\n\n${titulo}\n\n${corpo}\n\n${fim}`);

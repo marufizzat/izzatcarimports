@@ -85,7 +85,7 @@ const perguntas = [
     resposta: 'A gente envia para todo o Brasil. Pelo WhatsApp, o frete é combinado pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.',
     link: { href: '/envios.html', texto: 'Ver envios' },
     // o campo de CEP ("Cotar o frete no WhatsApp") é montado pelo script, na 1ª vez que a pergunta abre (HTML mínimo)
-    attrs: { 'data-cep': '' },
+    attrs: { 'data-cep': '', id: 'envio-peca' },
   },
   {
     pergunta: 'Tem nota fiscal?',
@@ -159,6 +159,9 @@ const perguntas = [
         <div class="compra-lista"><button type="button"><Icone nome="lista-mais" /><span>Adicionar à lista<span class="cl-longo"> de orçamento</span></span></button></div>
       </div>
       <p class="compra-confia">Peça original usada · <a href="/garantia.html">Garantia de 90 dias</a> · <a href="/garantia.html">Nota fiscal</a> · <a href="/sobre.html">Desmanche credenciado CDV nº 01060</a></p>
+      {/* o frete pelo CEP, numa linha só, perto da compra: abre o "Como é o envio?" no lugar (o campo do CEP é o mesmo) e
+          foca o campo. Sem script, o link leva à pergunta (a âncora). Não promete valor nem prazo. */}
+      <a class="frete-entrada" href="#envio-peca" data-frete-entrada><Icone nome="carro" /><span>Calcular frete pelo CEP</span><Icone nome="seta" /></a>
       <ul class="compra-facil">
         <li><b>Na dúvida se serve?</b> A gente confere na peça antes de você comprar.</li>
         <li><b>WhatsApp:</b> mensagem pronta com a peça<span data-whats-carro></span>.</li>
@@ -290,6 +293,14 @@ const perguntas = [
     // antes de abrir (o clique no título vem antes da troca): o campo já está lá quando a altura anima
     envio.querySelector('summary')?.addEventListener('click', montar);
     envio.addEventListener('toggle', () => { if (envio.open) montar(); });
+    // "Calcular frete pelo CEP" (perto da compra): abre a pergunta, leva a ela e põe o cursor no campo do CEP
+    document.querySelector<HTMLAnchorElement>('[data-frete-entrada]')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      envio.open = true;
+      montar();
+      envio.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      envio.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+    });
   }
 
   // Galeria em tela cheia: módulo pequeno e sem React (ui/GaleriaTelaCheia.ts). Pré-busca quando o navegador folga
@@ -753,6 +764,17 @@ const perguntas = [
   /* celular estreito (320): "Na lista · Ver lista (3)" + "Tirar" numa linha só */
   @media (max-width: 359px) { .compra-lista .cl-sua { display: none; } .compra-lista .cl-na { gap: 8px; } }
   @media (prefers-reduced-motion: reduce) { .compra-lista .cl-na > svg:first-child { animation: none; } }
+  /* "Calcular frete pelo CEP": uma linha, com a cara dos botões de apoio (superfície suave, borda, alvo de 48 px) */
+  .frete-entrada { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px 0 14px; border-radius: 14px; background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font-size: 15px; font-weight: 650; font-stretch: 96%; text-decoration: none;
+    -webkit-tap-highlight-color: transparent; transition: background-color .18s ease, box-shadow .18s ease; }
+  .frete-entrada > svg:first-child { flex: none; width: 19px; height: 19px; color: var(--accent-text); }
+  .frete-entrada > span { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
+  .frete-entrada > svg:last-child { flex: none; width: 16px; height: 16px; color: var(--ink-2); transition: transform .18s ease; }
+  .frete-entrada:hover { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .frete-entrada:hover > svg:last-child { transform: translateX(3px); }
+  .frete-entrada:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .frete-entrada, .frete-entrada > svg:last-child { transition: none; } }
   .compra-facil { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.4; color: var(--ink-3); text-wrap: pretty; }
   .compra-facil b { font-weight: 650; color: var(--ink-2); }
 
