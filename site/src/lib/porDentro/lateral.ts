@@ -48,14 +48,14 @@ export function pontosLateral(lado: Lado): PontoQuente[] {
       poligonos: ['902,531 875,547 866,590 860,596 859,607 841,616 840,640 832,646 831,690 832,700 846,715 874,718 890,709 893,704 891,689 904,676 907,629 897,616 874,606 871,596 878,555 886,547 903,540 905,533'],
     },
     {
-      k: 'macanetas', nome: 'Maçanetas externas', procuro: `a maçaneta externa ${a}`, ancora: [966, 917], tipo: 'Maçanetas e Fechaduras', sub: 'Maçanetas das Portas', lado,
+      k: 'macanetas', nome: 'Maçanetas externas', procuro: `a maçaneta externa ${a}`, ancora: [966, 917], tipo: 'Maçanetas e Fechaduras', sub: 'Maçanetas das Portas', lado, eh: { cab: 'macaneta', sem: 'interna interno tampa porta-malas camera' },
       poligonos: [
         '1010,894 1000,887 972,890 965,886 954,890 944,885 891,891 830,910 819,921 815,935 826,944 821,949 823,952 860,954 869,948 885,947 870,941 879,931 938,926 944,934 929,940 930,943 942,941 950,950 960,948 966,952 985,938 993,939 1009,923',
         '1357,893 1347,886 1303,888 1286,882 1242,889 1184,908 1173,922 1172,935 1180,942 1177,948 1190,953 1251,955 1255,951 1226,950 1225,936 1238,928 1288,924 1294,932 1283,936 1284,940 1291,939 1298,946 1322,941 1332,945 1345,937 1342,931 1356,919',
       ],
     },
     {
-      k: 'forros', nome: 'Forros de porta', procuro: `o forro de porta ${o}`, ancora: [488, 175], tipo: 'Acabamentos e Forros', sub: 'Forros', lado,
+      k: 'forros', nome: 'Forros de porta', procuro: `o forro de porta ${o}`, ancora: [488, 175], tipo: 'Acabamentos e Forros', sub: 'Forros', lado, eh: { cab: 'forro', tem: 'porta', sem: 'porta-malas bagagito tampa' },
       poligonos: [
         '642,56 340,76 286,236 284,261 302,287 293,295 571,279 599,238',
         '1390,56 1113,75 1086,247 1088,262 1103,282 1099,292 1243,287 1281,280 1330,196 1357,170 1389,81',

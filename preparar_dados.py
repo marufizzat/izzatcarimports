@@ -2067,6 +2067,9 @@ REGRAS_NOME = [
     (r"^modulo (de )?controle (da )?transmissao\b", None, "Transmissão", "Módulos do Câmbio e da Tração"),
     (r"^modulo\b(?!.*\batuador\b).*\bar condicionado\b", None, "Climatização", "Comandos de Ar Condicionado"),
     (r"^resistencia\b.*\bventilador\b", None, "Climatização", "Resistências e Relés do Ar"),
+    # revisão 15 (P1-2): a "Caixa ar condicionado" (a caixa do ar, que fica dentro do painel) vinha na categoria dos
+    # condensadores do ML e entrava, já marcada, na lista do conserto de batida na frente. Caixa não é condensador.
+    (r"^caixa\b", {"Condensadores"}, "Climatização", "Evaporadores"),
     (r"^sensor\b.*\b(qualidade (do )?ar|temperatura (interna|interior)|pressostato|ar condicionado)\b", None,
      "Climatização", "Sensores do Ar-condicionado"),
     (r"^(motor|ventilador)\b.*\b(interno|ar|ventilacao)\b|^motor ventilacao\b", {"Motores de Ventilador"}, "Climatização",

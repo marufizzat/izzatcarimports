@@ -27,15 +27,15 @@ export const PONTOS: PontoQuente[] = [
     poligonos: ['576,402 564,409 561,420 552,428 555,436 552,458 546,463 535,454 525,460 522,484 526,505 534,517 543,517 552,508 561,509 576,525 584,541 615,544 622,536 639,531 643,513 657,505 662,494 675,487 683,490 693,487 695,462 688,448 683,446 671,454 653,454 634,430 635,419 617,414 612,401 599,400 592,410'],
   },
   {
-    k: 'cardan', nome: 'Cardan', procuro: 'o cardan', ancora: [915, 438], tipo: 'Câmbio e Transmissão', sub: 'Cardans',
+    k: 'cardan', nome: 'Cardan', procuro: 'o cardan', ancora: [915, 438], tipo: 'Câmbio e Transmissão', sub: 'Cardans', eh: { cab: 'cardan eixo' },
     poligonos: ['1128,403 1101,393 1059,409 948,420 925,400 900,401 881,426 766,441 752,435 712,440 709,475 722,486 735,486 769,470 884,455 888,460 873,466 877,476 918,473 937,487 956,485 959,473 943,465 949,447 1060,434 1120,437 1128,431'],
   },
   {
-    k: 'diferencial', nome: 'Diferencial traseiro', procuro: 'o diferencial traseiro', ancora: [1255, 413], tipo: 'Câmbio e Transmissão', sub: 'Diferenciais',
+    k: 'diferencial', nome: 'Diferencial traseiro', procuro: 'o diferencial traseiro', ancora: [1255, 413], tipo: 'Câmbio e Transmissão', sub: 'Diferenciais', eh: { cab: 'diferencial' }, fora: 'D',
     poligonos: ['1145,381 1140,412 1145,433 1154,445 1167,446 1182,434 1195,452 1222,463 1238,486 1263,491 1272,489 1291,467 1306,462 1324,417 1339,428 1350,428 1359,421 1363,408 1361,383 1348,363 1336,362 1323,379 1314,380 1296,369 1295,360 1269,354 1260,343 1247,351 1228,344 1218,352 1207,344 1190,351 1189,367 1178,389 1160,376'],
   },
   {
-    k: 'semieixos', nome: 'Semieixos traseiros', procuro: 'o semieixo traseiro', ancora: [1175, 514], tipo: 'Câmbio e Transmissão', sub: 'Semieixos e Suportes',
+    k: 'semieixos', nome: 'Semieixos traseiros', procuro: 'o semieixo traseiro', ancora: [1175, 514], tipo: 'Câmbio e Transmissão', sub: 'Semieixos e Suportes', eh: { cab: 'semieixo' }, fora: 'D',
     poligonos: [
       '1432,274 1428,270 1414,272 1390,262 1377,262 1358,272 1350,285 1343,290 1322,296 1301,289 1283,290 1259,306 1254,314 1239,318 1238,326 1243,331 1260,328 1279,334 1295,334 1315,322 1322,311 1350,302 1377,309 1396,305 1416,286 1430,282',
       '1236,505 1231,498 1212,501 1185,489 1170,489 1143,502 1129,515 1093,520 1076,511 1057,510 1029,526 1023,534 1005,538 1003,548 1008,553 1026,550 1051,559 1067,559 1082,553 1099,536 1139,530 1157,539 1177,541 1209,525 1215,517 1233,513',
@@ -51,7 +51,7 @@ export const PONTOS: PontoQuente[] = [
   },
   // o tipo "Escapamentos" do estoque junta o tubo, o silencioso e os defletores: o nome do ponto é o do tipo
   {
-    k: 'escapamento', nome: 'Escapamento', procuro: 'o escapamento (tubo e silencioso)', ancora: [1160, 180], tipo: 'Escapamento', sub: 'Escapamentos',
+    k: 'escapamento', nome: 'Escapamento', procuro: 'o escapamento (tubo e silencioso)', ancora: [1160, 180], tipo: 'Escapamento', sub: 'Escapamentos', eh: { cab: 'escapamento silencioso abafador tubo ponteira' },
     poligonos: ['1400,165 1319,147 1282,115 1167,135 1148,103 1127,112 1153,111 1155,134 1101,147 1084,179 949,174 931,140 911,149 935,149 937,171 891,185 846,225 800,229 733,201 649,195 639,222 654,250 669,235 734,232 767,247 783,277 804,268 783,269 782,257 860,251 918,206 1032,196 1148,229 1299,198 1322,174 1383,188'],
   },
   {

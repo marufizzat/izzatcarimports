@@ -622,6 +622,10 @@ def test_peca_na_familia_certa():
         (("Comando rebatimento banco traseiro", "Motor", "Comandos de Válvulas"), ("Peças de Interior", "Peças de Banco")),
         (("Motor rebatimento retrovisor", "Motor", "Motores"), ("Motor", "Motores")),
         (("Solenoide comando válvulas", "Motor", "Comandos de Válvulas"), ("Motor", "Comandos de Válvulas")),
+        # revisão 15 (P1-2): a caixa do ar-condicionado na categoria dos condensadores do ML não é condensador
+        (("Caixa ar condicionado", "Climatização", "Condensadores"), ("Climatização", "Evaporadores")),
+        (("Condensador ar condicionado", "Climatização", "Condensadores"), ("Climatização", "Condensadores")),
+        (("Radiador condensador ar", "Climatização", "Condensadores"), ("Climatização", "Condensadores")),
         # o que ja esta certo nao muda
         (("Alavanca freio de mão", "Peças de Interior", "Alavancas do Freio de Mão"),
          ("Peças de Interior", "Alavancas do Freio de Mão")),

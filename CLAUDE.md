@@ -278,8 +278,14 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    `lib/carroPagina.ts` + `components/AnosDoCarro.astro`. As **fichas de ano** ficam DENTRO da caixa do carro (na 1ª tela
    do celular de 360×640); o ano do carro salvo deste modelo já vem aceso e à vista antes da 1ª pintura (script inline,
    `rolarFila`); tocar num ano filtra a página e **salva o "Meu carro"** ("Salvo como seu carro · Desfazer"; se havia
-   outro carro, "Salvo no lugar do Onix 2015"; o Desfazer devolve o carro e o ano de antes); "Todos" não mexe no carro
-   salvo. No PC as fichas têm largura fixa (a quebra de linha não muda quando a letra chega: era o CLS 0,11 das páginas
+   outro carro, "Salvo no lugar do Onix 2015"); "Todos" não mexe no carro salvo. **O Desfazer** (revisão 15, P2-5) devolve
+   o carro e o ano de ANTES do 1º toque num ano nesta visita (não o do toque anterior: com o Onix salvo, tocar 2019 e
+   2020 deixava o XC60 salvo sem volta e o pedido da peça saía com "Meu carro: Volvo XC60"), continua à vista com o
+   "Todos" e depois de recarregar (`sessionStorage['izzatcar.carro.antes']`, só enquanto o carro salvo é o que a página
+   gravou: `origemGuardada`) e some quando o carro é trocado por fora. **A volta à página no meio da vista de um ano**
+   (recarregar, voltar sem bfcache, o app que recarrega; P2-4): a página guarda onde estava ao sair
+   (`izzatcar.carro.rolagem`) e, na volta, monta a vista do ano inteira numa tarefa e vai para lá (`rolagemGuardada`;
+   no WebKit a rolagem reposta sobre o HTML de todos os anos caía no rodapé). No PC as fichas têm largura fixa (a quebra de linha não muda quando a letra chega: era o CLS 0,11 das páginas
    pequenas, revisão 14) e, no carro sem arte, a coluna do disco da marca tem a largura dele desde o começo (a regra mora em
    `TopoArte.astro`: uma regra na página do carro perde para a do componente, por causa do atributo de escopo do Astro; com
    `auto` as fichas mudavam de linha quando o disco chegava no HTML, CLS 0,02 a 0,05 em toda carga lenta). As **peças** saem agrupadas pelos blocos (`agrupar`: mais peças primeiro, "Outros" no fim), com
@@ -298,14 +304,28 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **"Bati o carro"** (o seletor de dois modos acima da arte; `v2/raioXBatida.ts` + `.css`): a arte troca as 9 zonas
      pelos **8 pontos da batida** (`lib/batida.ts`: `PONTOS`, medidos na arte; o lado de lá fica na borda visível, com a
      etiqueta dizendo o lado) e o painel vira a **lista do conserto**: as linhas na ordem da oficina, com a peça mais
-     barata de cada uma (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
+     barata de cada uma **que É a peça do título da linha** (revisão 15, P1-2: o tipo do estoque junta a peça e os
+     acessórios dela, e "a mais barata" punha o suporte na linha da maçaneta, o forro do porta-malas na do forro da
+     porta e a polaina na do para-choque, já marcados e somados: 98 de 708 linhas nos carros com 20+ peças. Cada linha
+     diz qual nome é a peça dela, `eh` = a 1ª palavra do nome, como o "tipo" da busca; `itensDaLinha` ordena primeiro as
+     que são a peça, depois as outras do tipo, a mais barata na frente em cada grupo; a linha principal que só tem peça
+     LIGADA vira o título no pátio + a ligada em "Também costuma ir junto" com "(peça ligada)" no nome, sem marcar:
+     `linhasDoPainel`, `marcadasDeInicio`; o teste confere em TODO carro e ponto, nos dois estoques. Linha nova = dizer
+     o `eh` dela) (capa, nome, preço do site riscado e o do WhatsApp por `precoWhats`), caixa de marcar de verdade,
      "Outra opção" (passa pelas outras peças da mesma linha; nunca a palavra "trocar") e o total ao vivo (`somaPrecos`, em centavos). Regras do kit:
      peça que vem em par é pedida com o LADO do ponto; a que não tem lado entra sem ele e a guarda do ponto tira só a que
      DIZ o lado/posição oposta (o estoque quase nunca escreve "dianteiro" em grade, alma e guia); linha **principal** sem
      peça fica como "a gente procura no pátio" (ficha de marcar: vai no pedido como item para procurar); linha **extra**
      (dobradiça, emblema, defletor…) só aparece com peça, no grupo "Também costuma ir junto", e nunca vem marcada (o total
      não infla sozinho). **Com carro** (o salvo na home; na página do carro, o da página, no ano do salvo se for o mesmo):
-     a conta sai do `/dados/carro/<k>.json` e as principais já vêm marcadas. **Sem carro**: o estoque inteiro pelo
+     a conta sai do `/dados/carro/<k>.json` e as principais já vêm marcadas: a com peça entra no total; **a sem peça
+     vai marcada como "a gente procura no pátio"** (11/11: nos 40 carros com mais peças, 35% dos pontos não têm nenhuma
+     linha principal com peça e 31% têm uma só, e o que falta é o para-choque, o farol, o capô, a porta; o painel
+     terminava em "nenhuma peça deste conserto" com o botão apagado). Sem peça com preço marcada não há total em
+     dinheiro e o botão vira "Pedir para procurar no pátio" (`data-botao="raiox-patio"`, a mesma `mensagemConserto`,
+     só com a lista de pátio e o carro; `peDoConserto`); com 0 ou 1 linha com peça a lista de pátio abre o painel
+     (`poucoAnunciado`), com a frase "Nem toda peça está anunciada. Marque o que você precisa e a gente procura no
+     pátio." (`FRASE_PATIO`; nunca prometer que tem). **Sem carro**: o estoque inteiro pelo
      `/dados/batida.json` (curto: cada peça uma vez), NADA marcado (são peças de carros diferentes), 6 linhas à vista e o
      convite "Dizer o meu carro". Pé preso ao pé da tela: "Pedir o conserto no WhatsApp" (`mensagemConserto`,
      `data-botao="raiox-conserto"` → `contato_whatsapp`; a ordem da mensagem é a da tela) e "Guardar na lista"
@@ -317,7 +337,11 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      acesa, "Fica na frente do carro" (`Zona.fica`) e o link "Ver as outras peças da frente do XC60" →
      `/carros/<k>.html#raio-x=<zona>` (carro sem Raio-x na página: `/#raio-x=<zona>`). A zona é a do painel
      (`zonasDaPeca` em `lib/raioX.ts`, a mesma regra da busca; `zonaDaPecaId` em `lib/raioXDados.ts`); peça sem zona ou
-     em duas zonas (pos `A`) não mostra o bloco. HTML parado; estilo no arquivo com cache.
+     em duas zonas (pos `A`) não mostra o bloco. A legenda AFIRMA o lugar, o painel só junta o que a pessoa procura ali:
+     por isso `zonaOndeFica` é mais exigente (revisão 15, P2-1) e tira o tipo sem lugar certo (`SEM_LUGAR`: chave de
+     roda e macaco, suporte do estepe, sensor do freio, portinhola do tanque, módulo do câmbio, triângulo, sirene), a
+     posição oposta (o braço TRASEIRO do limpador não fica "na frente") e o nome que diz outro lugar (`OUTRO_LUGAR`: a
+     luz da PORTA não fica "no teto", o forro do PORTA-MALAS não fica "na lateral"). Tipo novo: conferir as duas listas. HTML parado; estilo no arquivo com cache.
    - **As vistas "por dentro"** (rodada 16: todas as zonas; a Frente foi o piloto da 15): o botão "Ver o motor por
      dentro" do painel de cada zona troca a arte do carro pela vista explodida daquela parte no MESMO palco, com View
      Transition onde existe (o zoom sai do ponto da zona). `lib/raioXVistas.ts` (`VISTAS`, pela chave da zona: a arte,
@@ -328,7 +352,11 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      (`pontosLateral(lado)`: o lado vai nos links; o desenho é o do lado esquerdo, e a nota do painel diz).
      Cada peça é um link com a FORMA dela (`PontoQuente`, `lib/porDentro/base.ts`: contornos tirados da arte), com o
      nome e quantas há; o número é o do catálogo com os filtros do link (`contarPontos`; sem carro:
-     `/dados/raio-x-dentro.json`, um arquivo para todas as vistas). Sem peça, ou tipo que o estoque não tem (capô,
+     `/dados/raio-x-dentro.json`, um arquivo para todas as vistas). O ponto cujo tipo junta a peça e os acessórios
+     dela leva a regra do nome (`eh`, a mesma da lista do conserto: `nomeEh` em `lib/raioX.ts`) e/ou a guarda de
+     posição (`fora`): sem NENHUMA peça que seja a do desenho no link, conta 0 e vira pedido de pátio (revisão 15,
+     P2-2: o "Escapamento" abria um atuador e dois defletores; os "Airbags" do XC60, sensores; a "Alma" da frente do
+     E-Pace, a traseira). Com a peça, o número segue o do link (o catálogo não sabe tirar "a que diz traseiro"). Sem peça, ou tipo que o estoque não tem (capô,
      tampa traseira, vidro e quadro do teto solar, forro do teto, longarinas, bancos, disco de freio, protetor de
      cárter): cinza e o link é o WhatsApp "a gente procura no pátio" (`linkProcuraPeca` em `lib/aviso.ts`,
      `data-botao="raio-x"`). Zona sem peça do carro também mostra o botão (a vista vira a lista de pedidos de pátio).
@@ -366,7 +394,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      `--ab-horizonte`) e as peças viram até 5 atalhos DELE, do bloco com mais peças para o de menos, com o número do
      catálogo (`contarBlocos` sobre `/dados/carro/<k>.json`, o mesmo arquivo do "Chegou para o seu carro";
      `linkAtalho` = `/catalogo.html?tipo=&marca=&modelo=&ano=`). Bloco sem peça não vira atalho; ano salvo sem peça =
-     os atalhos do modelo em todos os anos. A peça é ilustrativa do BLOCO (nunca dizer que é a peça do carro).
+     os atalhos do modelo em todos os anos. De 1024 a 1365 px (iPad deitado, notebook pequeno) os atalhos ficam nas
+     duas fileiras do celular: no arco, o palco de ~520 px punha um rótulo sobre o número do outro (revisão 15, P2-7). A peça é ilustrativa do BLOCO (nunca dizer que é a peça do carro).
    - **Peça nova no palco**: gerar sozinha em fundo liso `#DAD6D1` (super prompt no SUPER-PLANEJAMENTO), rodar
      `python ferramentas/camada_abertura.py <png> <nome> --larguras 320,480` (recorte do Vision, borda firme, sem auréola;
      conferir a 200% sobre claro e escuro), pôr em `PECAS_PALCO` com o nome EXATO do bloco (o teste confere) e commitar o
@@ -398,6 +427,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      evento `meu-carro` (etapa `pronto` no `olharSeletor`: apelido migrado na leitura, outra aba). Antes de mexer:
      `node scripts/abertura-arte.cjs <url>` (confere `naturalWidth` da arte em todos os caminhos: nascer salvo com e sem a
      chave, sem arte, escolher, trocar, esquecer, voltar pelo histórico, apelido) e `node scripts/abertura-fluxo.cjs <url>`.
+   - **Voltar (bfcache) com o carro trocado noutra página** (revisão 15, P2-6): `lib/meuCarro.ts` dispara o evento
+     `meu-carro` (também com `null`) no `pageshow` persistido quando o carro salvo não é o que a página conhece; a
+     abertura, o seletor, o cabeçalho e as categorias acompanham juntos (antes a home voltava com dois carros).
    - **Não quebrar**: o seletor (`ui/meuCarroPicker.ts`) não foi tocado — a abertura só OUVE (`meu-carro`,
      MutationObserver no `[data-mc-conteudo]`, as classes `.mc-corpo[data-etapa]` e `.mc-campo-cheio[data-alvo="marca"]`);
      quem mexer nessas classes confere o título. O slot `topo` ("Continuar") e o slot `busca` continuam iguais.

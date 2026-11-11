@@ -472,6 +472,13 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
     .abv2 .ab-selo-t { display: flex; align-items: baseline; gap: 7px; }
     .abv2 .ab-espia { width: 98px; right: -36px; }
   }
+  /* PC estreito (1024 a 1365 px: iPad deitado, notebook pequeno): o palco tem de 520 a 690 px e o arco de 5 atalhos
+     punha um rótulo em cima do outro, cobrindo o número ("Acabamentos 6▌": 65 dos 172 modelos a 1024, revisão 15,
+     P2-7). Aqui valem as duas fileiras desencontradas do celular (os mesmos lugares: lugaresEstreitos). */
+  @media (min-width: 1024px) and (max-width: 1365px) {
+    .abv2 .ab-p[data-slot] { --x: var(--mx); --y: var(--my); }
+    .abv2 .ab-rot { font-size: 12.5px; padding: 6px 10px; }
+  }
   /* PC baixo (1366×768, 1280×800, 1024×768): menos ar para o cartão inteiro (com ou sem carro salvo) caber na 1ª tela */
   @media (min-width: 1024px) and (max-height: 820px) {
     .abv2 .abv2-conteudo { padding-top: clamp(16px, 3vh, 40px); gap: 12px; }

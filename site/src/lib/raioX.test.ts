@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, zonasDaPeca, linkLinha, linkZona, linkDoFiltro, falaDaZona, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
+import { ZONAS, ARTE, NA_GALERIA, contarZonas, pecasDaZona, zonasDaPeca, zonaOndeFica, nomeEh, linkLinha, linkZona, linkDoFiltro, falaDaZona, filtrosLinha, codigoDaFoto, fotoDoCodigo, lerRaioX } from './raioX';
 import { Busca, type Indice } from './busca';
-import { indiceFixo, carroMaisCheio, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
+import { indiceFixo, estoques, carroMaisCheio, BLOCOS_DA_LOJA, TIPOS_DA_LOJA } from '../../testes/estoques';
 
 const buscaArq = 'public/dados/busca.json';
 
@@ -248,6 +248,86 @@ describe('a zona de cada peça (o "Onde fica" da página da peça)', () => {
     expect(k({ c: 'Motor', s: 'Coxins do Motor' })).toEqual(['motor']);
     expect(k({ c: 'Outros', s: 'Outros' })).toEqual([]);
     for (const z of ZONAS) expect(z.fica.length).toBeGreaterThan(5);
+  });
+});
+
+// Revisão 15, P2-1: a legenda "Fica na frente do carro" AFIRMA onde a peça está; o painel só junta o que a pessoa
+// procura ali. A legenda é mais exigente: tipo sem lugar certo, posição oposta ou nome de outro lugar = sem o bloco.
+describe('o "Onde fica" afirma o lugar: mais exigente que o painel', () => {
+  const k = (p: Parameters<typeof zonaOndeFica>[0]) => zonaOndeFica(p)?.k ?? null;
+  // [bloco, tipo, nome, lado, posição] -> a zona (null = sem o bloco); nomes escritos aqui, nenhum depende do estoque
+  const casos: [string, string, string, string, string, string | null][] = [
+    ['Rodas', 'Macacos e Chaves de Roda', 'Chave roda', '', '', null],
+    ['Rodas', 'Macacos e Chaves de Roda', 'Kit macaco chave roda triângulo', '', '', null],
+    ['Rodas', 'Suportes do Estepe', 'Suporte estepe', '', '', null],
+    ['Rodas', 'Rodas', 'Roda aro 17', '', '', 'rodas'],
+    ['Freios', 'Sensores do Freio', 'Sensor pedal freio', '', '', null],
+    ['Freios', 'Sensores ABS', 'Sensor ABS dianteiro', '', 'D', 'rodas'],
+    ['Freios', 'Mangueiras e Flexíveis do Freio', 'Mangueira do hidrovácuo', '', '', null],
+    ['Freios', 'Mangueiras e Flexíveis do Freio', 'Flexível freio traseiro', '', 'T', 'rodas'],
+    ['Limpador e Lavador', 'Braços do Limpador', 'Braço traseiro do limpador', '', 'T', null],
+    ['Limpador e Lavador', 'Braços do Limpador', 'Braço limpador para-brisa', '', '', 'frente'],
+    ['Módulos e Elétrica', 'Sensores de Estacionamento', 'Sensor estacionamento dianteiro', '', 'D', null],
+    ['Módulos e Elétrica', 'Sensores de Estacionamento', 'Sensor estacionamento traseiro', '', 'T', 'traseira'],
+    ['Para-choques e Lataria', 'Suportes da Placa', 'Suporte placa dianteiro', '', 'D', null],
+    ['Acabamentos e Forros', 'Luzes Internas', 'Luz cortesia porta dianteira', '', 'D', null],
+    ['Acabamentos e Forros', 'Luzes Internas', 'Luz teto cortesia', '', '', 'teto'],
+    ['Acabamentos e Forros', 'Luzes Internas', 'Luz cortesia teto porta óculos', '', '', 'teto'],
+    ['Acabamentos e Forros', 'Alças e Puxadores', 'Puxador interno porta-malas', '', '', null],
+    ['Acabamentos e Forros', 'Alças e Puxadores', 'Alça teto dianteiro', '', 'D', 'teto'],
+    ['Injeção e Combustível', 'Portinholas e Tampas do Tanque', 'Portinhola tanque combustível', '', '', null],
+    ['Injeção e Combustível', 'Tanques de Combustível', 'Tanque combustível', '', '', 'embaixo'],
+    ['Injeção e Combustível', 'Bombas de Combustível', 'Relé bomba combustível', '', '', null],
+    ['Acabamentos e Forros', 'Forros', 'Forro esquerdo porta-malas', 'E', '', null],
+    ['Acabamentos e Forros', 'Forros', 'Forro porta dianteira esquerda', 'E', 'D', 'lateral-esquerda'],
+    ['Airbag e Segurança', 'Triângulos de Segurança', 'Triângulo segurança', '', '', null],
+    ['Câmbio e Transmissão', 'Módulos do Câmbio e da Tração', 'Módulo câmbio automático', '', '', null],
+    ['Câmbio e Transmissão', 'Coxins do Câmbio', 'Coxim câmbio', '', '', 'embaixo'],
+    ['Para-choques e Lataria', 'Vigas de Reforço', 'Barra reforco frontal superior', '', 'D', null],
+    ['Módulos e Elétrica', 'Caixas de Fusíveis', 'Caixa fusíveis motor', '', '', null],
+    ['Módulos e Elétrica', 'Caixas de Fusíveis', 'Caixa fusíveis', '', '', 'interior'],
+    ['Faróis e Lanternas', 'Faróis', 'Farol esquerdo', 'E', '', 'frente'],
+    ['Retrovisores', 'Retrovisores Externos', 'Retrovisor elétrico direito', 'D', '', 'lateral-direita'],
+  ];
+  it.each(casos)('%s > %s: "%s" (%s%s) fica em %s', (c, s, n, l, pos, esperado) => {
+    expect(k({ c, s, n, l: l as 'E' | 'D' | '', pos: pos as 'D' | 'T' | '' })).toBe(esperado);
+  });
+
+  const SEM_LUGAR = ['Macacos e Chaves de Roda', 'Suportes do Estepe', 'Sensores do Freio', 'Portinholas e Tampas do Tanque', 'Módulos do Câmbio e da Tração', 'Triângulos de Segurança', 'Alarmes e Sirenes'];
+  it('os tipos sem lugar certo são nomes que a loja sabe escrever', () => {
+    for (const t of SEM_LUGAR) expect(TIPOS_DA_LOJA.has(t), t).toBe(true);
+  });
+  it.each(estoques())('no $nome: a zona afirmada é sempre UMA zona do painel; a frente nunca diz traseira, a traseira nunca dianteira, a lateral é a do lado da peça', ({ ix }) => {
+    const b = new Busca(ix);
+    const erros: string[] = [];
+    let com = 0;
+    for (const it of b.itens) {
+      const z = zonaOndeFica({ c: it.c, s: it.s, l: it.l, pos: it.pos, n: it.n });
+      if (!z) continue;
+      com++;
+      const doPainel = zonasDaPeca({ c: it.c, s: it.s, l: it.l, pos: it.pos }).map((q) => q.k);
+      if (doPainel.length !== 1 || doPainel[0] !== z.k) erros.push(`${it.id} ${it.n}: ${z.k} fora do painel (${doPainel.join('+')})`);
+      if (z.k === 'frente' && it.pos === 'T') erros.push(`${it.id} ${it.n}: traseira na frente`);
+      if (z.k === 'traseira' && it.pos === 'D') erros.push(`${it.id} ${it.n}: dianteira na traseira`);
+      if (z.k === 'lateral-esquerda' && it.l !== 'E') erros.push(`${it.id} ${it.n}: lateral esquerda sem ser esquerda`);
+      if (z.k === 'lateral-direita' && it.l !== 'D') erros.push(`${it.id} ${it.n}: lateral direita sem ser direita`);
+      // tipo sem lugar certo (a chave de roda, o macaco, o sensor do freio, a portinhola, o módulo do câmbio…): sem legenda
+      if (SEM_LUGAR.includes(it.s) || /^(chave (de )?roda|macaco|kit macaco|portinhola)\b/i.test(it.n)) erros.push(`${it.id} ${it.n}: ${z.k}`);
+      if (z.k === 'teto' && /\bporta\b/i.test(it.n) && !/\bteto\b/i.test(it.n)) erros.push(`${it.id} ${it.n}: luz/peça de porta no teto`);
+    }
+    expect(erros.slice(0, 12)).toEqual([]);
+    // a legenda nunca afirma mais que o painel
+    expect(com).toBeLessThanOrEqual(b.itens.length);
+  });
+
+  it('a regra do nome (nomeEh): a 1ª palavra é a da peça; "Kit"/"Par" na frente não contam; a composta vale inteira', () => {
+    expect(nomeEh({ cab: 'macaneta' }, 'Maçaneta externa dianteira esquerda')).toBe(true);
+    expect(nomeEh({ cab: 'macaneta' }, 'Suporte maçaneta traseira')).toBe(false);
+    expect(nomeEh({ cab: 'radiador' }, 'Kit radiador completo')).toBe(true);
+    expect(nomeEh({ cab: 'forro', tem: 'porta' }, 'Forro porta-malas')).toBe(false);
+    expect(nomeEh({ cab: 'para-choque' }, 'Parachoque traseiro')).toBe(true);
+    expect(nomeEh({ cab: 'farol' }, 'Faróis dianteiros')).toBe(true);
+    expect(nomeEh(undefined, 'Farol')).toBe(false);
   });
 });
 
