@@ -43,21 +43,25 @@ const msgDesconto = 'Quero comprar pelo WhatsApp com os 10% de desconto.';
 // Antes da 1ª pintura: (1) as peças que não são a heroína esperam a entrada (com hora para desistir: sem o script
 // principal elas aparecem sozinhas); (2) quem tem carro salvo E com peça (o SeletorCarro marcou data-salvo) já nasce
 // com o título dele e a arte do carro no palco.
-const antes = `(function(){try{var s=document.currentScript.parentNode,d=document.documentElement,p=s.querySelector('[data-ab-palco]'),pc=matchMedia('(min-width: 1024px)').matches;`
+const antes = `(function(){try{var s=document.currentScript.parentNode,d=document.documentElement,p=s.querySelector('[data-ab-palco]'),pc=matchMedia('(min-width: 1024px)').matches,`
+  + `r=s.querySelector('[data-mc-raiz]'),salvo=!!r&&r.hasAttribute('data-salvo'),luz=s.querySelectorAll('.ab-drl'),h=s.querySelector('.ab-heroi'),`
+  + `vivo=!matchMedia('(prefers-reduced-motion: reduce)').matches&&!d.classList.contains('leve');`
   // as imagens das peças ficam para depois: tirar() guarda o srcset (aberturaPalco.ts devolve quando a peça vai aparecer)
   + `function tirar(q){[].forEach.call(s.querySelectorAll(q),function(i){i.setAttribute('data-srcset',i.getAttribute('srcset'));i.setAttribute('data-src',i.getAttribute('src'));i.removeAttribute('srcset');i.removeAttribute('src')})}`
-  + `var luz=s.querySelectorAll('.ab-drl');if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!d.classList.contains('leve')){p.setAttribute('data-ab-entrada','');[].forEach.call(luz,function(x){x.classList.add('ab-apagado')})}`
+  // com movimento: as peças esperam a entrada (.ab-on) e o farol nasce apagado; a heroína do PC já nasce à vista (é o LCP)
+  + `if(vivo){p.setAttribute('data-ab-anima','');[].forEach.call(luz,function(x){x.classList.add('ab-apagado')})}`
   // celular e tablet: o palco está abaixo do cartão e dorme (sem montar e sem baixar nada) até chegar na tela
-  + `if(!pc){p.setAttribute('data-ab-dorme','');tirar('.ab-p img[srcset]')}else{var h=s.querySelector('.ab-heroi .ab-img');if(h)h.loading='eager'}`
+  + `if(!pc){p.setAttribute('data-ab-dorme','');tirar('.ab-p img[srcset]')}else if(!salvo&&h){h.classList.add('ab-on');h.querySelector('.ab-img').loading='eager'}`
   // sem o script principal em 5 s (rede ruim, erro): a cena aparece sozinha, parada
-  + `setTimeout(function(){if(s.hasAttribute('data-ab-montada'))return;p.removeAttribute('data-ab-entrada');[].forEach.call(luz,function(x){x.classList.remove('ab-apagado')});[].forEach.call(s.querySelectorAll('.ab-p[data-cena]'),function(x){x.classList.add('ab-on')});if(p.hasAttribute('data-ab-dorme')){p.removeAttribute('data-ab-dorme');[].forEach.call(s.querySelectorAll('.ab-p[data-cena] img[data-srcset]'),function(i){i.srcset=i.getAttribute('data-srcset');i.src=i.getAttribute('data-src')})}},5000);`
-  + `var r=s.querySelector('[data-mc-raiz]');if(!r||!r.hasAttribute('data-salvo'))return;`
+  + `setTimeout(function(){if(s.hasAttribute('data-ab-montada'))return;p.removeAttribute('data-ab-anima');[].forEach.call(luz,function(x){x.classList.remove('ab-apagado')});if(p.hasAttribute('data-ab-dorme')){p.removeAttribute('data-ab-dorme');[].forEach.call(s.querySelectorAll('.ab-p[data-cena] img[data-srcset]'),function(i){i.srcset=i.getAttribute('data-srcset');i.src=i.getAttribute('data-src')})}},5000);`
+  + `if(!salvo)return;`
+  // quem volta com carro salvo (e com peça): o título dele, o estado "carro" e a arte do carro já na 1ª pintura
   + `var c=JSON.parse(localStorage.getItem('izzatcar.meuCarro'));var v=(${palavraViva.toString()})(c.m,c.y,c.b);`
   + `s.querySelector('[data-ab-palavra]').textContent=v.t;s.querySelector('[data-ab-h1]').style.setProperty('--ab-l',v.l);p.setAttribute('data-ab','carro');`
   // com o carro, as peças da cena de abertura não aparecem: as imagens delas só descem se virarem atalho dele
   + `if(pc)tirar('.ab-p img[srcset]');`
-  + `var a=s.querySelector('[data-ab-auto]');if(typeof c.a==='string'&&/^[a-z0-9-]{1,80}$/.test(c.a)){var u='/arte/v2/carro-'+c.a+'.webp',w=Array.isArray(c.as)?c.as.filter(function(x){return x===(x|0)&&x>0&&x<=4000}):[];`
-  + `if(pc){a.loading='eager';a.setAttribute('fetchpriority','high')}`
+  + `var a=s.querySelector('[data-ab-auto]');if(pc&&typeof c.a==='string'&&/^[a-z0-9-]{1,80}$/.test(c.a)){var u='/arte/v2/carro-'+c.a+'.webp',w=Array.isArray(c.as)?c.as.filter(function(x){return x===(x|0)&&x>0&&x<=4000}):[];`
+  + `a.loading='eager';a.setAttribute('fetchpriority','high');`
   + `if(w.length)a.setAttribute('srcset',w.map(function(x,i){return(i===w.length-1?u:u.replace(/\\.webp$/,'-'+x+'.webp'))+' '+x+'w'}).join(', '));a.setAttribute('src',u);a.setAttribute('data-on','')}`
   + `}catch(e){}})()`;
 ---
@@ -125,15 +129,15 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
         {pecas.map((p) => (
           <li class:list={['ab-p', { 'ab-heroi': p.i === 0 }]} data-k={p.k} data-cena={p.cena ? '' : undefined}
               style={`--w:${p.w};--ar:${p.ar.toFixed(3)};--sc:${p.sc.toFixed(3)};--i:${p.i};` + (p.cena ? `--cx:${p.cena.x};--cy:${p.cena.y};--d:${p.cena.d}` : '--d:16')}>
-            <a href={p.href} data-base={p.href} data-rotulo={p.rotulo} aria-label={p.rotulo}>
+            <a href={p.href} aria-label={p.rotulo}>
               <span class="ab-f">
                 {p.cena
-                  ? <img class="ab-img" src={p.src} srcset={p.srcset} sizes={p.sizes} alt="" width="1000" height={p.alt} loading="lazy" decoding="async" />
+                  ? <img class="ab-img" src={p.src} srcset={p.srcset} sizes={p.sizes} alt="" width="1000" height={p.alt} loading="lazy" decoding="async" onload={p.i === 0 ? "this.parentNode.classList.add('ab-veio')" : undefined} />
                   : <img class="ab-img" data-src={p.src} data-srcset={p.srcset} sizes={p.sizes} alt="" width="1000" height={p.alt} decoding="async" />}
                 {p.i === 0 && <span class="ab-drl"><i></i></span>}
                 {p.i === 0 && <img class="ab-ref" src={p.src} srcset={p.srcset} sizes={p.sizes} alt="" width="1000" height={p.alt} loading="lazy" decoding="async" />}
               </span>
-              <span class="ab-rot"><span data-ab-nome data-rot={p.rot} data-curto={p.curto}>{p.rot}</span><b class="num" data-ab-n hidden></b></span>
+              <span class="ab-rot"><span data-ab-nome data-curto={p.curto}>{p.rot}</span><b class="num" data-ab-n hidden></b></span>
             </a>
           </li>
         ))}
@@ -182,9 +186,10 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
 
 <style is:global>
   /* ====== Abertura viva (tudo preso a .abv2) ====== */
-  /* fonte de espera do título: estreita como a Archivo condensada (a linha não quebra enquanto a fonte não chega) */
-  @font-face { font-family: "Ab Espera"; src: local("Arial Narrow"), local("Roboto Condensed"), local("HelveticaNeue-CondensedBold"), local("Roboto"), local("Arial"); font-weight: 100 900;
-    size-adjust: 80%; ascent-override: 109.75%; descent-override: 26.25%; line-gap-override: 0%; }
+  /* fonte de espera do título: um negrito do aparelho reduzido para a largura e a altura da Archivo condensada (enquanto
+     a fonte não chega, a linha não quebra e o "precisa?" quase não anda: medido, CLS da troca de fonte) */
+  @font-face { font-family: "Ab Espera"; src: local("Arial Bold"), local("Arial-BoldMT"), local("Roboto Bold"), local("Roboto-Bold"), local("Helvetica Neue Bold"), local("HelveticaNeue-Bold"), local("Arial");
+    font-weight: 100 900; size-adjust: 85%; ascent-override: 103.3%; descent-override: 24.7%; line-gap-override: 0%; }
 
   .abv2 { position: relative; background: #f1f0ed; min-height: clamp(600px, calc(100svh - 84px), 860px); display: grid; align-content: start;
     /* onde o palco começa no PC: a margem da moldura + a coluna do conteúdo + um respiro */
@@ -219,7 +224,9 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
   .abv2 .ab-anima [data-ab-palavra], .abv2 .ab-anima .ab-resto { display: inline-block; }
   .abv2 .ab-pincel { position: absolute; z-index: -1; left: -3%; bottom: -.03em; width: 106%; height: .2em; fill: var(--accent); transform-origin: 0 50%; overflow: visible; }
   .abv2 .ab-pincel.ab-traca { animation: ab-traca .5s cubic-bezier(.2, .8, .2, 1) both; }
+  .abv2 .ab-pincel.ab-traca2 { animation: ab-traca2 .5s cubic-bezier(.2, .8, .2, 1) both; }
   @keyframes ab-traca { from { transform: scaleX(0); } to { transform: none; } }
+  @keyframes ab-traca2 { from { transform: scaleX(0); } to { transform: none; } }
 
   /* ---- selos ---- */
   /* colunas de largura fixa: a fonte que chega depois não mexe em nenhum selo */
@@ -292,7 +299,7 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
   .abv2 .ab-pecas { list-style: none; margin: 0; padding: 0; }
   .abv2 .ab-p { position: absolute; left: 0; top: 0; width: calc(var(--w) * 1cqmin); aspect-ratio: var(--ar); --se: 1; --x: var(--cx, 50); --y: var(--cy, 40);
     transform: translate3d(calc(var(--x) * 1cqw - 50%), calc(var(--y) * 1cqh - 50%), 0) scale(var(--se));
-    transition: transform .8s cubic-bezier(.3, .9, .25, 1) var(--at, 0ms), opacity .4s ease var(--at, 0ms), visibility 0s linear var(--at, 0ms); }
+    transition: transform .8s cubic-bezier(.3, .9, .25, 1) var(--at, 0ms), opacity .4s ease var(--at, 0ms); }
   .abv2 .ab-p > a { position: absolute; inset: 0; display: block; color: #1d1d1f; border-radius: 18px; -webkit-tap-highlight-color: transparent;
     transform: translate3d(calc(var(--px) * var(--d) * -1px), calc(var(--py) * var(--d) * -.6px), 0); }
   .abv2 .ab-p > a:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 6px; }
@@ -302,11 +309,14 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
   .abv2 .ab-img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: contain;
     filter: drop-shadow(0 calc(var(--w) * .05cqmin) calc(var(--w) * .06cqmin) rgb(60 40 30 / .2));
     transition: transform .22s cubic-bezier(.2, .9, .25, 1.15); }
-  .abv2 .ab-p:not([data-cena]):not([data-slot]), .abv2 .ab-palco[data-ab="carro"] .ab-p:not([data-slot]) { opacity: 0; visibility: hidden; pointer-events: none; }
-  .abv2 .ab-p:not([data-cena]):not([data-slot]) .ab-f, .abv2 .ab-palco[data-ab="carro"] .ab-p:not([data-slot]) .ab-f { animation: none; }
-  /* a entrada: as peças (menos a heroína, que é a 1ª pintura) esperam a imagem e descem 14 px, uma a uma */
-  .abv2 .ab-palco[data-ab-entrada] .ab-p:not(.ab-heroi):not(.ab-on), .abv2 .ab-p[data-slot]:not(.ab-on) { opacity: 0; }
-  .abv2 .ab-palco[data-ab-entrada] .ab-p:not(.ab-heroi):not(.ab-on) .ab-f, .abv2 .ab-p[data-slot]:not(.ab-on) .ab-f { translate: 0 -14px; }
+  /* peça que o estado não usa: fora do layout (são 18; no máximo 5 ou 6 aparecem). Saindo (.ab-sai, posto pelo
+     script por 0,4 s): some suave antes de sair. */
+  .abv2 .ab-p:not([data-cena]):not([data-slot]):not(.ab-sai), .abv2 .ab-palco[data-ab="carro"] .ab-p:not([data-slot]):not(.ab-sai) { display: none; }
+  .abv2 .ab-p.ab-sai { opacity: 0; pointer-events: none; }
+  /* a entrada (só com movimento: data-ab-anima, posto antes da 1ª pintura): a peça espera a imagem e desce 14 px
+     (.ab-on, uma a uma). A heroína do PC já nasce com .ab-on (é a 1ª pintura). */
+  .abv2 .ab-palco[data-ab-anima] .ab-p:not(.ab-on) { opacity: 0; }
+  .abv2 .ab-palco[data-ab-anima] .ab-p:not(.ab-on) .ab-f { translate: 0 -14px; }
   .abv2 .ab-f { transition: translate .7s cubic-bezier(.2, .9, .25, 1.1) var(--at, 0ms); }
 
   /* o rótulo: sempre do mesmo tamanho (a peça encolhe em volta do carro, o texto não) */
@@ -324,23 +334,23 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
   }
   .abv2 .ab-p > a:active .ab-img { transform: scale(.97); }
 
-  /* a heroína no piso: sombra de contato e reflexo (a mesma imagem, virada) */
-  .abv2 .ab-heroi .ab-f::before { content: ""; position: absolute; left: 6%; right: 4%; bottom: -3%; height: 16%; border-radius: 50%;
+  /* a heroína no piso: sombra de contato (só com a imagem na tela: .ab-veio) e reflexo (a mesma imagem, virada) */
+  .abv2 .ab-heroi .ab-f::before { content: ""; position: absolute; left: 6%; right: 4%; bottom: -3%; height: 16%; border-radius: 50%; opacity: 0;
     background: radial-gradient(closest-side, rgb(40 26 18 / .42), rgb(40 26 18 / 0)); transition: opacity .3s ease; }
-  .abv2 .ab-heroi:not(.ab-on) .ab-f::before { opacity: 0; }
+  .abv2 .ab-heroi .ab-f.ab-veio::before { opacity: 1; }
   .abv2 .ab-heroi .ab-rot { top: calc(100% + 16px / var(--se)); }
   .abv2 .ab-ref { position: absolute; left: 0; top: 96%; width: 100%; height: 100%; max-width: none; transform: scaleY(-1); opacity: .2; pointer-events: none;
     -webkit-mask-image: linear-gradient(0deg, #000 0, transparent 42%); mask-image: linear-gradient(0deg, #000 0, transparent 42%); transition: opacity .3s ease; }
   .abv2 .ab-p { z-index: 2; }
   .abv2 .ab-heroi { z-index: 1; }
-  .abv2 .ab-palco[data-ab="carro"] .ab-heroi { z-index: 2; }
 
-  /* com o carro: as peças viram atalhos em arco em cima dele, todas do mesmo peso */
-  .abv2 .ab-palco[data-ab="carro"] .ab-p[data-slot] { --se: var(--sc); --u: calc(var(--slot) - (var(--n) - 1) / 2);
-    --x: calc(50 + var(--u) * 19); --y: calc(17 + var(--u) * var(--u) * 2.6); }
-  .abv2 .ab-palco[data-ab="carro"] .ab-heroi .ab-f::before, .abv2 .ab-palco[data-ab="carro"] .ab-ref { opacity: 0; }
-  .abv2 .ab-palco[data-ab="carro"] .ab-heroi .ab-rot { top: calc(100% + 7px / var(--se)); }
-  .abv2 .ab-palco[data-ab="carro"] .ab-img { filter: drop-shadow(0 calc(var(--w) * .06cqmin) calc(var(--w) * .07cqmin) rgb(60 40 30 / .26)); }
+  /* com o carro: as peças viram atalhos em arco em cima dele, todas do mesmo peso (vale enquanto a peça tem data-slot,
+     também enquanto ela sai) */
+  .abv2 .ab-p[data-slot] { --se: var(--sc); --u: calc(var(--slot) - (var(--n) - 1) / 2);
+    --x: calc(50 + var(--u) * 19); --y: calc(17 + var(--u) * var(--u) * 2.6); z-index: 2; }
+  .abv2 .ab-heroi[data-slot] .ab-f::before, .abv2 .ab-heroi[data-slot] .ab-ref { opacity: 0; }
+  .abv2 .ab-heroi[data-slot] .ab-rot { top: calc(100% + 7px / var(--se)); }
+  .abv2 .ab-p[data-slot] .ab-img { filter: drop-shadow(0 calc(var(--w) * .06cqmin) calc(var(--w) * .07cqmin) rgb(60 40 30 / .26)); }
 
   /* a legenda dos atalhos: "Para o seu Onix 2019" (só com o carro e os atalhos na tela) */
   .abv2 .ab-legenda { position: absolute; left: 0; right: 0; top: 3.4cqh; margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -360,11 +370,14 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
   .abv2 .ab-drl.ab-apagado i { opacity: 1; }
   .abv2 .ab-drl.ab-corre i { animation: ab-corre 1s cubic-bezier(.45, 0, .2, 1) both; }
   .abv2 .ab-drl.ab-pisca i { animation: ab-pisca .66s linear both; }
+  .abv2 .ab-drl.ab-pisca2 i { animation: ab-pisca2 .66s linear both; }
   @keyframes ab-corre { from { opacity: 1; transform: none; } to { opacity: 1; transform: translateX(100%); } }
+  /* dois nomes para a mesma animação: trocar de um para o outro recomeça sem forçar layout */
   @keyframes ab-pisca { 0%, 100% { opacity: 0; } 10%, 30% { opacity: 1; } 42%, 54% { opacity: 0; } 64%, 82% { opacity: 1; } }
+  @keyframes ab-pisca2 { 0%, 100% { opacity: 0; } 10%, 30% { opacity: 1; } 42%, 54% { opacity: 0; } 64%, 82% { opacity: 1; } }
 
   /* a vida: deriva lenta (só transform), só com o palco na tela e a aba à vista */
-  .abv2 .ab-p.ab-on:not(.ab-heroi) .ab-f, .abv2 .ab-palco[data-ab="carro"] .ab-heroi.ab-on .ab-f { animation: ab-deriva calc(7s + var(--i) * .9s) ease-in-out calc(var(--i) * -1.3s) infinite alternate paused; }
+  .abv2 .ab-p.ab-on:not(.ab-heroi) .ab-f, .abv2 .ab-heroi.ab-on[data-slot] .ab-f { animation: ab-deriva calc(7s + var(--i) * .9s) ease-in-out calc(var(--i) * -1.3s) infinite alternate paused; }
   .abv2 .ab-palco[data-ab-vivo] .ab-p .ab-f { animation-play-state: running; }
   @keyframes ab-deriva { from { transform: translate3d(0, -5px, 0) rotate(-1.1deg); } to { transform: translate3d(0, 6px, 0) rotate(1.1deg); } }
   /* rolagem: as camadas saem em velocidades diferentes (onde o navegador tem linha do tempo de rolagem) */
@@ -405,7 +418,7 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
     .abv2 .ab-palco[data-ab-dorme] .ab-cena { display: none; }
     .abv2 .ab-rot { font-size: 12.5px; padding: 6px 10px; }
     /* com o carro: duas fileiras desencontradas (os rótulos não se encostam) */
-    .abv2 .ab-palco[data-ab="carro"] .ab-p[data-slot] { --x: var(--mx); --y: var(--my); }
+    .abv2 .ab-p[data-slot] { --x: var(--mx); --y: var(--my); }
   }
   /* tablet: o cartão com largura de cartão (não de tela), o palco largo */
   @media (min-width: 768px) and (max-width: 1023px) {
@@ -422,8 +435,15 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
     .abv2 .abv2-painel { padding: 18px 20px 20px; }
     .abv2 .ab-palco { aspect-ratio: 16 / 11; max-height: none; margin-bottom: 34px; }
     .abv2 .ab-fundo { height: 70vw; }
-    .abv2 .ab-palco[data-ab="carro"] .ab-p[data-slot] { --x: calc(50 + var(--u) * 19); --y: calc(16 + var(--u) * var(--u) * 1.2); }
+    .abv2 .ab-p[data-slot] { --x: calc(50 + var(--u) * 19); --y: calc(16 + var(--u) * var(--u) * 1.2); }
     .abv2 .ab-auto { --ab-aw: 96cqw; }
+  }
+  /* celular: cada pixel de altura conta (o cartão inteiro, com "Ver todas as marcas", na 1ª tela de 360 × 640) */
+  @media (max-width: 767px) {
+    .abv2 .abv2-conteudo { padding-top: 8px; gap: 10px; }
+    .abv2 .ab-topo { min-height: 42px; margin-bottom: -8px; }
+    .abv2 .ab-espia { width: 124px; right: -38px; transform: translateY(-54%); }
+    .abv2 .ab-selo { min-height: 44px; padding-block: 5px; }
   }
   @media (max-width: 400px) {
     .abv2 .abv2-abas [role="tab"] { font-size: 14.5px; }
