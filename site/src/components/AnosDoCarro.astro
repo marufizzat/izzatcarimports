@@ -45,12 +45,16 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
 
 <style is:global>
   /* presas à raiz do componente; a ficha imita o ano do seletor "Seu carro" (.mc-ano) */
-  .anos-carro { display: grid; gap: 8px; min-width: 0; width: 100%; }
+  /* contain: a largura das fichas e do aviso não entra na conta da coluna do título (no celular a arte do carro encolhia) */
+  .anos-carro { display: grid; gap: 8px; min-width: 0; width: 100%; contain: inline-size; }
   /* o rótulo e, à direita dele, o aviso do que o toque fez ("Salvo como seu carro · Desfazer"): a linha já tem a altura
      do aviso (nada pula quando ele chega) */
   .anos-carro .ac-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; min-height: 24px; margin: 0; font-size: 13.5px; line-height: 1.3; }
   .anos-carro .ac-rot { flex: none; font-weight: 680; color: var(--ink-2); }
-  .anos-carro .ac-salvo { display: inline-flex; align-items: center; gap: 0; min-width: 0; font-weight: 600; color: var(--serve-ink); white-space: nowrap; }
+  .anos-carro .ac-salvo { min-width: 0; font-weight: 600; color: var(--serve-ink); }
+  .anos-carro .ac-salvo > span { white-space: nowrap; }
+  /* celular: o aviso ocupa o lugar do rótulo (que segue lá para o leitor de tela): a linha não quebra, nada pula */
+  @media (max-width: 599px) { .anos-carro .ac-cab:has(.ac-salvo:not(:empty)) .ac-rot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
   .anos-carro .ac-salvo:empty { display: none; }
   .anos-carro .ac-salvo > span::before { content: ""; display: inline-block; width: 13px; height: 13px; margin-right: 5px; vertical-align: -2px; border-radius: 50%;
     background: #1f9d55 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.6 8.4 7 10.6l4.4-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; }

@@ -209,7 +209,8 @@ export function iniciarPaginaCarro() {
     window.addEventListener('resize', pedirAcompanhar, { passive: true });
     fila.addEventListener('click', (e) => {
       const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a.gp-ficha');
-      const alvo = a ? document.getElementById(a.hash.slice(1)) : null;
+      // o grupo da vista que está na tela (a de todos os anos e a do ano têm grupos com a mesma âncora)
+      const alvo = a ? vista()?.querySelector<HTMLElement>(`#${CSS.escape(a.hash.slice(1))}`) ?? null : null;
       if (!a || !alvo) return;
       e.preventDefault();
       const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
