@@ -16,14 +16,11 @@ Como (rota 2, padrão — a peça e a sombra do ChatGPT intactas, só reenquadra
   4. peça + sombra são reenquadradas pela MESMA regra da v2 (capas_estudio.enquadrar) sobre o MESMO
      fundo de estúdio das capas automáticas;
   5. logo (mesma opção da v2: a | b | c | 0).
-  Os pixels da peça são os do ChatGPT (só mudam de escala); nada é redesenhado. Única exceção: o TOM AZUL da luz do
-  vendedor na peça preta (o ChatGPT guarda a cor da foto) passa pela mesma correção das automáticas
-  (capas_estudio.aplicar_cor, decisão em camadas; ajuste `cor` de capas_ajustes.json manda), só nos pixels da peça;
-  o que foi feito vai em <saída>/_cor.json. --sem-cor desliga (comparação).
+  Os pixels da peça são os do ChatGPT (só mudam de escala); nada é redesenhado.
 Rota 1 (--rota 1, para comparar): move/escala o quadro inteiro do ChatGPT e estende o fundo dele.
 
 Uso (Mac; precisa de ~/.local/bin/recorta-fundo):
-  python ferramentas/marca_pro.py [--saida PASTA] [--logo a|b|c|0] [--limpa] [--rota 1|2] [--sem-cor] [MLB ...]
+  python ferramentas/marca_pro.py [--saida PASTA] [--logo a|b|c|0] [--limpa] [--rota 1|2] [MLB ...]
   --limpa  grava também a versão SEM logo (pasta <saida>/limpa) para o Google Shopping.
 """
 
@@ -147,9 +144,8 @@ def zona_sombra(alfa, z=ZONA):
     return perto * _suave(borda / (z["RAMPA"] * W))
 
 
-def capa_v2(mlb, logo="a", rota=2, cor=None):
-    """Devolve (capa_com_logo, capa_sem_logo, info). cor = decisor do tom azul (capas_estudio.decisor_cor), só na rota 2;
-    None = sem correção (como antes)."""
+def capa_v2(mlb, logo="a", rota=2):
+    """Devolve (capa_com_logo, capa_sem_logo, info)."""
     import numpy as np
     from PIL import Image, ImageFilter
     from scipy import ndimage
@@ -206,17 +202,6 @@ def capa_v2(mlb, logo="a", rota=2, cor=None):
         fundo = np.asarray(ce._fundo_v2(L), float) * (np.asarray(mapa, float) / 255)[..., None]
         tela = Image.fromarray(np.clip(fundo, 0, 255).astype("uint8")).convert("RGBA")
         peca = rec.crop(caixa).resize((nw, nh), Image.LANCZOS)
-        if cor is not None:              # tom azul da luz: só os pixels da peça mudam (fundo, sombra, selo iguais)
-            g_foto, g_alfa = im, rec.split()[3]
-            orig = TRAB / "orig" / f"{mlb}.jpg"   # a guarda (azul nos claros) vale na FOTO do vendedor, não na
-            med = ce.medir_azul(peca)             # maquiada (o ChatGPT realça a cor); só se a peça está azulada
-            if (med["br"] or 0) >= ce.COR["LIMIAR"] and orig.exists():
-                g_foto = Image.open(orig).convert("RGB")
-                g_foto.thumbnail((1200, 1200))
-                g_alfa = ce.recortar_vision(g_foto).split()[3]
-            peca, rc = ce.aplicar_cor(peca, cor, g_foto, g_alfa)
-            if rc:
-                info["cor"] = rc
         tela.alpha_composite(peca, (x, y))
         limpa = tela.convert("RGB")
     return ce.com_logo(limpa, logo), limpa, info
@@ -229,7 +214,6 @@ def main():
     ap.add_argument("--logo", default=ce.LOGO_OPCAO, choices=["a", "b", "c", "0"])
     ap.add_argument("--rota", type=int, default=2, choices=[1, 2])
     ap.add_argument("--limpa", action="store_true", help="grava também a versão sem logo (Google Shopping)")
-    ap.add_argument("--sem-cor", action="store_true", help="sem a correção do tom azul da luz (comparação)")
     args = ap.parse_args()
     saida = Path(args.saida).expanduser().resolve()
     if saida == PRO.resolve():
@@ -239,38 +223,17 @@ def main():
     pasta.mkdir(parents=True, exist_ok=True)
     if args.limpa:
         (saida / "limpa").mkdir(parents=True, exist_ok=True)
-    import json
-    pecas, fila, ajustes = {}, {}, ce.carregar_ajustes()
-    if not args.sem_cor:
-        pecas = {x["id"]: x for x in json.loads((ROOT / "site/src/data/pecas.json").read_text(encoding="utf-8"))}
-        arq_fila = ROOT / "capas_pro.json"
-        fila = json.loads(arq_fila.read_text(encoding="utf-8")) if arq_fila.exists() else {}
-    cores = {}
     for i in ids:
-        cor = None
-        if not args.sem_cor:
-            dec = ce.decisor_cor(pecas.get(i), (ajustes.get(i) or {}).get("cor"))
-            fonte_ml = (fila.get(i) or {}).get("foto")      # a foto do ML que o ChatGPT maquiou (fica fora da prova)
-            cor = lambda m, g, dec=dec, k=fonte_ml: dec(m, g, k)   # noqa: E731
         try:
-            com, sem, info = capa_v2(i, args.logo, args.rota, cor)
+            com, sem, info = capa_v2(i, args.logo, args.rota)
         except Exception as e:  # noqa: BLE001
             print(f"  {i}  FALHOU: {e}")
             continue
-        if info.get("cor"):
-            cores[i] = info["cor"]
-            print(f"  {i}  cor: {info['cor']['modo']} ({info['cor']['motivo']})"
-                  + ("  — COR A CONFERIR" if info["cor"].get("conferir") else ""))
         com.save(pasta / f"{i}.webp", quality=ce.QUALIDADE_V2, method=6)
         if args.limpa:
             sem.save(saida / "limpa" / f"{i}.webp", quality=ce.QUALIDADE_V2, method=6)
         print(f"  {i}  fonte {info['fonte']}  escala {info['escala']}  -> {pasta / (i + '.webp')}")
-    if cores:
-        arq = saida / "_cor.json"
-        antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
-        antigo.update(cores)
-        arq.write_text(json.dumps(antigo, ensure_ascii=False, indent=0, sort_keys=True), encoding="utf-8")
-    print(f"pronto: {len(ids)} capas em {pasta}" + (f" | tom azul: {len(cores)} -> {saida / '_cor.json'}" if cores else ""))
+    print(f"pronto: {len(ids)} capas em {pasta}")
 
 
 if __name__ == "__main__":

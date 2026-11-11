@@ -134,7 +134,7 @@ function htmlCampos(e: Estado): string {
  *  e troca pelo carro salvo antes de pintar: o aviso já nasce no lugar (a grade de marcas não desce depois). */
 export const AVISO_CARRO = '__CARRO__';
 export function htmlAvisoSemPeca(carro: string): string {
-  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolha outro carro ou <a data-botao="meu-carro-sem-peca" href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">chame no WhatsApp</a>.</p>`;
+  return `<p class="mc-aviso-linha" data-mc-aviso>Sem peças do <b>${esc(carro)}</b> no site agora. Escolha outro carro ou <a href="${whats(`Procuro peça para ${carro}. Tem no pátio?`)}">peça no WhatsApp</a>.</p>`;
 }
 
 function htmlMarcas(g: Garagem, e: Estado): string {
@@ -155,7 +155,7 @@ function htmlModelos(e: Estado): string {
   const m = e.marca!;
   const todas = `/catalogo.html?${new URLSearchParams({ marca: m.n }).toString()}`;
   // links curtos (a marca já está no campo): os dois cabem numa linha, e a grade de modelos tem a altura da de marcas
-  const procura = `<a class="mc-link" data-botao="meu-carro-procura" href="${whats(`Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}" aria-label="Não achou? A gente procura o modelo no pátio, pelo WhatsApp">Não achou? A gente procura</a>`;
+  const procura = `<a class="mc-link" href="${whats(`Procuro peça para ${m.n} ____ (modelo e ano). Tem no pátio?`)}" aria-label="Não achou? A gente procura o modelo no pátio, pelo WhatsApp">Não achou? A gente procura</a>`;
   if (!m.modelos.length)
     // marca sem modelo lido nos anúncios (ex.: Mini): vai direto para as peças dela
     return `
@@ -182,7 +182,7 @@ function htmlModelos(e: Estado): string {
 function htmlConta(e: Estado): string {
   const mo = e.modelo!;
   const n = contagem(mo, e.ano);
-  return `<b class="num">${fmt(n)}</b> ${n === 1 ? 'peça' : 'peças'} ${e.ano == null ? 'no pátio' : `de ${e.ano}`}`;
+  return `<b class="num">${fmt(n)}</b> ${n === 1 ? 'peça' : 'peças'} ${e.ano == null ? 'no pátio' : `para o ${e.ano}`}`;
 }
 const textoVer = (n: number) => (n === 1 ? 'Ver a peça' : `Ver as ${fmt(n)} peças`);
 const textoVerNaPeca = (n: number) => (n === 1 ? 'Ver a peça do seu carro' : `Ver as ${fmt(n)} peças do seu carro`);
@@ -240,7 +240,7 @@ function htmlGaragem(e: Estado): string {
 
 /** Selo do rodapé: "Salvo neste aparelho"; o ano salvo sem peça agora avisa ali (o cartão mostra todos os anos). */
 const htmlSalvo = (e: Estado | null) =>
-  e?.anoSemPeca ? `${AVISO}Sem peças de ${e.anoSemPeca}` : `${CHECK}Salvo neste aparelho`;
+  e?.anoSemPeca ? `${AVISO}Sem peças do ${e.anoSemPeca}` : `${CHECK}Salvo neste aparelho`;
 const htmlNota = (e: Estado | null) => `
     <div class="mc-nota"><span class="mc-salvo${e?.anoSemPeca ? ' mc-salvo-aviso' : ''}" data-mc-salvo>${htmlSalvo(e)}</span>
       <span class="mc-nota-acoes"><button type="button" data-acao="trocar" data-chave="trocar" aria-label="Trocar carro">Trocar<span class="mc-so-largo"> carro</span></button><span aria-hidden="true">·</span><button type="button" data-acao="tirar" data-chave="tirar">Esquecer</button></span></div>`;
@@ -285,7 +285,7 @@ function htmlErro(): string {
   return `<div class="mc-corpo" data-etapa="erro"><div class="mc-aviso"><p>Não deu para carregar os carros agora.</p>
     <p class="mc-aviso-acoes"><button type="button" class="botao botao-linha" data-acao="recarregar" data-chave="recarregar" data-foco>Tentar de novo</button>
       <a class="mc-link" href="/catalogo.html">Ver o catálogo</a>
-      <a class="mc-link" data-botao="meu-carro-erro" href="${whats('Procuro uma peça.')}">Chamar no WhatsApp</a></p></div></div>`;
+      <a class="mc-link" href="${whats('Estou procurando uma peça.')}">Chamar no WhatsApp</a></p></div></div>`;
 }
 
 /** Marcação inicial (campos + grade de marcas), igual à que o script desenha: a abertura já nasce com ela. */
@@ -517,7 +517,7 @@ export function montarPicker(raiz: HTMLElement): Handle {
       e.carroSemPeca = null;
       e.etapa = 'marca';
       salvarMeuCarro(null);
-      voz.textContent = 'O carro saiu deste aparelho.';
+      voz.textContent = 'Carro esquecido neste aparelho.';
     } else {
       return;
     }

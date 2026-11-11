@@ -34,7 +34,7 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
       <div class="ac-lista" role="group" aria-labelledby="ac-rot">
         <span class="ac-fixo"><button type="button" class="ac-ano" data-y="" aria-pressed="true" aria-label={`Todos os anos, ${pecasTxt(lista.length)}`}>Todos</button></span>
         {anos.map(([y, c]) => (
-          <button type="button" class="ac-ano num" data-y={y} data-c={c} data-d={String(c).length} aria-pressed="false" aria-label={`${y}, ${pecasTxt(c)}`}>{y}<small aria-hidden="true">{c}</small></button>
+          <button type="button" class="ac-ano num" data-y={y} data-c={c} aria-pressed="false" aria-label={`${y}, ${pecasTxt(c)}`}>{y}<small aria-hidden="true">{c}</small></button>
         ))}
       </div>
     </div>
@@ -291,14 +291,6 @@ const abrirFila = `(function(){var r=document.currentScript.previousElementSibli
     .anos-carro .ac-lista { flex-wrap: wrap; overflow: visible; }
     .anos-carro .ac-trilho .ac-lista { -webkit-mask-image: none; mask-image: none; }
     .anos-carro .ac-ano { height: 40px; }
-    /* No PC as fichas quebram em linhas: a largura de cada uma é FIXA (pelo número de algarismos da contagem, data-d),
-       para a quebra não depender da fonte. Antes, quando a fonte do site chegava, as fichas encolhiam ~5 px, cabia mais
-       uma na 1ª linha e a última pulava de linha: CLS de 0,10 a 0,13 nas páginas de carro (revisão 14, item 33). */
-    .anos-carro .ac-fixo .ac-ano { width: 66px; padding-inline: 0; }
-    .anos-carro .ac-ano[data-d] { width: 70px; padding-inline: 0; }
-    .anos-carro .ac-ano[data-d="2"] { width: 76px; }
-    .anos-carro .ac-ano[data-d="3"] { width: 83px; }
-    .anos-carro .ac-ano[data-d="4"] { width: 90px; }
   }
   /* a grade: o cartão de outro ano sai (também os da lista completa, que entram depois) */
   #pecas .fora-do-ano { display: none !important; }

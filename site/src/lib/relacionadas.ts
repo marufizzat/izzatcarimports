@@ -272,11 +272,6 @@ export const JUNTO: Record<string, string[]> = {
 /** Até quantas o "Vai junto" mostra. */
 export const MAX_JUNTO = 4;
 
-/** Os códigos gravados da peça, em minúsculas ("1j0858601 1j0858601d" = 2 códigos). */
-export const codigosDe = (p: Pick<Peca, 'o'>): Set<string> => new Set((p.o || '').toLowerCase().split(/\s+/).filter(Boolean));
-/** Tampas de válvula e de óleo: são do cabeçote, não vão junto com bobina, sensor etc. */
-const TAMPAS = new Set(['Tampas de Válvulas', 'Tampas de Óleo']);
-
 type PecaJunto = Pick<Peca, 'id' | 'n' | 's' | 'o' | 'b' | 'm' | 'y' | 'ms' | 'ys'>;
 
 /** O grupo da peça (o 1º de GRUPOS cujo tipo e nome servem), ou null. */
@@ -318,19 +313,15 @@ export function vaiJunto(p: PecaJunto, doCarro: readonly PecaJunto[], max = MAX_
   const anos = p.m ? anosNoModelo(p, p.m) : null;
   if (!g || !alvos || !p.b || !p.m || !anos) return nada;
   const lado = ladoDa(p.n), zona = zonaDa(p.n, g);
-  // os códigos gravados (um anúncio pode trazer 2 ou mais): nenhuma peça com um código que a peça já tem, nem repetida na lista
-  const cods = codigosDe(p);
-  const nomeP = sem(p.n);
+  const cod = (p.o || '').trim().toLowerCase();
   const filas = new Map<string, { x: PecaJunto; nota: number }[]>(alvos.map((k) => [k, []]));
   for (const x of doCarro) {
     if (x.id === p.id || x.b !== p.b || !serveNoModelo(x, p.m)) continue;
-    if ([...codigosDe(x)].some((c) => cods.has(c))) continue;
-    // a tampa de válvula não vai junto com bobina nem sensor (são peças elétricas do cabeçote, não da tampa)
-    if (TAMPAS.has(x.s) && (g === 'bobina' || g === 'sensor-motor') && x.s !== p.s) continue;
     if (!mesmaGeracao(anos, anosNoModelo(x, p.m))) continue;
     const gx = grupoDa(x);
     if (!gx || !filas.has(gx)) continue;
     if ((GRUPOS_MOTOR.has(g) || GRUPOS_MOTOR.has(gx)) && FORA_DO_MOTOR.test(sem(x.n))) continue;
+    if (cod && (x.o || '').trim().toLowerCase() === cod) continue;
     if (x.s === p.s && primeira(x.n) === primeira(p.n)) continue;
     const lx = ladoDa(x.n), zx = zonaDa(x.n, gx);
     if (lado && lx && lado !== lx) continue;
@@ -340,20 +331,18 @@ export function vaiJunto(p: PecaJunto, doCarro: readonly PecaJunto[], max = MAX_
   for (const f of filas.values()) f.sort((a, b) => b.nota - a.nota || a.x.n.localeCompare(b.x.n, 'pt-BR') || (a.x.id < b.x.id ? -1 : 1));
   // 1ª volta: a melhor de cada grupo, sem repetir tipo; depois as seguintes, até `max`
   const pecas: PecaJunto[] = [];
-  const tipos = new Set<string>(), nomes = new Set<string>(), usados = new Set<string>();
+  const tipos = new Set<string>(), nomes = new Set<string>();
   for (let volta = 0; pecas.length < max && volta < max; volta++) {
     for (const k of alvos) {
       const f = filas.get(k)!;
       // o mesmo nome duas vezes (duas "Caixa fusível BSI" de anos diferentes) não: a 2ª sai da fila
-      const livre = (c: { x: PecaJunto }) => sem(c.x.n) !== nomeP && !nomes.has(sem(c.x.n)) && ![...codigosDe(c.x)].some((k) => usados.has(k));
-      while (f.length && !livre(f[0])) f.shift();
-      const i = volta === 0 ? f.findIndex((c) => !tipos.has(c.x.s) && livre(c)) : 0;
+      while (f.length && nomes.has(sem(f[0].x.n))) f.shift();
+      const i = volta === 0 ? f.findIndex((c) => !tipos.has(c.x.s) && !nomes.has(sem(c.x.n))) : 0;
       if (i < 0 || !f[i]) continue;
       const [c] = f.splice(i, 1);
       pecas.push(c.x);
       tipos.add(c.x.s);
       nomes.add(sem(c.x.n));
-      codigosDe(c.x).forEach((k) => usados.add(k));
       if (pecas.length >= max) break;
     }
   }

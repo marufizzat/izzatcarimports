@@ -1,14 +1,13 @@
 ---
 // Cartão da peça (vitrine). O MESMO desenho do cartão do catálogo (Etiqueta, em catalogo/Catalogo.tsx):
-// foto de estúdio em cima; carro e anos, nome, código gravado, o preço do WhatsApp (o do anúncio riscado, o selo verde
-// "−10% no WhatsApp") e a linha dos gatilhos de verdade (garantia e, com 1 em estoque, "Peça única") embaixo.
+// foto de estúdio em cima; carro e anos, nome, código gravado, preço e a linha de confiança embaixo.
 // .etiqueta-cx segura o cartão (a.etiqueta) e a ação rápida "Pedir no WhatsApp" (link irmão: link dentro de link quebra o HTML).
 // A ação rápida "Pedir no WhatsApp" (só aparece com mouse; no toque o CSS esconde) é criada pelo script abaixo,
 // com a mensagem pronta lida do próprio cartão: não se repete no HTML de cada página. Ícones pelo sprite /icones.svg.
 import type { Peca } from '../lib/dados';
-import { fotoCartaoPeca, resumo } from '../lib/dados';
+import { fotoCartaoPeca, resumo, brl } from '../lib/dados';
 import { SIZES_CARTAO } from '../lib/busca';
-import { linhaCarro, codigoPeca, precoCartao, SELO_WHATS, dadosCarro, CLASSE_CARTAO } from './catalogo/etiqueta';
+import { linhaCarro, codigoPeca, precoPartes, dadosCarro, CLASSE_CARTAO, icone } from './catalogo/etiqueta';
 interface Props {
   p: Peca; base?: string; eager?: boolean; /** selo "Chegou agora"; sem a prop, vale resumo().chegou */ novo?: boolean;
   /** largura da foto do cartão em cada tela (SIZES_CARTAO de lib/busca.ts); sem a prop, a da grade de 2/3/4 colunas */
@@ -17,8 +16,7 @@ interface Props {
 const { p, base = '/peca/', eager = false, sizes = SIZES_CARTAO.grade } = Astro.props;
 const { carro, anos } = linhaCarro(p.b, p.m, p.y, p.ms);
 const cod = codigoPeca(p.o);
-// o preço do WhatsApp (10% de desconto) em destaque e o do anúncio riscado (etiqueta.ts: precoCartao)
-const pc = precoCartao(p.p);
+const [reais, cent] = precoPartes(p.p);
 // capa de estúdio com as versões leves de 400/640 px no srcset (o celular não baixa a de 1000 px); sem capa, a foto do ML
 const f = fotoCartaoPeca(p, sizes);
 const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
@@ -35,20 +33,17 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
       {carro && <span class="etiqueta-carro"><span class="etiqueta-modelo">{carro}</span>{p.dif && <> <span class="etiqueta-dif">{p.dif}</span></>}{anos && <span class="etiqueta-anos"><span class="etiqueta-sep"> · </span>{anos}</span>}</span>}
       <h3 class="etiqueta-nome">{p.n}</h3>
       {cod && <span class="etiqueta-cod" title="Código gravado na peça">Cód. <span class="oem">{cod}</span></span>}
-      <span class="sr-only">{pc.sr}</span>
-      <span class="etiqueta-valor num" aria-hidden="true"><s>R$ {pc.de}</s><span class="etiqueta-preco"><small>R$</small>{pc.reais}<small>{pc.cent}</small></span><span class="etiqueta-wa">{SELO_WHATS}</span></span>
-      <span class="etiqueta-confia"><span>90 dias de garantia</span>{p.q === 1 && <b>Peça única</b>}</span>
+      <span class="sr-only">R$ {brl(p.p)}</span>
+      <span class="etiqueta-preco num" aria-hidden="true"><small>R$</small>{reais}<small>{cent}</small></span>
+      <span class="etiqueta-confia"><svg viewBox="0 0 24 24" aria-hidden="true"><use href={icone('garantia')} /></svg><span><span class="etiqueta-confia-longo">Original · </span>90 dias de garantia</span></span>
     </div>
   </a>
 </div>
 
 <script>
-  // "+ Lista" do cartão: um ouvinte só para a página (components/ui/listaCartao.ts)
-  import { iniciarListaCartao } from './ui/listaCartao';
-  iniciarListaCartao();
   // selo "Serve no seu ..." quando o carro salvo bate com a peça (regra do contrato meuCarro.ts)
   import { lerMeuCarro, serveNoMeuCarro, lerModelos, nomeModelos, norm, EVENTO } from '../lib/meuCarro';
-  import { SITE, icone, precoCheioDoTexto } from './catalogo/etiqueta';
+  import { SITE, icone } from './catalogo/etiqueta';
   import { linkWhats, mensagemPeca, anosTexto } from '../lib/whats';
   // Na página do PRÓPRIO carro salvo (/carros/<k>, botão "É o meu carro"), o verde em quase todo cartão era ruído:
   // ali só aparece o aviso âmbar "Confira o ano" nas peças de outros anos.
@@ -74,15 +69,14 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
 
   // "Pedir no WhatsApp" do cartão (o mesmo link do cartão do catálogo): criado aqui, no fim do cartão, com a mesma
   // mensagem do botão da peça (lib/whats.ts), lida do próprio cartão: nome limpo, carro, anos (data-a0/a1), código,
-  // preço cheio (o 1º do texto do leitor de tela) e o endereço do link. A foto tem alt vazio: o nome já está no link.
+  // preço (o texto do leitor de tela) e o endereço do link. A foto tem alt vazio: o nome já está no link.
   function acoes() {
     document.querySelectorAll<HTMLElement>('.etiqueta-cx').forEach((cx) => {
       if (cx.querySelector('.etiqueta-acao')) return;
       const cartao = cx.querySelector<HTMLAnchorElement>('a.etiqueta');
       const txt = (s: string) => cartao?.querySelector(s)?.textContent?.trim() || '';
       const nome = txt('.etiqueta-nome');
-      // o preço CHEIO (o 1º do texto "de R$ X por R$ Y no WhatsApp"): a mensagem leva o do site e o do WhatsApp
-      const preco = precoCheioDoTexto(txt('.etiqueta-dados > .sr-only'));
+      const preco = txt('.etiqueta-dados > .sr-only').replace(/^R\$\s*/, '');
       if (!cartao || !nome || !preco) return;
       const d = cartao.dataset;
       const a = document.createElement('a');
@@ -93,7 +87,6 @@ const novo = Astro.props.novo ?? resumo().chegou.includes(p.id);
       }));
       a.target = '_blank';
       a.rel = 'noopener';
-      a.dataset.botao = 'pedir-cartao';
       a.setAttribute('aria-label', `Pedir no WhatsApp: ${nome}`);
       a.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="${icone('whats')}"></use></svg>Pedir no WhatsApp`;
       cx.append(a);

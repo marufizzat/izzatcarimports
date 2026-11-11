@@ -10,12 +10,9 @@
 import Icone from '../Icone.astro';
 import { resumo } from '../../lib/dados';
 interface Props { nome: string; texto: string; href?: string; class?: string; formato?: 'faixa' | 'arte'; titulo?: string; apoio?: string; rotulo?: string;
-  arteW?: number; arteH?: number; celW?: number; celH?: number;
-  /** o nome do botão no GA4 (contato_whatsapp, data-botao); sem ele, o nome da arte ("banner-serve", "banner-garantia") */
-  botao?: string; }
+  arteW?: number; arteH?: number; celW?: number; celH?: number; }
 const { nome, texto, href, class: cls, formato = 'faixa', arteW = 1536, arteH = 1024, celW = 1024, celH = 1536 } = Astro.props;
 const Caixa = href ? 'a' : 'figure';
-const botao = Astro.props.botao ?? nome;
 
 // ícone 3D de cada assunto (public/icones, os mesmos dos destaques)
 const ICONE: Record<string, string> = { 'banner-serve': 'serve', 'banner-nao-achou': 'patio', 'banner-oficinas': 'oficina' };
@@ -32,12 +29,12 @@ const naPaginaDoCarro = /^\/carros\/([^/]+)\.html$/.exec(Astro.url.pathname)?.[1
 const carro = naPaginaDoCarro && nome === 'banner-serve' && !Astro.props.titulo ? resumo().carros.find((c) => c.k === naPaginaDoCarro) : null;
 if (carro) {
   titulo = `Tem um ${carro.b} ${carro.m}?`;
-  apoio = Astro.props.apoio ?? 'Mande o ano e a peça que você procura. A gente confere no pátio e responde pelo WhatsApp.';
+  apoio = Astro.props.apoio ?? 'Mande o ano e a peça que você procura. A gente confere no pátio e responde com foto.';
 }
 const icone = ICONE[nome] ?? 'conversa';
 ---
 {formato === 'arte' ? (
-  <Caixa class:list={['banner-v2', { 'banner-v2-link': !!href }, cls]} {...(href ? { href, rel: 'noopener', 'aria-label': texto, 'data-botao': botao } : {})}>
+  <Caixa class:list={['banner-v2', { 'banner-v2-link': !!href }, cls]} {...(href ? { href, rel: 'noopener', 'aria-label': texto } : {})}>
     <picture>
       <source media="(max-width: 700px)" srcset={`/arte/v2/${nome}-celular.webp`} width={celW} height={celH} />
       <img src={`/arte/v2/${nome}.webp`} alt={texto} width={arteW} height={arteH} loading="lazy" decoding="async" />
@@ -50,7 +47,7 @@ const icone = ICONE[nome] ?? 'conversa';
       <p class="fw-titulo">{titulo}</p>
       {apoio && <p class="fw-apoio">{apoio}</p>}
     </div>
-    <a class="botao botao-laranja fw-botao" href={href} rel="noopener" data-botao={botao}><Icone nome="whats" />{rotulo}</a>
+    <a class="botao botao-laranja fw-botao" href={href} rel="noopener"><Icone nome="whats" />{rotulo}</a>
   </div>
 )}
 <style>

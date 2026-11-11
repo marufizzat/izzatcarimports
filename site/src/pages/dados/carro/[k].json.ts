@@ -9,7 +9,6 @@ import type { APIRoute } from 'astro';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { garagem } from '../../../lib/garagem';
-import { resumo } from '../../../lib/dados';
 import { serveNoModelo } from '../../../lib/meuCarro';
 import { chaveCarro } from '../../../lib/chegouCarro';
 import type { Indice } from '../../../lib/busca';
@@ -19,10 +18,7 @@ const indice = (): Indice => (ix ??= JSON.parse(readFileSync(join(process.cwd(),
 
 export function getStaticPaths() {
   const vistos = new Set<string>();
-  // + os apelidos de carro unido (C180, New Fiesta): o "Meu carro" salvo com eles ainda acha o "Chegou para o seu carro"
-  const apelidos = (resumo().aliases ?? []).map((a) => ({ b: a.b, m: a.de }));
-  return [...garagem().marcas.flatMap((mc) => mc.modelos.map((mo) => ({ b: mc.n, m: mo.n }))), ...apelidos]
-    .map((x) => ({ params: { k: chaveCarro(x.b, x.m) }, props: { b: x.b, m: x.m } }))
+  return garagem().marcas.flatMap((mc) => mc.modelos.map((mo) => ({ params: { k: chaveCarro(mc.n, mo.n) }, props: { b: mc.n, m: mo.n } })))
     .filter((x) => !vistos.has(x.params.k) && !!vistos.add(x.params.k));
 }
 

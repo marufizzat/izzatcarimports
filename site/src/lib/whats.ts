@@ -1,7 +1,6 @@
 // Mensagens do WhatsApp: UMA abertura para o site inteiro ("Olá! Vim pelo site da Izzat Car.") e, depois dela,
 // o contexto de quem chama (a peça, o carro, a garantia...). Quem monta mensagem passa SÓ o contexto; a abertura
 // nunca é escrita à mão em outro arquivo (o teste whats.test.ts confere). Sem node:fs: roda no build e no navegador.
-import { gruposModelos } from './meuCarro';
 
 export const WHATS = '5553991170950';
 export const ABERTURA = 'Olá! Vim pelo site da Izzat Car.';
@@ -120,10 +119,6 @@ export function carroSalvoTxt(c: { b: string; m: string; y?: number | null }): s
  *  peça sem marca: tudo em branco). `ms` = o data-ms do cartão ("S60|XC60") ou qualquer texto com "|" para 2+ carros. */
 export function conviteCarro(b?: string | null, m?: string | null, ms?: string | null): string {
   if (!b) return '____ (modelo), ano ____';
-  // o carro unido é UM carro ("Classe C|C180|C200" = Classe C): o modelo já vai escrito
-  const nomes = (ms || '').split('|').filter(Boolean);
-  const carros = nomes.length > 1 ? gruposModelos({ b, m, ms: nomes }) : [];
-  if (carros.length === 1) return `${b} ${carros[0].m}, ano ____`;
   return ms && ms.includes('|') ? `${b} ____, ano ____` : `${b} ${m || '____'}, ano ____`;
 }
 /** Põe (ou troca) a linha "Meu carro: …" numa mensagem de peça já pronta (o link dos cartões nasce sem ela: entra no
@@ -132,15 +127,6 @@ export function comMeuCarro(msg: string, carro: string): string {
   const sem = msg.replace(/^Meu carro: .*\n/m, '');
   const i = sem.lastIndexOf(CAUDA_PECA);
   return i < 0 || !carro ? sem : sem.slice(0, i) + linhaMeuCarro(carro) + sem.slice(i);
-}
-/** Mensagem de dúvida com a lacuna do carro ("Meu carro é Renault ____, ano ____.", "Meu carro é: ____ (modelo) ____
- *  (ano). A peça é: ____", "Meu carro é ____ (modelo e ano) e a peça é: ____"): com o carro salvo (carroSalvoTxt), a
- *  lacuna vira o carro da pessoa ("Meu carro é Volvo XC60 2019."; salvo sem ano, o ano continua em branco). O resto da
- *  frase fica. Mensagem sem a lacuna, ou sem carro, volta igual. */
-export function comCarroNaFrase(msg: string, carro: string): string {
-  if (!carro) return msg;
-  const ate = '(?:(?! e a peça| e procuro)[^.\\n])*';
-  return msg.replace(new RegExp(`Meu carro é:? ${ate}____${ate}`), `Meu carro é ${carro}`);
 }
 export function mensagemPeca(x: PecaMsg, meuCarro = ''): string {
   return cabecaPeca(x) + meuCarro + caudaPeca(x.url);
@@ -183,12 +169,7 @@ export function somaPrecos(l: readonly { preco: number }[]): { site: number; wha
 export type ItemMsg = { id: string; nome: string; carro?: string; anos?: string; cod?: string; preco: number };
 export const LINK_LISTA = 'https://izzatcarimports.com.br/lista.html';
 export const LIMITE_MSG_LISTA = 1800;
-/** "CEP: 96445-000" na lista (opcional: CEP incompleto ou vazio não entra; o frete é combinado no WhatsApp). */
-export function linhaCep(cep: string): string {
-  const d = cep.replace(/\D/g, '');
-  return d.length === 8 ? `CEP: ${d.slice(0, 5)}-${d.slice(5)}\n` : '';
-}
-export function mensagemLista(itens: readonly ItemMsg[], meuCarro = '', limite = LIMITE_MSG_LISTA, cep = ''): string {
+export function mensagemLista(itens: readonly ItemMsg[], meuCarro = '', limite = LIMITE_MSG_LISTA): string {
   const n = itens.length;
   const um = n === 1;
   const { site, whats } = somaPrecos(itens);
@@ -203,7 +184,7 @@ export function mensagemLista(itens: readonly ItemMsg[], meuCarro = '', limite =
     [`*${i + 1}. ${x.nome}*`, comCod && x.cod && `Cód. ${x.cod}`, `R$ ${paraBrl(x.preco)}`].filter(Boolean).join(' · ');
   const fim = [
     `Subtotal no site: R$ ${paraBrl(site)}\n*Total no WhatsApp (${DESCONTO_WHATS}% de desconto): R$ ${paraBrl(whats)}*`,
-    `${linhaCep(cep)}${linhaMeuCarro(meuCarro)}${um ? CAUDA_PECA : 'Servem e ainda têm?'}`,
+    `${linhaMeuCarro(meuCarro)}${um ? CAUDA_PECA : 'Servem e ainda têm?'}`,
     `${LINK_LISTA}?i=${itens.map((x) => x.id).join(',')}`,
   ].join('\n\n');
   const montar = (corpo: string) => mensagem(`\n\n${titulo}\n\n${corpo}\n\n${fim}`);

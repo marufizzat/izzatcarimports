@@ -1,7 +1,7 @@
 // Regras do cartão da peça, as MESMAS no build (CartaoPeca.astro) e no navegador (Catalogo.tsx).
 // Sem node:fs: este arquivo roda nos dois lados.
-import { atributosModelos, nomeModelos, gruposModelos } from '../../lib/meuCarro';
-import { mensagemPeca, anosTexto, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
+import { atributosModelos, nomeModelos } from '../../lib/meuCarro';
+import { mensagemPeca, anosTexto } from '../../lib/whats';
 
 /** INTERRUPTOR DA VITRINE (um só, vale para o site inteiro):
  *  true  = B "vitrine clara": o cartão da peça é sempre claro (tema de estúdio), também no modo escuro;
@@ -26,25 +26,9 @@ export function precoPartes(v: number): [string, string] {
   return [r, c];
 }
 
-/** O preço do cartão (decisão do dono, 11/11): o do WHATSAPP em destaque (10% de desconto, lib/whats.ts: precoWhats, em
- *  centavos inteiros) e o do anúncio (o cheio, o do Mercado Livre) riscado em cima. `sr` = o que o leitor de tela lê; os
- *  scripts do cartão tiram dele o preço CHEIO (precoCheioDoTexto): a lista e a mensagem do WhatsApp partem do cheio. */
-export function precoCartao(v: number) {
-  const de = brl(v);
-  const [reais, cent] = precoPartes(precoWhats(v));
-  return { de, reais, cent, sr: `de R$ ${de} por R$ ${reais},${cent} no WhatsApp` };
-}
-/** O selo verde colado ao preço grande: diz de onde vem o desconto ("−10% no WhatsApp"). */
-export const SELO_WHATS = `−${DESCONTO_WHATS}% no WhatsApp`;
-/** "de R$ 7.680,00 por R$ 6.912,00 no WhatsApp" -> "7.680,00" (o 1º valor é o cheio; cartão antigo "R$ 7.680,00": igual). */
-export function precoCheioDoTexto(s: string | null | undefined): string {
-  return /R\$\s*([\d.]+,\d{2})/.exec(s || '')?.[1] ?? '';
-}
-
-/** Carro e anos da peça: { carro: "Volvo XC60", anos: "2018–2024" }. Peça de 2+ carros (ms): "Volvo S60 / XC60".
- *  O carro unido aparece uma vez, pelo principal ("Mercedes-Benz Classe C", nunca "Classe C / C180 / C200"). */
+/** Carro e anos da peça: { carro: "Volvo XC60", anos: "2018–2024" }. Peça de 2+ carros (ms): "Volvo S60 / XC60". */
 export function linhaCarro(b?: string | null, m?: string | null, y?: [number, number] | null, ms?: string[] | null) {
-  const carro = [b, ms && ms.length > 1 ? gruposModelos({ b, m, ms }).map((g) => g.m).join(' / ') : m].filter(Boolean).join(' ');
+  const carro = [b, ms && ms.length > 1 ? ms.join(' / ') : m].filter(Boolean).join(' ');
   const anos = y ? (y[0] === y[1] ? String(y[0]) : `${y[0]}–${y[1]}`) : '';
   return { carro, anos };
 }

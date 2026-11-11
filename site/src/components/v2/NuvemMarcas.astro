@@ -18,7 +18,7 @@ const sobra = (cols: number) => (cols - (marcas.length % cols)) % cols || cols;
       <span class="nuvem-nome">{m.n}</span>
       {m.c >= POUCAS && <span class="nuvem-qtd num">{m.c.toLocaleString('pt-BR')} peças</span>}
     </a></li>); })}
-  <li class="nuvem-fim"><a href={whatsUrl('Procuro peça para o meu carro: ____ (marca, modelo e ano).')} class="nuvem-item nuvem-outra" data-botao="marca-outra">
+  <li class="nuvem-fim"><a href={whatsUrl('Procuro peça para o meu carro: ____ (marca, modelo e ano).')} class="nuvem-item nuvem-outra">
     <span class="nuvem-logo"><Icone nome="whats" /></span>
     <span class="nuvem-nome">Outra marca?</span>
     <span class="nuvem-qtd">A gente procura no pátio</span>

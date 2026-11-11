@@ -287,8 +287,7 @@ def test_capas_ajustes_do_repositorio():
             continue
         assert mlb.startswith("MLB") and isinstance(aj, dict), mlb
         tipos = [bool(aj.get("sem_capa")), bool(aj.get("ok")), ce.eh_manual(aj)]
-        assert sum(tipos) == 1 or (sum(tipos) == 0 and aj.get("cor")), (mlb, aj)   # `cor` sozinho vale
-        assert aj.get("cor") in (None, "manter", "neutra"), (mlb, aj)
+        assert sum(tipos) == 1, (mlb, aj)
         if aj.get("corte"):
             ce.caixa_px(aj["corte"], 1000, 1000)
         for r in aj.get("apagar") or []:

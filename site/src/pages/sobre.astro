@@ -28,9 +28,9 @@ const etapas = [
     arte: 'historia-2', alt: 'Farol já removido, apoiado num carrinho de ferramentas, ao lado do carro' },
   { t: 'Limpeza e conferência', s: 'A peça é limpa, testada sempre que possível (motores, módulos) e o código original é identificado.',
     arte: 'historia-conferencia', alt: 'Módulo eletrônico limpo, com o código gravado iluminado por uma lanterna' },
-  { t: 'Foto e anúncio', s: 'As fotos do anúncio são da própria peça. Ela é anunciada com o código gravado, para você achar a peça certa.',
+  { t: 'Foto e anúncio', s: 'Ela é fotografada de verdade e anunciada com o código, para você achar a peça certa.',
     arte: 'historia-3', alt: 'Alternador limpo sobre a bancada, com etiqueta laranja e uma lupa' },
-  { t: 'Embalagem e envio', s: 'Embalada com cuidado e enviada para todo o Brasil. O frete é combinado pelo WhatsApp ou calculado pelo Mercado Livre.',
+  { t: 'Embalagem e envio', s: 'Embalada com proteção e enviada para todo o Brasil. O frete é combinado pelo WhatsApp ou calculado pelo Mercado Livre.',
     arte: 'historia-4', alt: 'Peça embalada em caixa de papelão, com fita laranja' },
 ];
 ---
@@ -43,7 +43,7 @@ const etapas = [
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', ...lojaLd() })} />
   {/* topo com o Maruf atrás da bancada (arte sem texto; o título é vivo) */}
   <TopoArte trilha={[['Início', '/'], ['O pátio', canonicalPath]]}
-    titulo="O pátio da Izzat Car"
+    titulo="O pátio"
     lead="Um desmanche credenciado pelo Detran-RS. Cada carro chega com baixa legal, e cada peça sai identificada."
     arte="/arte/v2/topo-sobre.webp" arteFoco="100% 88%" />
 
@@ -125,7 +125,7 @@ const etapas = [
     id="h-chamada"
     titulo="Quer ver uma peça do pátio?"
     texto="Mande o modelo do carro ou o código gravado da peça. A gente responde pelo WhatsApp."
-    mensagem="Vi a página do pátio e quero saber sobre uma peça."
+    mensagem="Vi o pátio e quero saber sobre uma peça."
   />
 </Pagina>
 

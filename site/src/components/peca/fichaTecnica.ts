@@ -127,7 +127,7 @@ export function montarFicha(ficha: [string, string][], serve: string, serveRotul
   const ml = ficha.filter((l) => !repete(l));
   const linhas: Linha[] = [];
   const iCod = ml.findIndex(([k]) => k.startsWith('Código'));
-  if (iCod >= 0) linhas.push({ rotulo: 'Código gravado', valor: ml[iCod][1], icone: 'codigo', chave: 'codigo' });
+  if (iCod >= 0) linhas.push({ rotulo: 'Código original', valor: ml[iCod][1], icone: 'codigo', chave: 'codigo' });
   if (serve) linhas.push({ rotulo: serveRotulo, valor: serve, icone: serveRotulo === 'Anos' ? 'calendario' : 'veiculo', chave: 'serve' });
   ml.forEach(([k, v], i) => { if (i !== iCod) linhas.push({ rotulo: k, valor: v, icone: iconeDoRotulo(k), chave: chaveRotulo(k) }); });
   for (const e of extras) if (!linhas.some((l) => l.chave === e.chave)) linhas.push(e);

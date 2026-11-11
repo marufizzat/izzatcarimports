@@ -14,7 +14,7 @@ import {
 import { Busca, capaItem, carroAnos, type Atalho, type Item, type Sugestoes } from '../../lib/busca';
 import { icone } from '../catalogo/etiqueta';
 import { whatsUrl } from '../../lib/whats';
-import { pedidoPatioAchou } from '../../lib/patio';
+import { pedidoPatio } from '../../lib/patio';
 import { lerMeuCarro } from '../../lib/meuCarro';
 import { guardarBusca, lerRecentes, limparRecentes } from '../../lib/buscasRecentes';
 import './sugestoes.css';
@@ -102,8 +102,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   }, [q]);
 
   const res = useMemo<Sugestoes | null>(
-    // o carro salvo ("Meu carro") sobe nas sugestões, como no catálogo
-    () => (busca && termo.trim().length >= 2 ? busca.sugestoes(termo, 6, lerMeuCarro()) : null),
+    () => (busca && termo.trim().length >= 2 ? busca.sugestoes(termo, 6) : null),
     [busca, termo],
   );
   const aberto = foco && q.trim().length >= 2;
@@ -131,14 +130,14 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
   // Aviso para o leitor de tela, numa região viva que existe SEMPRE (a que nasce junto com a lista costuma ser pulada):
   // quantas sugestões apareceram, ou que não achou nada.
   const nSug = ops.filter((o) => o.tipo === 'item' || o.tipo === 'atalho').length;
-  const anuncio = abertoRecentes ? `${recentes.length === 1 ? '1 busca recente' : `${recentes.length} buscas recentes`}. Use as setas para escolher.`
+  const anuncio = abertoRecentes ? `${recentes.length === 1 ? '1 busca recente' : `${recentes.length} buscas recentes`}, usa as setas.`
     : !aberto ? ''
     : mostraCarregando ? 'Carregando as peças…'
     : erro ? 'Não deu para carregar a busca agora.'
     : semResultado ? `Nada com “${termoTela}” no site.`
     : !res ? ''
-    : res.aproximado && nSug > 0 ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}. Use as setas para escolher.`
-    : `${nSug === 1 ? '1 sugestão' : `${nSug} sugestões`}. Use as setas para escolher.`;
+    : res.aproximado ? `Nada exato com “${termoTela}”. ${nSug === 1 ? '1 parecida' : `${nSug} parecidas`}, usa as setas.`
+    : `${nSug === 1 ? '1 sugestão' : `${nSug} sugestões`}, usa as setas.`;
 
   useEffect(() => {
     setAtivo(-1);
@@ -187,7 +186,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
 
   // o pedido do pátio: o texto do campo agora (não o atrasado do debounce), o carro digitado e o salvo
   const linkPatio = comPatio
-    ? whatsUrl(pedidoPatioAchou({ q: textoBusca, carroDaBusca: res?.carros[0] ?? null, meuCarro: lerMeuCarro(), achadas: res && !res.aproximado ? res.total : 0 }).texto)
+    ? whatsUrl(pedidoPatio({ q: textoBusca, carroDaBusca: res?.carros[0] ?? null, meuCarro: lerMeuCarro() }).texto)
     : '';
   const escolher = (op: Op) => {
     if (op.tipo === 'recente') {
@@ -319,7 +318,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       <div key="ver" {...comum} className={`sb-op sb-ver${on}`}>
         <span>
           {!res || erro ? `Buscar “${termoTela}” no catálogo`
-            : res.aproximado ? (n === 1 ? 'Ver a peça parecida' : `Ver as ${n2(n)} peças parecidas`)
+            : res.aproximado ? `Ver as ${n2(n)} peças parecidas`
             : n === 1 ? 'Ver o resultado no catálogo' : `Ver todos os ${n2(n)} resultados`}
         </span>
         <IconeSeta />
@@ -418,9 +417,8 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
               <button type="button" className="sb-tentar" onClick={carregar}>Tentar de novo</button>
             </p>
           )}
-          {/* só com parecida na lista: sem nenhuma, a frase de baixo ("Nada com…") já diz tudo (revisão 14, P2-7) */}
-          {res?.aproximado && !semResultado && itens.length > 0 && (
-            <p className="sb-status sb-status-aprox">Nada exato com “{termoTela}”. {itens.length === 1 ? 'Esta é a parecida:' : 'Estas são as parecidas:'}</p>
+          {res?.aproximado && (
+            <p className="sb-status sb-status-aprox">Nada exato com “{termoTela}”. Estas são as parecidas:</p>
           )}
           {semResultado && (
             <p className="sb-status">
