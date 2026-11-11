@@ -19,7 +19,16 @@ export const VAZIAS = new Set(['de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'c
 export const SINONIMOS: [string[], string[], string[]?][] = [
   // luzes
   [['sinaleira', 'sinaleiro'], ['lanterna']],
-  [['pisca', 'pisca pisca', 'piscapisca', 'lanterna direcao', 'luz direcao', 'luz seta', 'lampada seta'], ['seta']],
+  // (a "Chave seta" é a peça do pisca; "seta" sozinha acha o resto: o "Chicote pisca…" não é a peça)
+  [['pisca', 'pisca pisca', 'piscapisca', 'lanterna direcao', 'luz direcao', 'luz seta', 'lampada seta'], ['chave seta', 'seta']],
+  // o botão do pisca-alerta: o estoque escreve "Botão pisca-alerta" e "Botão alerta" (as compostas vão juntas, como a
+  // busca as lê: "pisca alerta" = "piscaalerta")
+  [['piscaalerta', 'botao piscaalerta', 'botao alerta', 'botao pisca'], ['botao piscaalerta', 'botao alerta', 'piscaalerta']],
+  // a 3ª luz de freio: o estoque escreve "Brake light (luz de freio)"
+  [['luz freio', 'terceira luz freio', 'terceira luz', 'break light', 'brake light', 'luz stop'], ['brake light', 'luz freio']],
+  // o interruptor do farol: botão, chave ou comando, conforme o carro
+  [['interruptor farol', 'botao farol', 'comando farol', 'chave farol', 'interruptor luz', 'botao luz'],
+    ['interruptor farol', 'botao farol', 'chave farol', 'comando farol', 'chave luz']],
   [['farolete', 'farol auxiliar', 'farol neblina', 'neblina', 'luz milha'], ['farol milha', 'milha']],
   [['alavanca seta', 'alavanca pisca', 'chave pisca', 'chave luz'], ['chave seta']],
   // carroceria (frente e traseira; "traseira", "dianteira", "esquerda", "direita" viram filtro em lib/busca.ts)
@@ -27,13 +36,24 @@ export const SINONIMOS: [string[], string[], string[]?][] = [
   // difusor de ar são de dentro do carro (a grade do alto-falante e a "Moldura frontal painel" não são a frente) e o que é
   // de trás não é a frente (o amortecedor da tampa traseira vinha pelo tipo "Amortecedores da Tampa e do Capô")
   [['frente', 'frente completa'], ['grade', 'churrasqueira', 'farol', 'capo', 'parachoque dianteiro', 'paralama dianteiro', 'frontal'],
-    ['painel', 'console', 'falante', 'tweeter', 'difusor', 'tras', 'porta-malas', 'portamalas']],
+    ['painel', 'console', 'falante', 'tweeter', 'difusor', 'tras', 'porta-malas', 'portamalas', 'chave', 'botao', 'interruptor']],
+  // a churrasqueira no estoque quase sempre é a "Grade churrasqueira" (rodada 14b: com uma só peça chamada
+  // "Churrasqueira…", vendida ela a grade do carro virava "ligada", atrás da "Moldura churrasqueira")
+  [['churrasqueira'], ['grade churrasqueira']],
   [['espelho', 'espelho retrovisor', 'retrovisor externo'], ['retrovisor']],
   [['masaneta', 'massaneta', 'trinco'], ['macaneta']],
+  [['trava eletrica', 'trava porta', 'trava eletrica porta'], ['fechadura eletrica', 'trava eletrica', 'fechadura trava']],
+  // a tampa do porta-malas é a "Tampa traseira" do estoque
+  [['tampa portamalas', 'tampa mala', 'tampa bagageiro'], ['tampa traseira']],
+  [['tapa sol', 'tapasol', 'parasol', 'pala sol'], ['quebrasol']],
   // vidro elétrico
   // ("motor vidro" fica como estava: já acha os "Motor vidro" e os "Motor máquina vidro")
   [['maquina vidro', 'maquininha vidro', 'regulador vidro', 'elevador vidro'], ['maquina vidro', 'motor vidro']],
+  // "motor vidro" também acha a "Máquina vidro" (o nome que o estoque usa; a palavra digitada continua valendo)
+  [['motor vidro'], ['maquina vidro']],
   [['vidro eletrico'], ['maquina vidro', 'motor vidro', 'botao vidro']],
+  // o botão do vidro: "Botão vidro", "Comando vidro" e "Botoneira vidro" no estoque
+  [['botao vidro', 'comando vidro', 'botoneira vidro', 'botoneira', 'interruptor vidro', 'botao vidro eletrico'], ['botao vidro', 'comando vidro', 'botoneira']],
   // tampa, capô e porta-malas
   [['amortecedor tampa', 'amortecedor portamalas', 'amortecedor mala', 'mola gas', 'molas gas', 'pistao tampa', 'pistao capo', 'amortecedor gas'],
     ['amortecedor tampa', 'amortecedor portamalas', 'amortecedor capo', 'amortecedor gas']],
@@ -48,13 +68,35 @@ export const SINONIMOS: [string[], string[], string[]?][] = [
   // motor
   [['tbi', 'corpo borboleta', 'borboleta'], ['tbi', 'corpo borboleta']],
   [['caneta', 'caneta ignicao', 'bobina ignicao'], ['bobina']],
-  [['arranque', 'motor arranque'], ['motor partida', 'arranque']],
+  [['arranque', 'motor arranque', 'motor partida'], ['motor partida', 'motor arranque', 'arranque']],
+  [['turbo', 'turbocompressor'], ['turbina']],
+  // o estoque vende o "Motor parcial"; o cliente pede "motor completo"
+  [['motor completo'], ['motor parcial']],
+  [['calco motor', 'calco coxim', 'coxim motor'], ['coxim motor', 'calco coxim motor', 'calco motor']],
+  [['ventoinha', 'eletroventilador', 'eletro ventilador', 'ventilador radiador'], ['ventoinha', 'ventilador', 'motor ventilador', 'eletroventilador']],
+  [['reservatorio expansao', 'vaso expansao', 'reservatorio radiador', 'reservatorio arrefecimento'], ['reservatorio agua']],
+  // "filtro de ar" no estoque é a "Caixa filtro ar"
+  [['filtro ar'], ['caixa filtro ar', 'caixa filtro']],
+  [['flauta bico', 'flauta bicos', 'flauta injecao', 'flauta injetor'], ['flauta']],
   [['bomba gasolina', 'bomba combustivel', 'bomba tanque'], ['bomba combustivel', 'bomba gasolina', 'bomba tanque']],
+  // freio, direção e suspensão
+  [['servo freio', 'servofreio', 'hidro vacuo', 'hidrovacuo'], ['hidrovacuo', 'servo freio', 'servofreio']],
+  // o freio de mão no estoque é a "Alavanca freio mão"
+  [['freio mao', 'freio estacionamento'], ['alavanca freio mao', 'freio mao']],
+  [['homocinetica', 'junta homocinetica'], ['semieixo']],
+  [['balanca', 'bandeja', 'leque'], ['bandeja', 'balanca']],
+  // elétrica
+  [['sensor re', 'sensor estacionamento', 'sensor reverso', 'sensor parking'], ['sensor estacionamento', 'sensor re']],
+  [['chave canivete', 'chave presenca', 'chave presencial', 'chave reserva', 'chave carro', 'chave codificada', 'smart key', 'telecomando'],
+    ['chave canivete', 'chave presenca', 'chave presencial']],
   // interior
   [['forro porta', 'painel porta', 'forracao', 'forracao porta'], ['forro porta', 'forro']],
+  // o estoque não tem o cinto; a fivela é a peça dele que aparece
+  [['cinto seguranca', 'cinto'], ['fivela cinto']],
+  [['saida ar', 'aerador', 'saida ar condicionado'], ['difusor ar', 'saida ar', 'difusor saida ar']],
   [['tapete', 'tapetes', 'carpete', 'assoalho'], ['tapete', 'carpete']],
   // rodas
-  [['estepe', 'step', 'roda reserva', 'roda sobressalente'], ['estepe']],
+  [['estepe', 'step', 'roda reserva', 'roda sobressalente'], ['estepe', 'roda']],
   [['roda', 'rodas', 'aro', 'pneu'], ['estepe', 'roda']],
 ];
 

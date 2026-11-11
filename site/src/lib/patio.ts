@@ -4,6 +4,7 @@
 // Sem node:fs: roda no navegador.
 import { codigoJunto, type Carro } from './busca';
 import { nomeCarro, type MeuCarro } from './meuCarro';
+import { mensagem } from './whats';
 
 export type PedidoPatio = {
   /** o que a pessoa digitou */
@@ -52,4 +53,25 @@ export function pedidoPatio(o: PedidoPatio): { texto: string; procuro: string; o
   const paraCarro = carro ? `para ${carro}` : ano ? `para carro ano ${ano}` : '';
   const procuro = [oQue, paraCarro].filter(Boolean).join(' ');
   return { texto: `Procuro ${procuro}. Não achei no site, tem no pátio?`, procuro, oQue, digitado, carro, ano };
+}
+
+/** A busca ACHOU peça (poucas: 1 a 3 na tela, ou o código digitado é o de uma peça da lista) e a pessoa ainda chama o
+ *  pátio: a mensagem nunca diz "Não achei no site" (o vendedor recebia isso de uma peça que está no site: revisão 14,
+ *  item 21). Mesmo pedido de pedidoPatio (o que procura e para qual carro); muda só o fim:
+ *   - `exata` (o código digitado é o código de uma peça da lista):
+ *     "Procuro a peça com o código 31476671 para Volvo XC60 2019. Achei no site e quero confirmar se é a certa. Tem outra no pátio?"
+ *   - senão, com `achadas` peças na tela:
+ *     "Procuro retrovisor direito para Volvo XC60 2019. Achei só 2 no site. Tem outra no pátio?"
+ *  `achadas` < 1 volta o pedidoPatio de sempre ("Não achei no site, tem no pátio?"). */
+export function pedidoPatioAchou(o: PedidoPatio & { achadas: number; exata?: boolean }): ReturnType<typeof pedidoPatio> {
+  const p = pedidoPatio(o);
+  const n = Math.max(0, Math.trunc(o.achadas || 0));
+  if (n < 1) return p;
+  const fim = o.exata ? 'Achei no site e quero confirmar se é a certa. Tem outra no pátio?' : `Achei só ${n} no site. Tem outra no pátio?`;
+  return { ...p, texto: `Procuro ${p.procuro}. ${fim}` };
+}
+
+/** Peça que vendeu e chegou só pelo link da lista (sem nome): o WhatsApp leva o número do anúncio e pergunta pelo pátio. */
+export function mensagemPatioVendida(id: string): string {
+  return mensagem(`Quero uma peça parecida com a do anúncio ${id}, da minha lista de orçamento, que já vendeu. Tem no pátio?`);
 }

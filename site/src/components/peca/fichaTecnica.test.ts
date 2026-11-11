@@ -22,7 +22,7 @@ describe('ficha técnica e descrição em blocos', () => {
   });
   it('ficha não repete a cor que o ML já deu', () => {
     const f = montarFicha([['Código original (OEM)', '5U0199555'], ['Cor', 'Preto']], 'Volkswagen Gol e Voyage, 2008 a 2012', 'Serve em', d.extras, () => false);
-    expect(f.map((l) => l.rotulo)).toEqual(['Código original', 'Serve em', 'Cor', 'Material', 'Posição']);
+    expect(f.map((l) => l.rotulo)).toEqual(['Código gravado', 'Serve em', 'Cor', 'Material', 'Posição']);
   });
   it('descrição vazia: nada quebra', () => {
     const v = lerDescricao('');

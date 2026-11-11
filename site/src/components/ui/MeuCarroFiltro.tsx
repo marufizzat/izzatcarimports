@@ -56,17 +56,17 @@ export default function MeuCarroFiltro({ marca, modelo, ano, aoAplicar }: Props)
     linha = (
       <>
         <p className="cat-meu-txt"><span>Sem peças do seu carro no site agora</span><b>{nomeCarro(carro)}</b></p>
-        <a className="botao botao-laranja cat-meu-whats" href={whatsUrl(`Procuro peça para ${nomeCarro(carro)}. Tem no pátio?`)}>
+        <a className="botao botao-laranja cat-meu-whats" data-botao="meu-carro-sem-peca" href={whatsUrl(`Procuro peça para ${nomeCarro(carro)}. Tem no pátio?`)}>
           <Rotulo pc="Procurar no pátio" cel="Procurar" />
         </a>
       </>
     );
   } else {
     const rotulo = semAno
-      ? <span>Sem peças do {carro.y} agora</span>
+      ? <span>Sem peças de {carro.y} agora</span>
       : carro.y == null
-        ? <span>{filtrado ? 'Mostrando o seu carro' : 'Seu carro'} · <button type="button" onClick={qualAno}>qual o ano?</button></span>
-        : <span>{filtrado ? 'Mostrando as peças do seu carro' : 'Seu carro'}</span>;
+        ? <span>{filtrado ? 'Peças do seu carro' : 'Meu carro'} · <button type="button" onClick={qualAno}>qual o ano?</button></span>
+        : <span>{filtrado ? 'Peças do seu carro' : 'Meu carro'}</span>;
     linha = (
       <>
         <p className="cat-meu-txt">{rotulo}<b>{semAno ? `${carro.b} ${carro.m}${filtrado ? ' · todos os anos' : ''}` : nomeCarro(carro)}</b></p>
@@ -76,7 +76,7 @@ export default function MeuCarroFiltro({ marca, modelo, ano, aoAplicar }: Props)
           </button>
         ) : (
           <button type="button" className="botao botao-grafite" onClick={() => aoAplicar({ marca: carro.b, modelo: carro.m, ano: anoUsado ?? undefined })}>
-            {semAno ? <Rotulo pc={`Ver o ${carro.m} de todos os anos`} cel="Ver todos os anos" /> : <Rotulo pc="Ver só as peças do meu carro" cel="Ver só as dele" />}
+            {semAno ? <Rotulo pc={`Ver o ${carro.m} de todos os anos`} cel="Ver todos os anos" /> : <Rotulo pc="Ver só as peças do meu carro" cel="Só o meu carro" />}
           </button>
         )}
       </>

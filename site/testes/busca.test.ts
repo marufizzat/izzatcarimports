@@ -1,8 +1,11 @@
 // Testes do motor de busca. Os casos sao escolhidos NO ESTOQUE DO MOMENTO (o robo roda
 // a cada 30 min e as pecas sao vendidas): se um caso nao existir hoje, o teste pula.
+// REGRA (11/11/2026, o robo recusou a rodada 14 por causa de uma venda): nada aqui pode esperar que um carro TENHA ou
+// NAO TENHA uma peca, nem uma contagem. O que se espera sai, por regra, do estoque lido. Caso que cita peca vai para o
+// estoque congelado (src/lib/busca.regressao.test.ts). A prova: node scripts/estoque-perturbado.mjs.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { Busca, codigoJunto, normal, palavras, termos, type Item } from '../src/lib/busca';
+import { Busca, codigoJunto, mesmaForma, mesmaPalavra, normal, palavras, termos, type Item } from '../src/lib/busca';
 import { serveNoModelo, anosNoModelo, modelosDa } from '../src/lib/meuCarro';
 
 const ix = JSON.parse(readFileSync('public/dados/busca.json', 'utf-8'));
@@ -133,15 +136,25 @@ describe('relevancia: o modelo exato vem primeiro', () => {
     const r = b.procurar({ q: 'farol compass' });
     const exatas = r.filter((x) => serveNoModelo(x, 'Compass') && /farol/.test(normal(x.t)));
     if (exatas.length) return ctx.skip(); // chegou farol do Compass: o caso não vale hoje
-    expect(b.aproximado).toBe(true);
-    const n = porCarro.get('Jeep|Compass')!.length;
-    expect(b.nDoCarro).toBe(n);
-    expect(r.slice(0, n).every((x) => serveNoModelo(x, 'Compass'))).toBe(true);
+    const daFamilia = (x: Item) => /farol|farois|lanterna/.test(`${normal(x.n)} ${normal(x.c)} ${normal(x.s)}`);
+    if (!b.itens.some(daFamilia)) return ctx.skip(); // estoque sem nenhuma luz: não há família para mostrar
+    // rodada 14 (cliente oculto, atrito 6): a parecida é da FAMÍLIA do farol (luzes e faróis), nunca qualquer peça do carro.
+    // Com aviso: "parecidas" enquanto houver alguma peça chamada "Farol…" no estoque; vendida a última, a palavra é só o
+    // bloco "Faróis e Lanternas" e a tela diz "peças ligadas a…" (citam). Nunca como achado
+    const aviso = b.aproximado || b.citam;
+    expect(aviso).toBe(true);
+    expect(b.nExatas).toBe(0);
+    expect(r.length).toBeGreaterThan(0);
+    // (o que só o anúncio cita pode vir, mas no fim: nunca antes de uma da família)
+    const ultimaDaFamilia = r.map(daFamilia).lastIndexOf(true);
+    expect(daFamilia(r[0])).toBe(true);
+    expect(r.slice(0, ultimaDaFamilia + 1).every(daFamilia)).toBe(true);
+    const primeiroFora = r.findIndex((x) => !serveNoModelo(x, 'Compass'));
+    if (primeiroFora > 0) expect(r.slice(0, primeiroFora).every((x) => serveNoModelo(x, 'Compass'))).toBe(true);
     const s = b.sugestoes('farol compass');
-    expect(s.aproximado).toBe(true);
+    expect(s.aproximado || s.citam).toBe(true);
+    expect(s.nExatas).toBe(0);
     expect(s.total).toBe(r.length);
-    expect(s.itens.length).toBeGreaterThan(0);
-    expect(serveNoModelo(s.itens[0], 'Compass')).toBe(true);
   });
 
   it('o nome da peça que começa pela palavra buscada vem antes ("farol": Farol… antes de Interruptor farol)', (ctx) => {
@@ -318,19 +331,26 @@ describe('termos do índice', () => {
   // categoria da palavra (Faróis e Lanternas), não por fechaduras em ordem qualquer
   it('"farol compass" sem farol do Compass: começa pelas luzes do Compass', (ctx) => {
     const compass = b.itens.filter((i) => serveNoModelo(i, 'Compass'));
-    const farolCompass = compass.some((i) => /farol/i.test(i.n));
+    const farolCompass = compass.some((i) => /farol/i.test(`${i.n} ${i.t}`));
     const luzCompass = compass.some((i) => i.c === 'Faróis e Lanternas');
     if (farolCompass || !luzCompass) return ctx.skip();
     const r = b.procurar({ q: 'farol compass' });
-    expect(b.aproximado).toBe(true);
+    // (com aviso: parecidas, ou "ligadas a…" quando o estoque não tem mais nenhuma peça chamada "Farol…")
+    expect(b.aproximado || b.citam).toBe(true);
+    expect(b.nExatas).toBe(0);
     expect(serveNoModelo(r[0], 'Compass')).toBe(true);
-    expect(r[0].c).toBe('Faróis e Lanternas');
+    // do bloco das luzes, ou de um tipo que diz "farol" (o nome do bloco não é o que importa: a família é)
+    expect(`${normal(r[0].c)} ${normal(r[0].s)}`).toMatch(/farol|farois/);
   });
   it('"lanterna xc60" continua com o XC60 na frente', (ctx) => {
-    if (!temCarro('Volvo', 'XC60')) return ctx.skip();
+    // vale quando o XC60 tem alguma peça da família (o nome, o tipo ou o bloco dizem lanterna); sem nenhuma, a lista
+    // abre com as lanternas dos outros carros, como parecidas
+    const daFamilia = (x: Item) => /lanterna/.test(normal(`${x.n} ${x.s} ${x.c}`));
+    if (!b.itens.some((x) => x.b === 'Volvo' && serveNoModelo(x, 'XC60') && daFamilia(x))) return ctx.skip();
     const r = b.procurar({ q: 'lanterna xc60' });
-    if (!r.length) return ctx.skip();
+    expect(r.length).toBeGreaterThan(0);
     expect(serveNoModelo(r[0], 'XC60')).toBe(true);
+    expect(daFamilia(r[0])).toBe(true);
   });
 });
 
@@ -350,6 +370,8 @@ describe('a lista bate com o que a pessoa procura (bloco "A gente procura no pá
 
   it('J1 com o carro só salvo (sem filtro): a lista traz retrovisores de outros carros, mas para o XC60 2019 não bate', (ctx) => {
     if (!temCarro('Volvo', 'XC60') || retroDireitoXc.length) return ctx.skip();
+    // (precisa de algum retrovisor direito no estoque, de qualquer carro)
+    if (!b.itens.some((x) => /^retrovisor/.test(normal(x.n)) && x.l === 'D')) return ctx.skip();
     const r = b.procurar({ q: 'retrovisor direito' });
     expect(r.length).toBeGreaterThan(0);
     expect(b.aproximado).toBe(false);
@@ -402,7 +424,8 @@ describe('sinônimos e plural', () => {
   const nomesComecam = (r: Item[], w: string) => r.filter((x) => normal(x.n).startsWith(w)).length;
   it('"sinaleira" (RS) acha as lanternas, como "lanterna"', (ctx) => {
     const lanternas = b.procurar({ q: 'lanterna' });
-    if (!lanternas.length) return ctx.skip();
+    // (vale com alguma peça chamada "Lanterna…" no estoque)
+    if (!nomesComecam(lanternas, 'lanterna')) return ctx.skip();
     const r = b.procurar({ q: 'sinaleira' });
     expect(b.aproximado).toBe(false);
     expect(nomesComecam(r, 'lanterna')).toBe(nomesComecam(lanternas, 'lanterna'));
@@ -414,37 +437,52 @@ describe('sinônimos e plural', () => {
     expect(b.bate(r, 'sinaleira', null)).toBe(true);
   });
   it('"faróis" acha o mesmo que "farol" (plural fora do padrão)', (ctx) => {
-    const um = b.procurar({ q: 'farol' });
-    if (!um.length) return ctx.skip();
+    // as peças que dizem "farol", a palavra inteira (a busca ao vivo também acha pelo começo: "farolete" não é plural)
+    const um = b.procurar({ q: 'farol' }).filter((x) => /\bfarol\b/.test(normal(`${x.n} ${x.t}`)));
+    if (!um.some((x) => normal(x.n).startsWith('farol'))) return ctx.skip();
     const varios = new Set(b.procurar({ q: 'faróis' }).map((x) => x.id));
     expect(b.aproximado).toBe(false);
-    expect(um.every((x) => varios.has(x.id))).toBe(true);
+    expect(um.filter((x) => !varios.has(x.id)).map((x) => x.t)).toEqual([]);
   });
   it('"máquina de vidro" acha os "Motor vidro"; "mola a gás" acha os amortecedores da tampa e do capô', (ctx) => {
     const motores = b.itens.filter((x) => /^motor vidro/.test(normal(x.n)));
     if (!motores.length) return ctx.skip();
     const ids = new Set(b.procurar({ q: 'máquina de vidro' }).map((x) => x.id));
     expect(motores.every((x) => ids.has(x.id))).toBe(true);
-    const mola = b.procurar({ q: 'mola a gás' });
+    // (vale com algum amortecedor da tampa ou do capô no estoque)
+    const aGas = b.itens.filter((x) => /^amortecedor.*(tampa|capo|porta-malas|gas)/.test(normal(x.n)));
+    if (!aGas.length) return;
+    const mola = new Set(b.procurar({ q: 'mola a gás' }).map((x) => x.id));
     expect(b.aproximado).toBe(false);
-    expect(mola.some((x) => /amortecedor/.test(normal(x.n)))).toBe(true);
+    expect(aGas.filter((x) => !mola.has(x.id)).map((x) => x.n)).toEqual([]);
   });
-  it('sinônimo só acrescenta: a palavra digitada continua valendo ("pisca" acha o pisca-alerta e a chave de seta)', (ctx) => {
-    const antes = b.itens.filter((x) => /\bpisca\b/.test(normal(x.n)));
+  it('"pisca" acha o pisca-alerta e a chave de seta (o tipo do botão e da alavanca), não o chicote do injetor', (ctx) => {
+    // rodada 14: o tipo manda; "chicote pisca bico injetor" deixou de ser "pisca" (a palavra só está no nome)
+    const antes = b.itens.filter((x) => /^(botao pisca|chave seta)/.test(normal(x.n)));
     if (!antes.length) return ctx.skip();
     const ids = new Set(b.procurar({ q: 'pisca' }).map((x) => x.id));
     expect(antes.every((x) => ids.has(x.id))).toBe(true);
-    expect(b.procurar({ q: 'pisca' }).some((x) => /chave seta/.test(normal(x.n)))).toBe(true);
+    // conserto da rodada 14 (revisão: nada some): o chicote cita "pisca" no nome e fica DEPOIS das exatas, em "Outras
+    // peças ligadas a…"; nunca entre as que são a peça
+    const r = b.procurar({ q: 'pisca' });
+    expect(r.slice(0, b.nExatas).some((x) => /chicote/.test(normal(x.n)))).toBe(false);
   });
 });
 
 describe('"frente": a frente do carro, nunca o painel nem o que é de trás (revisão 12, P3.8)', () => {
-  it('"frente xc60": a grade (churrasqueira) nas 5 primeiras; nada de painel, console, alto-falante ou tampa traseira', (ctx) => {
+  it('"frente xc60": a grade (churrasqueira) do XC60 na lista, antes de qualquer outro carro; nada de painel, console, alto-falante ou tampa traseira', (ctx) => {
     const grade = b.itens.find((x) => serveNoModelo(x, 'XC60') && /churrasqueira/.test(normal(x.n)));
     if (!grade) return ctx.skip();
     const r = b.procurar({ q: 'frente xc60' });
-    expect(r.slice(0, 5).some((x) => /grade|churrasqueira/.test(normal(x.n)))).toBe(true);
-    for (const x of r) expect(normal(`${x.n} ${x.s}`), x.n).not.toMatch(/painel|console|falante|difusor|tras/);
+    // a peça do XC60 que diz "churrasqueira" está na lista, e antes dela só peça do XC60 (nenhuma de outro carro passa na
+    // frente). As que SÃO a frente (o nome começa por grade, churrasqueira, farol, capô, para-choque, para-lama), quando
+    // o XC60 tem, abrem a lista
+    const i = r.findIndex((x) => x.id === grade.id);
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(r.slice(0, i).filter((x) => !textoPeca(x).includes('xc60')).map((x) => x.t)).toEqual([]);
+    if (!b.aproximado) expect(r.slice(0, b.nExatas).filter((x) => !/^(grade|churrasqueira|farol|farois|capo|para-choque|para-lama|frontal)/.test(normal(x.n))).map((x) => x.n)).toEqual([]);
+    // nada de painel, console, alto-falante, difusor nem do que é de trás (fora a peça cujo próprio anúncio diz "frente")
+    for (const x of r) if (!/\bfrente\b/.test(normal(`${x.n} ${x.t}`))) expect(normal(`${x.n} ${x.s}`), x.n).not.toMatch(/painel|console|falante|difusor|tras/);
   });
   it('quem digita a palavra do "fora" acha a peça ("frente painel" acha a moldura do painel)', (ctx) => {
     const moldura = b.itens.find((x) => serveNoModelo(x, 'XC60') && /^moldura frontal painel/.test(normal(x.n)));
@@ -460,7 +498,8 @@ describe('lado e posição', () => {
   const comLado = b.itens.filter((x) => x.l).length;
   it('o índice traz o lado e a posição só de quem tem', (ctx) => {
     if (!ix.l) return ctx.skip();
-    expect(comLado).toBeGreaterThan(1000);
+    // (um décimo do estoque, pelo menos, diz o lado no nome: hoje é um terço; zero = a coluna "l" quebrou)
+    expect(comLado).toBeGreaterThan(b.itens.length * 0.1);
     for (const it of b.itens.filter((x) => x.l).slice(0, 300)) {
       const n = normal(it.n);
       expect(it.l === 'E' ? /esquerd|motorista/.test(n) : /direit|passageiro/.test(n), it.n).toBe(true);
@@ -490,8 +529,15 @@ describe('lado e posição', () => {
     if (!temCarro('Volvo', 'XC60') || !comLado) return ctx.skip();
     const r = b.procurar({ q: 'retrovisor direito xc60' });
     expect(b.ladoDaBusca).toBe('D');
-    expect(r.length).toBeGreaterThan(0);
+    // o lado é estrito: toda peça da lista é do lado direito (com ou sem retrovisor direito do XC60 no estoque)
     expect(r.every((x) => x.l === 'D')).toBe(true);
+    // rodada 14: sem a peça desse lado, a lista sai vazia e diz o que faltou, com o outro lado de dica (nunca troca de
+    // lado em silêncio). O caso com as peças do XC60 está no estoque congelado (src/lib/busca.regressao.test.ts)
+    if (b.faltou) {
+      expect(r).toEqual([]);
+      expect(b.faltou.lado).toBe('D');
+      expect(b.outrosLados.every((x) => x.l === 'E')).toBe(true);
+    }
     // "lado do motorista" = esquerdo
     const m = b.procurar({ q: 'retrovisor lado do motorista' });
     expect(b.ladoDaBusca).toBe('E');
@@ -501,11 +547,12 @@ describe('lado e posição', () => {
   });
   it('"amortecedor traseiro": o que o nome diz "traseiro" vem antes da tampa traseira', (ctx) => {
     const r = b.procurar({ q: 'amortecedor traseiro' });
-    if (!r.some((x) => /amortecedor traseiro/.test(normal(x.n)))) return ctx.skip();
-    expect(normal(r[0].n)).toMatch(/traseiro/);
+    // (vale com alguma peça chamada "Amortecedor traseiro…" no estoque)
+    if (!r.some((x) => /^amortecedor traseiro/.test(normal(x.n)))) return ctx.skip();
+    expect(normal(r[0].n)).toMatch(/^amortecedor traseiro/);
     expect(r.every((x) => x.pos === 'T' || x.pos === 'A')).toBe(true);
   });
-  it('sem nenhuma peça daquele lado, a busca volta a valer como texto (nunca pior que antes)', () => {
+  it('sem nenhuma peça daquele lado, a busca diz o que faltou (rodada 14: não troca por outro lado em silêncio)', () => {
     // índice de 3 peças: o farol não diz o lado no nome, só no título do anúncio
     const mini = new Busca({
       v: 1, updated: '', marcas: ['Volvo'], familias: ['Faróis e Lanternas'], tipos: ['Faróis'],
@@ -514,12 +561,63 @@ describe('lado e posição', () => {
       b: [0, 0, 0], m: ['XC60', 'XC60', 'XC60'], y: [0, 0, 0], c: [0, 0, 0], s: [0, 0, 0], o: ['', '', ''], l: '0E0', pos: '0TT',
     });
     const r = mini.procurar({ q: 'farol direito' });
-    expect(r.map((x) => x.id)).toEqual(['MLB1']);
-    expect(mini.ladoDaBusca).toBeUndefined();
+    expect(r).toEqual([]);
+    expect(mini.faltou?.lado).toBe('D');
     // com peça do lado, filtra
     expect(mini.procurar({ q: 'lanterna esquerda' }).map((x) => x.id)).toEqual(['MLB2']);
     expect(mini.procurar({ q: 'lanterna traseira' }).map((x) => x.id).sort()).toEqual(['MLB2', 'MLB3']);
     // as duas posições na busca: fica no texto
     expect(mini.procurar({ q: 'lanterna dianteira/traseira' }).length).toBeGreaterThanOrEqual(0);
+  });
+});
+
+// 11/11/2026: vendida a última lanterna do XC60, "lanterna xc60" abria as parecidas com a "Capa antena" e o "Sensor
+// temperatura interna" do XC60 ("antena" e "interna" estão a 2 letras de "lanterna") e o robô recusou a rodada 14
+describe('palavra que o estoque conhece nunca é erro de digitação de outra', () => {
+  it('mesmaForma: plural e concordância, nunca outra palavra; mesmaPalavra: também o erro de 1 letra', () => {
+    for (const [a, c] of [['lanterna', 'lanternas'], ['farol', 'farois'], ['eletrico', 'eletrica'], ['painel', 'paineis'], ['modulo', 'modulos']]) {
+      expect(mesmaForma(a, c), `${a} ${c}`).toBe(true);
+      expect(mesmaForma(c, a), `${c} ${a}`).toBe(true);
+    }
+    for (const [a, c] of [['modulo', 'modelo'], ['lanterna', 'interna'], ['lanterna', 'antena'], ['capa', 'capo'], ['porta', 'portaluvas'], ['motor', 'motorista']]) {
+      expect(mesmaForma(a, c), `${a} ${c}`).toBe(false);
+    }
+    expect(mesmaPalavra('retrovizor', 'retrovisor')).toBe(true);
+    expect(mesmaPalavra('modulo', 'modelo')).toBe(true);   // a 1 letra: só vale para quem digitou palavra que o estoque não conhece
+    expect(mesmaPalavra('lanterna', 'antena')).toBe(false);
+  });
+
+  it('índice de 4 peças: "lanterna xc60" sem lanterna do XC60 não traz a antena nem o sensor de temperatura interna', () => {
+    const mini = new Busca({
+      v: 1, updated: '', marcas: ['Volvo', 'Audi'], familias: ['Faróis e Lanternas', 'Som e Multimídia', 'Ar-condicionado'], tipos: ['Lanternas Traseiras', 'Antenas', 'Sensores do Ar-condicionado', 'Refletores'],
+      id: ['MLB1', 'MLB2', 'MLB3', 'MLB4'],
+      t: ['Capa Antena Shark Teto Volvo Xc60 18/24', 'Sensor Temperatura Interna Volvo Xc60 18/24', 'Lanterna Traseira Direita Audi Q3 12/15', 'Refletor Para-choque Traseiro Volvo Xc60'],
+      n: ['Capa antena shark teto', 'Sensor temperatura interna', 'Lanterna traseira direita', 'Refletor para-choque traseiro'], p: [100, 200, 300, 400], i: ['', '', '', ''], h: ['a', 'b', 'c', 'd'], f: '0000',
+      b: [0, 0, 1, 0], m: ['XC60', 'XC60', 'Q3', 'XC60'], y: [0, 0, 0, 0], c: [1, 2, 0, 0], s: [1, 2, 0, 3], o: ['', '', '', ''], l: '00D0', pos: '00TT',
+    });
+    for (const q of ['lanterna xc60', 'sinaleira xc60', 'xc60 lanterna']) {
+      const r = mini.procurar({ q });
+      // parecidas, com aviso: a luz do XC60 (o bloco "Faróis e Lanternas") e a lanterna do outro carro; nada de antena
+      expect(mini.aproximado, q).toBe(true);
+      expect(mini.nExatas, q).toBe(0);
+      expect(r.map((x) => x.id), q).toEqual(['MLB4', 'MLB3']);
+    }
+    // sem nada que ligue a peça à palavra, o carro digitado sozinho não faz parecida: zero (o pátio)
+    expect(mini.procurar({ q: 'churrasqueira xc60' })).toEqual([]);
+    // e o erro de digitação de verdade continua achando
+    expect(mini.procurar({ q: 'lanterrna' }).map((x) => x.id)).toEqual(['MLB3']);
+  });
+});
+
+describe('carro unido (C180 -> Classe C, decisao do dono 10/11)', () => {
+  it('o apelido sai da lista de modelos; o filtro do principal e o "Meu carro" salvo com o apelido seguem achando as pecas', (ctx) => {
+    if (!(ix.apelidos ?? []).includes('Mercedes-Benz|C180')) return ctx.skip();
+    const f = b.facetas({ marca: 'Mercedes-Benz' } as Parameters<Busca['facetas']>[0]);
+    const nomes = f.modelos.map(([m]) => m);
+    expect(nomes).not.toContain('C180');
+    expect(nomes).toContain('Classe C');
+    const salvo = b.itens.filter((it) => it.b === 'Mercedes-Benz' && serveNoModelo(it, 'C180'));
+    expect(salvo.length).toBeGreaterThan(0);
+    for (const it of salvo) expect(serveNoModelo(it, 'Classe C')).toBe(true);
   });
 });

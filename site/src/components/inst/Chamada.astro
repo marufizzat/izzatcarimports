@@ -6,8 +6,10 @@ import './inst.css';
 import Icone from '../Icone.astro';
 import CartaoWhats from './CartaoWhats.astro';
 import { whatsUrl } from '../../lib/dados';
-interface Props { titulo: string; texto: string; mensagem?: string; rotulo?: string; id?: string; arte?: string; arteAlt?: string; }
-const { titulo, texto, mensagem = 'Estou procurando uma peça.', rotulo = 'Chamar no WhatsApp', id, arte, arteAlt = '' } = Astro.props;
+// `botao` = o nome do botão no GA4 (contato_whatsapp, data-botao): "chamada-<página>" ("chamada-garantia"), ou o que a página passar.
+interface Props { titulo: string; texto: string; mensagem?: string; rotulo?: string; id?: string; arte?: string; arteAlt?: string; botao?: string; }
+const { titulo, texto, mensagem = 'Procuro uma peça.', rotulo = 'Chamar no WhatsApp', id, arte, arteAlt = '' } = Astro.props;
+const botao = Astro.props.botao ?? `chamada-${Astro.url.pathname.replace(/^\/|\.html$/g, '').replace(/[^a-z0-9]+/gi, '-') || 'inicio'}`;
 const url = whatsUrl(mensagem);
 ---
 <div class="moldura inst-sec inst-sec-fim">
@@ -15,8 +17,8 @@ const url = whatsUrl(mensagem);
     <div class="inst-chamada-texto">
       <h2 class="titulo-secao" id={id}>{titulo}</h2>
       <p>{texto}</p>
-      <a class="botao botao-laranja inst-botao" href={url} rel="noopener"><Icone nome="whats" />{rotulo}</a>
-      <a class="inst-fone" href={url} rel="noopener" aria-label="WhatsApp (53) 99117-0950">(53) 99117-0950</a>
+      <a class="botao botao-laranja inst-botao" href={url} rel="noopener" data-botao={botao}><Icone nome="whats" />{rotulo}</a>
+      <a class="inst-fone" href={url} rel="noopener" data-botao={`${botao}-numero`} aria-label="WhatsApp (53) 99117-0950">(53) 99117-0950</a>
     </div>
     {arte
       ? <div class="inst-chamada-arte"><img src={arte} alt={arteAlt} width="1024" height="537" loading="lazy" decoding="async" /></div>

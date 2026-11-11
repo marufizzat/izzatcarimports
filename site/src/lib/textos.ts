@@ -138,12 +138,12 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
   const k = `categoria:${f.k}`;
 
   const p1 = escolha(`${k}:1`, ehPeca ? [
-    `${S(N)} ${N} ${tema} ${O(N)} no estoque.`,
-    `No estoque há ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
+    `${S(N)} ${N} ${tema} ${O(N)} no pátio.`,
+    `No pátio há ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
     `Esta categoria reúne ${N} ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
   ] : [
-    `${S(N)} ${N} ${P(N)} de ${tema} ${O(N)} no estoque.`,
-    `No estoque há ${N} ${P(N)} de ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
+    `${S(N)} ${N} ${P(N)} de ${tema} ${O(N)} no pátio.`,
+    `No pátio há ${N} ${P(N)} de ${tema} ${O(N)}, de carros com baixa legal no Detran-RS.`,
     `Esta categoria reúne ${N} ${P(N)} ${O(N)} de ${tema}, retiradas de carros com baixa legal no Detran-RS.`,
   ]);
   const paragrafos = [p1];
@@ -156,10 +156,14 @@ export function textosCategoria(f: { n: string; k: string }, lista: Peca[]): Tex
   }
   if (marcas.length) {
     const base = modelos ? `${modelos} ${M(modelos)}` : '';
+    // a frase diz de que categoria fala: sem isso, duas categorias com os mesmos números saíam com o MESMO parágrafo
+    // ("Há peças para 103 modelos, de carros de 1999 a 2027; a marca com mais peças é Chevrolet." em Maçanetas e
+    // Fechaduras e em Vidro Elétrico, num estoque sorteado da rodada 14b) e o teste de parágrafo único travava o robô
+    const oQue = ehPeca ? tema : `peças de ${tema}`;
     paragrafos.push(base ? escolha(`${k}:3`, [
-      `As marcas com mais peças são ${juntar(marcas)}, e há peças para ${base}${anosFrase}.`,
-      `Há peças para ${base}${anosFrase}; a marca com mais peças é ${marcas[0]}.`,
-    ]) : `As marcas com mais peças são ${juntar(marcas)}${anosFrase}.`);
+      `As marcas com mais ${oQue} são ${juntar(marcas)}, e há peças para ${base}${anosFrase}.`,
+      `Há ${oQue} para ${base}${anosFrase}; a marca com mais peças é ${marcas[0]}.`,
+    ]) : `As marcas com mais ${oQue} são ${juntar(marcas)}${anosFrase}.`);
   }
   const qtd = ehPeca ? `${N} ${tema} ${O(N)}` : `${N} peças originais de ${tema}`;
   const meta = caber([
@@ -183,8 +187,8 @@ export function textosCarro(c: Pick<Carro, 'k' | 'b' | 'm' | 'c' | 'anos' | 'fam
 
   const p1 = escolha(`${k}:1`, [
     `${S(N)} ${N} ${P(N)} ${O(N)} para ${nome}${anos}.`,
-    `No estoque há ${N} ${P(N)} para ${nome}${anos}, de carros com baixa legal no Detran-RS.`,
-    `Para ${nome}${anos}, ${S(N).toLowerCase()} ${N} ${P(N)} ${O(N)} em estoque.`,
+    `No pátio há ${N} ${P(N)} para ${nome}${anos}, de carros com baixa legal no Detran-RS.`,
+    `Para ${nome}${anos}, ${S(N).toLowerCase()} ${N} ${P(N)} ${O(N)} no pátio.`,
   ]);
   const paragrafos = [p1];
   if (fams.length && N < 5) {
@@ -227,24 +231,25 @@ export function textosMarca(m: Pick<Marca, 'n' | 'c' | 'm'>, lista: Peca[]): Tex
   const paragrafos: string[] = [
     modelos ? escolha(`${k}:1`, [
       `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} para ${modelos} ${M(modelos)}.`,
-      `Há ${N} ${P(N)} ${O(N)} de ${m.n} em estoque, para ${modelos} ${M(modelos)}${modelos > 1 ? ' diferentes' : ''}.`,
-      `As peças de ${m.n} no estoque somam ${N}, de ${modelos} ${M(modelos)}.`,
-    ]) : `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} no estoque.`,
+      `Há ${N} ${P(N)} ${O(N)} de ${m.n} no pátio, para ${modelos} ${M(modelos)}${modelos > 1 ? ' diferentes' : ''}.`,
+      `As peças de ${m.n} no pátio somam ${N}, de ${modelos} ${M(modelos)}.`,
+    ]) : `${S(N)} ${N} ${P(N)} ${O(N)} de ${m.n} no pátio.`,
   ];
   if (nomes.length) {
+    // (com o nome da marca: cada parágrafo é de UMA página, com qualquer estoque)
     paragrafos.push(escolha(`${k}:2`, [
-      `Os modelos com mais peças são ${juntar(nomes)}.`,
-      `Entre os carros, ${juntar(nomes)} são os que mais aparecem.`,
-      `Os carros com mais anúncios são ${juntar(nomes)}.`,
+      `Os modelos ${m.n} com mais peças são ${juntar(nomes)}.`,
+      `Entre os carros ${m.n}, ${juntar(nomes)} são os que mais aparecem.`,
+      `Os carros ${m.n} com mais anúncios são ${juntar(nomes)}.`,
     ]));
   }
   if (fams.length) {
     // "A maioria" só com 5+ peças (auditoria 4, 7.2: a Lifan tinha 1 peça e "A maioria é de faróis")
-    paragrafos.push(N === 1 ? `A peça é ${juntarDe(fams)}${a ? `, para carros de ${anoTxt(a)}` : ''}.`
-      : N < 5 ? `São peças ${juntarDe(fams)}${anosFrase}.`
+    paragrafos.push(N === 1 ? `A peça ${m.n} é ${juntarDe(fams)}${a ? `, para carros de ${anoTxt(a)}` : ''}.`
+      : N < 5 ? `As peças ${m.n} são ${juntarDe(fams)}${anosFrase}.`
       : escolha(`${k}:3`, [
-        `A maioria é ${juntarDe(fams)}${anosFrase}.`,
-        `O que mais tem é peça ${juntarDe(fams.map(sistema))}${anosFrase}.`,
+        `A maioria das peças ${m.n} é ${juntarDe(fams)}${anosFrase}.`,
+        `Em ${m.n}, o que mais tem é peça ${juntarDe(fams.map(sistema))}${anosFrase}.`,
       ]));
   }
   const meta = caber([
@@ -268,4 +273,4 @@ export const tituloCarro = (b: string, m: string, anos: [number, number] | null)
 export const tituloMarca = (n: string) => `Peças ${n} originais | Izzat Car Imports`;
 
 /** Termos que nunca podem aparecer nos textos (regras da marca: nada nao confirmado). */
-export const PROIBIDOS = ['frete grátis', 'tem aqui', 'mais barato', '100% garantido', 'lacre', 'retirada no local', 'horário', 'endereço', '12x'];
+export const PROIBIDOS = ['frete grátis', 'tem aqui', 'mais barato', '100% garantido', 'lacre', 'retirada no local', '12x', 'troca', 'devolu', 'transportadora', 'único whatsapp', 'parcel', 'seminov'];

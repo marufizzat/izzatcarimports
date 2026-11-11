@@ -4,6 +4,7 @@ IZZAT CAR — prepara os dados do site novo (pasta site/, Astro).
 Le products.json (o mesmo que atualizar_catalogo.py grava) e escreve:
   site/src/data/pecas.json     -> uma entrada por peca, usada pra gerar /peca/*.html
   site/src/data/resumo.json    -> marcas, modelos, familias, carros, vitrines da home
+  site/src/data/unidos.json    -> carros unidos: "marca|apelido" -> principal (Meu carro salvo e nome do carro na tela)
   site/public/dados/busca.json -> indice compacto que o navegador baixa pra busca
 
 Nada aqui e publicado como esta: products.json (com a localizacao da peca no
@@ -19,6 +20,7 @@ Rodar depois de atualizar_catalogo.py:
 """
 
 import json
+import os
 import re
 import sys
 import time
@@ -72,6 +74,7 @@ MARCAS = {
     "RAM": ["ram"],
     "Chrysler": ["chrysler"],
     "Porsche": ["porsche"],
+    "SsangYong": ["ssangyong", "ssang yong", "ssangyoung"],
 }
 
 # "Mini" e "Ram" e "MB" sao palavras comuns demais: so contam como marca quando
@@ -194,6 +197,8 @@ def palavras(titulo, marca, inicio=None):
         if saida and VERSAO_FORA.match(w):
             continue
         saida.append(w)
+    if alias == "mini cooper":
+        return ["Cooper"] + saida
     if alias == "range rover":
         return ["Range Rover " + saida[0]] if saida else ["Range Rover"]
     return saida
@@ -257,6 +262,7 @@ def exibir(nome):
 
 
 SIGLAS = {"abs", "bcm", "bsi", "led", "cd", "dvd", "gps", "usb", "ecu", "tcu", "egr",
+          "ipm", "pdm", "lcm", "ecm", "pwm", "peps", "gnv", "sam", "sim", "tft", "slm", "ccu", "mmi", "bms", "pcu",
           "pcv", "tpms", "srs", "esp", "4x4", "cvt", "tsi", "tdi", "lcd", "mp3", "dsg",
           "abs/esp", "maf", "map", "ac", "a/c", "obd", "drl", "suv",
           "tbi", "bsm", "pdc", "uch", "tcm", "vcm", "epb", "ibs", "sos", "vvt", "dme", "eps",
@@ -286,7 +292,7 @@ ACENTOS = {
     "parachoque": "para-choque", "para-brisa": "para-brisa", "parabrisa": "para-brisa",
     "cilindro": "cilindro", "acustica": "acústica", "termico": "térmico", "conexao": "conexão",
     "posicao": "posição", "rotacao": "rotação", "sucção": "sucção", "succao": "sucção",
-    "distribuicao": "distribuição",
+    "distribuicao": "distribuição", "carter": "cárter", "aluminio": "alumínio",
     "braco": "braço", "reservatorio": "reservatório", "resistencia": "resistência",
     "tensao": "tensão", "ventilador": "ventilador", "eletroventilador": "eletroventilador",
     "pistao": "pistão", "embreagem": "embreagem", "silencioso": "silencioso",
@@ -321,7 +327,7 @@ ACENTOS.update({
     "rele": "relé", "reles": "relés", "diagnostico": "diagnóstico", "planetaria": "planetária",
     "secundaria": "secundária", "transferencia": "transferência", "multimedia": "multimídia",
 })
-MOTOR_FORA = re.compile(r"^(\d{1,2}v|tfsi|fsi|tsi|tdi|thp|t\d?|turbo|flex|hibrido|híbrido|"
+MOTOR_FORA = re.compile(r"^(asp|aspirado|cabrio|\d{1,2}v|tfsi|fsi|tsi|tdi|thp|t\d?|turbo|flex|hibrido|híbrido|"
                         r"hybrid|sport|v6|v8|aut)$", re.I)
 _CONHECIDOS_GLOBAL = set()
 
@@ -1084,14 +1090,40 @@ def palavra_cortada(w):
     return None if not cand else cand.pop() if len(cand) == 1 else ""
 
 
+# palavra de peca/lado que nunca e pedaco de carro: "Esq 17/23" nao vira "Esq17" (e o lado some)
+_NAO_JUNTA = set(ABREV_ADJETIVO) | set(ABREV_FIXA) | set(ABREV_INVARIAVEL) | {"aro"}
+
+
+# Lixo do anuncio e abreviacao do ML no nome (auditoria 04, 10/11). Palavra inteira; "air" sozinho fica (air bag).
+_LIXO_PARES = re.compile(r"\b(fell pack|feel live|feel pack|fell live|air cross)\b", re.I)
+_LIXO_PALAVRAS = re.compile(r"\b(recharge|rr|ex|lx|lxl|lr|red|snjrrl|snjfrl|panda|ver|way|track|avant|sigma|duratc|etorq"
+                            r"|assy|ata|fire|firefly|cross|fell|feel|live|pack)\b", re.I)
+_ABREV_NOME = {"automatic": "automático", "senso": "sensor", "dia": "dianteiro", "aux": "auxiliar", "pre": "pré"}
+_LADO_SIGLA = {"rh": "direita", "lh": "esquerda"}
+
+
+def limpar_lixo_anuncio(titulo):
+    t = _LIXO_PARES.sub(" ", titulo)
+    t = _LIXO_PALAVRAS.sub(" ", t)
+    lado = re.search(r"\b(direit[oa]s?|esquerd[oa]s?)\b", t, re.I)
+    def lado_fn(m):
+        return "" if lado else _LADO_SIGLA[m.group(0).lower()]
+    t = re.sub(r"\b(rh|lh)\b", lado_fn, t, flags=re.I)
+    t = re.sub(r"\b(automatic|senso|dia|aux|pre)\b", lambda m: _ABREV_NOME[m.group(0).lower()], t, flags=re.I)
+    t = re.sub(r"\bgrade dianteiro\b", "grade dianteira", t, flags=re.I)
+    t = re.sub(r"\bacabamento interna\b", "acabamento interno", t, flags=re.I)
+    return re.sub(r"\s{2,}", " ", t).strip()
+
+
 def nome_limpo(titulo, marca, modelo, outros=()):
     """'Lanterna Esquerda Tampa Traseira Volvo Xc 60 18/24 A045591'
     -> 'Lanterna esquerda tampa traseira'. Carro, ano e codigo aparecem a parte.
     outros = os outros carros em que a peca serve ("ms"): saem do nome como o modelo."""
+    titulo = limpar_lixo_anuncio(titulo)
     ws = titulo.split()
     if len(titulo) >= TITULO_CHEIO and len(ws) > 1 and palavra_cortada(ws[-1]) is not None:
         titulo = " ".join(ws[:-1] + [palavra_cortada(ws[-1])]).strip()      # "... 15/21 Die" -> "... 15/21 diesel"
-    t = CODIGO_SEPARADO.sub(lambda m: m.group(1) + m.group(2), titulo)   # "Xc 60" -> "Xc60"
+    t = CODIGO_SEPARADO.sub(lambda m: m.group(0) if _sem(m.group(1)) in _NAO_JUNTA else m.group(1) + m.group(2), titulo)   # "Xc 60" -> "Xc60"; "Esq 17/23", "Dir 24/26", "Aro 17" ficam
     t = gi.ANOS_RE.sub(" ", t)
     t = re.sub(r"\b(19|20)\d{2}\s*(a|até|ate|/|-)\s*(19|20)\d{2}\b", " ", t, flags=re.I)
     t = re.sub(r"\b(19|20)\d{2}\s*/\s*\d{2}\b", " ", t)                 # "2019/24"
@@ -1130,7 +1162,10 @@ def nome_limpo(titulo, marca, modelo, outros=()):
             continue                                       # geracao/chassi: "G06", "E90", "G5", "B8"
         if k in _CONHECIDOS_GLOBAL and re.search(r"\d", w):   # outro modelo: s90, q5
             continue
+        if len(k) == 1 and not (saida and _sem(saida[-1]) in ("coluna", "pilar") and re.fullmatch(r"[A-Da-d]", w)):
+            continue
         if len(k) == 1:
+            saida.append(w.upper())
             continue
         if re.search(r"\d", w) and len(k) >= 5:          # codigo OEM / part number
             continue
@@ -1140,6 +1175,9 @@ def nome_limpo(titulo, marca, modelo, outros=()):
         if re.search(r"\d", nucleo) and not re.fullmatch(r"\d+([.,]\d+)?", nucleo) \
                 and not CODIGO_NO_NOME.fullmatch(nucleo) and not UNIDADE_NO_NOME.fullmatch(nucleo) \
                 and nucleo not in SIGLAS:
+            continue
+        if re.fullmatch(r"\d{2}", w) and saida and _sem(saida[-1]) == "aro":
+            saida.append(w)
             continue
         if re.fullmatch(r"\d+([.,]\d+)?", w):            # 1.6, 2.0 soltos
             continue
@@ -1160,6 +1198,8 @@ def nome_limpo(titulo, marca, modelo, outros=()):
         nucleo = w.strip("()")
         if w in SIGLAS:
             frase.append(w.upper())
+        elif len(nucleo) == 1 and i and _sem(palavras_nome[i - 1]) in ("coluna", "pilar"):
+            frase.append(w.upper())                          # "coluna B"
         elif CODIGO_NO_NOME.fullmatch(nucleo):             # codigo de motor/chassi: "m270" -> "M270"
             frase.append(w.replace(nucleo, nucleo.upper()))
         elif i == 0:
@@ -1931,6 +1971,26 @@ def tipo_loja(s, familia=""):
 # Familia nova None = fica na mesma. A 1a regra que casa vale. O BLOCO sai do tipo novo (o "Faróis" com esguicho
 # e modulo, a "Luz teto" no Faróis e Lanternas, o "Motor limpador" no Vidro: auditoria 3, item 3.1/3.2).
 REGRAS_NOME = [
+    # auditoria 03c (10/11): o nome manda (fechadura do banco nao e fechadura da porta; sensor do banco nao e caixa de fusiveis)
+    (r"^fechadura (trava )?(do )?banco\b", None, None, "Peças de Banco"),
+    (r"^modulo sensor banco\b", None, "Outros Sensores", "Outros Sensores"),
+    (r"^painel controle suspensao\b", None, "Botões e Chaves de Seta", "Outros Botões"),
+    (r"^suporte amortecedor\b", None, None, "Coxins do Amortecedor"),
+    # auditoria de dados 10/11: rele nao e chave/botao nem motor de vidro
+    (r"^(modulo )?rele\b(?!.*\b(ventoinha|ar condicionado|bomba)\b)", {"Chaves do Limpador", "Botões do Pisca-alerta", "Interruptores de Para-brisas", "Interruptores de Piscas-alertas", "Máquinas e Motores de Vidro Elétrico"}, "Sistema Elétrico", "Relés"),
+    # moldura do painel na categoria "Relogios > Colunas e Copos" (vira Acabamentos de Coluna)
+    (r"^(moldura|acabamento)\b(?!.*\b(coluna|pilar)\b).*\bpainel\b", {"Acabamentos de Coluna"}, "Peças de Interior", "Acabamentos do Painel"),
+    # suporte/coxim do MOTOR na categoria do cambio
+    (r"^(suporte|coxim|calco)( (do|de))? motor\b(?!.*\bcambio\b)", {"Coxins do Câmbio"}, "Motor", "Coxins do Motor"),
+    # mangueira de outro sistema na categoria errada
+    (r"^mangueira\b.*\b(radiador|arrefecimento)\b", {"Mangueiras de Ar Condicionado"}, "Motor", "Mangueiras de Arrefecimento"),
+    (r"^mangueira\b.*\b(turbina|turbo)\b", {"Mangueiras da Direção"}, "Motor", "Mangueiras do Turbo e Intercooler"),
+    (r"^duto\b.*\bar condicionado\b", {"Mangueiras de Admissão"}, "Climatização", "Outros"),
+    (r"^(filtro )?ressonador\b", {"Mangueiras de Admissão"}, "Filtros", "Caixas do Filtro de Ar"),
+    # modulo na categoria de maquina de vidro que nao e do vidro (modulo conforto/porta, sensor)
+    (r"^modulo\b(?!.*\bvidro\b)", {"Máquinas e Motores de Vidro Elétrico"}, "Sistema Elétrico", "Módulos de Conforto (BCM)"),
+    # comando do radio na categoria do ar
+    (r"^comando (do |de )?(radio|som)\b", {"Comandos de Ar Condicionado"}, "Som e Multimídia", "Interfaces de Som"),
     # macaco e chave de roda: o kit do carro, junto do "Kit macaco chave roda triângulo" que o ML ja poe em Segurança
     (r"^(kit macaco|chave (de )?roda|isopor estepe|macaco)\b", None, "Segurança", "Macacos e Chaves de Roda"),
     # "Comando rebatimento tampa" (o botão da tampa traseira que também rebate o banco) caía no "Comando de válvulas" do
@@ -2469,7 +2529,8 @@ def codigo_valido(t):
         return False
     if not ((re.search(r"[a-z]", k) and re.search(r"\d", k)) or (k.isdigit() and len(k) >= 6)):
         return False
-    if _COD_ANOS.match(k) or _COD_MEDIDA.match(k) or _COD_CARRO.match(k) or _COD_ENCHIMENTO.match(k):
+    if _COD_ANOS.match(k) or _COD_MEDIDA.match(k) or _COD_CARRO.match(k) or _COD_ENCHIMENTO.match(k) \
+            or re.fullmatch(r"(pa|pp|pbt|pom|pc|pe)\d{0,3}(gf|td|mf|t)\d{2}", k):
         return False
     if k in "01234567890123456789" or k in _CONHECIDOS_GLOBAL:        # "123456", nome de carro
         return False
@@ -3043,7 +3104,13 @@ def estoque(p):
 
 def codigos_busca(p):
     """Codigos pra busca, sem hifen ("31663477" acha "316-63477"); o 1o e o do cartao."""
-    return " ".join(dict.fromkeys(_cod_chave(c) for c in codigos_peca(p)))[:120]
+    cods = codigos_peca(p)
+    if not cods:
+        return ""
+    chaves = list(dict.fromkeys(_cod_chave(c) for c in cods))
+    # o cartao mostra o 1o pedaco do "o": com traco/ponto, vai antes a grafia do anuncio (igual a pagina); sem, nada muda
+    vitrine = [cods[0]] if _cod_chave(cods[0]) != cods[0].lower() else []
+    return " ".join(vitrine + chaves)[:120]
 
 
 # ---- Mesma peca, precos diferentes (cliente oculto 10/11, atrito 7) ----
@@ -3151,6 +3218,28 @@ NIVEIS_REPUTACAO = {"1_red": ("vermelho", 1), "2_orange": ("laranja", 2), "3_yel
 LIDERES_REPUTACAO = {"silver": "prata", "gold": "ouro", "platinum": "platina"}
 
 
+TETO_EXCLUIDOS = 40
+
+
+def excluidos_do_site(prods):
+    """Anuncio que NAO vai para o site: so o que esta em excluir_do_site.json ({"MLB...": "motivo"}), lista curta e
+    auditavel (teto TETO_EXCLUIDOS). Sai do site, nao do ML. A pagina dele cai no 404 (a "vendida")."""
+    f = ROOT / "excluir_do_site.json"
+    if not f.exists():
+        return set()
+    d = json.loads(f.read_text(encoding="utf-8"))
+    if len(d) > TETO_EXCLUIDOS:
+        raise SystemExit(f"excluir_do_site.json: {len(d)} anuncios (teto {TETO_EXCLUIDOS}); lista so o que e claro")
+    sem_motivo = [k for k, v in d.items() if not str(v).strip()]
+    if sem_motivo:
+        raise SystemExit(f"excluir_do_site.json: sem motivo: {sem_motivo}")
+    ids = {p["id"] for p in prods}
+    sumidos = [k for k in d if k not in ids]
+    if sumidos:
+        print(f"excluir_do_site.json: fora do estoque de hoje (ignorado): {sumidos}")
+    return set(d) & ids
+
+
 def ler_reputacao(caminho=None):
     """reputation.json -> {nivel, n, lider?, vendas?} ou None. So leva o que o ML informou:
     sem nivel conhecido nao ha termometro; sem lider ou sem vendas, some so essa linha."""
@@ -3207,6 +3296,45 @@ def modelos_do_titulo(marca, ws, principal, validos):
     return lista
 
 
+# ---- Mesmo carro em 2 paginas (decisao do dono, 10/11): motor/geracao vira o carro principal ----
+# A peca ganha o carro principal em "ms" (pagina, filtro e garagem o acham) e o nome antigo continua em "ms": quem salvou
+# "C180" no Meu carro nao perde peca. O endereco /carros/<apelido>.html continua (resumo["aliases"]): a mesma pagina do
+# principal, com canonical para ele; fora de "carros" (menus, cartoes, sitemap).
+UNIR_CARRO_PARES = {
+    ("Mercedes-Benz", "C180"): "Classe C", ("Mercedes-Benz", "C200"): "Classe C", ("Mercedes-Benz", "C320"): "Classe C",
+    ("BMW", "320i"): "Série 3", ("BMW", "330i"): "Série 3", ("BMW", "530i"): "Série 5",
+    ("Mercedes-Benz", "GLA200"): "GLA", ("Ford", "New Fiesta"): "Fiesta", ("Honda", "New Civic"): "Civic",
+}
+UNIR_CARRO = {(m, gi.chave_modelo(a)): P for (m, a), P in UNIR_CARRO_PARES.items()}
+_UNIAO = Counter()   # (marca, apelido, principal) -> pecas que tinham o apelido (o endereco antigo so existe com 8+)
+
+
+def unir_carro(marca, mod, ms, ys, faixa):
+    """(mod, ms, ys) da peca com o carro principal no lugar do apelido (UNIR_CARRO). Sem apelido, nada muda."""
+    carros = list(ms) if ms else ([mod] if mod else [])
+    alvo = {c: UNIR_CARRO.get((marca, gi.chave_modelo(c))) for c in carros}
+    if not any(alvo.values()):
+        return mod, ms, ys
+    for c, P in alvo.items():
+        if P:
+            _UNIAO[(marca, c, P)] += 1
+    faixas = list(ys) if ys else [faixa] * len(carros)
+    principais = []                                    # principal novo (o que nao estava na peca), com a faixa dos apelidos
+    for P in dict.fromkeys(v for v in alvo.values() if v):
+        if any(gi.chave_modelo(c) == gi.chave_modelo(P) for c in carros):
+            continue
+        fs = [f for c, f in zip(carros, faixas) if alvo[c] == P and f]
+        principais.append((P, [min(f[0] for f in fs), max(f[1] for f in fs)] if fs else faixa))
+    nomes = [P for P, _ in principais] + carros
+    anos = [f for _, f in principais] + faixas
+    if mod and alvo.get(mod):
+        mod = alvo[mod]
+    if mod in nomes:                                   # o carro da peca vem primeiro (o "m")
+        i = nomes.index(mod)
+        nomes, anos = [nomes[i]] + nomes[:i] + nomes[i + 1:], [anos[i]] + anos[:i] + anos[i + 1:]
+    return mod, nomes, (anos if ys else None)
+
+
 def anos_por_modelo(ms, marca, a0, a1):
     """(carros, anos de cada um) da peca de 2+ carros. A faixa do titulo vale para todos, cortada no
     periodo de venda de cada carro ("Fit Wr-v 15/21": WR-V so a partir de 2017). Carro cuja faixa fica
@@ -3248,20 +3376,28 @@ def main():
     print("  IZZAT CAR — dados do site novo")
     print("=" * 52)
 
-    bruto = json.loads((ROOT / "products.json").read_text(encoding="utf-8"))
+    # IZZAT_PRODUTOS: outro products.json (site/scripts/estoque-perturbado.mjs prova os testes com o estoque mexido);
+    # sem a variável, o de sempre
+    bruto = json.loads(Path(os.environ.get("IZZAT_PRODUTOS") or ROOT / "products.json").read_text(encoding="utf-8"))
     prods = bruto["products"]
+    excl = excluidos_do_site(prods)
+    if excl:
+        print(f"fora do site (excluir_do_site.json): {sorted(excl)}")
+        prods = [p for p in prods if p["id"] not in excl]
     cats = gi.load_categorias(prods)
     print(f"produtos: {len(prods)} | categorias: {len(cats)}")
 
     # 1) Marca de cada titulo; quando o titulo nao diz a marca, aprende pelo
     #    nome do carro ("Passat" so aparece com Volkswagen no resto do estoque).
-    marca_de = {p["id"]: marca_do_titulo(p["title"]) for p in prods}
+    # titulo quebrado no ML ("Fechadura"): le pelo atributo (titulo_de_leitura). O "t" exibido continua o do ML.
+    TL = {p["id"]: titulo_de_leitura(p) for p in prods}
+    marca_de = {p["id"]: marca_do_titulo(TL[p["id"]]) for p in prods}
 
     palavras_por_marca = defaultdict(Counter)
     for p in prods:
         mc = marca_de[p["id"]]
         if mc:
-            for w in palavras(p["title"], mc)[:1]:
+            for w in palavras(TL[p["id"]], mc)[:1]:
                 palavras_por_marca[gi.chave_modelo(w)][mc] += 1
     inicio_de = {}
     for p in prods:
@@ -3269,7 +3405,7 @@ def main():
             continue
         votos = Counter()
         onde = {}
-        for mt in re.finditer(r"[A-Za-z0-9-]{2,}", gi.strip_accents(p["title"])):
+        for mt in re.finditer(r"[A-Za-z0-9-]{2,}", gi.strip_accents(TL[p["id"]])):
             for mc, n in palavras_por_marca.get(gi.chave_modelo(mt.group(0)), {}).items():
                 if n >= 3:
                     votos[mc] += n
@@ -3284,7 +3420,7 @@ def main():
     for p in prods:
         mc = marca_de[p["id"]]
         if mc:
-            ws = palavras(p["title"], mc)
+            ws = palavras(TL[p["id"]], mc)
             if ws:
                 conhecidos.add(gi.chave_modelo(ws[0]))
 
@@ -3293,10 +3429,10 @@ def main():
     sozinho = defaultdict(Counter)
     for p in prods:
         mc = marca_de[p["id"]]
-        tit = limpar_titulo(p["title"], conhecidos)
+        tit = limpar_titulo(TL[p["id"]], conhecidos)
         ini = inicio_de.get(p["id"])
         if ini is not None:   # a limpeza pode mudar o tamanho: acha de novo
-            alvo = gi.strip_accents(p["title"])[ini:].split()[0]
+            alvo = gi.strip_accents(TL[p["id"]])[ini:].split()[0]
             pos = gi.strip_accents(tit).find(alvo)
             ini = pos if pos >= 0 else None
         ws = palavras(tit, mc, ini) if mc else []
@@ -3349,28 +3485,66 @@ def main():
     _aprender_nomes([display[k] for k, v in grafias.items() if sum(v.values()) >= 2], modelos=True)
     # carros que valem como modelo: os de 2+ pecas (leitura de uma peca so e quase sempre errada)
     validos = {k: display[k] for k, v in grafias.items() if sum(v.values()) >= 2}
+    # carro conhecido (CARROS_CONHECIDOS) citado em QUALQUER posicao de 2+ titulos da marca tambem vale ("Gol Voyage
+    # Saveiro": o Saveiro nunca e o 1o carro, e o dono do Saveiro nao via 29 pecas)
+    citados = Counter()
+    for mc, ws in cru:
+        vistos = set()
+        for n_ in (2, 1):
+            for i in range(len(ws) - n_ + 1):
+                kk = gi.chave_modelo(modelo_canonico(mc, " ".join(ws[i:i + n_])) or "")
+                if (mc, kk) in CARROS_CONHECIDOS:
+                    vistos.add(kk)
+        for kk in vistos:
+            citados[(mc, kk)] += 1
+    for (mc, kk), n_ in citados.items():
+        if n_ >= 2 and (mc, kk) not in validos:
+            validos[(mc, kk)] = display[(mc, kk)] = CARROS_CONHECIDOS[(mc, kk)]
+    _aprender_nomes(list(validos.values()), modelos=True)
 
     # 3) Uma entrada por peca.
     _DIM_PADRAO.clear()
+    _UNIAO.clear()
     _DIM_PADRAO.update(dimensoes_padrao(p.get("desc") for p in prods))
     pecas = []
     for p, (mc, ws) in zip(prods, cru):
         nome = modelo_canonico(mc, resolver(mc, ws))
         mod = display.get((mc, gi.chave_modelo(nome)), "") if nome else ""
         # Modelo com uma peca so e quase sempre leitura errada: fica sem.
-        if mod and sum(grafias[(mc, gi.chave_modelo(nome))].values()) < 2:
+        k_mod = (mc, gi.chave_modelo(nome)) if nome else None
+        if mod and sum(grafias[k_mod].values()) < 2 and k_mod not in validos and k_mod not in CARROS_CONHECIDOS:
             mod = ""
+        if not mod and ws:            # o 1o "carro" nao vale (1 peca so, versao, erro): o proximo carro valido do titulo
+            for i in range(len(ws)):
+                for n_ in (2, 1):
+                    kk = gi.chave_modelo(modelo_canonico(mc, " ".join(ws[i:i + n_])) or "")
+                    if (mc, kk) in validos and kk != gi.chave_modelo(mc):
+                        mod = validos[(mc, kk)]
+                        break
+                if mod:
+                    break
         if mod and (gi.chave_modelo(mod) == gi.chave_modelo(mc)
                     or gi.chave_modelo(mod) in {gi.chave_modelo(a) for a in MARCAS.get(mc, [])}):
             mod = ""
         # Peca que serve em mais de um carro ("Volvo S60 Xc60"): todos os carros da marca, o principal primeiro
-        ms_titulo = modelos_do_titulo(mc, ws, mod, validos) if mod else []
-        a0, a1 = anos_do_titulo(p["title"], mc, mod, p.get("part_number"), ms_titulo)
-        ms, ys = anos_por_modelo(ms_titulo, mc, a0, a1)
+        ms_titulo = modelos_do_titulo(mc, ws + palavras_depois_do_ano(TL[p["id"]]), mod, validos) if mod else []
+        a0, a1 = anos_do_titulo(TL[p["id"]], mc, mod, p.get("part_number"), ms_titulo)
+        c0, c1 = anos_crus(TL[p["id"]], mc, mod, p.get("part_number"), ms_titulo)
+        ms2 = [modelo_no_periodo(mc, m_, c0 or a0) for m_ in ms_titulo]      # "C4" 18/24 = C4 Cactus
+        if ms2 != ms_titulo or modelo_no_periodo(mc, mod, c0 or a0) != mod:
+            ms_titulo, mod = list(dict.fromkeys(ms2)), modelo_no_periodo(mc, mod, c0 or a0)
+            a0, a1 = anos_do_titulo(TL[p["id"]], mc, mod, p.get("part_number"), ms_titulo)
+        # cada carro e cortado no periodo DELE a partir da faixa crua do titulo (o 2o carro nao herda o corte do 1o)
+        ms, ys = anos_por_modelo(ms_titulo, mc, c0, c1) if (c0 and a0) else anos_por_modelo(ms_titulo, mc, a0, a1)
         if len(ms) > 1 and ms[0] != mod:
             mod = ms[0]   # a faixa do titulo e de outro carro da peca: ele vira o carro principal
+        mod, ms, ys = unir_carro(mc, mod, ms, ys, [a0, a1] if a0 else None)   # mesmo carro, outra pagina (UNIR_CARRO)
+        if not a0 and mc:   # titulo e part_number sem ano: a descricao ("Anos compativeis: 2013 ate 2020")
+            d0, d1 = anos_da_descricao(p.get("desc"))
+            if d0 and d1 > d0:   # um ano so ("Anos compativeis: 2010 ate 2010") e do outro carro da descricao: fica sem ano
+                a0, a1 = limitar_anos(d0, d1, mc, mod)
         cat = cats.get(p.get("category_id"))
-        n = nome_limpo(p["title"], mc, mod, ms_titulo)
+        n = nome_limpo(TL[p["id"]], mc, mod, ms_titulo)
         fam, tipo, chave_bloco = classificar_peca(n, cat, p.get("category_id") or "")
         fotos = list(dict.fromkeys(p.get("pics") or ([p["img"]] if p.get("img") else [])))[:12]
         pecas.append({
@@ -3410,6 +3584,11 @@ def main():
     n_dif = diferencas(pecas)
     print(f"dif: {n_dif} pecas com a versao na pilula ({len(grupos_mesma_peca(pecas))} grupos de mesma peca, preco diferente)")
 
+    # 3d) Preco de reserva (R$ 2.000,xx): so a lista para o dono corrigir no ML (o site mostra o preco do anuncio)
+    reserva = [x["id"] for x in pecas if preco_reserva(x["p"])]
+    if reserva:
+        print(f"preco de reserva R$ 2.000,xx: {len(reserva)} pecas (conferir no ML): {reserva}")
+
     # 4) Blocos (campo "c"): a lista fixa de BLOCOS, na ordem dela; "Outros" (fora da grade) no fim.
     fam_cnt = Counter(x["c"] for x in pecas)
     sobra = sorted(x["n"] for x in pecas if x["c"] == BLOCO_OUTROS)
@@ -3428,8 +3607,9 @@ def main():
 
     MIN_CARRO = 8
     carros = []
+    apelidos = {(mc_, c_) for (mc_, c_, _P) in _UNIAO}      # o apelido nao e pagina propria: vai como alias do principal
     for (mc, mod), lst in sorted(por_carro.items(), key=lambda kv: -len(kv[1])):
-        if len(lst) < MIN_CARRO:
+        if len(lst) < MIN_CARRO or (mc, mod) in apelidos:
             continue
         # mosaico do carro: 2a foto original de pecas variadas (familias diferentes)
         cands, fams_vistas = [], set()
@@ -3440,11 +3620,13 @@ def main():
                 break
         boas = fotos_limpas.limpas(cands)[:4]
         anos_l = [y for x in lst if anos_no_modelo(x, mod) for y in anos_no_modelo(x, mod)]
+        # a faixa do carro nunca sai do periodo dele (PRODUCAO_BR): a peca de 2 carros sem "ys" tem a faixa do titulo
+        a_ini, a_fim = limitar_anos(min(anos_l), max(anos_l), mc, mod) if anos_l else (None, None)
         fams = Counter(x["c"] for x in lst)
         carros.append({
             "k": chave_url(f"{mc} {mod}"),
             "b": mc, "m": mod, "c": len(lst),
-            "anos": [min(anos_l), max(anos_l)] if anos_l else None,
+            "anos": [a_ini, a_fim] if a_ini else None,
             "fams": [[n, c] for n, c in fams.most_common(6)],
             # so capas limpas (sem o carro colado) no mosaico do carro
             "capas": (boas + [x["fotos"][0] for x in lst if x["fotos"] and x.get("limpa")
@@ -3453,7 +3635,8 @@ def main():
 
     marcas = []
     for mc, lst in sorted(por_marca.items(), key=lambda kv: -len(kv[1])):
-        mods = Counter(mod for x in lst for mod in modelos_de(x))
+        # o apelido (C180, New Fiesta) nao aparece nas listas de modelo (marca, filtro, garagem): a peca conta no principal
+        mods = Counter(mod for x in lst for mod in modelos_de(x) if (mc, mod) not in {(a_, b_) for (a_, b_, _p) in _UNIAO})
         marcas.append({
             "n": mc, "k": chave_url(mc), "c": len(lst),
             "m": [{"n": n, "k": chave_url(n), "c": c}
@@ -3498,6 +3681,9 @@ def main():
         # endereco antigo (familia do ML) -> bloco: paginas de redirecionamento e o ?tipo= antigo do catalogo
         "antigas": [{"k": k, "n": n, "para": para} for k, (n, para) in FAMILIAS_ANTIGAS.items()],
         "carros": carros,
+        # enderecos antigos de carro unido (mesmo carro, outra pagina): /carros/<k>.html com canonical para <para>
+        "aliases": [{"k": chave_url(f"{mc_} {c_}"), "b": mc_, "de": c_, "m": P_, "para": chave_url(f"{mc_} {P_}")}
+                    for (mc_, c_, P_), n_ in sorted(_UNIAO.items()) if n_ >= MIN_CARRO],
         "chegou": chegou,
         "preco": {"min": precos[0], "max": precos[-1]},
     }
@@ -3518,6 +3704,7 @@ def main():
         "marcas": [m["n"] for m in marcas],
         "familias": [f["n"] for f in familias],
         "tipos": tipos,
+        "apelidos": [f"{a['b']}|{a['de']}" for a in resumo.get("aliases", [])],   # o filtro nao lista; a busca ainda acha
         "id": [x["id"] for x in pecas],
         "t": [x["t"] for x in pecas],
         "n": [x["n"] for x in pecas],
@@ -3541,6 +3728,8 @@ def main():
         # lado e posição pelo nome (lado_posicao; a posição, senão, pelo tipo): uma letra por peça, '0' quando não diz
         "l": "".join(lado_posicao(x["n"], x["s"])[0] or "0" for x in pecas),
         "pos": "".join(lado_posicao(x["n"], x["s"])[1] or "0" for x in pecas),
+        # peca unica (estoque 1 no anuncio do ML): '1' ou '0' por peca; o cartao so diz "Peca unica" com o dado
+        "q": "".join("1" if x.get("q") == 1 else "0" for x in pecas),
     }
 
     marcar_datas(pecas, prods)
@@ -3552,6 +3741,12 @@ def main():
         json.dumps(resumo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     (SAIDA_PUBLICA / "busca.json").write_text(
         json.dumps(busca, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    # carros unidos, TODOS (tambem o apelido com menos de 8 pecas, que nao tem endereco antigo: "330i"): "marca|apelido" ->
+    # principal. O site usa para (1) trocar o Meu carro salvo com o apelido pelo principal e (2) nao escrever o apelido ao
+    # lado do proprio principal ("Classe C, C180 e C200" -> "Classe C"). Arquivo pequeno a parte: vai no JS do navegador.
+    (SAIDA_DADOS / "unidos.json").write_text(
+        json.dumps({f"{mc_}|{c_}": P_ for (mc_, c_, P_) in sorted(_UNIAO)}, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8")
 
     sem_marca = sum(1 for x in pecas if not x["b"])
     sem_modelo = sum(1 for x in pecas if not x["m"])
@@ -3570,6 +3765,98 @@ def marcar_datas(pecas, prods):
         d = datas.get(x.get("id"), "")
         if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d):
             x["u"] = d
+
+
+
+# ---- auditoria de dados 10/11 ----
+# Carro cujo nome volta com outro carro: "C4" de 2018 em diante no Brasil e o C4 Cactus (o C4 hatch/Lounge saiu em 2020).
+MODELO_POR_PERIODO = {("Citroën", "C4"): (2018, "C4 Cactus")}
+
+
+def modelo_no_periodo(marca, modelo, a0):
+    regra = MODELO_POR_PERIODO.get((marca, modelo))
+    return regra[1] if regra and a0 and a0 >= regra[0] else modelo
+
+
+# Preco no pico R$ 2.000,xx (81 anuncios; R$ 1.900-2.100 fora dele: 21): valor de reserva do vendedor em peca pequena
+# (botao, soleira, macaneta). Nao da para separar do preco real (semieixo, coluna de direcao) pela mediana do tipo:
+# so SINALIZA (lista no log do robo para o dono corrigir no ML); o site continua com o preco do anuncio.
+def preco_reserva(p):
+    return 2000 <= p < 2001
+
+
+# Carros conhecidos (alem do _PRODUCAO): um carro citado em qualquer posicao do titulo vale como carro da peca.
+CARROS_EXTRA = {
+    "Volvo": ["XC90", "XC40", "V40", "V60", "S90", "C30"], "Audi": ["A5", "A6", "Q5", "Q7"],
+    "BMW": ["X4", "X5", "X6", "Z4"], "Volkswagen": ["Saveiro", "Parati", "Bora", "Spacefox", "Crossfox", "Nivus", "Fox", "Polo", "Jetta", "Tiguan"],
+    "Chevrolet": ["Montana", "Camaro", "Classic", "Kadett", "Trailblazer", "Omega"], "Fiat": ["Doblo", "Fiorino", "Pulse", "Fastback", "Linea"],
+    "Nissan": ["Versa", "Tiida", "Livina", "Sentra"], "Land Rover": ["Evoque", "Velar"], "Jaguar": ["F-Pace", "XE", "XF"],
+    "Mercedes-Benz": ["C230", "C250", "A200"], "Kia": ["Soul", "Mohave"], "Mitsubishi": ["Pajero", "L200"], "Toyota": ["SW4", "Etios", "RAV4"],
+    "Ford": ["Ecosport"], "Renault": ["Megane"], "Hyundai": ["Azera", "Elantra"],
+}
+CARROS_CONHECIDOS = {(m, gi.chave_modelo(c)): c for m, cs in CARROS_EXTRA.items() for c in cs}
+CARROS_CONHECIDOS.update({(m, gi.chave_modelo(c)): c for m, cs in _PRODUCAO.items() for c in cs})
+
+
+_ANOS_DESC = re.compile(r"anos? compat[ií]ve(?:l|is):?\s*((?:19|20)\d{2})\s*(?:a|at[eé]|-|–)\s*((?:19|20)\d{2})", re.I)
+
+
+def anos_da_descricao(desc):
+    """Titulo e part_number sem ano: a descricao do anuncio ("Anos compativeis: 2013 ate 2020", "1999 2000 2001 ... 2006",
+    "Palio 1.6 2008, Palio 1.6 2009, ..."). So a faixa escrita ou 3+ anos SEGUIDOS a ate 30 letras um do outro."""
+    m = _ANOS_DESC.search(desc or "")
+    if m:
+        return _par_anos(m.group(1), m.group(2)) or (None, None)
+    achados = [(a.start(), int(a.group(0))) for a in re.finditer(r"(?<!\d)(?:19|20)\d{2}(?!\d)", desc or "")]
+    run = []
+    for pos, ano in achados + [(10 ** 9, 0)]:
+        if run and pos - run[-1][0] <= 30 and ano == run[-1][1] + 1:
+            run.append((pos, ano))
+            continue
+        if len(run) >= 3 and run[-1][1] <= ANO_MAX:
+            return run[0][1], run[-1][1]
+        run = [(pos, ano)]
+    return None, None
+
+
+# palavras do titulo DEPOIS do 1o ano ("Vw Golf 99/11 Bora 00/05"): o carro tambem pode estar ali
+def palavras_depois_do_ano(titulo):
+    m = gi.ANOS_RE.search(titulo or "")
+    return re.findall(r"[A-Za-z][A-Za-z0-9-]*", titulo[m.end():]) if m else []
+
+
+def anos_crus(titulo, marca="", modelo="", pn="", outros=()):
+    """A faixa do titulo SEM cortar no periodo do 1o carro (cada carro e cortado no dele em anos_por_modelo)."""
+    a0, a1 = gi.anos(titulo)
+    if a0 and (a1 - a0) > 40:
+        return None, None
+    if not a0 and marca:
+        a0, a1, _ = _ler_anos(titulo, marca)
+        p0, p1 = _anos_pn(pn)
+        if a0 and a0 == a1 and p0 and p0 <= a0 <= p1:
+            a0, a1 = p0, p1
+    if not a0 and marca:
+        a0, a1 = _anos_pn(pn)
+    if not a0 and marca and modelo:
+        a0 = a1 = _ano_depois_do_carro(titulo, [modelo, *outros])
+    return a0, a1
+
+
+def titulo_de_leitura(p):
+    """Titulo quebrado no ML ("Fechadura", "Painel/forro": 1-2 palavras e sem marca): a peca de verdade esta no atributo
+    BRAND ("Volvo Coletor Admissao"), o carro no MODEL e os anos no PART_NUMBER. So para LER (o "t" continua o do ML)."""
+    t = p.get("title") or ""
+    attrs = p.get("attrs") or {}
+    br = (attrs.get("BRAND") or "").strip()
+    if len(t.split()) > 2 or marca_do_titulo(t) or len(br.split()) < 3:
+        return t
+    m = _ALIAS_RE.match(gi.strip_accents(br).lower())
+    if not m:
+        return t
+    peca = br[m.end():].strip()
+    a0, a1 = _anos_pn(p.get("part_number"))
+    anos = f" {a0 % 100:02d}/{a1 % 100:02d}" if a0 else ""
+    return f"{peca} {br[:m.end()]} {attrs.get('MODEL') or ''}{anos}".strip()
 
 
 if __name__ == "__main__":

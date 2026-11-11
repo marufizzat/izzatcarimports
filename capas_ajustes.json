@@ -1,5 +1,5 @@
 {
- "_leia": "Ajustes manuais das capas de estúdio (capas_estudio.py). chave = foto do ML (a referência); foto = índice na lista fotos do pecas.json (só para o olho humano); corte/apagar em frações da foto inteira [x0, y0, x1, y1]; sem_capa = nenhuma foto serve (o site mostra a foto do ML); ok = capa conferida a olho (falso alarme), não volta para o _revisar.json.",
+ "_leia": "Ajustes manuais das capas de estúdio (capas_estudio.py). chave = foto do ML (a referência); foto = índice na lista fotos do pecas.json (só para o olho humano); corte/apagar em frações da foto inteira [x0, y0, x1, y1]; sem_capa = nenhuma foto serve (o site mostra a foto do ML); ok = capa conferida a olho (falso alarme), não volta para o _revisar.json. cor = tom da peça (\"neutra\" = é preta/cinza, tira o azul da luz do vendedor; \"manter\" = é azul de verdade, não mexe).",
  "MLB4508814911": {"chave": "837185-MLB107468379350_032026", "foto": 3, "nota": "capa atual = acabamento por trás (texto moldado, presilhas); foto 3 = frente lisa inteira"},
  "MLB4523972201": {"chave": "646258-MLB108589857703_032026", "foto": 1, "corte": [0.0, 0.445, 1.0, 1.0], "nota": "capa atual = painel por trás (etiquetas); foto 1 = painel aceso de frente, cortada sem o carrinho colado em cima"},
  "MLB4526724015": {"ok": true, "chave": "659750-MLB107874206620_032026", "foto": 4},
@@ -469,7 +469,7 @@
  "MLB6788450900": {"chave": "892998-MLB111793390477_052026", "foto": 5, "nota": "capa atual = recorte errado (só o aro rosa e um arco do vidro, painel irreconhecível); foto 5 = painel inteiro de frente"},
  "MLB6791997354": {"chave": "668769-MLB110948733074_052026", "foto": 1, "corte": [0.0, 0.0, 0.505, 1.0], "nota": "capa atual de cabeça para baixo; foto 0 corta a aba direita; foto 1 = montagem (módulo inteiro à esquerda, carro à direita)"},
  "MLB6791999802": {"ok": true, "chave": "682097-MLB110857025438_052026", "foto": 1},
- "MLB6792005532": {"ok": true, "chave": "659652-MLB111821009497_052026", "foto": 1},
+ "MLB6792005532": {"ok": true, "chave": "659652-MLB111821009497_052026", "foto": 1, "cor": "neutra", "nota": "10/11 preta: conferida pelo revisor nos closes do anúncio (a foto da capa sai azulada pela luz)"},
  "MLB6792134268": {"ok": true, "chave": "845426-MLB114212515549_072026", "foto": 0},
  "MLB6792198130": {"chave": "745614-MLB110859144078_052026", "foto": 1, "nota": "capa atual = miolo por trás com a etiqueta de papel, sem as hastes; foto 1 = chave inteira com as hastes"},
  "MLB6792251182": {"ok": true, "chave": "955333-MLB110859882152_052026", "foto": 1},
@@ -712,5 +712,14 @@
  "MLB7086101262": {"chave": "754402-MLB112856695176_072026", "foto": 1, "nota": "10/11 a peça estava cortada na foto da capa antiga (foto 0); foto 1 = peça inteira"},
  "MLB7111536050": {"chave": "839076-MLB113001834484_072026", "foto": 2, "nota": "10/11 a peça estava cortada na foto da capa antiga (foto 0); foto 2 = peça inteira"},
  "MLB7160049440": {"chave": "686216-MLB113257871628_072026", "foto": 1, "nota": "10/11 a peça estava cortada na foto da capa antiga (foto 0); foto 1 = peça inteira"},
- "MLB7626707754": {"chave": "911115-MLB116065356614_092026", "foto": 1, "nota": "10/11 a peça estava cortada na foto da capa antiga (foto 0); foto 1 = peça inteira"}
+ "MLB7626707754": {"chave": "911115-MLB116065356614_092026", "foto": 1, "nota": "10/11 a peça estava cortada na foto da capa antiga (foto 0); foto 1 = peça inteira"},
+ "MLB4687532121": {"cor": "neutra", "nota": "10/11 preta: conferida pelo revisor nos closes do anúncio (a foto da capa sai azulada pela luz)"},
+ "MLB4687584199": {"cor": "neutra", "nota": "10/11 preta: conferida pelo revisor nos closes do anúncio (a foto da capa sai azulada pela luz)"},
+ "MLB6792080614": {"cor": "neutra", "nota": "10/11 preta: conferida pelo revisor nos closes do anúncio (a foto da capa sai azulada pela luz)"},
+ "MLB5210676995": {"cor": "manter", "nota": "11/11 antena shark pintada de azul-petróleo (as 4 fotos mostram azul; o chicote preto sai neutro na mesma foto): a revisão 14 pegou a capa cinza"},
+ "MLB7045412214": {"cor": "neutra", "nota": "11/11 preta: a revisão 14 conferiu nas fotos do anúncio (a capa ficava azul-marinho pela luz)"},
+ "MLB4648094821": {"cor": "neutra", "nota": "11/11 preta: a revisão 14 conferiu nas fotos do anúncio (a capa ficava azul-marinho pela luz)"},
+ "MLB4583095627": {"cor": "neutra", "nota": "11/11 preta: a revisão 14 conferiu nas fotos do anúncio (a capa ficava azul-marinho pela luz)"},
+ "MLB4649160347": {"cor": "neutra", "nota": "11/11 preta: a revisão 14 conferiu nas fotos do anúncio (a capa ficava azul-marinho pela luz)"},
+ "MLB6582678182": {"cor": "neutra", "nota": "11/11 preta: a revisão 14 conferiu nas fotos do anúncio (a capa ficava azul-marinho pela luz)"}
 }

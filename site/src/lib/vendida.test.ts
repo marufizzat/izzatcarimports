@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import {
   RE_VENDIDA, montarDicionario, lerEndereco, lerSlug, anosDoSlug, nomeDoSlug, mensagemVendida, filtrosIniciais,
   linkFiltros, parecidas, categoriaDoNome, type Dicionario,
+  mlbDoEndereco, shardDe, shardDoEstoque, decidirEndereco, SHARDS,
 } from './vendida';
 import { ABERTURA } from './whats';
 import { Busca } from './busca';
@@ -194,5 +195,144 @@ describe('com o estoque do momento', () => {
     const amostra = pecas.filter((p, i) => i % 23 === 0 && p.c && p.c !== 'Outros');
     const certas = amostra.filter((p) => categoriaDoNome(pecas.filter((x) => x.id !== p.id), p.n) === p.c).length;
     expect(certas / amostra.length).toBeGreaterThan(0.7);   // hoje ~88%
+  });
+});
+
+// ---- endereço antigo de peça que segue à venda (friction 4): o MLB do endereço, o arquivo do estoque e a decisão
+describe('endereço antigo: o MLB, o arquivo do estoque e o que a 404 faz', () => {
+  it('mlbDoEndereco: acha o MLB com qualquer slug, sem diferenciar maiúsculas, com ou sem .html', () => {
+    expect(mlbDoEndereco('/peca/para-choque-MLB7684800042.html')).toBe('MLB7684800042');
+    expect(mlbDoEndereco('/peca/Para-choque-Dianteiro-E-Pace-mlb7684800042')).toBe('MLB7684800042');
+    expect(mlbDoEndereco('/peca/MLB7684800042.html')).toBe('MLB7684800042');
+    expect(mlbDoEndereco('/peca/a%20b-MLB7684800042.html')).toBe('MLB7684800042');
+    expect(mlbDoEndereco('/peca/modulo-abs-xc60-MLB4524344387.html')).toBe('MLB4524344387');
+  });
+  it('mlbDoEndereco: nada que não é endereço de peça com MLB de 6 a 14 números', () => {
+    for (const u of ['/catalogo.html', '/peca/x.html', '/peca/airbag-MLB12.html', '/carros/airbag-MLB4811340217.html',
+      '/peca/airbag-MLB4811340217/extra.html', '/peca/airbag-MLBX123456.html', '/', '/peca/']) {
+      expect(mlbDoEndereco(u), u).toBeNull();
+    }
+  });
+  it('shardDe: o mesmo MLB cai no mesmo arquivo, em maiúsculas ou minúsculas, dentro de 0..SHARDS-1', () => {
+    expect(shardDe('MLB4518662815')).toBe(shardDe('mlb4518662815'));
+    for (const m of ['MLB4518662815', 'MLB7684800042', 'MLB123456', 'MLB99999999999999']) {
+      expect(shardDe(m)).toBeGreaterThanOrEqual(0);
+      expect(shardDe(m)).toBeLessThan(SHARDS);
+    }
+  });
+  it('shardDoEstoque: cada peça ativa sai em UM só arquivo (o do seu resto) e com o endereço de hoje', () => {
+    const pares: [string, string][] = [['MLB4518662815', 'sensor-x-MLB4518662815'], ['MLB7684800042', 'para-choque-MLB7684800042'],
+      ['MLB123456', 'bobina-MLB123456']];
+    const arquivos = Array.from({ length: SHARDS }, (_, k) => shardDoEstoque(pares, k));
+    for (const [id, h] of pares) {
+      const achou = arquivos.filter((a) => a[id] !== undefined);
+      expect(achou).toHaveLength(1);
+      expect(achou[0][id]).toBe(h);
+      expect(arquivos[shardDe(id)][id]).toBe(h);
+    }
+    expect(Object.keys(arquivos.reduce((a, b) => ({ ...a, ...b }), {})).sort()).toEqual(pares.map(([id]) => id).sort());
+  });
+  it('decidirEndereco: peça à venda com outro endereço vai para o de hoje, com a busca e a âncora', () => {
+    expect(decidirEndereco('/peca/para-choque-MLB7684800042.html', '?x=1', '#fotos', 'para-choque-dianteiro-e-pace-MLB7684800042'))
+      .toEqual({ acao: 'ir', destino: '/peca/para-choque-dianteiro-e-pace-MLB7684800042.html?x=1#fotos' });
+    expect(decidirEndereco('/peca/Para-choque-MLB7684800042.html', '', '', 'para-choque-MLB7684800042'))
+      .toEqual({ acao: 'ir', destino: '/peca/para-choque-MLB7684800042.html' });
+  });
+  it('decidirEndereco: mesmo endereço de hoje não redireciona (nada de laço)', () => {
+    expect(decidirEndereco('/peca/para-choque-MLB7684800042.html', '', '', 'para-choque-MLB7684800042'))
+      .toEqual({ acao: 'geral' });
+  });
+  it('decidirEndereco: MLB que sumiu do estoque com endereço de peça = vendida; sem o formato certo = 404 comum', () => {
+    expect(decidirEndereco('/peca/airbag-motorista-mercedes-benz-c320-01-07-2034601898-MLB4811340217.html', '', '', null))
+      .toEqual({ acao: 'vendida' });
+    // maiúsculas no slug: a peça não é mostrada como vendida (só a 404 comum), mas se a peça segue à venda vai para o certo
+    expect(decidirEndereco('/peca/Airbag-MLB4811340217.html', '', '', null)).toEqual({ acao: 'geral' });
+    expect(decidirEndereco('/peca/Airbag-MLB4811340217.html', '', '', 'airbag-MLB4811340217')).toEqual({ acao: 'ir', destino: '/peca/airbag-MLB4811340217.html' });
+    expect(decidirEndereco('/catalogo.html', '', '', null)).toEqual({ acao: 'geral' });
+    expect(decidirEndereco('/peca/x-MLB12.html', '', '', null)).toEqual({ acao: 'geral' });
+  });
+});
+
+// Revisão 14, item 25 e P3: "mlb" minúsculo e a barra no fim valem como os outros endereços.
+import { caminhoLimpo, conferirAntes as conferir, RE_MLB_PECA } from './vendida';
+describe('caminhoLimpo: o endereço como a 404 o confere', () => {
+  it('barra no fim, MLB minúsculo e texto em maiúsculas viram o endereço normal', () => {
+    expect(caminhoLimpo('/peca/farol-direito-gm-cruze-MLB4687584199.html/')).toBe('/peca/farol-direito-gm-cruze-MLB4687584199.html');
+    expect(caminhoLimpo('/peca/farol-direito-gm-cruze-mlb4687584199.html')).toBe('/peca/farol-direito-gm-cruze-MLB4687584199.html');
+    expect(caminhoLimpo('/PECA/Farol-Direito-MLB4687584199.HTML')).toBe('/peca/farol-direito-MLB4687584199.html');
+    expect(caminhoLimpo('/peca/farol-MLB4687584199')).toBe('/peca/farol-MLB4687584199');
+  });
+  it('a vendida com "mlb" minúsculo ou com a barra passa a ser lida como vendida', () => {
+    for (const p of ['/peca/bomba-alta-volvo-xc60-mlb4687584199.html', '/peca/bomba-alta-volvo-xc60-MLB4687584199.html/']) {
+      expect(decidirEndereco(caminhoLimpo(p), '', '', null)).toEqual({ acao: 'vendida' });
+    }
+  });
+  it('o que não é peça só perde a barra', () => {
+    expect(caminhoLimpo('/qualquer/coisa/')).toBe('/qualquer/coisa');
+    expect(caminhoLimpo('/')).toBe('/');
+  });
+});
+
+describe('conferirAntes: o script do <head> da 404 (copiado por toString)', () => {
+  type Doc = { classes: Set<string> };
+  function rodar(caminho: string, estoque: Record<string, string> | 'falha', gemeas: Record<string, string> = {}) {
+    const doc: Doc = { classes: new Set() };
+    const fila: [number, () => void][] = [];
+    const amb = {
+      document: { documentElement: { classList: { add: (...c: string[]) => c.forEach((x) => doc.classes.add(x)), remove: (...c: string[]) => c.forEach((x) => doc.classes.delete(x)) } } },
+      location: { pathname: caminho, search: '?utm=1', hash: '#foto', replace: (u: string) => { foi = u; } },
+      window: {} as { __nf?: { id: string; alvo: string; tarde: () => boolean; estoque: Promise<string | null | undefined> } },
+      setTimeout: (f: () => void, ms: number) => { fila.push([ms, f]); return fila.length; },
+      clearTimeout: (n: number) => { if (n) fila[n - 1] = [0, () => {}]; },
+      fetch: (u: string) => { pedido = u; return estoque === 'falha' ? Promise.reject(new Error('rede')) : Promise.resolve({ ok: true, json: () => Promise.resolve(estoque) }); },
+    };
+    let foi = '';
+    let pedido = '';
+    const f = new Function(...Object.keys(amb), `return (${conferir.toString()})(${JSON.stringify(RE_MLB_PECA.source)}, 64, ${JSON.stringify(gemeas)}, 400, 2500)`);
+    f(...Object.values(amb));
+    return { doc, amb, passar: (ms: number) => fila.filter(([t]) => t === ms).forEach(([, g]) => g()), foi: () => foi, pedido: () => pedido };
+  }
+  it('endereço que não é de peça: não esconde nada nem pede nada', () => {
+    const r = rodar('/pagina-que-nao-existe.html', {});
+    expect([...r.doc.classes]).toEqual([]);
+    expect(r.amb.window.__nf).toBeUndefined();
+    expect(r.pedido()).toBe('');
+  });
+  it('peça à venda com outro endereço: pede o arquivo do MLB no <head> e vai para o endereço de hoje (com a busca e a âncora)', async () => {
+    const r = rodar('/peca/slug-velho-mlb7406476550.html/', { MLB7406476550: 'slug-de-hoje-MLB7406476550' });
+    expect(r.doc.classes.has('nf-conferindo')).toBe(true);
+    expect(r.pedido()).toBe(`/dados/peca/${7406476550 % 64}.json`);
+    await new Promise((ok) => setTimeout(ok, 0));
+    expect(r.foi()).toBe('/peca/slug-de-hoje-MLB7406476550.html?utm=1#foto');
+  });
+  it('400 ms sem resposta: "Abrindo a peça…"; 2,5 s: a página aparece conferindo e nada mais navega sozinho', async () => {
+    const r = rodar('/peca/slug-velho-MLB7406476550.html', { MLB7406476550: 'slug-de-hoje-MLB7406476550' });
+    r.passar(400);
+    expect(r.doc.classes.has('nf-abrindo')).toBe(true);
+    r.passar(2500);
+    expect([...r.doc.classes]).toEqual(['nf-lenta']);
+    expect(r.amb.window.__nf!.tarde()).toBe(true);
+    // a resposta chega depois do teto: o endereço de hoje vai para o script da página (botão "Abrir a peça"), sem navegar
+    expect(await r.amb.window.__nf!.estoque).toBe('slug-de-hoje-MLB7406476550');
+    expect(r.foi()).toBe('');
+  });
+  it('fim(): quando a página mostra o resultado, os relógios param (a "vendida" não volta para "Conferindo…" aos 2,5 s)', async () => {
+    const r = rodar('/peca/x-MLB7406476550.html', {});
+    expect(await r.amb.window.__nf!.estoque).toBeNull();
+    (r.amb.window.__nf as unknown as { fim: () => void }).fim();
+    r.doc.classes.clear();
+    r.passar(400); r.passar(2500);
+    expect([...r.doc.classes]).toEqual([]);
+    expect(r.amb.window.__nf!.tarde()).toBe(false);
+  });
+  it('fora do estoque: null (a página decide "vendida"); a conferência falhou: undefined (a 404 de sempre)', async () => {
+    expect(await rodar('/peca/x-MLB7406476550.html', {}).amb.window.__nf!.estoque).toBeNull();
+    expect(await rodar('/peca/x-MLB7406476550.html', 'falha').amb.window.__nf!.estoque).toBeUndefined();
+  });
+  it('anúncio tirado do site com um igual à venda: confere e abre o igual', async () => {
+    const r = rodar('/peca/slug-MLB6818584120.html', { MLB6540744984: 'slug-da-gemea-MLB6540744984' }, { MLB6818584120: 'MLB6540744984' });
+    expect(r.pedido()).toBe(`/dados/peca/${6540744984 % 64}.json`);
+    await new Promise((ok) => setTimeout(ok, 0));
+    expect(r.foi()).toBe('/peca/slug-da-gemea-MLB6540744984.html?utm=1#foto');
   });
 });
