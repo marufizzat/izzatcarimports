@@ -20,6 +20,7 @@ Rodar depois de atualizar_catalogo.py:
 """
 
 import json
+import os
 import re
 import sys
 import time
@@ -3375,7 +3376,9 @@ def main():
     print("  IZZAT CAR — dados do site novo")
     print("=" * 52)
 
-    bruto = json.loads((ROOT / "products.json").read_text(encoding="utf-8"))
+    # IZZAT_PRODUTOS: outro products.json (site/scripts/estoque-perturbado.mjs prova os testes com o estoque mexido);
+    # sem a variável, o de sempre
+    bruto = json.loads(Path(os.environ.get("IZZAT_PRODUTOS") or ROOT / "products.json").read_text(encoding="utf-8"))
     prods = bruto["products"]
     excl = excluidos_do_site(prods)
     if excl:
