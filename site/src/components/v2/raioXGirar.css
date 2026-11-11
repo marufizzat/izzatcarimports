@@ -1,0 +1,10 @@
+/* "Girar o carro" (components/v2/raioXGirar.ts): entra na página só quando a pessoa gira o carro (import ?inline),
+   nunca no CSS que trava a 1ª pintura. O botão, as fichas "do outro lado" e o "novo" ficam no estilo do Raio-x. */
+
+/* cada vista na caixa dela (a arte, os véus, o mapa, os pontos e as etiquetas); só a da vez aparece */
+.rxg-lado { position: absolute; inset: 0; }
+.rx[data-lado="tras"] .rxg-lado[data-v="f"], .rx:not([data-lado="tras"]) .rxg-lado[data-v="t"] { display: none; }
+/* durante o giro as duas ficam à vista: a Web Animations cruza uma com a outra (opacidade e transform) */
+.rx[data-girando] .rxg-lado[data-v] { display: block; pointer-events: none; }
+/* na vista por dentro as zonas do carro saem do Tab e do leitor de tela (a regra de lá mira os filhos do palco) */
+.rx[data-vista="dentro"] .rx-palco > .rxg-lado { visibility: hidden; }
