@@ -68,6 +68,14 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      filtros automáticos; `sem_capa` = nenhuma foto serve (o robô apaga a capa e o site mostra a foto do ML);
      `ok` = falso alarme conferido (não volta ao `_revisar.json`). Ajuste novo/mudado refaz a capa (assinatura em
      `<saída>/_ajustes_aplicados.json`, que vai junto no ramo). Teste: `python testes/test_capas_ajustes.py`.
+   - **Tom azul da luz** (nov/2026): a luz do vendedor deixa a peça preta azul-marinho nos escuros. `corrigir_azul()` tira só
+     o croma do lado do azul da luz (luminância e textura intactas, nunca passa do neutro: cromado não amarela; poupa
+     vermelho/laranja/amarelo/verde, os claros e o azul saturado ou bem acima do típico: fio, conector, ícone), só nos pixels
+     da peça. `decidir_cor()`: ajuste `cor` (`"neutra"`|`"manter"`) > azul escrito no título/nome/ficha, lataria pintada ou
+     azul forte nos claros da foto (fica) > título diz preto/cinza/prata (neutra) > outras fotos do anúncio (classe `p`, `-O`
+     na caixa, 1º quartil do B−R escuro ≤ 30: neutra) > só o excesso + "cor a conferir" no `_revisar.json`; registro em
+     `<saída>/_cor.json`. A ficha "Cor: Preto" é o padrão do vendedor (não conta). `ESTUDIO_COR=0` desliga, `ESTUDIO_COR_PROVA`
+     prova; maquiadas pelo `marca_pro.py`. Teste: `python testes/test_capas_cor.py`.
    - **Fotos do anúncio na galeria da peça** (depois da capa): o mesmo quadro quadrado da capa, fundo do estúdio
      (`#F4F3F0→#E7E5E1`) e a foto "multiplicando" sobre ele (o branco cru do ML vira o tom do estúdio). A peça fica
      centrada ocupando ~84% quando a foto deixa (`site/src/lib/quadroFoto.ts`, só CSS, a foto do ML não é copiada), com
