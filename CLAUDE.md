@@ -280,7 +280,9 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    `rolarFila`); tocar num ano filtra a página e **salva o "Meu carro"** ("Salvo como seu carro · Desfazer"; se havia
    outro carro, "Salvo no lugar do Onix 2015"; o Desfazer devolve o carro e o ano de antes); "Todos" não mexe no carro
    salvo. No PC as fichas têm largura fixa (a quebra de linha não muda quando a letra chega: era o CLS 0,11 das páginas
-   pequenas, revisão 14). As **peças** saem agrupadas pelos blocos (`agrupar`: mais peças primeiro, "Outros" no fim), com
+   pequenas, revisão 14) e, no carro sem arte, a coluna do disco da marca tem a largura dele desde o começo (a regra mora em
+   `TopoArte.astro`: uma regra na página do carro perde para a do componente, por causa do atributo de escopo do Astro; com
+   `auto` as fichas mudavam de linha quando o disco chegava no HTML, CLS 0,02 a 0,05 em toda carga lenta). As **peças** saem agrupadas pelos blocos (`agrupar`: mais peças primeiro, "Outros" no fim), com
    a barra de fichas presa sob o cabeçalho (`.gp-barra`, só as famílias com peça no ano, pela contagem; pula para o grupo
    com `scroll-margin-top`; a ficha ativa acompanha a rolagem) e, em cada grupo, 8 cartões no HTML (o CSS mostra 4 no
    celular, 6 no tablet, 8 no PC) + "Ver as N de <família>" (catálogo com `marca`, `modelo`, `tipo` e `ano`). Carro com
@@ -427,7 +429,8 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
    - **Convite para instalar** (`lib/app.ts`, testado em `app.test.ts`; desenho em `components/app/convite.ts`, só desce
      quando vai aparecer): no celular, só na 2ª visita, ou com peça na lista, ou depois de 3 peças abertas; uma vez por
      sessão; o "×" lembra por 30 dias (`localStorage['izzatcar.app']`); nunca no app instalado nem na página com barra
-     fixa (peça, lista). Android/Chrome: guarda o `beforeinstallprompt` (a barra do Chrome não aparece sozinha) e o botão
+     fixa (peça, lista) nem por cima do pé da lista do conserto do Raio-x (`.rxb-fixo`: com ele na página o convite some; na
+     integração da rodada 15 ele cobria o "Pedir o conserto no WhatsApp"). O texto do convite não diz "na hora". Android/Chrome: guarda o `beforeinstallprompt` (a barra do Chrome não aparece sozinha) e o botão
      "Instalar" abre a janela. iPhone (Safari/Chrome/Firefox/Edge, nunca o navegador do Instagram/Facebook): a dica
      "Toque em Compartilhar → Adicionar à Tela de Início". GA4 `app_instalar` (`resultado`: aceito/dispensado, `onde`:
      chrome/faixa/ios), pelo evento `app-instalar` no `rastreio.js`.
