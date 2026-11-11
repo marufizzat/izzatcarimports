@@ -239,3 +239,14 @@ describe('busca: a revisão da rodada 14', () => {
     expect(b().procurar({ q: `cod ${ix.o[k]}` })[0].o.split(' ')).toContain(ix.o[k]);
   });
 });
+
+describe('busca: o que a pessoa digitou, sem o carro (o pedido do pátio)', () => {
+  it('tira o carro e a marca do jeito que a busca os entendeu', () => {
+    const bb = b();
+    expect(bb.semCarroQ('vw gol lanterna')).toBe('lanterna');
+    expect(bb.semCarroQ('lanterna new fiesta')).toBe('lanterna');
+    expect(bb.semCarroQ('retrovisor direito xc 60')).toBe('retrovisor direito');
+    expect(bb.semCarroQ("bomba d'água xc60")).toBe('bomba água');
+    expect(bb.semCarroQ('farol')).toBe('farol');
+  });
+});

@@ -383,7 +383,7 @@ const confianca: [string, string][] = [
   .cat-vazio-botoes { grid-area: botoes; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
   /* lado que o estoque não tem: a dica do outro lado, com o botão de texto (44 px de toque, sem cair no botão laranja) */
   .cat-vazio-outro { font-size: 15px; line-height: 1.45; }
-  .cat-link-outro { min-height: 44px; padding: 0 6px; margin: 0 -6px; border: 0; background: none; color: var(--accent-text); font: inherit; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .cat-link-outro { display: flex; align-items: center; text-align: left; min-height: 44px; padding: 0 6px; margin: 0 -6px; border: 0; background: none; color: var(--accent-text); font: inherit; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
   .cat-vazio .cat-aponte { font-size: 14px; color: var(--ink-3); }
   .cat-aponte a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent-text); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
   .cat-link-outro:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }

@@ -691,7 +691,8 @@ export default function Catalogo({ total: totalInicial, logos = SEM_LOGOS, selo,
   const ano = alvo?.y ?? (f.ano || anoQ);
   const carroPedido = alvo ? (alvo.m ? nomeCarro({ b: alvo.b, m: alvo.m, y: alvo.y ?? null }) : `${alvo.b}${alvo.y ? ` ${alvo.y}` : ''}`) : '';
   // o que a pessoa digitou, sem o carro e o ano ("retrovisor xc60 2019" -> "retrovisor"); código: "a peça com o código …"
-  const digitado = f.marca ? qSemAno : semCarro(qSemAno, carroDaBusca);
+  // (com o índice, pela própria busca: "vw gol lanterna" e "lanterna new fiesta" viram "lanterna")
+  const digitado = f.marca ? qSemAno : busca && carroDaBusca ? busca.semCarroQ(qSemAno) : semCarro(qSemAno, carroDaBusca);
   const codDigitado = codigoBusca || codigoJunto(digitado) || (/^[a-z0-9]{6,20}$/i.test(digitado) && (digitado.match(/\d/g) ?? []).length >= 5 ? digitado : '');
   const oQue = (codDigitado ? `a peça com o código ${codDigitado.toUpperCase()}` : digitado) || (f.sub ? f.sub.toLowerCase() : f.tipo ? `peça de ${f.tipo.toLowerCase()}` : 'peça');
   const paraCarro = carroPedido ? `para ${carroPedido}` : ano ? `para carro ano ${ano}` : '';

@@ -352,11 +352,10 @@ export class Busca {
   private _familias: Map<string, { c: string; n: number }> | null = null;
   private _anosCarro = new Map<string, [number, number]>();
   private _codigos: string[] | null = null;
-  // as palavras dos nomes (montarVocab): por peça (_nt: nome; _st: tipo "s") e por palavra (_cab: a 1ª do nome; _nome:
-  // qualquer uma; _sis: as do tipo; _bloco: as do bloco "c"); _pares: vizinhas no nome, juntas; _prefixos: a 1ª parte das
-  // compostas com hífen; _principal: apelido de carro unido -> o carro principal
+  // as palavras dos nomes (montarVocab): por peça (_nt) e por palavra (_cab: a 1ª do nome; _nome: qualquer uma; _sis: as
+  // do tipo "s"; _bloco: as do bloco "c"; _porS: as peças de cada tipo); _pares: vizinhas no nome, juntas; _prefixos: a
+  // 1ª parte das compostas com hífen; _principal: apelido de carro unido -> o carro principal
   private _nt: string[][] | null = null;
-  private _st: string[][] | null = null;
   private _cab = new Map<string, number[]>();
   private _nome = new Map<string, number[]>();
   private _sis = new Map<string, number[]>();
@@ -541,7 +540,7 @@ export class Busca {
    *  tipo "s" e as do bloco "c"). Não vai no busca.json nem nas peças (a 1ª tela do catálogo é serializada no HTML). */
   private montarVocab() {
     if (this._nt) return;
-    const nt: string[][] = [], st: string[][] = [];
+    const nt: string[][] = [];
     const por = (m: Map<string, number[]>, w: string, k: number) => { const l = m.get(w); if (l) { if (l[l.length - 1] !== k) l.push(k); } else m.set(w, [k]); };
     const memo = new Map<string, string[]>();
     const doSistema = (s: string) => { let r = memo.get(s); if (!r) { r = this.palavrasDoNome(s); memo.set(s, r); } return r; };
@@ -554,16 +553,14 @@ export class Busca {
         // vizinhas no nome: "ar condicionado" digitado junto ("arcondicionado")
         if (i + 1 < ws.length && !this._pares.has(ws[i] + ws[i + 1])) this._pares.set(ws[i] + ws[i + 1], [ws[i], ws[i + 1]]);
       }
-      const ss = doSistema(it.s);
-      st.push(ss);
-      for (const w of ss) por(this._sis, w, it.k);
+      for (const w of doSistema(it.s)) por(this._sis, w, it.k);
       if (it.s) por(this._porS, it.s, it.k);
       for (const w of doSistema(it.c)) por(this._bloco, w, it.k);
       // 1ª parte das compostas com hífen ("para", "porta", "quebra", "alto"): quem pode se juntar com a vizinha
       for (const w of normal(it.n).split(/\s+/)) { const i = w.indexOf('-'); if (i > 1) this._prefixos.add(w.slice(0, i)); }
     }
     this._vocab = [...new Set([...this._nome.keys(), ...this._sis.keys(), ...this._bloco.keys()])];
-    this._nt = nt; this._st = st;
+    this._nt = nt;
   }
 
   /** As palavras do estoque que são a palavra digitada (ig) e as que só começam por ela (pre: a busca ao vivo). */
@@ -766,6 +763,15 @@ export class Busca {
       return (lado && (!!LADO_Q[n] || n === 'lado')) || (pos && !!POS_Q[n]);
     };
     return q.trim().split(/\s+/).filter((w) => w && !tirar(w)).join(' ');
+  }
+
+  /** A busca sem as palavras que são carro ou marca, do jeito que a busca as entendeu ("vw gol lanterna" -> "lanterna";
+   *  "lanterna new fiesta" -> "lanterna"): o pedido do pátio diz "Procuro lanterna para Volkswagen Gol". */
+  semCarroQ(q: string): string {
+    const brutas = limpar(q).split(/\s+/).filter(Boolean);
+    const { usado } = this.entender(brutas.join(' '));
+    let i = 0;
+    return brutas.filter((w) => { const n = palavras(w).length; const carro = n > 0 && usado.slice(i, i + n).every(Boolean); i += n; return !carro; }).join(' ');
   }
 
   /** Erro de digitação: troca a palavra que o estoque não conhece (nem como começo de palavra) pela palavra do estoque

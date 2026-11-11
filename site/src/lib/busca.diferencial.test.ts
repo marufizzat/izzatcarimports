@@ -5,7 +5,8 @@
 //       (sem cópia do repositório) e empacotado com o esbuild;
 //   (b) o candidato (lib/busca.ts).
 // O candidato não pode perder para o motor do ar em NENHUMA consulta, e não pode falhar o gabarito fora da lista de
-// CONHECIDAS (as discutíveis, cada uma com o motivo). Fica no repositório como guarda de regressão (roda em ~3 s).
+// CONHECIDAS (as discutíveis, cada uma com o motivo). Fica no repositório como guarda de regressão (roda em ~3 s;
+// BUSCA_RELATORIO=arquivo grava a tabela consulta a consulta e põe a tabela antiga no placar).
 //
 // As regras (o que cada falha quer dizer):
 //   ZERO          o estoque tem a peça pedida e a lista veio vazia;
@@ -666,13 +667,18 @@ describe('busca: o juiz diferencial (gabarito pelo estoque; candidato × motor d
         `cand ${c.n}${c.aprox ? '~' : ''} ex${c.nExatas} top10=${c.noTopo10} ${c.falhas.join('+') || 'ok'}`,
         `ar ${a.n}${a.aprox ? '~' : ''} top10=${a.noTopo10} ${a.falhas.join('+') || 'ok'}`, `C: ${c.topo.join(' ; ')}`, `A: ${a.topo.join(' ; ')}`].join(' | '));
     }
-    // a tabela antiga (gabarito dela): o candidato não pode errar o que o motor do ar acerta
-    const lista = casos(ix);
-    const rc = avaliar(Cand as any, JSON.parse(JSON.stringify(ix)), lista).rows; const ra = avaliar(Ar as any, JSON.parse(JSON.stringify(ix)), lista).rows;
-    const antiga = { consultas: lista.length, candOk: rc.filter((r) => r.ok).length, arOk: ra.filter((r) => r.ok).length, vitorias: 0, derrotas: 0 };
-    rc.forEach((r, i) => { if (r.ok && !ra[i].ok) antiga.vitorias++; if (!r.ok && ra[i].ok) { antiga.derrotas++; perdas.push(`[tabela antiga] ${r.q} | ${r.motivo} | ${r.top1}`); } });
-    console.log(`PLACAR juiz: ${JSON.stringify(placar)}\nPLACAR tabela antiga: ${JSON.stringify(antiga)}`);
-    if (process.env.BUSCA_RELATORIO) writeFileSync(process.env.BUSCA_RELATORIO, `${linhas.join('\n')}\n\n${JSON.stringify({ placar, antiga }, null, 1)}\n`);
+    console.log(`PLACAR juiz: ${JSON.stringify(placar)}`);
+    // a tabela antiga (926 consultas geradas, gabarito dela) no placar: só no modo relatório, porque dobra o tempo do
+    // teste e não guarda nada a mais (busca.regressao.test.ts já exige as 926 do candidato: quem acerta todas não perde)
+    let antiga: Record<string, number> | undefined;
+    if (process.env.BUSCA_RELATORIO) {
+      const lista = casos(ix);
+      const rc = avaliar(Cand as any, JSON.parse(JSON.stringify(ix)), lista).rows; const ra = avaliar(Ar as any, JSON.parse(JSON.stringify(ix)), lista).rows;
+      antiga = { consultas: lista.length, candOk: rc.filter((r) => r.ok).length, arOk: ra.filter((r) => r.ok).length, vitorias: 0, derrotas: 0 };
+      rc.forEach((r, i) => { if (r.ok && !ra[i].ok) antiga!.vitorias++; if (!r.ok && ra[i].ok) { antiga!.derrotas++; perdas.push(`[tabela antiga] ${r.q} | ${r.motivo} | ${r.top1}`); } });
+      console.log(`PLACAR tabela antiga: ${JSON.stringify(antiga)}`);
+      writeFileSync(process.env.BUSCA_RELATORIO, `${linhas.join('\n')}\n\n${JSON.stringify({ placar, antiga }, null, 1)}\n`);
+    }
     expect(perdas).toEqual([]);
   }, 60000);
 
