@@ -113,7 +113,8 @@ describe('a peça da linha: o nome começa pela peça que a linha promete', () =
     ['Condensador do ar-condicionado', 'Radiador condensador ar', true],
     ['Condensador do ar-condicionado', 'Caixa ar condicionado', false],
     ['Painel frontal', 'Painel frontal', true],
-    ['Painel frontal', 'Suporte radiador', true],
+    // revisão 16, P1-1: "Suporte radiador" não diz se é a peça inteira (no Kardian é um suporte pequeno com coxim)
+    ['Painel frontal', 'Suporte radiador', false],
     ['Painel frontal', 'Suporte travessa radiador', true],
     ['Painel frontal', 'Placa suporte esquerdo radiador', false],
     ['Painel frontal', 'Par suportes coxins radiador', false],
@@ -262,6 +263,26 @@ describe.each(estoques())('o kit da batida no $nome', ({ ix, fixo }) => {
       }
     }
     expect(erros.slice(0, 10)).toEqual([]);
+  });
+
+  it('o nome que abre com "Suporte" só é a peça do título numa linha de suporte ou guia, ou quando diz a peça inteira', () => {
+    // Revisão 16, P1-1: no Kardian, "Suporte radiador" (um suporte pequeno com coxim) nascia marcado e somado como
+    // "Painel frontal". Regra, sem peça nem carro escritos: em toda linha, a peça que conta como a do título e cujo
+    // nome ABRE com "suporte" só vale se o título da linha é um suporte ou uma guia, ou se o nome diz a peça inteira
+    // (a palavra que abre o título da linha, ou "travessa", a barra de um lado ao outro). Vale para o estoque inteiro
+    // (toda peça de todo carro passa por aqui: com o carro, a lista é um recorte desta).
+    const abreComSuporte = (nome: string) => /^((kit|par|jogo|conjunto) )*suportes?\b/.test(plano(nome));
+    const erros: string[] = [];
+    for (const p of PONTOS) for (const l of p.linhas) {
+      if (!l.tipo) continue;
+      const titulo = plano(l.nome);
+      if (/\b(suporte|guia)\b/.test(titulo)) continue;
+      const pecaInteira = new RegExp(`\\b(${titulo.split(/[^a-z0-9-]+/)[0]}|travessa)`);
+      for (const it of procurar(filtrosDaLinha(l))) {
+        if (ehDaLinha(l, it.n) && abreComSuporte(it.n) && !pecaInteira.test(plano(it.n))) erros.push(`${p.k} ${l.nome}: "${it.n}" conta como a peça do título`);
+      }
+    }
+    expect([...new Set(erros)].slice(0, 10)).toEqual([]);
   });
 
   it('a mesma peça nunca aparece em duas linhas do mesmo ponto (o total não conta nada em dobro)', () => {

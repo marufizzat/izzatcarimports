@@ -21,7 +21,7 @@
 // Kit curto na frente é o estoque de verdade, não falta de linha.
 // Sem node:fs e sem valores de lib/busca.ts: roda no build (pages/dados/batida.json.ts), no teste e no navegador.
 import type { Filtros, Item, Lado, Posicao } from './busca';
-import { codigoDaFoto, linkLinha, nomeEh, type Eh } from './raioX';
+import { codigoDaFoto, linkLinha, nomeEh, EH_PAINEL_FRONTAL, type Eh } from './raioX';
 import { anosTexto } from './whats';
 import { nomeModelos } from './meuCarro';
 import { codigoPeca } from '../components/catalogo/etiqueta';
@@ -97,9 +97,9 @@ const frente = (L?: Lado): Linha[] => [
   { nome: 'Guia do para-choque', tipo: LATARIA, sub: 'Guias e Suportes do Para-choque', lado: L, ...X, eh: { cab: 'guia suporte', tem: 'para-choque' } },
   { nome: 'Alma do para-choque', tipo: LATARIA, sub: 'Almas do Para-choque', eh: { cab: 'alma', tem: 'para-choque' } },
   { nome: 'Travessa de reforço', tipo: LATARIA, sub: 'Vigas de Reforço', pos: 'D', ...X, eh: { cab: 'travessa barra viga reforco' } },
-  // o painel frontal é a peça inteira (sem lado): o suporte de um lado, o coxim e a plaquinha são peça ligada
-  { nome: 'Painel frontal', tipo: ARREF, sub: 'Suportes do Radiador', eh: [{ cab: 'painel', tem: 'frontal dianteiro radiador' },
-    { cab: 'suporte travessa', tem: 'radiador travessa', sem: 'esquerdo direito esquerda direita coxim braco placa inferior superior lateral' }] },
+  // o painel frontal é a peça inteira (sem lado): o nome diz "painel" ou "travessa" (EH_PAINEL_FRONTAL, lib/raioX.ts);
+  // o suporte pequeno, o coxim e a plaquinha são peça ligada
+  { nome: 'Painel frontal', tipo: ARREF, sub: 'Suportes do Radiador', eh: EH_PAINEL_FRONTAL },
   { nome: 'Radiador', tipo: ARREF, sub: 'Radiadores', eh: { cab: 'radiador' } },
   { nome: 'Condensador do ar-condicionado', tipo: 'Ar-condicionado', sub: 'Condensadores', eh: { cab: 'condensador radiador', tem: 'condensador' } },
   { nome: 'Intercooler', tipo: 'Filtro de Ar e Turbo', sub: 'Intercoolers', ...X, eh: { cab: 'intercooler' } },

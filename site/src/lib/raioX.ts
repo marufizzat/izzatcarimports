@@ -270,6 +270,16 @@ export function nomeEh(eh: Eh | Eh[] | undefined, nome: string): boolean {
     lista(e.cab).some((c) => mesma(cab, c)) && (!e.tem || lista(e.tem).some(diz)) && !lista(e.sem).some(diz));
 }
 
+/** O "Painel frontal" (o tipo "Suportes do Radiador" junta a peça inteira e os suportes pequenos dela): o nome tem de
+ *  DIZER a peça inteira, "painel" ou "travessa" (a barra comprida que segura o radiador de um lado ao outro). Um
+ *  "Suporte radiador" sozinho não diz qual é: no Kardian era um suporte pequeno com coxim e nascia marcado e somado
+ *  como painel frontal (revisão 16, P1-1); fica como peça ligada. A lista do conserto (lib/batida.ts) e a vista por
+ *  dentro da frente (lib/raioXFrente.ts) usam esta MESMA regra. */
+export const EH_PAINEL_FRONTAL: Eh[] = [
+  { cab: 'painel', tem: 'frontal dianteiro radiador' },
+  { cab: 'travessa suporte', tem: 'travessa', sem: 'esquerdo direito esquerda direita coxim braco placa inferior superior lateral' },
+];
+
 /** A peça como a zona precisa dela: o bloco, o tipo e o lado/posição que o nome diz (os campos c, s, l, pos do índice). */
 export type PecaZona = { c: string; s: string; l?: Lado | '' | '0'; pos?: Posicao | 'A' | '' | '0' };
 /** A peça cabe no grupo? A MESMA regra da busca do catálogo (lib/busca.ts): bloco e tipo iguais, o lado igual, e a
