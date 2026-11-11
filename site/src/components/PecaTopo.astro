@@ -65,7 +65,7 @@ const perguntas = [
     resposta: [
       carro ? `Esta peça é ${p.m ? 'do' : 'de'} ${carro}${anos ? `, ${anos}` : ''}.` : '',
       cod ? `Compare o código gravado na sua peça velha com o desta (${cod}): se for o mesmo, é a mesma peça.`
-          : 'Ela não tem código gravado: para conferir, mande o modelo e o ano do seu carro no WhatsApp.',
+          : 'O anúncio não traz o código: para conferir, mande o modelo e o ano do seu carro no WhatsApp.',
     ].filter(Boolean).join(' '),
     link: cod ? { href: '#como-achar-codigo', texto: 'Onde achar o código' } : undefined,
   },
@@ -75,21 +75,25 @@ const perguntas = [
     // incompatibilidade (prazo, frete, compra errada) ainda não foi definida pelo Maruf: nada de "troca ou devolução"
     // aqui nem na garantia (auditorias 3, item 1.2, e 4, item 3.2).
     resposta: 'Na dúvida, mande o modelo e o ano antes de comprar: a gente confere na peça. Depois da compra, são 90 dias '
-      + 'de garantia: fale no WhatsApp com o número do pedido que a gente avalia e resolve. '
+      + 'de garantia: chame no WhatsApp com o número do anúncio ou a nota fiscal que a gente avalia e resolve. '
       + 'Comprando pelo Mercado Livre, vale também a proteção de compra da plataforma.',
     link: { href: '/garantia.html', texto: 'Ver a garantia' },
   },
   {
     pergunta: 'Como é o envio?',
     // regra do dono (09/11): frete a combinar pelo site; frete e prazo do ML são os do anúncio (sem prazo próprio)
-    resposta: 'A gente envia para todo o Brasil. Pelo WhatsApp, o frete é combinado na hora, pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.',
+    resposta: 'A gente envia para todo o Brasil. Pelo WhatsApp, o frete é combinado pelo seu CEP. Comprando pelo Mercado Livre, o frete e o prazo são os calculados lá, no anúncio.',
     link: { href: '/envios.html', texto: 'Ver envios' },
     // o campo de CEP ("Cotar o frete no WhatsApp") é montado pelo script, na 1ª vez que a pergunta abre (HTML mínimo)
     attrs: { 'data-cep': '' },
   },
   {
     pergunta: 'Tem nota fiscal?',
-    resposta: 'Sim, em toda venda. E a peça é original, de carro com baixa legal no Detran-RS: somos desmanche credenciado, CDV nº 01060.',
+    resposta: 'Sim, em toda venda. A peça é original, de carro com baixa legal no Detran-RS (desmanche credenciado, CDV nº 01060).',
+  },
+  {
+    pergunta: 'Como pago?',
+    resposta: 'A forma de pagamento você combina no WhatsApp.',
   },
 ];
 ---
@@ -154,6 +158,7 @@ const perguntas = [
             guardado: nada pula quando o script chega); o "Ver lista (n)" e o estado "Na sua lista" vêm do script */}
         <div class="compra-lista"><button type="button"><Icone nome="lista-mais" /><span>Adicionar à lista<span class="cl-longo"> de orçamento</span></span></button></div>
       </div>
+      <p class="compra-confia">Peça original usada · <a href="/garantia.html">Garantia de 90 dias</a> · <a href="/garantia.html">Nota fiscal</a> · <a href="/sobre.html">Desmanche credenciado CDV nº 01060</a></p>
       <ul class="compra-facil">
         <li><b>Na dúvida se serve?</b> A gente confere na peça antes de você comprar.</li>
         <li><b>WhatsApp:</b> mensagem pronta com a peça<span data-whats-carro></span>.</li>
@@ -680,6 +685,8 @@ const perguntas = [
   .estoque-unica { color: var(--accent-text); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%); }
   .estoque-unica i { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 78%); }
   .estoque-txt { margin: -2px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
+  .compra-confia { margin: 2px 0 0; font-size: 13px; line-height: 1.4; color: var(--ink-2); text-wrap: balance; }
+  .compra-confia a { color: var(--ink); font-weight: 650; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
   .compra-botoes { position: relative; display: grid; gap: 10px; margin-top: 6px; }
   /* "No WhatsApp: de R$ X por R$ Y  −10%" (10% em toda peça pelo WhatsApp). Um elemento só, dois desenhos:
      - celular e tablet (uma coluna): selo claro preso no canto de cima do botão laranja (metade fora dele), SEM ocupar
