@@ -466,6 +466,8 @@ const antes = `(function(){try{var s=document.currentScript.parentNode,d=documen
     .abv2 .abv2-abas { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); }
     .abv2 .abv2-abas [role="tab"] { font-size: 14px; letter-spacing: -.01em; padding-inline: 4px; }
     .abv2 .abv2-h1 { --ab-fs: 37px; }
+    /* 280 px (celular dobrável fechado): a 1ª linha do título passava 6 px da tela e o "seu" saía cortado (rodada 19) */
+    @media (max-width: 299px) { .abv2 .abv2-h1 { --ab-fs: 33px; } }
     /* os dois selos não cabem lado a lado: um em cima do outro, baixos, com o texto numa linha só */
     .abv2 .ab-selos { grid-template-columns: minmax(0, 1fr); gap: 6px; }
     .abv2 .ab-selo { min-height: 40px; padding: 4px 10px 4px 5px; border-radius: 13px; }

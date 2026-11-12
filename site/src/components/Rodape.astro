@@ -102,6 +102,9 @@ const reputacao = !!r.reputacao && !COM_REPUTACAO.has(caminho);
   .rodape nav a { display: flex; align-items: center; justify-self: start; min-height: 44px; color: var(--ink-2); font-size: 15px; line-height: 1.3; }
   .rodape nav a:hover { color: var(--ink); }
   @media (min-width: 900px) and (pointer: fine) { .rodape nav a { min-height: 36px; } }
+  /* 280 px (celular dobrável fechado): "@cdvizzatcarimports" é uma palavra só, mais larga que a coluna, e saía 13 px
+     para fora da tela (rodada 19). Só aí a coluna deixa de crescer com a palavra e o link pode quebrar. */
+  @media (max-width: 299px) { .rodape nav { grid-template-columns: minmax(0, 1fr); } .rodape nav a { overflow-wrap: anywhere; } }
   /* marcas: duas colunas no celular (a lista não vira uma tela inteira); o resto da lista ocupa a linha toda */
   .rodape .rodape-pecas { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
   .rodape .rodape-pecas > :not(.rodape-marca-link) { grid-column: 1 / -1; }
