@@ -4,9 +4,11 @@
 // altura. Os cartões são os do catálogo (cartaoHtml, lib/vendidaCartoes.ts), montados aqui no navegador.
 // Sem lib/busca.ts aqui: os cartões chegam por import() só quando há o que mostrar.
 
+import { escalaTela, larga } from '../../lib/escalaTela';
+
 /** A largura da foto do cartão nos trilhos da home (CSS em trilhoPessoal.css): 208 px no celular; 5 por fila de 1024
  *  a 1279 px; 6 por fila depois (a moldura chega a 1240 px, 16 px entre os cartões). */
-export const SIZES_PESSOAL = '(min-width: 1304px) 194px, (min-width: 1280px) calc(16.7vw - 24px), (min-width: 1024px) calc(20vw - 26px), 208px';
+export const SIZES_PESSOAL = `(min-width: 1304px) ${larga(194)}, (min-width: 1280px) calc(16.7vw - 24px), (min-width: 1024px) calc(20vw - 26px), 208px`;
 
 /** O esqueleto de um cartão: a MESMA estrutura e as mesmas classes do cartão (a mesma altura), com as linhas vazias.
  *  No cartão estreito dos trilhos (até 214 px) o carro e os anos ocupam 2 linhas e o nome, 2 (às vezes 3): o esqueleto
@@ -73,7 +75,7 @@ export function ligarSetas(secao: HTMLElement) {
     if (!cx || trilho.scrollWidth <= trilho.clientWidth + 1) return;
     const r = cx.getBoundingClientRect(), t = trilho.getBoundingClientRect();
     if (r.left >= t.left - 1 && r.right <= t.right + 1) return;
-    trilho.scrollTo({ left: trilho.scrollLeft + (r.left - t.left) - 4, behavior: 'auto' });
+    trilho.scrollTo({ left: trilho.scrollLeft + (r.left - t.left) / escalaTela() - 4, behavior: 'auto' });
   });
 }
 

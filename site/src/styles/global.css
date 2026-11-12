@@ -80,7 +80,7 @@
     text-rendering: optimizeLegibility;
     scroll-padding-top: 88px;
   }
-  body { min-height: 100dvh; line-height: 1.5; }
+  body { min-height: calc(100dvh / var(--z)); line-height: 1.5; }
   ::selection { background: var(--accent); color: var(--on-accent); }
   :focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; border-radius: 6px; box-shadow: 0 0 0 6px var(--foco-halo); }
   img, video { display: block; max-width: 100%; }
@@ -118,6 +118,40 @@
   content: ""; position: absolute; z-index: -1;
   left: -.06em; right: -.08em; bottom: -.02em; height: .36em;
   background: url("/identidade/pincel.svg") center / 100% 100% no-repeat;
+}
+
+/* ---- Tela larga (rodada 19) ------------------------------------------------
+   Monitor largo sem retina (2560 px de largura, 4K a 100%): o site abria como uma coluna estreita e miúda no meio e
+   a pessoa tinha de dar zoom. Acima de 1700 px de largura o site INTEIRO cresce junto (`zoom` na raiz: letra, botão,
+   imagem, espaço, cabeçalho, gaveta), na proporção de janela / 1700: 1920 = 1,13×, 2560 = 1,5×, 3840 = 2,26×. É o
+   mesmo desenho do PC, maior — o que o zoom do navegador faria, sozinho. Três limites: a altura (a tela nunca fica
+   com menos de 840 px de altura de desenho: no ultralargo 3440×1440 a escala para em 1,71×; 840 e não 800 porque a
+   abertura tem uma regra de "PC baixo" até 820 px, que o zoom não deixaria valer), o teto de 3× e a largura
+   (abaixo de 1700 px esta regra não existe). Contínuo (acompanha o redimensionar), só CSS (sem script, sem pulo na
+   carga). `tan(atan2(a, b))` é a divisão de duas medidas, que o calc() não faz; navegador sem ela ignora a regra e
+   mostra o site como sempre foi.
+   O QUE O ZOOM MEXE (quem escreve CSS ou script novo precisa saber):
+   - vw/vh/dvh/svh também são multiplicados: altura ou largura "da janela" divide por var(--z)
+     (`calc(100dvh / var(--z))`); os clamp(px, vw, px) do site já estão no máximo nessa largura e não precisam.
+   - no script, retângulo (getBoundingClientRect) e mouse (clientX) vêm em px da JANELA; offsetWidth, clientWidth,
+     scrollLeft e o px que se escreve no style são px do DESENHO: misturar os dois = dividir por `escalaTela()`
+     (lib/escalaTela.ts). A rolagem da página (scrollY, scrollTo) é da janela.
+   - `sizes` das imagens não sabe do zoom: a medida do PC é `max(Npx, N/17 vw)` (`larga()` em lib/variantes.ts), para
+     a imagem vir com os pontos da tela e não borrar.
+   - SAFARI FICA DE FORA (o @supports abaixo: a fonte -apple-system-body só existe no WebKit). Medido no WebKit 26.5,
+     com zoom na raiz ele erra três coisas que o site usa: (1) cqw/cqh/cqi/cqmin em width/height/top saem
+     multiplicados pelo zoom duas vezes (o palco da abertura crescia 1,5× a mais); (2) @container mede o cartão já
+     ampliado quando a largura vem da grade (o cartão de 192 px passava por 288 e perdia as regras de cartão
+     estreito); (3) min() com % dentro de calc() sai errado. Chrome, Edge e Firefox fazem as três certas. No Safari o
+     site continua como era (sem escala). Para ligar um dia: tirar o @supports e rodar _r19telas/scripts/equiv.cjs
+     no WebKit (as sondas sonda-cq*.cjs e sonda-calc.cjs mostram os três erros).
+   - :root.z1 (posta no <head> pelo Base.astro): navegador antigo em que o retângulo não acompanha o zoom fica sem a
+     escala (a conta do toque sairia errada). */
+:root { --z: 1; }
+@media screen and (min-width: 1700px) and (min-height: 840px) {
+  @supports not (font: -apple-system-body) {
+    :root:not(.z1) { --z: min(tan(atan2(100vw, 1700px)), tan(atan2(100vh, 840px)), 3); zoom: var(--z); }
+  }
 }
 
 /* ---- Layout -------------------------------------------------------------- */

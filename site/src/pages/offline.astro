@@ -69,7 +69,7 @@ const whats = whatsUrl('Estou procurando uma peça.');
 
 <style is:global>
   /* presos a .off (o HTML dos cartões vem do script, sem o atributo de escopo) */
-  .off { min-height: 100dvh; display: flex; flex-direction: column; }
+  .off { min-height: calc(100dvh / var(--z, 1)); display: flex; flex-direction: column; }
   .off [hidden] { display: none !important; }
   .off .off-topo { position: sticky; top: 0; z-index: 10; padding-top: env(safe-area-inset-top); background: color-mix(in oklab, var(--bg), transparent 8%);
     border-bottom: 1px solid color-mix(in oklab, var(--line), transparent 25%); }

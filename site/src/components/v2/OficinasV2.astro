@@ -5,6 +5,7 @@
 // texto. No tablet a arte vira uma faixa em cima e o texto se divide em 2 colunas; no celular, a arte quadrada em cima.
 import Icone from '../Icone.astro';
 import { whatsUrl } from '../../lib/dados';
+import { larga } from '../../lib/escalaTela';
 const msg = 'Sou de oficina/revenda e quero mandar uma lista de peças. Carro e ano: ____. Peças: ____';
 const passos = ['Mande a lista com o carro e o ano', 'A gente confere no pátio', 'Responde pelo WhatsApp, com o código'];
 ---
@@ -13,7 +14,7 @@ const passos = ['Mande a lista com o carro e o ano', 'A gente confere no pátio'
     <source media="(max-width: 639px)" srcset="/arte/v2/oficinas-maruf-celular-600.webp 600w, /arte/v2/oficinas-maruf-celular.webp 900w"
       sizes="calc(100vw - 32px)" width="900" height="900" />
     <img src="/arte/v2/oficinas-maruf.webp" srcset="/arte/v2/oficinas-maruf-900.webp 900w, /arte/v2/oficinas-maruf.webp 1536w"
-      sizes="(min-width: 1304px) 1240px, calc(100vw - 64px)"
+      sizes={`(min-width: 1304px) ${larga(1240)}, calc(100vw - 64px)`}
       alt="O Maruf, da Izzat Car, põe um farol na caixa do pedido de uma oficina; na bancada, as outras peças separadas, cada uma com a sua etiqueta laranja"
       width="1536" height="1024" loading="lazy" decoding="async" />
   </picture>

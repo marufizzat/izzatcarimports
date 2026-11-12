@@ -11,6 +11,7 @@
 //    versão (reserva o espaço certo, a página não pula). Sem `href` (arte sem botão desenhado): vira <figure>, sem link.
 import Icone from '../Icone.astro';
 import { resumo } from '../../lib/dados';
+import { larga } from '../../lib/escalaTela';
 interface Props { nome: string; texto: string; href?: string; class?: string; formato?: 'faixa' | 'arte'; titulo?: string; apoio?: string; rotulo?: string;
   arteW?: number; arteH?: number; celW?: number; celH?: number;
   /** o nome do botão no GA4 (contato_whatsapp, data-botao); sem ele, o nome da arte ("banner-serve", "banner-garantia") */
@@ -55,7 +56,9 @@ const [bolhaCliente, bolhaLoja] = CONVERSA[nome] ?? CONVERSA['banner-serve'];
   <div class:list={['fw-fora', cls]}>
     <div class="faixa-whats">
       <span class="fw-maruf">
-        <img src="/arte/v2/maruf-celular-220.webp" srcset="/arte/v2/maruf-celular-220.webp 1x, /arte/v2/maruf-celular.webp 2x"
+        {/* larguras (w) e não 1x/2x: na tela larga o zoom da raiz (global.css) pede o arquivo maior numa tela 1x. 158 px = a
+            largura do recorte com os 186 px de altura do PC; no celular (126 px, tela 2x/3x) continua vindo o maior. */}
+        <img src="/arte/v2/maruf-celular-220.webp" srcset="/arte/v2/maruf-celular-220.webp 187w, /arte/v2/maruf-celular.webp 374w" sizes={larga(158)}
           alt="O Maruf, da Izzat Car, respondendo um cliente no celular" width={MARUF.w} height={MARUF.h} loading="lazy" decoding="async" />
       </span>
       <span class="fw-digitando" aria-hidden="true"><i></i><i></i><i></i></span>

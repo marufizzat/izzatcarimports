@@ -17,6 +17,7 @@ import { whatsUrl } from '../../lib/whats';
 import { pedidoPatioAchou } from '../../lib/patio';
 import { lerMeuCarro } from '../../lib/meuCarro';
 import { guardarBusca, lerRecentes, limparRecentes } from '../../lib/buscasRecentes';
+import { escalaTela } from '../../lib/escalaTela';
 import './sugestoes.css';
 
 type Props = {
@@ -153,7 +154,7 @@ export default function SugestoesBusca({ placeholder = 'Buscar peça, carro ou c
       const r = raiz.current?.getBoundingClientRect();
       if (!r) return;
       const fundo = vv ? vv.offsetTop + vv.height : window.innerHeight;
-      const livre = Math.floor(fundo - r.bottom - 16);
+      const livre = Math.floor((fundo - r.bottom) / escalaTela() - 16);
       el.style.maxHeight = `${Math.max(200, Math.min(460, livre))}px`;
     };
     ajustar();

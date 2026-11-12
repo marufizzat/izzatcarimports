@@ -9,6 +9,7 @@
 import { EVENTO, lerMeuCarro, carregarGaragem, type MeuCarro } from '../../lib/meuCarro';
 import { ARQUIVO_CARRO } from '../../lib/chegouCarro';
 import { whatsUrl } from '../../lib/whats';
+import { escalaTela } from '../../lib/escalaTela';
 import { palavraViva, contarBlocos, escolherAtalhos, linkAtalho, pecasTxt, lugaresEstreitos, type IndiceCarro, type Atalho } from '../../lib/abertura';
 
 type Estado = '' | 'marca' | 'carro';
@@ -50,7 +51,7 @@ export function montarAbertura(sec: HTMLElement) {
     const a = palavra.animate([{ opacity: .2, clipPath: 'inset(-.2em 100% -.2em 0)' }, { opacity: 1, clipPath: 'inset(-.2em 0 -.2em 0)' }], { duration: 280, easing: 'cubic-bezier(.2, .8, .2, 1)' });
     a.onfinish = a.oncancel = () => { if (palavraAgora === t) h1.classList.remove('ab-anima'); };
     if (resto && antes && depois && Math.abs(antes.top - depois.top) < 4)
-      resto.animate([{ transform: `translateX(${antes.left - depois.left}px)` }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+      resto.animate([{ transform: `translateX(${(antes.left - depois.left) / escalaTela()}px)` }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2, .8, .2, 1)' });
     // o traço se desenha de novo (dois nomes para a mesma animação: recomeça sem forçar layout)
     if (pincel) { const outra = pincel.classList.contains('ab-traca') ? 'ab-traca2' : 'ab-traca'; pincel.classList.remove('ab-traca', 'ab-traca2'); pincel.classList.add(outra); }
   }

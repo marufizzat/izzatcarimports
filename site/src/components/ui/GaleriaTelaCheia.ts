@@ -11,6 +11,7 @@
 // só para as miniaturas, que são cópias das da página).
 
 import { caixaFoto, soltoComElastico, pinca, assentar, toqueDuplo, type Caixa, type Ponto, type Vista } from './zoomToque';
+import { escalaTela } from '../../lib/escalaTela';
 
 type Gesto = {
   modo: 'arrastar' | 'pinca';
@@ -117,10 +118,12 @@ let ultimoFoco: Ponto = { x: 0, y: 0 };
 function pintar() {
   quadro = 0;
   if (!el) return;
-  el.trilho.style.transform = `translate3d(calc(${-i * 100}% + ${arrasto}px), 0, 0)`;
+  // a conta do gesto é em px da janela (mouse e retângulo); o transform, em px do desenho (tela larga: lib/escalaTela.ts)
+  const z = escalaTela();
+  el.trilho.style.transform = `translate3d(calc(${-i * 100}% + ${arrasto / z}px), 0, 0)`;
   const atual = el.fotos[i];
   if (fotoAmpliada && fotoAmpliada !== atual) fotoAmpliada.style.transform = '';
-  atual.style.transform = vista.s > 1 || vista.x || vista.y ? `translate3d(${vista.x}px, ${vista.y}px, 0) scale(${vista.s})` : '';
+  atual.style.transform = vista.s > 1 || vista.x || vista.y ? `translate3d(${vista.x / z}px, ${vista.y / z}px, 0) scale(${vista.s})` : '';
   fotoAmpliada = atual;
   el.palco.classList.toggle('amplo', vista.s > 1);
 }

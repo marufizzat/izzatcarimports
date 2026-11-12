@@ -4,6 +4,7 @@
 // do carro entra no palco e as peças viram os atalhos DELE, com a contagem real (a do catálogo com tipo + carro + ano).
 // Aqui só o que é função pura (testada em abertura.test.ts); o comportamento está em components/v2/aberturaPalco.ts.
 // Sem node:fs e sem lib/dados.ts: roda no build e no navegador.
+import { larga } from './escalaTela';
 import { serveNoModelo, anosNoModelo } from './meuCarro';
 
 /** Uma camada do palco: k = arquivo (/arte/v2/abertura/<k>-<largura>.webp); bloco = o nome do bloco nos dados (p.c);
@@ -47,9 +48,10 @@ export function lugaresEstreitos(n: number): [number, number][] {
 
 /** `sizes` da arte do carro e do farol-herói no palco: os MESMOS no <img> (AberturaV2.astro) e na pré-carga do <head>
  *  (index.astro), para o navegador escolher o mesmo arquivo e baixar uma vez só. No celular o valor é menor que a
- *  largura de verdade de propósito: tela 3x pediria a arte de 1200 px para um palco de 360. */
-export const SIZES_AUTO = '(max-width: 1023px) 70vw, min(56vw, 1060px)';
-export const SIZES_HEROI = '(max-width: 1023px) 62vw, min(52vw, 800px)';
+ *  largura de verdade de propósito: tela 3x pediria a arte de 1200 px para um palco de 360. O teto do PC passa por
+ *  larga(): na tela larga o palco cresce com o zoom da raiz (em 2560 px o farol vinha com 800 px para 1.050 na tela). */
+export const SIZES_AUTO = `(max-width: 1023px) 70vw, min(56vw, ${larga(1060)})`;
+export const SIZES_HEROI = `(max-width: 1023px) 62vw, min(52vw, ${larga(800)})`;
 
 /** Quantos atalhos cabem em volta do carro. */
 export const ATALHOS_MAX = 5;

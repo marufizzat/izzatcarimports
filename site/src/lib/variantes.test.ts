@@ -62,7 +62,8 @@ describe('variantes das artes (srcset)', () => {
     for (const s of todos) {
       const partes = s.split(/,\s(?![^()]*\))/);
       partes.slice(0, -1).forEach((p) => expect(p).toMatch(/^\(max-width: \d+px\) (calc\([^()]+\)|\d+(px|vw))$/));
-      expect(partes[partes.length - 1]).toMatch(/^(calc\([^()]+\)|\d+(px|vw))$/);
+      // o último valor é a medida do PC: larga(N) = "max(Npx,N/17 vw)" (a tela larga cresce com o zoom da raiz)
+      expect(partes[partes.length - 1]).toMatch(/^max\(\d+px,\d+(\.\d)?vw\)$/);
     }
   });
 });

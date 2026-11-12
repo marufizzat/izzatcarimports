@@ -184,7 +184,7 @@ const confianca: [string, string][] = [
   /* filtros: painel fixo no computador; os mesmos grupos na gaveta do celular */
   .cat-lateral { display: none; }
   @media (min-width: 1024px) {
-    .cat-lateral { display: block; position: sticky; top: calc(var(--cat-cab) + 16px); align-self: start; max-height: calc(100dvh - var(--cat-cab) - 32px);
+    .cat-lateral { display: block; position: sticky; top: calc(var(--cat-cab) + 16px); align-self: start; max-height: calc(100dvh / var(--z) - var(--cat-cab) - 32px);
       overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; border-radius: 18px; }
     /* tem mais filtros embaixo: um degradê no pé da lateral (some no fim da rolagem; sem rolagem, nem aparece) */
     .cat-lateral::after { content: ""; position: sticky; bottom: 0; display: block; height: 44px; margin-top: -44px; border-radius: 0 0 18px 18px;
@@ -366,7 +366,10 @@ const confianca: [string, string][] = [
   .cat-patio-form { grid-area: form; margin: 0; font-size: 14px; line-height: 1.4; color: var(--ink-3); }
   .cat-patio-form a { display: inline-block; padding: 8px 2px; margin: -8px -2px; color: var(--accent-text); font-weight: 650;
     text-decoration: underline; text-underline-offset: 3px; }
-  @media (min-width: 900px) {
+  /* de 1024 a 1199 px a lateral dos filtros deixa ~670 px para a lista: os dois botões ao lado espremiam o texto numa
+     tira de 70 px, uma palavra por linha (rodada 19). Nessa faixa o cartão fica empilhado, como no celular. */
+  @media (min-width: 1024px) and (max-width: 1199px) { .cat-aviso.cat-patio { grid-template-columns: auto minmax(0, 1fr); } }
+  @media (min-width: 900px) and (max-width: 1023px), (min-width: 1200px) {
     .cat-aviso.cat-patio { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "rosto titulo botoes" "rosto texto form";
       gap: 4px 18px; padding: 18px 22px; }
     .cat-aviso.cat-patio .cat-patio-rosto { align-self: center; width: 52px; height: 52px; }

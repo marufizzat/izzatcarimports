@@ -4,6 +4,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { larga } from './escalaTela';
 
 const RAIZ = process.cwd();
 const PUB = join(RAIZ, 'public');
@@ -45,30 +46,31 @@ export function srcArte(src: string, sizes: string): { srcset?: string; sizes?: 
 
 // sizes de cada lugar, tirados do CSS (moldura = min(100vw - 32px, 1240px); a partir de 768, min(100vw - 64px, 1240px),
 // e chega aos 1240 em 1304 px). Um pouco a mais é melhor que a menos: arredondado para cima.
+// A medida do PC (o último valor) passa por larga(): na tela larga o site cresce com o zoom da raiz (global.css).
 export const SIZES = {
   // /carros (CarrosPatio todos): 2 colunas (gap 10) até 759, 3 (gap 16) até 1179, 4 (gap 18)
-  carrosTodos: '(max-width: 759px) calc(50vw - 21px), (max-width: 1179px) calc(33.4vw - 31px), (max-width: 1303px) calc(25vw - 29px), 297px',
+  carrosTodos: '(max-width: 759px) calc(50vw - 21px), (max-width: 1179px) calc(33.4vw - 31px), (max-width: 1303px) calc(25vw - 29px), ' + larga(297),
   // home (CarrosPatio): trilho de 80% até 699, 2 colunas (gap 16) até 1079, 3 (gap 18)
-  carrosHome: '(max-width: 699px) calc(80vw - 25px), (max-width: 1079px) calc(50vw - 40px), (max-width: 1303px) calc(33.4vw - 33px), 402px',
+  carrosHome: '(max-width: 699px) calc(80vw - 25px), (max-width: 1079px) calc(50vw - 40px), (max-width: 1303px) calc(33.4vw - 33px), ' + larga(402),
   // /carros, topo do PC (some abaixo de 900): metade da caixa (gap 40), vitrine até 620; cv-1 58%, cv-2 e cv-3 46%
-  vitrine1: '(max-width: 1303px) calc(29vw - 30px), 360px',
-  vitrine23: '(max-width: 1303px) calc(23vw - 24px), 286px',
+  vitrine1: '(max-width: 1303px) calc(29vw - 30px), ' + larga(360),
+  vitrine23: '(max-width: 1303px) calc(23vw - 24px), ' + larga(286),
   // topo do carro (TopoArte "meio"): no celular a coluna de 46%; no PC, de 48% até o fim da caixa
-  topoCarro: '(max-width: 899px) calc(46vw - 25px), (max-width: 1303px) calc(52vw - 33px), 645px',
+  topoCarro: '(max-width: 899px) calc(46vw - 25px), (max-width: 1303px) calc(52vw - 33px), ' + larga(645),
   // topo da categoria (TopoArte "contem"): no celular a coluna de 46%; no PC, a metade direita da caixa
-  topoCategoria: '(max-width: 899px) calc(46vw - 25px), (max-width: 1303px) calc(50vw - 32px), 620px',
+  topoCategoria: '(max-width: 899px) calc(46vw - 25px), (max-width: 1303px) calc(50vw - 32px), ' + larga(620),
   // marca: 3 maiores (gap 12 no celular, 18 no PC)
-  marcaPrimeiro: '(max-width: 899px) calc(100vw - 32px), (max-width: 1303px) calc(60vw - 49px), 734px', // mm-d3 e mm-d1
-  marcaDupla: '(max-width: 899px) calc(50vw - 22px), (max-width: 1303px) calc(50vw - 41px), 611px', // mm-d2
-  marcaLado: '(max-width: 899px) calc(50vw - 22px), (max-width: 1303px) calc(40vw - 33px), 490px', // mm-d3, 2º e 3º
+  marcaPrimeiro: '(max-width: 899px) calc(100vw - 32px), (max-width: 1303px) calc(60vw - 49px), ' + larga(734), // mm-d3 e mm-d1
+  marcaDupla: '(max-width: 899px) calc(50vw - 22px), (max-width: 1303px) calc(50vw - 41px), ' + larga(611), // mm-d2
+  marcaLado: '(max-width: 899px) calc(50vw - 22px), (max-width: 1303px) calc(40vw - 33px), ' + larga(490), // mm-d3, 2º e 3º
   // marca, os outros carros: 2 colunas (gap 12) até 699, 3 até 1099, 4 (gap 16)
-  marcaGrade: '(max-width: 699px) calc(50vw - 22px), (max-width: 1099px) calc(33.4vw - 19px), (max-width: 1303px) calc(25vw - 28px), 298px',
+  marcaGrade: '(max-width: 699px) calc(50vw - 22px), (max-width: 1099px) calc(33.4vw - 19px), (max-width: 1303px) calc(25vw - 28px), ' + larga(298),
 } as const;
 
 /** Cartão da grade de categorias (home): 2 colunas (gap 10) até 699, 4 (gap 14) até 1079, 5 (gap 14). Os grandes do
  *  bento ocupam 2×2 (g4 no tablet, g5 no PC); com carro salvo eles voltam a 1×1 (a conta fica para cima, sem perda). */
 export function sizesCategoria(g4: boolean, g5: boolean): string {
   const tablet = g4 ? 'calc(50vw - 24px)' : 'calc(25vw - 19px)';
-  const pc = g5 ? '(max-width: 1303px) calc(40vw - 34px), 488px' : '(max-width: 1303px) calc(20vw - 24px), 237px';
+  const pc = g5 ? `(max-width: 1303px) calc(40vw - 34px), ${larga(488)}` : `(max-width: 1303px) calc(20vw - 24px), ${larga(237)}`;
   return `(max-width: 699px) calc(50vw - 21px), (max-width: 1079px) ${tablet}, ${pc}`;
 }
