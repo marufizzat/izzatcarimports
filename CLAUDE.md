@@ -640,9 +640,44 @@ não vai. É proibido pular, excluir ou afrouxar teste no robô.
   próximo (`FAMILIAS_ANTIGAS` em `preparar_dados.py` → `site/src/pages/categoria/[antiga].html.ts`); o `?tipo=` antigo
   do catálogo vira o bloco novo no `<head>` de `catalogo.astro`.
 
+## Tela larga: o site cresce inteiro (rodada 19, 11/11/2026)
+Num monitor largo sem retina (2560 px de largura, 4K a 100%) o site abria como uma coluna estreita e miúda no meio e a
+pessoa tinha de dar zoom. Agora, com a janela de 1700 px ou mais, o site INTEIRO cresce na proporção (janela / 1700):
+1920 = 1,13×, 2560 = 1,5×, 3840 = 2,26×. É o desenho do PC, só maior. Abaixo de 1700 px nada muda.
+- **A regra** (uma só, em `site/src/styles/global.css`, "Tela larga"): `zoom` na raiz, só CSS (vale sem script, sem pulo
+  na carga, acompanha o redimensionar). `--z` = min(largura / 1700, altura / 840, 3). A altura limita: a tela nunca fica
+  com menos de 840 px de altura de desenho (ultralargo 3440×1440 = 1,71×; janela com menos de 840 px de altura = sem
+  escala). 840 e não 800: a abertura tem uma regra de "PC baixo" até 820 px que o zoom não deixaria valer.
+- **O que o zoom mexe e quem escreve código novo precisa saber**:
+  - `vw`/`vh`/`dvh`/`svh` também são multiplicados. Altura ou largura "da janela" = `calc(100dvh / var(--z))` (gaveta,
+    diálogo do carro, lateral do catálogo, altura da abertura, sugestões). Os `clamp(px, vw, px)` já estão no máximo
+    em 1700 px e não precisam.
+  - No script: retângulo (`getBoundingClientRect`) e mouse (`clientX`) vêm em px da JANELA; `offsetWidth`,
+    `clientWidth`, `scrollLeft` e o px que se escreve no `style` são px do DESENHO. Misturar = dividir por
+    `escalaTela()` (`site/src/lib/escalaTela.ts`): a lupa e a tela cheia da peça, as filas que centralizam uma ficha,
+    a altura das sugestões. A rolagem da página (`scrollY`, `scrollTo`) é da janela.
+  - `sizes` das imagens não sabe do zoom: a medida do PC é `larga(N)` = `max(Npx, N/17 vw)` (mesmo arquivo), senão a
+    imagem vem com os pontos de 1700 px e é esticada. Nunca `1x, 2x` no `srcset`: sempre larguras (`w`).
+  - Regra de `@media` com ALTURA acima de 820 px: rever o piso de 840 na regra do zoom.
+- **Safari fica de fora** (`@supports not (font: -apple-system-body)` em volta da regra: essa fonte só existe no
+  WebKit): com zoom na raiz o WebKit (medido no 26.5) erra três coisas que o site usa — `cqw/cqh/cqi` em
+  largura/altura/posição saem multiplicados duas vezes (o palco da abertura crescia 1,5× a mais), `@container` mede
+  o cartão já ampliado quando a largura vem da grade (o cartão de 192 px perdia as regras de cartão estreito) e
+  `min()` com % dentro de `calc()` sai errado. No Safari o site continua como era. Para ligar um dia: tirar o
+  `@supports` e passar `_r19telas/scripts/equiv.cjs` no WebKit (as sondas `sonda-cq*.cjs` e `sonda-calc.cjs` mostram
+  os três erros).
+- **Navegador antigo** (`html.z1`, posta no `<head>` pelo `Base.astro`): onde o retângulo não acompanha o zoom o site
+  fica como era, sem escala (medido com um `<p>` de 1 px; quem tem `currentCSSZoom` nem mede). Sem `tan()`/`atan2()`
+  no CSS, ou sem `zoom` (Firefox até 125): idem.
+- **Prova**: `_r19telas/scripts/` — `equiv.cjs` + `compara-equiv.py` (a página em 2550×1440 com zoom = a mesma em
+  1700×960 numa tela 1,5x, ponto a ponto), `interacoes.cjs` (lupa, tela cheia, sugestões, diálogo, Raio-x, batida),
+  `nitidez.cjs` (pontos do arquivo x pontos da tela), `diversos.cjs` (redimensionar, sem script, guarda), `janelas.cjs`
+  (as 20 janelas × 9 páginas × com e sem carro).
+
 ## Onde mexer
 | Quero mudar… | Arquivo |
 |---|---|
+| A escala da tela larga (de onde começa, o piso da altura, o teto) | `site/src/styles/global.css` ("Tela larga"); a conta no script: `site/src/lib/escalaTela.ts` |
 | Cores, fontes, botões, etiqueta da peça | `site/src/styles/global.css` |
 | Página da peça | `site/src/pages/peca/[slug].astro` e `site/src/components/PecaTopo.astro` |
 | Home | `site/src/pages/index.astro` e `site/src/components/v2/*` (abertura, selos, categorias, marcas, carros, banners) |

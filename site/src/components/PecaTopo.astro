@@ -214,6 +214,7 @@ const perguntas = [
   import { linkWhats, mensagemFrete, blocoDaCabeca, urlDaCauda, linhaMeuCarro, carroSalvoTxt, abrirWhats } from '../lib/whats';
   import { ligarListaPeca, ligarVaiJunto } from './peca/listaPeca';
   import { ligarVistos } from './peca/vistosPeca';
+  import { escalaTela } from '../lib/escalaTela';
 
   // "Adicionar à lista de orçamento" (o 3º botão da compra) e o "+ lista" dos cartões do "Vai junto" (peca/VaiJunto.astro)
   ligarListaPeca();
@@ -495,10 +496,12 @@ const perguntas = [
     }
     // a foto à vista como está desenhada no quadro (px do quadro): capa de estúdio (cover), foto do anúncio enquadrada
     // (fill, posta pelo --w/--x/--y e maior que o quadro) ou inteira (scale-down, com respiro: menor que a caixa)
-    const lupaComecar = (im: HTMLImageElement, r: DOMRect) => {
+    // tela larga (zoom na raiz): retângulo e mouse chegam em px da janela; a lupa é desenhada em px do desenho
+    const caixaDesenho = (el: Element) => { const r = el.getBoundingClientRect(), z = escalaTela(); return { left: r.left / z, top: r.top / z, right: r.right / z, width: r.width / z, height: r.height / z, z }; };
+    const lupaComecar = (im: HTMLImageElement, r: ReturnType<typeof caixaDesenho>) => {
       const nw = im.naturalWidth, nh = im.naturalHeight;
       if (!nw || !r.width) return false;   // ainda carregando: tenta no próximo movimento
-      const s = getComputedStyle(im), c = im.getBoundingClientRect();
+      const s = getComputedStyle(im), c = caixaDesenho(im);
       const pl = parseFloat(s.paddingLeft), pt = parseFloat(s.paddingTop);
       const cw = c.width - pl - parseFloat(s.paddingRight), ch = c.height - pt - parseFloat(s.paddingBottom);
       const fit = s.objectFit;
@@ -522,7 +525,7 @@ const perguntas = [
         trilho.after(guia);
       }
       // à direita do palco, da altura dele e da largura dele (menos, se a janela acaba antes)
-      const pw = Math.min(r.width, document.documentElement.clientWidth - r.right - 44), ph = r.height;
+      const pw = Math.min(r.width, document.documentElement.clientWidth / r.z - r.right - 44), ph = r.height;
       if (pw < 240) return false;
       painel.style.cssText = `width:${pw}px;height:${ph}px`;
       quadro.style.cssText = `width:${r.width * Z}px;height:${r.height * Z}px`;
@@ -541,11 +544,11 @@ const perguntas = [
       lupaAgendada = false;
       const im = fotos[atual];
       if (!im || !podeLupa.matches) return lupaFim();
-      const r = im.parentElement!.getBoundingClientRect();
+      const r = caixaDesenho(im.parentElement!);
       if (lupaImg !== im && !lupaComecar(im, r)) return;
       // guia centrado no mouse, sem sair do quadro; o painel mostra a mesma área, Z vezes maior
-      const x = Math.max(0, Math.min(r.width - gw, mx - r.left - gw / 2));
-      const y = Math.max(0, Math.min(r.height - gh, my - r.top - gh / 2));
+      const x = Math.max(0, Math.min(r.width - gw, mx / r.z - r.left - gw / 2));
+      const y = Math.max(0, Math.min(r.height - gh, my / r.z - r.top - gh / 2));
       guia.style.transform = `translate3d(${x}px,${y}px,0)`;
       quadro.style.transform = `translate3d(${-x * Z}px,${-y * Z}px,0)`;
     };

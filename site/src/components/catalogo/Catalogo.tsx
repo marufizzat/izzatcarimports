@@ -17,6 +17,7 @@ import {
 } from 'react';
 import { Busca, FAIXAS, SIZES_CARTAO, capaItem, codigoJunto, fotoCartao, type Carro, type Facetas, type Filtros, type Indice, type Item, type Lado, type Posicao } from '../../lib/busca';
 import Gaveta from '../ui/Gaveta';
+import { escalaTela } from '../../lib/escalaTela';
 import MeuCarroFiltro, { useMeuCarro } from '../ui/MeuCarroFiltro';
 import { serveNoMeuCarro, nomeCarro, nomeModelos, norm } from '../../lib/meuCarro';
 import { zonaDaChave } from '../../lib/raioX';
@@ -364,12 +365,13 @@ function CampoBusca({ valor, aoMudar, aoEnviar, aoFocar }: {
       const r = raiz.current?.getBoundingClientRect();
       if (!r) return;
       const fundo = vv ? vv.offsetTop + vv.height : window.innerHeight;
-      let livre = Math.floor(fundo - r.bottom - 16);
+      const z = escalaTela();   // retângulo e janela em px da janela; maxHeight e scrollHeight, do desenho
+      let livre = Math.floor((fundo - r.bottom) / z - 16);
       const quer = Math.min(el.scrollHeight, 300);
       const banda = raiz.current?.closest<HTMLElement>('.cat-banda');
       if (livre < quer && banda && getComputedStyle(banda).position === 'sticky') {
-        const sobe = Math.floor(Math.min(quer - livre, r.top - (parseFloat(getComputedStyle(banda).top) || 0) - 8));
-        if (sobe > 4) { window.scrollBy(0, sobe); livre += sobe; }
+        const sobe = Math.floor(Math.min(quer - livre, r.top / z - (parseFloat(getComputedStyle(banda).top) || 0) - 8));
+        if (sobe > 4) { window.scrollBy(0, sobe * z); livre += sobe; }
       }
       el.style.maxHeight = `${Math.max(120, Math.min(420, livre))}px`;
     };

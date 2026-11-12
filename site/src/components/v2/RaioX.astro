@@ -41,6 +41,7 @@
 import { ZONAS, ARTE, DO_OUTRO_LADO } from '../../lib/raioX';
 import { dadosRaioX } from '../../lib/raioXDados';
 import { srcArte, srcsetArte } from '../../lib/variantes';
+import { larga } from '../../lib/escalaTela';
 import { CHAVE } from '../../lib/meuCarro';
 import Icone from '../Icone.astro';
 
@@ -58,7 +59,7 @@ const nomeCarro = carro ? `${carro.b} ${carro.m}` : '';
 const titulo = Astro.props.titulo ?? (carro ? `Onde fica a peça no ${nomeCarro}?` : 'Não sabe o nome da peça? Aponte no carro.');
 const lead = 'Toque na parte do carro e veja as peças dela que a gente tem no estoque.';
 // a arte ocupa a moldura inteira no celular e no tablet; no PC, a coluna da esquerda (≈ 58% da moldura de até 1240)
-const sizes = '(max-width: 1023px) calc(100vw - 32px), (max-width: 1303px) calc(58vw - 40px), 716px';
+const sizes = `(max-width: 1023px) calc(100vw - 32px), (max-width: 1303px) calc(58vw - 40px), ${larga(716)}`;
 const pct = (v: number, t: number) => `${((v / t) * 100).toFixed(2)}%`;
 // na vista da frente (a que vem no HTML), a lateral direita e a traseira ficam do outro lado do carro
 const outro = (k: string) => DO_OUTRO_LADO.frente.includes(k);
@@ -173,6 +174,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
 <script>
   import { lerMeuCarro, nomeCarro, EVENTO, ABRIR, type MeuCarro } from '../../lib/meuCarro';
   import { ARQUIVO_CARRO } from '../../lib/chegouCarro';
+  import { escalaTela, larga } from '../../lib/escalaTela';
   import {
     ZONAS, NA_FRENTE, NA_GALERIA, ARQUIVO_GALERIA, DO_OUTRO_LADO, ARTE_TRAS_SRC, ARTE_TRAS_PEQUENA, SRCSET_TRAS, outroLado, linkLinha, linkZona, linkDoFiltro, falaDaZona, qtdPecas, contarZonas, pecasDaZona, lerRaioX,
     type CarroFiltro, type RaioXJson, type ZonaPainel, type LinhaPainel, type LadoArte,
@@ -190,7 +192,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
   const calmo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const SETA = '<svg class="rx-l-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
   // a foto do cartão no trilho do painel: 168 px no celular, 176 no PC
-  const SIZES_GALERIA = '(max-width: 1023px) 168px, 176px';
+  const SIZES_GALERIA = `(max-width: 1023px) 168px, ${larga(176)}`;
   type Procurar = (f: Filtros) => Item[];
   // devolve a vez ao navegador (scheduler.yield quando existe; senão um setTimeout)
   const pausa = () => (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler?.yield?.() ?? new Promise<void>((ok) => setTimeout(ok, 0));
@@ -560,7 +562,7 @@ const antes = `(function(){try{var c=JSON.parse(localStorage.getItem(${JSON.stri
         if (f && fila && fila.scrollWidth > fila.clientWidth) {
           const fr = f.getBoundingClientRect();
           const lr = fila.getBoundingClientRect();
-          fila.scrollLeft += fr.left - lr.left - (lr.width - fr.width) / 2;
+          fila.scrollLeft += (fr.left - lr.left - (lr.width - fr.width) / 2) / escalaTela();
         }
         // celular: o painel vem embaixo da arte; se ele começa fora da tela, rola só o bastante para o título e 2 tipos
         if (como.rolar || como.focar) {

@@ -18,6 +18,7 @@ import css from './raioXBatida.css?inline';
 import { PONTOS, PONTOS_DO_OUTRO_LADO, FRASE_PATIO, opcoesDoPonto, linhasDoPainel, marcadasDeInicio, poucoAnunciado, peDoConserto, repDe, linkDaLinha, linhaDoJson, nomeNaTela, type BatidaJson, type Linha, type Ponto, type Rep } from '../../lib/batida';
 import { ARTE, fotoDoCodigo, type CarroFiltro, type LadoArte } from '../../lib/raioX';
 import type { PontoTras } from '../../lib/raioXTras';
+import { escalaTela } from '../../lib/escalaTela';
 import { mensagemConserto, linkWhats, somaPrecos, precoWhats, DESCONTO_WHATS } from '../../lib/whats';
 import { adicionarNaLista, lerLista, PAGINA_LISTA, MAX_LISTA, type ItemLista } from '../../lib/lista';
 import type { Filtros, Item } from '../../lib/busca';
@@ -409,7 +410,7 @@ export function ligarBatida(ctx: Ctx) {
       if (f && fila.scrollWidth > fila.clientWidth) {
         const fr = f.getBoundingClientRect();
         const lr = fila.getBoundingClientRect();
-        fila.scrollLeft += fr.left - lr.left - (lr.width - fr.width) / 2;
+        fila.scrollLeft += (fr.left - lr.left - (lr.width - fr.width) / 2) / escalaTela();
       }
       if (como.rolar || como.focar) {
         const r = painel.getBoundingClientRect();

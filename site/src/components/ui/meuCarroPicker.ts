@@ -18,6 +18,7 @@ import { lerMeuCarro, salvarMeuCarro, lembrarArte, carregarGaragem as baixarGara
 import { whatsUrl } from '../../lib/whats';
 import { rolarFila } from '../../lib/anosFila';
 import { LINHA } from '../../lib/icones';
+import { larga } from '../../lib/escalaTela';
 
 /** a/as: arte do carro e as larguras do srcset (lib/garagem.ts). */
 export type Modelo = { n: string; c: number; ya: [number, number][]; a?: string; as?: number[] };
@@ -79,7 +80,7 @@ export const MODELO_LONGO = 8;
 /** Largura da arte no cartão do carro (MeuCarroEstilo.astro): no celular (seletor até 469 px, tela até ~539) a arte ocupa
  *  até 80% da altura do cartão (~176 px de largura); no resto, ~232 px. O esqueleto da abertura usa o MESMO valor (o
  *  navegador escolhe o mesmo arquivo do srcset e a arte não desce duas vezes). */
-export const SIZES_ARTE = '(max-width: 539px) 176px, 232px';
+export const SIZES_ARTE = `(max-width: 539px) 176px, ${larga(232)}`;
 /** src e srcset da arte do carro (a = chave, as = larguras do srcset; a última é a arte inteira). A MESMA conta está no
  *  script do esqueleto (SeletorCarro.astro). */
 export function fonteArte(a: string, as: number[] = []): { src: string; srcset: string } {

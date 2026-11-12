@@ -13,7 +13,7 @@
 .sb-busca .sb-btn svg{width:20px;height:20px;color:var(--on-accent)}
 @media (max-width:479px){.sb-btn{padding:0 14px}.sb-btn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}
 /* a lista: a altura máxima vem do script (acaba acima do teclado do celular); o "Ver todos" fica preso no pé */
-.sb-lista{position:absolute;z-index:40;left:0;right:0;top:calc(100% + 8px);max-height:min(70vh,460px);overflow-y:auto;overscroll-behavior:contain;
+.sb-lista{position:absolute;z-index:40;left:0;right:0;top:calc(100% + 8px);max-height:min(calc(70vh / var(--z)),460px);overflow-y:auto;overscroll-behavior:contain;
   padding:6px 6px 0;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-2);animation:sb-entrar .18s ease both}
 .sb-lista ul{list-style:none;margin:0;padding:0}
 .sb-lista ul>:last-child{margin-bottom:6px}

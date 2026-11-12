@@ -39,7 +39,7 @@ html.leve .gv-fundo{-webkit-backdrop-filter:none;backdrop-filter:none}
 .gv-rodape{flex:none;padding:14px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface)}
 .gv-rodape > *{width:100%}
 @media (min-width:768px){
-  .gv-painel{top:0;left:auto;bottom:0;width:min(440px,100vw);max-height:none;height:100dvh;border-radius:0;
+  .gv-painel{top:0;left:auto;bottom:0;width:min(440px,100vw);max-height:none;height:calc(100dvh / var(--z));border-radius:0;
     transform:translate3d(100%,0,0);transition:transform .36s cubic-bezier(.2,.8,.2,1)}
   .gv-painel.on{transform:none}
   .gv-alca{display:none}

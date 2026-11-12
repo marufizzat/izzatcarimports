@@ -19,6 +19,7 @@ import MiniSearch, { type Query, type SearchResult } from 'minisearch';
 import { serveNoModelo, anosNoModelo, modelosDa } from './meuCarro';
 import { MAPA_SINONIMOS, MAPA_FORA, MAIOR_GATILHO, VAZIAS, singulares, plural } from './sinonimos';
 import { zonaDaChave, pecaNaZona } from './raioX';
+import { larga } from './escalaTela';
 
 export type Indice = {
   v: number; updated: string; marcas: string[]; familias: string[]; tipos: string[];
@@ -1451,15 +1452,15 @@ export const LARGURAS_CAPA = [400, 640] as const;
  *  767, 100vw - 64px depois, no máximo 1240); arredondado para cima (um pouco a mais é melhor que a menos). */
 export const SIZES_CARTAO = {
   // grade de 2/3/4 colunas (gap 12/16/18): categoria, carro e a grade do ano da página do carro (GradePecas.astro)
-  grade: '(max-width: 699px) calc(50vw - 22px), (max-width: 1099px) calc(33.4vw - 21px), (max-width: 1303px) calc(25vw - 29px), 297px',
+  grade: '(max-width: 699px) calc(50vw - 22px), (max-width: 1099px) calc(33.4vw - 21px), (max-width: 1303px) calc(25vw - 29px), ' + larga(297),
   // catálogo: 2/3 colunas; do 1024 a lateral dos filtros (264 + 28) entra; 4 colunas do 1280
-  catalogo: '(max-width: 699px) calc(50vw - 22px), (max-width: 1023px) calc(33.4vw - 21px), (max-width: 1279px) calc(33.4vw - 129px), (max-width: 1303px) calc(25vw - 102px), 224px',
+  catalogo: '(max-width: 699px) calc(50vw - 22px), (max-width: 1023px) calc(33.4vw - 21px), (max-width: 1279px) calc(33.4vw - 129px), (max-width: 1303px) calc(25vw - 102px), ' + larga(224),
   // home, "Os mais procurados": trilho de 2,2 cartões no celular, 4 colunas do 700 (VitrineDestaques.astro)
-  vitrine: '(max-width: 699px) calc(45.5vw - 20px), (max-width: 1303px) calc(25vw - 28px), 297px',
+  vitrine: '(max-width: 699px) calc(45.5vw - 20px), (max-width: 1303px) calc(25vw - 28px), ' + larga(297),
   // home, carrossel (Coverflow.astro): 208 px; no PC em 3D o do meio chega a 300
-  carrossel: '(min-width: 1024px) 300px, 208px',
+  carrossel: `(min-width: 1024px) ${larga(300)}, 208px`,
   // peça vendida (404) e "do mesmo carro" da peça: trilho de 208 px; 30vw do 1024; 6 colunas do 1280
-  parecidas: '(min-width: 1280px) 200px, (min-width: 1024px) 30vw, 208px',
+  parecidas: `(min-width: 1280px) ${larga(200)}, (min-width: 1024px) 30vw, 208px`,
 } as const;
 
 /** A foto do cartão (UMA regra para os 3 que montam cartão: CartaoPeca.astro, a Etiqueta do catálogo e cartaoHtml):

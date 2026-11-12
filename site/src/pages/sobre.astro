@@ -8,6 +8,7 @@ import SeloReputacao from '../components/SeloReputacao.astro';
 import BannerV2 from '../components/v2/BannerV2.astro';
 import { SITE } from '../lib/dados';
 import { lojaLd } from '../lib/loja';
+import { larga } from '../lib/escalaTela';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -57,7 +58,7 @@ const etapas = [
           <li class="sob-etapa">
             <div class="sob-etapa-arte">
               <img src={`/arte/v2/${e.arte}.webp`} srcset={`/arte/v2/${e.arte}-600.webp 600w, /arte/v2/${e.arte}.webp 1200w`}
-                sizes="(min-width: 900px) min(560px, 44vw), calc(100vw - 92px)" alt={e.alt} width="1200" height="800" loading="lazy" decoding="async" />
+                sizes={`(min-width: 900px) min(${larga(560)}, 44vw), calc(100vw - 92px)`} alt={e.alt} width="1200" height="800" loading="lazy" decoding="async" />
             </div>
             <span class="sob-etapa-num num" aria-hidden="true">{i + 1}</span>
             <div class="sob-etapa-txt">

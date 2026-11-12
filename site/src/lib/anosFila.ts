@@ -10,12 +10,14 @@
  *  peças (`contas`, uma por ficha; empate de até 5%: a do meio). `fixo` = o "Todos" (sticky): a conta é na parte da fila
  *  à direita dele, e a variável --fixo (no pai da fila) diz onde começa o esmaecido da borda esquerda. */
 export function rolarFila(lista: HTMLElement, fixo: HTMLElement | null, chips: HTMLElement[], contas: number[], alvo: HTMLElement | null, suave?: boolean) {
+  // tela larga (zoom na raiz, global.css): o retângulo vem em px da janela; scrollLeft e offsetWidth, do desenho
+  const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
   const caixa = lista.getBoundingClientRect();
   const gap = parseFloat(getComputedStyle(lista).columnGap) || 6;
-  const ini = fixo ? fixo.getBoundingClientRect().right - caixa.left + gap : 0;
+  const ini = fixo ? (fixo.getBoundingClientRect().right - caixa.left) / z + gap : 0;
   if (lista.parentElement) lista.parentElement.style.setProperty('--fixo', `${Math.max(0, Math.round(ini - gap / 2))}px`);
   if (!chips.length || lista.scrollWidth <= lista.clientWidth + 1) return;
-  const pos = (el: HTMLElement) => el.getBoundingClientRect().left - caixa.left + lista.scrollLeft;
+  const pos = (el: HTMLElement) => (el.getBoundingClientRect().left - caixa.left) / z + lista.scrollLeft;
   const vis = lista.clientWidth - ini;
   let a = alvo ? chips.indexOf(alvo) : -1;
   let b = a;
