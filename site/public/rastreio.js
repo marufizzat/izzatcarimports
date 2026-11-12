@@ -18,6 +18,9 @@
 
   function iniciar() {
   var META_PIXEL_ID = '2508976816257209';
+  // pixel do portfólio empresarial novo da loja (criado em 12/11/2026, conta de anúncios final 2526): os dois recebem os
+  // mesmos eventos; o antigo fica até se saber de quem é a conta dele
+  var META_PIXEL_BM = '1967479790927539';
   var GA_ID = 'G-M9W3R23RY9';
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
@@ -28,7 +31,7 @@
     t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
   }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
   gtag('js', new Date()); gtag('config', GA_ID);
-  fbq('init', META_PIXEL_ID); fbq('track', 'PageView');
+  fbq('init', META_PIXEL_ID); fbq('init', META_PIXEL_BM); fbq('track', 'PageView');
 
   function carregarGA() { var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID; document.head.appendChild(s); }
   if ('requestIdleCallback' in window) requestIdleCallback(carregarGA, { timeout: 2500 }); else setTimeout(carregarGA, 1200);
