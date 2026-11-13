@@ -1802,6 +1802,22 @@
 "mudou": 0.829,
 "t": 0.959
 },
+"MLB4644214155": {
+"br": 20.09,
+"br_depois": 16.02,
+"conferir": true,
+"forca": 0.206,
+"foto": "608918-MLB110142374130_042026",
+"guarda": -14.28,
+"modo": "conservadora",
+"motivo": "sem outras fotos da peça para conferir",
+"mudou": 0.712,
+"prova": {
+"n": 0,
+"q1": null
+},
+"t": 0.176
+},
 "MLB4644214183": {
 "br": 23.74,
 "br_depois": 16.01,
@@ -4242,6 +4258,22 @@
 },
 "t": 3.534
 },
+"MLB4779231129": {
+"br": 63.13,
+"br_depois": 15.99,
+"conferir": true,
+"forca": 0.753,
+"foto": "875617-MLB114210885869_072026",
+"guarda": 20.26,
+"modo": "conservadora",
+"motivo": "sem outras fotos da peça para conferir",
+"mudou": 0.641,
+"prova": {
+"n": 0,
+"q1": null
+},
+"t": 0.102
+},
 "MLB4779231375": {
 "br": 38.42,
 "br_depois": 0.9,
@@ -5122,6 +5154,15 @@
 "q1": 35.6
 },
 "t": 0.714
+},
+"MLB4798902145": {
+"br": 64.41,
+"conferir": true,
+"foto": "965130-MLB114211156219_072026",
+"guarda": 45.55,
+"modo": "manter",
+"motivo": "azul forte também nos claros da peça (46 acima do fundo da foto)",
+"t": 0.034
 },
 "MLB4798905387": {
 "br": 54.71,
@@ -6973,6 +7014,22 @@
 "q1": 16.4
 },
 "t": 1.761
+},
+"MLB4898977599": {
+"br": 52.71,
+"br_depois": 16.0,
+"conferir": true,
+"forca": 0.74,
+"foto": "616643-MLB113360738158_072026",
+"guarda": 14.27,
+"modo": "conservadora",
+"motivo": "sem outras fotos da peça para conferir",
+"mudou": 0.706,
+"prova": {
+"n": 0,
+"q1": null
+},
+"t": 0.105
 },
 "MLB4902999047": {
 "br": 19.33,
@@ -10801,6 +10858,22 @@
 "q1": 9.9
 },
 "t": 1.225
+},
+"MLB5378421035": {
+"br": 19.75,
+"br_depois": 15.81,
+"conferir": true,
+"forca": 0.194,
+"foto": "679661-MLB119212353453_102026",
+"guarda": 8.79,
+"modo": "conservadora",
+"motivo": "sem outras fotos da peça para conferir (o título diz \"preto\")",
+"mudou": 0.572,
+"prova": {
+"n": 0,
+"q1": null
+},
+"t": 0.168
 },
 "MLB5399787979": {
 "br": 21.42,
@@ -16950,6 +17023,18 @@
 "motivo": "azul também nos claros da peça (34 acima do fundo da foto)",
 "mudou": 0.845,
 "t": 0.193
+},
+"MLB7005509488": {
+"br": 34.16,
+"br_depois": 16.01,
+"conferir": true,
+"forca": 0.537,
+"foto": "748961-MLB114212408299_072026",
+"guarda": 35.78,
+"modo": "conservadora",
+"motivo": "azul também nos claros da peça (36 acima do fundo da foto)",
+"mudou": 0.968,
+"t": 0.066
 },
 "MLB7005509592": {
 "br": 47.41,
