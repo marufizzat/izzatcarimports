@@ -13476,6 +13476,15 @@
 },
 "t": 1.55
 },
+"MLB6779186734": {
+"br": 31.46,
+"conferir": true,
+"foto": "929105-MLB114242625037_072026",
+"guarda": 2.95,
+"modo": "manter",
+"motivo": "peça pintada da cor do carro",
+"t": 0.029
+},
 "MLB6779231884": {
 "br": 32.29,
 "br_depois": -13.81,
@@ -17889,6 +17898,18 @@
 "q1": 12.8
 },
 "t": 1.116
+},
+"MLB7031669556": {
+"br": 24.17,
+"br_depois": 16.04,
+"conferir": true,
+"forca": 0.346,
+"foto": "925823-MLB114212450747_072026",
+"guarda": 26.86,
+"modo": "conservadora",
+"motivo": "azul também nos claros da peça (27 acima do fundo da foto; o título diz \"preto\")",
+"mudou": 0.891,
+"t": 0.05
 },
 "MLB7031733576": {
 "br": 28.07,
