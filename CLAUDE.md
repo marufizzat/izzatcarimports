@@ -610,6 +610,19 @@ e publicado sozinho no GitHub Pages a cada 30 minutos.
      transições de página ligadas, pinta normal do Raio-x ao catálogo e de volta (10 idas e voltas a 390 com toque e a
      1440: `_r18giro/scripts/pinta-com-janela.cjs`); o que trava é o Chromium sem janela do Playwright.
 
+21. **"Chegou no pátio esta semana" (21/11/2026)** — `site/src/components/v2/PatioSemana.astro` na home, logo ACIMA de "Carros
+   do pátio" (que não mudou). Os carros que ENTRARAM no pátio: `site/src/data/patio-semana.json` (hoje à mão; o plano é a
+   rota `/admin/patio_semana` do app, com o cadastro de sucata). Por carro: `k` (chave do `/carros/<k>.html`), marca, modelo,
+   `anos` (geração), `cor`, `chegou` (AAAA-MM-DD), `pasta` + `fotos` (N) + `video` das mídias reais em
+   `site/public/patio/<pasta>/` (`1..N.webp` 1400 px, `N-mini.webp` 480×480, `video.mp4` = 7 s, 960 px, SEM áudio,
+   `video-capa.jpg`). **Nunca** chassi, placa, custo, seguradora nem pessoa no quadro (o vídeo do Sorento mostra a
+   seguradora no vidro depois de 9 s: cortar no começo). A semana é a do dia do BUILD (Brasília): até 7 dias = "esta
+   semana"; nenhum, mas algum de 8 a 14 = "semana passada"; sem carro, o bloco some. Destaque = arte do modelo
+   (`arteDoCarro`) com "Imagem ilustrativa do modelo" + fileira das fotos reais (tela cheia num `<dialog>`). WhatsApp
+   `data-botao="patio-semana"": "Vi no site que chegou no pátio um <carro> <cor>. Procuro: ____" (nunca "à venda").
+   **Armadilha**: `<template set:html={...} />` auto-fechado TRAVA o compilador do Astro (loop infinito, dev a 100% de CPU);
+   os dados das mídias vão num `<script type="application/json" is:inline ... set:html></script>`.
+
 ## Testes e o estoque do dia (regra de 11/11/2026: o robô parou a loja por causa de teste)
 O robô roda `python testes/test_dados.py` e `npm --prefix site test` com o ESTOQUE DO DIA antes de publicar: teste vermelho
 = loja parada. Por isso nenhum teste pode depender do que está à venda hoje. Três fontes (`site/testes/estoques.ts`):

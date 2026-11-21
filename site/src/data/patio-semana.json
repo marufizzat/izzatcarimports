@@ -1,0 +1,11 @@
+{
+  "exemplo": false,
+  "carros": [
+    { "k": "citroen-c4-cactus", "b": "Citroën", "m": "C4 Cactus", "anos": "2018–2024", "cor": "Branco", "chegou": "2026-11-21",
+      "pasta": "citroen-c4-cactus-2026-11", "fotos": 5, "video": true },
+    { "k": "kia-sorento", "b": "Kia", "m": "Sorento", "anos": "2013–2015", "cor": "Prata", "chegou": "2026-11-21",
+      "pasta": "kia-sorento-2026-11", "fotos": 5, "video": true },
+    { "k": "ford-focus", "b": "Ford", "m": "Focus Hatch", "anos": "2016–2019", "cor": "Vermelho", "chegou": "2026-11-21",
+      "pasta": "ford-focus-2026-11", "fotos": 4, "video": true }
+  ]
+}

@@ -1998,7 +1998,8 @@ REGRAS_NOME = [
     # Motor (o motor do retrovisor que rebate continua no retrovisor)
     (r"\brebatimento\b(?!.*\bretrovisor)(?=.*\b(banco|bancos|encosto)\b)", {"Motor"}, "Peças de Interior", "Peças de Banco"),
     (r"\brebatimento\b(?!.*\bretrovisor)", {"Motor"}, "Peças de Interior", "Outros Botões"),
-    (r"^(motor|maquina) (de )?vidro\b(?!.*\bmanual)", {"Motor"}, "Janelas e Vedações",
+    # qualquer família (21/11: MLB5583934715 veio de outra categoria do ML e o teste parou o robô de 19 a 21/11)
+    (r"^(motor|maquina) (de )?vidro\b(?!.*\bmanual)", None, "Janelas e Vedações",
      "Máquinas e Motores de Vidro Elétrico"),
     (r"^modulo (do )?(cambio|tracao)\b", None, "Transmissão", "Módulos do Câmbio e da Tração"),
     (r"\bconversor (de )?torque\b", None, "Transmissão", "Câmbios e Peças Internas"),
