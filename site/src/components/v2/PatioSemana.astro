@@ -13,13 +13,20 @@ import Icone from '../Icone.astro';
 
 type Carro = { k: string; b: string; m: string; anos?: string; versao?: string; cor?: string; chegou: string;
   pecas?: number; pasta?: string; fotos?: number; video?: boolean };
-const carros = ([...dados.carros] as Carro[]).sort((a, b) => b.chegou.localeCompare(a.chegou));
+// O robô reconstrói o site a cada 30 min: a semana é a do dia do build (fuso de Brasília). Carro de até 7 dias = "esta
+// semana"; nenhum na semana, mas algum de 8 a 14 dias = "semana passada"; mais velho que isso some e, sem carro, o
+// bloco inteiro não aparece (nunca "esta semana" com carro velho).
+const hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+const diasAtras = (s: string) => Math.round((Date.parse(hoje) - Date.parse(s)) / 864e5);
+const todos = ([...dados.carros] as Carro[]).filter((c) => diasAtras(c.chegou) >= 0).sort((a, b) => b.chegou.localeCompare(a.chegou));
+const destaSemana = todos.filter((c) => diasAtras(c.chegou) <= 7);
+const passada = destaSemana.length === 0;
+const carros = passada ? todos.filter((c) => diasAtras(c.chegou) <= 14) : destaSemana;
 const r = resumo();
 const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
 const noSite = (k: string) => r.carros.find((c) => c.k === k);
 const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 const dia = (s: string) => { const d = new Date(`${s}T12:00:00`); return { nome: DIAS[d.getDay()], dm: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}` }; };
-const ini = dia(dados.semana.inicio), fim = dia(dados.semana.fim);
 const arte = (k: string) => { const a = arteDoCarro(k); return a ? `/arte/v2/carro-${a}.webp` : null; };
 const msg = (c: Carro) => `Vi no site que chegou no pátio um ${c.b} ${c.m}${c.cor ? ` ${c.cor.toLowerCase()}` : ''}. Procuro: ____`;
 const nome = (c: Carro) => `${c.b} ${c.m}`.replace(/-/g, '‑');
@@ -30,11 +37,11 @@ const porDia: [string, Carro[]][] = [];
 for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[1].push(c) : porDia.push([c.chegou, [c]]); }
 const so1Dia = porDia.length === 1;
 ---
-<section class="secao ps" aria-labelledby="t-ps">
+{carros.length > 0 && <section class="secao ps" aria-labelledby="t-ps">
   <div class="moldura">
     <div class="ps-cabeca">
-      <p class="ps-kicker"><span class="ps-vivo" aria-hidden="true"></span>Semana de {ini.dm} a {fim.dm}{dados.exemplo && <span class="ps-exemplo">prévia com carros de exemplo</span>}</p>
-      <h2 id="t-ps" class="titulo-secao">Chegou no pátio esta semana</h2>
+      <p class="ps-kicker"><span class="ps-vivo" aria-hidden="true"></span>{passada ? 'Os últimos que chegaram' : 'Atualizado toda semana'}{dados.exemplo && <span class="ps-exemplo">prévia com carros de exemplo</span>}</p>
+      <h2 id="t-ps" class="titulo-secao">{passada ? 'Chegou no pátio semana passada' : 'Chegou no pátio esta semana'}</h2>
       <p class="lead"><b>{carros.length === 1 ? '1 carro entrou' : `${carros.length} carros entraram`}</b> no pátio. Nem toda peça já está anunciada: peça desses carros você pede direto no WhatsApp e a gente separa.</p>
     </div>
 
@@ -113,7 +120,7 @@ const so1Dia = porDia.length === 1;
       <button type="button" class="ps-seta" data-ps-passo="1" aria-label="Próxima">›</button>
     </div>
   </dialog>
-</section>
+</section>}
 
 <script>
   document.querySelectorAll<HTMLElement>('.ps').forEach((s) => {

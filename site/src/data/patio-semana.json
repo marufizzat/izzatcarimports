@@ -1,6 +1,5 @@
 {
   "exemplo": false,
-  "semana": { "inicio": "2026-11-16", "fim": "2026-11-22" },
   "carros": [
     { "k": "citroen-c4-cactus", "b": "Citroën", "m": "C4 Cactus", "anos": "2018–2024", "cor": "Branco", "chegou": "2026-11-21",
       "pasta": "citroen-c4-cactus-2026-11", "fotos": 5, "video": true },
