@@ -1,0 +1,12 @@
+{
+  "exemplo": true,
+  "semana": { "inicio": "2026-11-16", "fim": "2026-11-22" },
+  "carros": [
+    { "k": "volvo-xc60", "b": "Volvo", "m": "XC60", "ano": 2019, "versao": "T5 Momentum", "cor": "Prata", "chegou": "2026-11-20", "pecas": 0 },
+    { "k": "jaguar-e-pace", "b": "Jaguar", "m": "E-Pace", "ano": 2020, "versao": "P250 R-Dynamic", "cor": "Branco", "chegou": "2026-11-19", "pecas": 0 },
+    { "k": "bmw-x3", "b": "BMW", "m": "X3", "ano": 2018, "versao": "xDrive30i", "cor": "Preto", "chegou": "2026-11-18", "pecas": 14 },
+    { "k": "jeep-compass", "b": "Jeep", "m": "Compass", "ano": 2021, "versao": "Longitude", "cor": "Cinza", "chegou": "2026-11-18", "pecas": 9 },
+    { "k": "audi-a3", "b": "Audi", "m": "A3", "ano": 2017, "versao": "Sedan 1.4 TFSI", "cor": "Azul", "chegou": "2026-11-17", "pecas": 23 },
+    { "k": "volvo-s60", "b": "Volvo", "m": "S60", "ano": 2016, "versao": "T5", "cor": "Cinza", "chegou": "2026-11-16", "pecas": 31 }
+  ]
+}

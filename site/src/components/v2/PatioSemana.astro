@@ -1,0 +1,173 @@
+---
+// "Chegou no pátio esta semana": os carros que ENTRARAM no pátio nos últimos 7 dias (cadastro de sucata do app da loja,
+// src/data/patio-semana.json). Só marca, modelo, ano, versão, cor e o dia (nunca chassi, placa, custo nem foto real).
+// Um carro em destaque (o mais novo) + a semana dia a dia; tocar num carro da semana traz ele para o destaque.
+// Carro sem peça anunciada ainda: o pedido vai para o WhatsApp ("a gente separa"), nunca "à venda".
+import dados from '../../data/patio-semana.json';
+import { resumo, logoInfo, arteDoCarro, whatsUrl } from '../../lib/dados';
+import { srcArte } from '../../lib/variantes';
+import { larga } from '../../lib/escalaTela';
+import Icone from '../Icone.astro';
+
+type Carro = { k: string; b: string; m: string; ano: number; versao?: string; cor?: string; chegou: string; pecas: number };
+const carros = ([...dados.carros] as Carro[]).sort((a, b) => b.chegou.localeCompare(a.chegou));
+const marcas = resumo().marcas;
+const kMarca = (b: string) => marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const dia = (s: string) => { const d = new Date(`${s}T12:00:00`); return { nome: DIAS[d.getDay()], dm: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}` }; };
+const ini = dia(dados.semana.inicio), fim = dia(dados.semana.fim);
+const arte = (k: string) => { const a = arteDoCarro(k); return a ? `/arte/v2/carro-${a}.webp` : null; };
+const msg = (c: Carro) => `Vi no site que chegou no pátio um ${c.b} ${c.m} ${c.ano}${c.cor ? ` ${c.cor.toLowerCase()}` : ''}. Procuro: ____`;
+const nome = (c: Carro) => `${c.b} ${c.m}`.replace(/-/g, '‑');
+const SIZES_DESTAQUE = `(max-width: 899px) calc(100vw - 32px), ${larga(760)}`;
+const SIZES_MINI = `(max-width: 899px) 132px, ${larga(150)}`;
+// por dia, na ordem da semana (mais novo em cima)
+const porDia: [string, Carro[]][] = [];
+for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[1].push(c) : porDia.push([c.chegou, [c]]); }
+---
+<section class="secao ps" aria-labelledby="t-ps">
+  <div class="moldura">
+    <div class="ps-cabeca">
+      <div>
+        <p class="ps-kicker"><span class="ps-vivo" aria-hidden="true"></span>Semana de {ini.dm} a {fim.dm}{dados.exemplo && <span class="ps-exemplo">prévia com carros de exemplo</span>}</p>
+        <h2 id="t-ps" class="titulo-secao">Chegou no pátio esta semana</h2>
+        <p class="lead"><b>{carros.length} carros</b> entraram no pátio. Nem toda peça já está anunciada: peça desses carros você pede direto no WhatsApp e a gente separa.</p>
+      </div>
+    </div>
+
+    <div class="ps-grade">
+      <div class="ps-palco">
+        {carros.map((c, i) => { const d = dia(c.chegou); const a = arte(c.k); const l = logoInfo(kMarca(c.b), 46, 30); const noSite = c.pecas > 0; return (
+          <article class="ps-destaque" data-ps={c.k + c.chegou} hidden={i > 0} aria-label={`${c.b} ${c.m} ${c.ano}`}>
+            <div class="ps-arte">
+              {a ? <img src={a} {...srcArte(a, SIZES_DESTAQUE)} alt="" width="1200" height="800" loading={i ? 'lazy' : 'eager'} decoding="async" />
+                 : <span class="ps-sem">{l && <img src={l.src} alt="" width={l.w * 2} height={l.h * 2} />}</span>}
+              <span class="ps-dia"><Icone nome="carro" />Chegou {d.nome}, {d.dm}</span>
+              <span class="ps-ilustra">Imagem ilustrativa do modelo</span>
+            </div>
+            <div class="ps-info">
+              <div class="ps-nome">
+                <span class="ps-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} />}</span>
+                <div><h3>{nome(c)} <span class="num">{c.ano}</span></h3>
+                  <p class="ps-fichas">{c.versao && <span>{c.versao}</span>}{c.cor && <span><i class={`ps-cor cor-${c.cor.toLowerCase()}`} aria-hidden="true"></i>Cor: {c.cor.toLowerCase()}</span>}</p></div>
+              </div>
+              <ol class="ps-etapas" aria-label="Onde o carro está">
+                <li class="feito">Chegou</li>
+                <li class:list={[noSite ? 'feito' : 'agora']}>Separando peças</li>
+                <li class:list={[noSite && 'agora']}>{noSite ? `${c.pecas} peças no site` : 'Peças no site'}</li>
+              </ol>
+              <div class="ps-acoes">
+                <a class="botao botao-laranja" data-botao="patio-semana" href={whatsUrl(msg(c))}><Icone nome="whats" />Quero peça deste carro</a>
+                {noSite && <a class="botao botao-linha" href={`/carros/${c.k}.html`}>Ver as {c.pecas} peças dele</a>}
+              </div>
+            </div>
+          </article>); })}
+      </div>
+
+      <div class="ps-semana">
+        <p class="ps-semana-t">A semana no pátio</p>
+        <ol class="ps-dias">
+          {porDia.map(([dd, cs]) => { const d = dia(dd); return (
+            <li class="ps-diab">
+              <p class="ps-diat"><b>{d.nome}</b> {d.dm}</p>
+              <ul>
+                {cs.map((c) => { const a = arte(c.k); return (
+                  <li><button type="button" class="ps-mini" data-ps-alvo={c.k + c.chegou} aria-pressed={c === carros[0] ? 'true' : 'false'}>
+                    <span class="ps-mini-arte">{a && <img src={a} {...srcArte(a, SIZES_MINI)} alt="" width="1200" height="800" loading="lazy" decoding="async" />}</span>
+                    <span class="ps-mini-txt"><b>{nome(c)}</b><small class="num">{c.ano}{c.cor ? ` · ${c.cor}` : ''}</small>
+                      <em class:list={['ps-chip', c.pecas > 0 && 'site']}>{c.pecas > 0 ? `${c.pecas} peças no site` : 'Separando peças'}</em></span>
+                  </button></li>); })}
+              </ul>
+            </li>); })}
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.ps').forEach((s) => {
+    s.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-ps-alvo]');
+      if (!b) return;
+      const alvo = b.dataset.psAlvo;
+      s.querySelectorAll<HTMLElement>('[data-ps]').forEach((d) => { d.hidden = d.dataset.ps !== alvo; if (!d.hidden) d.classList.add('ps-entra'); });
+      s.querySelectorAll('[data-ps-alvo]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      if (matchMedia('(max-width: 899px)').matches) s.querySelector('.ps-palco')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+</script>
+
+<style>
+  .ps-cabeca { margin-bottom: 22px; }
+  .ps-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+  .ps-vivo { width: 9px; height: 9px; border-radius: 50%; background: #FF6A00; box-shadow: 0 0 0 0 rgb(255 106 0 / .5); animation: ps-pulso 2s infinite; }
+  @keyframes ps-pulso { 70% { box-shadow: 0 0 0 9px rgb(255 106 0 / 0); } 100% { box-shadow: 0 0 0 0 rgb(255 106 0 / 0); } }
+  @media (prefers-reduced-motion: reduce) { .ps-vivo { animation: none; } }
+  .ps-exemplo { text-transform: none; letter-spacing: 0; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: #fff3cd; color: #7a5a00; }
+  .ps-cabeca .lead b { color: var(--ink); }
+
+  .ps-grade { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .ps-grade > * { min-width: 0; }
+  @media (min-width: 900px) { .ps-grade { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start; } }
+
+  .ps-destaque { border-radius: 26px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-2); }
+  .ps-destaque.ps-entra { animation: ps-entra .45s cubic-bezier(.2,.7,.2,1); }
+  @keyframes ps-entra { from { opacity: 0; transform: translateY(8px) scale(.99); } }
+  @media (prefers-reduced-motion: reduce) { .ps-destaque.ps-entra { animation: none; } }
+  .ps-arte { position: relative; background: #efeeeb; }
+  .ps-arte > img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; }
+  .ps-sem { aspect-ratio: 3 / 2; display: grid; place-items: center; background: radial-gradient(70% 60% at 50% 42%, #fbfaf8 0%, #efeeeb 62%, #e6e4e0 100%); }
+  .ps-dia { position: absolute; left: 16px; top: 16px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 11px; border-radius: 999px;
+    background: #FF6A00; color: #1d1d1f; font-weight: 800; font-size: 15px; box-shadow: 0 6px 18px rgb(255 106 0 / .28); }
+  .ps-dia :global(svg) { width: 19px; height: 19px; }
+  .ps-ilustra { position: absolute; right: 14px; bottom: 12px; padding: 3px 9px; border-radius: 999px; background: rgb(255 255 255 / .75); font-size: 11.5px; color: var(--ink-2); }
+  .ps-info { padding: 18px 20px 20px; display: grid; gap: 16px; }
+  .ps-nome { display: grid; grid-template-columns: 58px 1fr; gap: 14px; align-items: center; }
+  .ps-logo { width: 58px; height: 46px; display: grid; place-items: center; border-radius: 14px; background: #f3f2ef; }
+  .ps-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
+  .ps-nome h3 { margin: 0; font-stretch: 82%; font-weight: 820; font-size: clamp(24px, 3vw, 32px); line-height: 1.02; }
+  .ps-nome h3 .num { color: var(--ink-2); font-weight: 700; }
+  .ps-fichas { display: flex; flex-wrap: wrap; gap: 6px; margin: 7px 0 0; }
+  .ps-fichas span { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #f3f2ef; font-size: 13.5px; color: var(--ink-2); }
+  .ps-cor { width: 11px; height: 11px; border-radius: 50%; border: 1px solid rgb(0 0 0 / .18); background: #9a9a9a; }
+  .cor-prata { background: linear-gradient(135deg, #f2f2f2, #a9adb2); } .cor-branco { background: #fff; } .cor-preto { background: #161616; }
+  .cor-cinza { background: #6f7377; } .cor-azul { background: #23498f; } .cor-vermelho { background: #b3121b; }
+
+  .ps-etapas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; counter-reset: e; }
+  .ps-etapas li { position: relative; padding: 12px 10px 0; font-size: 13px; font-weight: 650; color: var(--ink-3); border-top: 4px solid #e6e4e0; border-radius: 2px; }
+  .ps-etapas li.feito { color: var(--ink-2); border-top-color: #1d1d1f; }
+  .ps-etapas li.agora { color: var(--ink); border-top-color: #FF6A00; }
+  .ps-etapas li.agora::before { content: ''; position: absolute; left: 0; top: -7px; width: 10px; height: 10px; border-radius: 50%; background: #FF6A00; box-shadow: 0 0 0 4px rgb(255 106 0 / .2); }
+  .ps-acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+  .ps-acoes .botao { flex: 1 1 220px; justify-content: center; }
+
+  .ps-semana { border-radius: 26px; background: var(--surface); box-shadow: var(--shadow-1); padding: 18px 14px 14px; }
+  .ps-semana-t { margin: 0 6px 10px; font-weight: 800; font-size: 17px; }
+  .ps-dias { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .ps-diat { margin: 8px 6px 6px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
+  .ps-diat b { color: var(--ink-2); }
+  .ps-diab ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .ps-mini { width: 100%; display: grid; grid-template-columns: 118px 1fr; gap: 12px; align-items: center; padding: 6px; border: 0; border-radius: 16px; background: transparent;
+    font: inherit; color: inherit; text-align: left; cursor: pointer; transition: background .25s, box-shadow .25s; }
+  .ps-mini-arte { display: block; border-radius: 12px; overflow: hidden; background: #efeeeb; }
+  .ps-mini-arte img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; }
+  .ps-mini-txt b { display: block; font-stretch: 82%; font-weight: 800; font-size: 17px; line-height: 1.1; }
+  .ps-mini-txt small { display: block; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .ps-chip { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 999px; font-style: normal; font-size: 12px; font-weight: 700; background: #f3f2ef; color: var(--ink-2); }
+  .ps-chip.site { background: #e7f6ec; color: #17633a; }
+  .ps-mini[aria-pressed='true'] { background: #fff4ec; box-shadow: inset 0 0 0 2px #FF6A00; }
+  @media (hover: hover) { .ps-mini:hover { background: #f6f5f2; } }
+  .ps-mini:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+
+  /* celular: a semana vira trilho de lado, logo abaixo do destaque */
+  @media (max-width: 899px) {
+    .ps-semana { padding: 14px 0 10px; background: transparent; box-shadow: none; }
+    .ps-semana-t { margin: 0 2px 8px; }
+    .ps-dias { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; gap: 10px; scrollbar-width: none; padding-bottom: 4px; }
+    .ps-dias::-webkit-scrollbar { display: none; }
+    .ps-diab ul { grid-auto-flow: column; }
+    .ps-mini { grid-template-columns: 1fr; width: 160px; background: var(--surface); box-shadow: var(--shadow-1); padding: 8px; }
+    .ps-diat { margin: 0 4px 6px; }
+  }
+</style>
