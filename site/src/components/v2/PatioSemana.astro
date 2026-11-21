@@ -1,44 +1,48 @@
 ---
-// "Chegou no pátio esta semana": os carros que ENTRARAM no pátio nos últimos 7 dias (cadastro de sucata do app da loja,
-// src/data/patio-semana.json). Só marca, modelo, ano, versão, cor e o dia (nunca chassi, placa, custo nem foto real).
-// Um carro em destaque (o mais novo) + a semana dia a dia; tocar num carro da semana traz ele para o destaque.
-// Carro sem peça anunciada ainda: o pedido vai para o WhatsApp ("a gente separa"), nunca "à venda".
+// "Chegou no pátio esta semana": os carros que ENTRARAM no pátio na semana (src/data/patio-semana.json; hoje à mão,
+// depois pelo cadastro de sucata do app). Só marca, modelo, anos, cor e o dia (nunca chassi, placa, custo).
+// Destaque = a arte de estúdio do modelo (a vitrine) + as FOTOS REAIS do carro no pátio e um clipe curto sem som
+// (public/patio/<pasta>/: 1..N.webp, N-mini.webp, video.mp4, video-capa.jpg; placa e seguradora fora do quadro).
+// Tocar num carro da semana traz ele para o destaque. Carro recém-chegado: o pedido vai para o WhatsApp
+// ("a gente separa"), nunca "à venda"; as peças do MESMO modelo que já estão no site têm link à parte.
 import dados from '../../data/patio-semana.json';
 import { resumo, logoInfo, arteDoCarro, whatsUrl } from '../../lib/dados';
 import { srcArte } from '../../lib/variantes';
 import { larga } from '../../lib/escalaTela';
 import Icone from '../Icone.astro';
 
-type Carro = { k: string; b: string; m: string; ano: number; versao?: string; cor?: string; chegou: string; pecas: number };
+type Carro = { k: string; b: string; m: string; anos?: string; versao?: string; cor?: string; chegou: string;
+  pecas?: number; pasta?: string; fotos?: number; video?: boolean };
 const carros = ([...dados.carros] as Carro[]).sort((a, b) => b.chegou.localeCompare(a.chegou));
-const marcas = resumo().marcas;
-const kMarca = (b: string) => marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
+const r = resumo();
+const kMarca = (b: string) => r.marcas.find((m) => m.n === b)?.k ?? b.toLowerCase();
+const noSite = (k: string) => r.carros.find((c) => c.k === k);
 const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 const dia = (s: string) => { const d = new Date(`${s}T12:00:00`); return { nome: DIAS[d.getDay()], dm: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}` }; };
 const ini = dia(dados.semana.inicio), fim = dia(dados.semana.fim);
 const arte = (k: string) => { const a = arteDoCarro(k); return a ? `/arte/v2/carro-${a}.webp` : null; };
-const msg = (c: Carro) => `Vi no site que chegou no pátio um ${c.b} ${c.m} ${c.ano}${c.cor ? ` ${c.cor.toLowerCase()}` : ''}. Procuro: ____`;
+const msg = (c: Carro) => `Vi no site que chegou no pátio um ${c.b} ${c.m}${c.cor ? ` ${c.cor.toLowerCase()}` : ''}. Procuro: ____`;
 const nome = (c: Carro) => `${c.b} ${c.m}`.replace(/-/g, '‑');
+const fotos = (c: Carro) => Array.from({ length: c.fotos ?? 0 }, (_, i) => ({ g: `/patio/${c.pasta}/${i + 1}.webp`, p: `/patio/${c.pasta}/${i + 1}-mini.webp` }));
 const SIZES_DESTAQUE = `(max-width: 899px) calc(100vw - 32px), ${larga(760)}`;
 const SIZES_MINI = `(max-width: 899px) 132px, ${larga(150)}`;
-// por dia, na ordem da semana (mais novo em cima)
 const porDia: [string, Carro[]][] = [];
 for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[1].push(c) : porDia.push([c.chegou, [c]]); }
+const so1Dia = porDia.length === 1;
 ---
 <section class="secao ps" aria-labelledby="t-ps">
   <div class="moldura">
     <div class="ps-cabeca">
-      <div>
-        <p class="ps-kicker"><span class="ps-vivo" aria-hidden="true"></span>Semana de {ini.dm} a {fim.dm}{dados.exemplo && <span class="ps-exemplo">prévia com carros de exemplo</span>}</p>
-        <h2 id="t-ps" class="titulo-secao">Chegou no pátio esta semana</h2>
-        <p class="lead"><b>{carros.length} carros</b> entraram no pátio. Nem toda peça já está anunciada: peça desses carros você pede direto no WhatsApp e a gente separa.</p>
-      </div>
+      <p class="ps-kicker"><span class="ps-vivo" aria-hidden="true"></span>Semana de {ini.dm} a {fim.dm}{dados.exemplo && <span class="ps-exemplo">prévia com carros de exemplo</span>}</p>
+      <h2 id="t-ps" class="titulo-secao">Chegou no pátio esta semana</h2>
+      <p class="lead"><b>{carros.length === 1 ? '1 carro entrou' : `${carros.length} carros entraram`}</b> no pátio. Nem toda peça já está anunciada: peça desses carros você pede direto no WhatsApp e a gente separa.</p>
     </div>
 
     <div class="ps-grade">
       <div class="ps-palco">
-        {carros.map((c, i) => { const d = dia(c.chegou); const a = arte(c.k); const l = logoInfo(kMarca(c.b), 46, 30); const noSite = c.pecas > 0; return (
-          <article class="ps-destaque" data-ps={c.k + c.chegou} hidden={i > 0} aria-label={`${c.b} ${c.m} ${c.ano}`}>
+        {carros.map((c, i) => { const d = dia(c.chegou); const a = arte(c.k); const l = logoInfo(kMarca(c.b), 46, 30);
+          const temPecas = (c.pecas ?? 0) > 0; const modelo = noSite(c.k); const fs = fotos(c); return (
+          <article class="ps-destaque" data-ps={c.k + c.chegou} hidden={i > 0} aria-label={`${c.b} ${c.m}`}>
             <div class="ps-arte">
               {a ? <img src={a} {...srcArte(a, SIZES_DESTAQUE)} alt="" width="1200" height="800" loading={i ? 'lazy' : 'eager'} decoding="async" />
                  : <span class="ps-sem">{l && <img src={l.src} alt="" width={l.w * 2} height={l.h * 2} />}</span>}
@@ -48,34 +52,50 @@ for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[
             <div class="ps-info">
               <div class="ps-nome">
                 <span class="ps-logo">{l && <img src={l.src} alt="" width={l.w} height={l.h} class={l.png ? 'png' : 'svg'} />}</span>
-                <div><h3>{nome(c)} <span class="num">{c.ano}</span></h3>
-                  <p class="ps-fichas">{c.versao && <span>{c.versao}</span>}{c.cor && <span><i class={`ps-cor cor-${c.cor.toLowerCase()}`} aria-hidden="true"></i>Cor: {c.cor.toLowerCase()}</span>}</p></div>
+                <div><h3>{nome(c)}</h3>
+                  <p class="ps-fichas">{c.anos && <span class="num">{c.anos}</span>}{c.versao && <span>{c.versao}</span>}{c.cor && <span><i class={`ps-cor cor-${c.cor.toLowerCase()}`} aria-hidden="true"></i>Cor: {c.cor.toLowerCase()}</span>}</p></div>
               </div>
+
+              {(fs.length > 0 || c.video) && (
+                <div class="ps-reais">
+                  <p class="ps-reais-t"><span class="ps-vivo" aria-hidden="true"></span>Este carro no pátio · fotos reais</p>
+                  <ul class="ps-fotos">
+                    {c.video && <li><button type="button" class="ps-foto ps-foto-video" data-ps-ver={`${c.pasta}|v`} aria-label={`Ver o vídeo do ${c.b} ${c.m} no pátio`}>
+                      <video src={`/patio/${c.pasta}/video.mp4`} poster={`/patio/${c.pasta}/video-capa.jpg`} muted loop playsinline preload="none" data-ps-auto></video>
+                      <span class="ps-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span></button></li>}
+                    {fs.map((f, j) => <li><button type="button" class="ps-foto" data-ps-ver={`${c.pasta}|${j}`} aria-label={`Ver a foto ${j + 1} do ${c.b} ${c.m}`}>
+                      <img src={f.p} alt="" width="480" height="480" loading="lazy" decoding="async" /></button></li>)}
+                  </ul>
+                  <script type="application/json" is:inline data-ps-midias={c.pasta} set:html={JSON.stringify({ nome: `${c.b} ${c.m}`, video: c.video ? `/patio/${c.pasta}/video.mp4` : null, fotos: fs.map((f) => f.g) })}></script>
+                </div>
+              )}
+
               <ol class="ps-etapas" aria-label="Onde o carro está">
                 <li class="feito">Chegou</li>
-                <li class:list={[noSite ? 'feito' : 'agora']}>Separando peças</li>
-                <li class:list={[noSite && 'agora']}>{noSite ? `${c.pecas} peças no site` : 'Peças no site'}</li>
+                <li class:list={[temPecas ? 'feito' : 'agora']}>Separando peças</li>
+                <li class:list={[temPecas && 'agora']}>{temPecas ? `${c.pecas} peças no site` : 'Peças no site'}</li>
               </ol>
               <div class="ps-acoes">
                 <a class="botao botao-laranja" data-botao="patio-semana" href={whatsUrl(msg(c))}><Icone nome="whats" />Quero peça deste carro</a>
-                {noSite && <a class="botao botao-linha" href={`/carros/${c.k}.html`}>Ver as {c.pecas} peças dele</a>}
+                {modelo && <a class="botao botao-linha" href={`/carros/${c.k}.html`}>Peças de {c.m} no site ({modelo.c})</a>}
               </div>
             </div>
           </article>); })}
       </div>
 
       <div class="ps-semana">
-        <p class="ps-semana-t">A semana no pátio</p>
+        <p class="ps-semana-t">{so1Dia ? `Chegaram ${dia(porDia[0][0]).nome}, ${dia(porDia[0][0]).dm}` : 'A semana no pátio'}</p>
         <ol class="ps-dias">
           {porDia.map(([dd, cs]) => { const d = dia(dd); return (
             <li class="ps-diab">
-              <p class="ps-diat"><b>{d.nome}</b> {d.dm}</p>
+              {!so1Dia && <p class="ps-diat"><b>{d.nome}</b> {d.dm}</p>}
               <ul>
-                {cs.map((c) => { const a = arte(c.k); return (
+                {cs.map((c) => { const fs = fotos(c); const a = arte(c.k); return (
                   <li><button type="button" class="ps-mini" data-ps-alvo={c.k + c.chegou} aria-pressed={c === carros[0] ? 'true' : 'false'}>
-                    <span class="ps-mini-arte">{a && <img src={a} {...srcArte(a, SIZES_MINI)} alt="" width="1200" height="800" loading="lazy" decoding="async" />}</span>
-                    <span class="ps-mini-txt"><b>{nome(c)}</b><small class="num">{c.ano}{c.cor ? ` · ${c.cor}` : ''}</small>
-                      <em class:list={['ps-chip', c.pecas > 0 && 'site']}>{c.pecas > 0 ? `${c.pecas} peças no site` : 'Separando peças'}</em></span>
+                    <span class="ps-mini-arte">{fs[0] ? <img src={fs[0].p} alt="" width="480" height="480" loading="lazy" decoding="async" />
+                      : a && <img src={a} {...srcArte(a, SIZES_MINI)} alt="" width="1200" height="800" loading="lazy" decoding="async" />}</span>
+                    <span class="ps-mini-txt"><b>{nome(c)}</b><small class="num">{[c.anos, c.cor].filter(Boolean).join(' · ')}</small>
+                      <em class:list={['ps-chip', (c.pecas ?? 0) > 0 && 'site']}>{(c.pecas ?? 0) > 0 ? `${c.pecas} peças no site` : 'Separando peças'}</em></span>
                   </button></li>); })}
               </ul>
             </li>); })}
@@ -83,25 +103,70 @@ for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[
       </div>
     </div>
   </div>
+
+  <dialog class="ps-tela" aria-label="Fotos do carro no pátio">
+    <div class="ps-tela-cabeca"><b data-ps-tela-nome></b><button type="button" class="ps-fechar" data-ps-fechar aria-label="Fechar">×</button></div>
+    <div class="ps-tela-palco" data-ps-tela-palco></div>
+    <div class="ps-tela-pe">
+      <button type="button" class="ps-seta" data-ps-passo="-1" aria-label="Anterior">‹</button>
+      <span class="num" data-ps-tela-n></span>
+      <button type="button" class="ps-seta" data-ps-passo="1" aria-label="Próxima">›</button>
+    </div>
+  </dialog>
 </section>
 
 <script>
   document.querySelectorAll<HTMLElement>('.ps').forEach((s) => {
+    const tela = s.querySelector<HTMLDialogElement>('.ps-tela')!;
+    const palco = tela.querySelector<HTMLElement>('[data-ps-tela-palco]')!;
+    let itens: { t: 'v' | 'f'; src: string }[] = [], atual = 0;
+    const mostrar = () => {
+      const it = itens[atual];
+      palco.innerHTML = it.t === 'v'
+        ? `<video src="${it.src}" autoplay muted loop playsinline controls></video>`
+        : `<img src="${it.src}" alt="">`;
+      tela.querySelector('[data-ps-tela-n]')!.textContent = `${atual + 1} de ${itens.length}`;
+    };
+    // os clipes do destaque andam sozinhos (mudos) só quando aparecem e sem "reduzir movimento"
+    const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('leve');
+    const olho = 'IntersectionObserver' in window && !reduz ? new IntersectionObserver((es) => es.forEach((e) => {
+      const v = e.target as HTMLVideoElement; if (e.isIntersecting) { v.preload = 'auto'; v.play().catch(() => {}); } else v.pause();
+    }), { threshold: .4 }) : null;
+    const vigiar = () => s.querySelectorAll<HTMLVideoElement>('.ps-destaque:not([hidden]) video[data-ps-auto]').forEach((v) => olho?.observe(v));
+    vigiar();
     s.addEventListener('click', (e) => {
-      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-ps-alvo]');
-      if (!b) return;
-      const alvo = b.dataset.psAlvo;
-      s.querySelectorAll<HTMLElement>('[data-ps]').forEach((d) => { d.hidden = d.dataset.ps !== alvo; if (!d.hidden) d.classList.add('ps-entra'); });
-      s.querySelectorAll('[data-ps-alvo]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      if (matchMedia('(max-width: 899px)').matches) s.querySelector('.ps-palco')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const alvo = e.target as HTMLElement;
+      const b = alvo.closest<HTMLButtonElement>('[data-ps-alvo]');
+      if (b) {
+        const k = b.dataset.psAlvo;
+        s.querySelectorAll<HTMLElement>('[data-ps]').forEach((d) => { d.hidden = d.dataset.ps !== k; if (!d.hidden) d.classList.add('ps-entra'); else d.querySelectorAll('video').forEach((v) => v.pause()); });
+        s.querySelectorAll('[data-ps-alvo]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        vigiar();
+        if (matchMedia('(max-width: 899px)').matches) s.querySelector('.ps-palco')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return;
+      }
+      const ver = alvo.closest<HTMLButtonElement>('[data-ps-ver]');
+      if (ver) {
+        const [pasta, qual] = ver.dataset.psVer!.split('|');
+        const m = JSON.parse(s.querySelector(`script[data-ps-midias="${pasta}"]`)!.textContent!);
+        itens = [...(m.video ? [{ t: 'v' as const, src: m.video }] : []), ...m.fotos.map((src: string) => ({ t: 'f' as const, src }))];
+        atual = qual === 'v' ? 0 : Number(qual) + (m.video ? 1 : 0);
+        tela.querySelector('[data-ps-tela-nome]')!.textContent = `${m.nome} · no pátio`;
+        mostrar(); tela.showModal(); return;
+      }
+      const passo = alvo.closest<HTMLElement>('[data-ps-passo]');
+      if (passo) { atual = (atual + Number(passo.dataset.psPasso) + itens.length) % itens.length; mostrar(); return; }
+      if (alvo.closest('[data-ps-fechar]') || alvo === tela) tela.close();
     });
+    tela.addEventListener('close', () => { palco.innerHTML = ''; });
+    tela.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { atual = (atual + (e.key === 'ArrowRight' ? 1 : -1) + itens.length) % itens.length; mostrar(); } });
   });
 </script>
 
 <style>
   .ps-cabeca { margin-bottom: 22px; }
   .ps-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
-  .ps-vivo { width: 9px; height: 9px; border-radius: 50%; background: #FF6A00; box-shadow: 0 0 0 0 rgb(255 106 0 / .5); animation: ps-pulso 2s infinite; }
+  .ps-vivo { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #FF6A00; box-shadow: 0 0 0 0 rgb(255 106 0 / .5); animation: ps-pulso 2s infinite; }
   @keyframes ps-pulso { 70% { box-shadow: 0 0 0 9px rgb(255 106 0 / 0); } 100% { box-shadow: 0 0 0 0 rgb(255 106 0 / 0); } }
   @media (prefers-reduced-motion: reduce) { .ps-vivo { animation: none; } }
   .ps-exemplo { text-transform: none; letter-spacing: 0; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: #fff3cd; color: #7a5a00; }
@@ -127,14 +192,25 @@ for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[
   .ps-logo { width: 58px; height: 46px; display: grid; place-items: center; border-radius: 14px; background: #f3f2ef; }
   .ps-logo img.svg { filter: brightness(0) saturate(100%) invert(9%) sepia(5%) saturate(500%) hue-rotate(200deg); }
   .ps-nome h3 { margin: 0; font-stretch: 82%; font-weight: 820; font-size: clamp(24px, 3vw, 32px); line-height: 1.02; }
-  .ps-nome h3 .num { color: var(--ink-2); font-weight: 700; }
   .ps-fichas { display: flex; flex-wrap: wrap; gap: 6px; margin: 7px 0 0; }
   .ps-fichas span { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #f3f2ef; font-size: 13.5px; color: var(--ink-2); }
   .ps-cor { width: 11px; height: 11px; border-radius: 50%; border: 1px solid rgb(0 0 0 / .18); background: #9a9a9a; }
   .cor-prata { background: linear-gradient(135deg, #f2f2f2, #a9adb2); } .cor-branco { background: #fff; } .cor-preto { background: #161616; }
-  .cor-cinza { background: #6f7377; } .cor-azul { background: #23498f; } .cor-vermelho { background: #b3121b; }
+  .cor-cinza { background: #6f7377; } .cor-azul { background: #23498f; } .cor-vermelho { background: #c0151f; }
 
-  .ps-etapas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; counter-reset: e; }
+  .ps-reais { display: grid; gap: 8px; }
+  .ps-reais-t { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 750; color: var(--ink-2); }
+  .ps-fotos { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 92px; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .ps-fotos::-webkit-scrollbar { display: none; }
+  .ps-foto { position: relative; display: block; width: 92px; height: 92px; padding: 0; border: 0; border-radius: 14px; overflow: hidden; background: #e9e7e3; cursor: zoom-in; }
+  .ps-foto img, .ps-foto video { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .4s cubic-bezier(.2,.7,.2,1); }
+  .ps-foto-video { box-shadow: inset 0 0 0 2px #FF6A00; }
+  .ps-play { position: absolute; inset: auto 6px 6px auto; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #FF6A00; color: #1d1d1f; }
+  .ps-play svg { width: 15px; height: 15px; }
+  @media (hover: hover) { .ps-foto:hover img, .ps-foto:hover video { transform: scale(1.06); } }
+  .ps-foto:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+
+  .ps-etapas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .ps-etapas li { position: relative; padding: 12px 10px 0; font-size: 13px; font-weight: 650; color: var(--ink-3); border-top: 4px solid #e6e4e0; border-radius: 2px; }
   .ps-etapas li.feito { color: var(--ink-2); border-top-color: #1d1d1f; }
   .ps-etapas li.agora { color: var(--ink); border-top-color: #FF6A00; }
@@ -148,10 +224,10 @@ for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[
   .ps-diat { margin: 8px 6px 6px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
   .ps-diat b { color: var(--ink-2); }
   .ps-diab ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-  .ps-mini { width: 100%; display: grid; grid-template-columns: 118px 1fr; gap: 12px; align-items: center; padding: 6px; border: 0; border-radius: 16px; background: transparent;
+  .ps-mini { width: 100%; display: grid; grid-template-columns: 104px 1fr; gap: 12px; align-items: center; padding: 6px; border: 0; border-radius: 16px; background: transparent;
     font: inherit; color: inherit; text-align: left; cursor: pointer; transition: background .25s, box-shadow .25s; }
-  .ps-mini-arte { display: block; border-radius: 12px; overflow: hidden; background: #efeeeb; }
-  .ps-mini-arte img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; }
+  .ps-mini-arte { display: block; border-radius: 12px; overflow: hidden; background: #efeeeb; aspect-ratio: 1; }
+  .ps-mini-arte img { display: block; width: 100%; height: 100%; object-fit: cover; }
   .ps-mini-txt b { display: block; font-stretch: 82%; font-weight: 800; font-size: 17px; line-height: 1.1; }
   .ps-mini-txt small { display: block; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
   .ps-chip { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 999px; font-style: normal; font-size: 12px; font-weight: 700; background: #f3f2ef; color: var(--ink-2); }
@@ -160,7 +236,14 @@ for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[
   @media (hover: hover) { .ps-mini:hover { background: #f6f5f2; } }
   .ps-mini:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
 
-  /* celular: a semana vira trilho de lado, logo abaixo do destaque */
+  .ps-tela { width: min(980px, calc(100vw / var(--z, 1) - 24px)); max-height: calc(100dvh / var(--z, 1) - 24px); padding: 0; border: 0; border-radius: 22px; background: #111; color: #fff; overflow: hidden; }
+  .ps-tela::backdrop { background: rgb(0 0 0 / .78); }
+  .ps-tela-cabeca { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 12px 18px; }
+  .ps-fechar, .ps-seta { width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgb(255 255 255 / .12); color: #fff; font-size: 28px; line-height: 1; cursor: pointer; }
+  .ps-tela-palco { display: grid; place-items: center; background: #000; height: min(70dvh, 640px); }
+  .ps-tela-palco :global(img), .ps-tela-palco :global(video) { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .ps-tela-pe { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 12px; font-size: 14px; }
+
   @media (max-width: 899px) {
     .ps-semana { padding: 14px 0 10px; background: transparent; box-shadow: none; }
     .ps-semana-t { margin: 0 2px 8px; }
@@ -169,5 +252,6 @@ for (const c of carros) { const g = porDia.find(([d]) => d === c.chegou); g ? g[
     .ps-diab ul { grid-auto-flow: column; }
     .ps-mini { grid-template-columns: 1fr; width: 160px; background: var(--surface); box-shadow: var(--shadow-1); padding: 8px; }
     .ps-diat { margin: 0 4px 6px; }
+    .ps-foto { width: 78px; height: 78px; } .ps-fotos { grid-auto-columns: 78px; }
   }
 </style>
